@@ -45,9 +45,9 @@ export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange 
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="max-h-[400px] overflow-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-muted/50">
             <TableRow className="bg-muted/50">
               <TableHead data-testid="header-datum">Datum</TableHead>
               <TableHead data-testid="header-bot-name">Bot-Name</TableHead>
