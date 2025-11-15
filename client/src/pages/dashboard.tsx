@@ -3,7 +3,7 @@ import { Wallet, TrendingUp, Percent, Calendar, Search, Check, Plus } from "luci
 import StatCard from "@/components/StatCard";
 import BotEntryTable from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
-import ProfitBarChart from "@/components/ProfitBarChart";
+import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
 import { BotEntry } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
@@ -182,19 +182,6 @@ export default function Dashboard() {
       return acc;
     }, [] as { date: string; profit: number }[]);
 
-  const barChartData = Object.entries(
-    allEntries.reduce((acc, entry) => {
-      if (!acc[entry.botName]) {
-        acc[entry.botName] = 0;
-      }
-      acc[entry.botName] += parseFloat(entry.profit);
-      return acc;
-    }, {} as Record<string, number>)
-  )
-    .map(([name, profit]) => ({ name, profit }))
-    .sort((a, b) => b.profit - a.profit)
-    .slice(0, 6);
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -305,7 +292,10 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <ProfitLineChart data={lineChartData} title="Profit-Verlauf" />
-          <ProfitBarChart data={barChartData} title="Profit nach Bot" />
+        </div>
+
+        <div className="mb-8">
+          <ProfitBarChartAdvanced entries={allEntries} title="Profit nach Bot" />
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
