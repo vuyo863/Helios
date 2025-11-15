@@ -186,78 +186,7 @@ export default function Upload() {
             onSelectBotType={setSelectedBotTypeId}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Screenshot hochladen</h2>
-                
-                <div className="border-2 border-dashed rounded-lg p-6 text-center bg-muted/30 hover-elevate mb-4">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    multiple
-                    data-testid="input-file-upload"
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <UploadIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Klicken Sie hier oder ziehen Sie eine Datei hierher
-                    </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG bis zu 10MB</p>
-                  </label>
-                </div>
-
-                {selectedFiles.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium" data-testid="text-file-count">
-                        {selectedFiles.length} {selectedFiles.length === 1 ? 'Datei' : 'Dateien'} ausgewählt
-                      </span>
-                    </div>
-                    <ScrollArea className="max-h-32">
-                      <div className="space-y-2">
-                        {selectedFiles.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md"
-                            data-testid={`file-item-${index}`}
-                          >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                              <span className="text-sm truncate">{file.name}</span>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveFile(index)}
-                              data-testid={`button-remove-file-${index}`}
-                              className="h-8 w-8 shrink-0"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-
-                <Button 
-                  onClick={handleSendToAI}
-                  className="w-full"
-                  disabled={selectedFiles.length === 0}
-                  data-testid="button-send-to-ai"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  An AI senden
-                </Button>
-              </Card>
-            </div>
-
+          <div className="space-y-6">
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">AI Chat Interface</h2>
               
@@ -309,6 +238,75 @@ export default function Upload() {
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
+            </Card>
+
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">Screenshot hochladen</h2>
+              
+              <div className="border-2 border-dashed rounded-lg p-6 text-center bg-muted/30 hover-elevate mb-4">
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  multiple
+                  data-testid="input-file-upload"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <UploadIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Klicken Sie hier oder ziehen Sie eine Datei hierher
+                  </p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG bis zu 10MB</p>
+                </label>
+              </div>
+
+              {selectedFiles.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium" data-testid="text-file-count">
+                      {selectedFiles.length} {selectedFiles.length === 1 ? 'Datei' : 'Dateien'} ausgewählt
+                    </span>
+                  </div>
+                  <ScrollArea className="max-h-32">
+                    <div className="space-y-2">
+                      {selectedFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md"
+                          data-testid={`file-item-${index}`}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <span className="text-sm truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveFile(index)}
+                            data-testid={`button-remove-file-${index}`}
+                            className="h-8 w-8 shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleSendToAI}
+                className="w-full"
+                disabled={selectedFiles.length === 0}
+                data-testid="button-send-to-ai"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                An AI senden
+              </Button>
             </Card>
           </div>
 
