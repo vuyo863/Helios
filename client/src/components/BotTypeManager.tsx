@@ -39,6 +39,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("existing");
 
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -139,6 +140,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
       description: botType.description || '',
       color: botType.color || '#3B82F6',
     });
+    setActiveTab("create");
     if (onEditBotType) {
       onEditBotType(botType);
     }
@@ -148,6 +150,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
     setEditMode(false);
     setEditingBotTypeId(null);
     setNewBotType({ name: '', description: '', color: '#3B82F6' });
+    setActiveTab("existing");
   };
 
   const colorOptions = [
@@ -161,7 +164,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
 
   return (
     <Card className="p-6">
-      <Tabs defaultValue="existing" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="existing" data-testid="tab-existing-bots">Bestehende Bots</TabsTrigger>
           <TabsTrigger value="create" data-testid="tab-create-bot-type">Create Bot Type</TabsTrigger>
