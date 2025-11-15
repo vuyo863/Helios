@@ -1,16 +1,49 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Calendar } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Calendar, Search, Check } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChart from "@/components/ProfitBarChart";
 import { BotEntry } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useMemo } from "react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const { data: entries = [], isLoading } = useQuery<BotEntry[]>({
     queryKey: ['/api/entries'],
   });
+
+  const [selectedBotName, setSelectedBotName] = useState<string>("Gesamt");
+  const [open, setOpen] = useState(false);
+
+  const allEntries = useMemo(() => [...entries], [entries]);
+
+  const uniqueBotNames = useMemo(() => {
+    const names = Array.from(new Set(allEntries.map(entry => entry.botName)));
+    return ["Gesamt", ...names.sort()];
+  }, [allEntries]);
+
+  const filteredEntries = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      return [...allEntries];
+    }
+    return allEntries.filter(entry => entry.botName === selectedBotName);
+  }, [allEntries, selectedBotName]);
 
   if (isLoading) {
     return (
@@ -27,16 +60,16 @@ export default function Dashboard() {
     );
   }
 
-  const totalInvestment = entries.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
-  const totalProfit = entries.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
+  const totalInvestment = filteredEntries.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+  const totalProfit = filteredEntries.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
   const totalProfitPercent = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
   
-  const dayCount = entries.length > 0 
-    ? Math.max(1, Math.ceil((new Date().getTime() - new Date(entries[entries.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
+  const dayCount = filteredEntries.length > 0 
+    ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntries[filteredEntries.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
     : 1;
   const avgDailyProfit = totalProfit / dayCount;
 
-  const lineChartData = entries
+  const lineChartData = filteredEntries
     .slice(0, 10)
     .reverse()
     .reduce((acc, entry) => {
@@ -51,7 +84,7 @@ export default function Dashboard() {
     }, [] as { date: string; profit: number }[]);
 
   const barChartData = Object.entries(
-    entries.reduce((acc, entry) => {
+    allEntries.reduce((acc, entry) => {
       if (!acc[entry.botName]) {
         acc[entry.botName] = 0;
       }
@@ -66,7 +99,58 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold mb-8" data-testid="heading-dashboard">Übersicht</h1>
+        <div className="flex items-center gap-4 mb-8 flex-wrap">
+          <h1 className="text-2xl font-bold" data-testid="heading-dashboard">Übersicht</h1>
+          
+          <div className="flex items-center gap-2">
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-[300px] justify-between"
+                  data-testid="button-bot-filter"
+                >
+                  {selectedBotName}
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Bot suchen..." data-testid="input-bot-search" />
+                  <CommandList>
+                    <CommandEmpty>Kein Bot gefunden.</CommandEmpty>
+                    <CommandGroup>
+                      {uniqueBotNames.map((botName) => (
+                        <CommandItem
+                          key={botName}
+                          value={botName}
+                          onSelect={(currentValue) => {
+                            const selectedName = uniqueBotNames.find(
+                              name => name.toLowerCase() === currentValue.toLowerCase()
+                            ) || "Gesamt";
+                            setSelectedBotName(selectedName);
+                            setOpen(false);
+                          }}
+                          data-testid={`option-bot-${botName}`}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedBotName === botName ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {botName}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
@@ -101,8 +185,10 @@ export default function Dashboard() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold mb-4">Alle Einträge</h2>
-          <BotEntryTable entries={entries} />
+          <h2 className="text-xl font-bold mb-4">
+            {selectedBotName === "Gesamt" ? "Alle Einträge" : `Einträge: ${selectedBotName}`}
+          </h2>
+          <BotEntryTable entries={filteredEntries} />
         </div>
       </div>
     </div>
