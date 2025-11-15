@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Calendar, Search, Check } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Calendar, Search, Check, Plus } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -20,7 +20,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -30,6 +41,10 @@ export default function Dashboard() {
 
   const [selectedBotName, setSelectedBotName] = useState<string>("Gesamt");
   const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedBotsForTable, setSelectedBotsForTable] = useState<string[]>([]);
+  const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -38,12 +53,50 @@ export default function Dashboard() {
     return ["Gesamt", ...names.sort()];
   }, [allEntries]);
 
+  const uniqueBotNamesOnly = useMemo(() => {
+    const names = Array.from(new Set(allEntries.map(entry => entry.botName)));
+    return names.sort();
+  }, [allEntries]);
+
+  const filteredEntriesForTable = useMemo(() => {
+    if (selectedBotsForTable.length === 0) {
+      return [...allEntries].slice(0, 3);
+    }
+    return allEntries.filter(entry => selectedBotsForTable.includes(entry.botName));
+  }, [allEntries, selectedBotsForTable]);
+
   const filteredEntries = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       return [...allEntries];
     }
     return allEntries.filter(entry => entry.botName === selectedBotName);
   }, [allEntries, selectedBotName]);
+
+  const filteredBotNames = useMemo(() => {
+    if (!searchQuery) return uniqueBotNamesOnly;
+    return uniqueBotNamesOnly.filter(name => 
+      name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [uniqueBotNamesOnly, searchQuery]);
+
+  const handleOpenDialog = () => {
+    setTempSelectedBots([...selectedBotsForTable]);
+    setSearchQuery("");
+    setDialogOpen(true);
+  };
+
+  const handleToggleBot = (botName: string) => {
+    setTempSelectedBots(prev => 
+      prev.includes(botName) 
+        ? prev.filter(b => b !== botName)
+        : [...prev, botName]
+    );
+  };
+
+  const handleSaveSelection = () => {
+    setSelectedBotsForTable([...tempSelectedBots]);
+    setDialogOpen(false);
+  };
 
   if (isLoading) {
     return (
@@ -188,8 +241,85 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold mb-4">
             {selectedBotName === "Gesamt" ? "Alle Einträge" : `Einträge: ${selectedBotName}`}
           </h2>
-          <BotEntryTable entries={filteredEntries} />
+          <BotEntryTable entries={filteredEntriesForTable} />
+          
+          <Card 
+            className="mt-4 p-6 text-center cursor-pointer hover-elevate"
+            onClick={handleOpenDialog}
+            data-testid="button-add-bot-version"
+          >
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Plus className="w-5 h-5" />
+              <span className="font-medium">Bot-Version hinzufügen</span>
+            </div>
+          </Card>
         </div>
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Bots für Tabelle auswählen</DialogTitle>
+              <DialogDescription>
+                Wählen Sie die Bots aus, die in der Tabelle angezeigt werden sollen.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {tempSelectedBots.length} ausgewählt
+                </span>
+              </div>
+
+              <Input
+                placeholder="Bot suchen..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="input-bot-search-dialog"
+              />
+
+              <div className="max-h-[300px] overflow-y-auto space-y-2">
+                {filteredBotNames.map((botName) => (
+                  <div
+                    key={botName}
+                    className="flex items-center space-x-2 p-2 rounded hover-elevate cursor-pointer"
+                    onClick={() => handleToggleBot(botName)}
+                    data-testid={`checkbox-bot-${botName}`}
+                  >
+                    <Checkbox
+                      checked={tempSelectedBots.includes(botName)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setTempSelectedBots(prev => [...prev, botName]);
+                        } else {
+                          setTempSelectedBots(prev => prev.filter(b => b !== botName));
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-sm">{botName}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                data-testid="button-cancel-selection"
+              >
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleSaveSelection}
+                data-testid="button-save-selection"
+              >
+                Speichern
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
