@@ -41,7 +41,6 @@ export default function Upload() {
     highestGridProfitPercent: '',
     overallAvgGridProfit: '',
     leverage: '',
-    notes: '',
   });
 
 
@@ -72,7 +71,6 @@ export default function Upload() {
         highestGridProfitPercent: '',
         overallAvgGridProfit: '',
         leverage: '',
-        notes: '',
       });
     },
     onError: () => {
@@ -139,7 +137,6 @@ export default function Upload() {
       highestGridProfitPercent: '',
       overallAvgGridProfit: '',
       leverage: '',
-      notes: botType.description || '',
     });
     toast({
       title: "Bot-Typ geladen",

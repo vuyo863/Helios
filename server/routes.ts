@@ -29,17 +29,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/bot-types/:id", async (req, res) => {
     try {
-      const updateData: Partial<InsertBotType> = {
-        name: req.body.name,
-        description: req.body.description,
-        color: req.body.color,
-      };
-      const updated = await storage.updateBotType(req.params.id, updateData);
+      const updateSchema = insertBotTypeSchema.partial().refine(
+        (data) => data.name !== undefined || data.description !== undefined || data.color !== undefined,
+        { message: "At least one field must be provided for update" }
+      ).refine(
+        (data) => !data.name || data.name.trim().length > 0,
+        { message: "Name cannot be empty", path: ["name"] }
+      );
+      
+      const validatedData = updateSchema.parse(req.body);
+      const updated = await storage.updateBotType(req.params.id, validatedData);
       if (!updated) {
         return res.status(404).json({ error: "Bot type not found" });
       }
       res.json(updated);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update bot type" });
     }
   });

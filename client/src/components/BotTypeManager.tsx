@@ -75,9 +75,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
         title: "Bot-Typ aktualisiert",
         description: "Der Bot-Typ wurde erfolgreich aktualisiert.",
       });
-      setNewBotType({ name: '', description: '', color: '#3B82F6' });
-      setEditMode(false);
-      setEditingBotTypeId(null);
+      handleCancelEdit();
     },
     onError: () => {
       toast({

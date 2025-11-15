@@ -284,9 +284,9 @@ export class MemStorage implements IStorage {
     
     const updatedBotType: BotType = {
       ...existingBotType,
-      name: updateData.name ?? existingBotType.name,
+      name: updateData.name !== undefined && updateData.name !== '' ? updateData.name : existingBotType.name,
       description: updateData.description !== undefined ? (updateData.description || null) : existingBotType.description,
-      color: updateData.color !== undefined ? (updateData.color || null) : existingBotType.color,
+      color: updateData.color !== undefined && updateData.color !== '' ? updateData.color : existingBotType.color,
     };
     
     this.botTypes.set(id, updatedBotType);
