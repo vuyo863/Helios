@@ -290,7 +290,7 @@ export default function Dashboard() {
                 data-testid="input-bot-search-dialog"
               />
 
-              <div className="max-h-[300px] overflow-y-auto space-y-2">
+              <div className="max-h-[350px] overflow-y-auto space-y-2">
                 {filteredBotNames.map((botName) => (
                   <div
                     key={botName}

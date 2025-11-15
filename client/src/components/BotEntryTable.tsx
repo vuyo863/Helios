@@ -45,16 +45,16 @@ export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange 
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <div className="max-h-[400px] overflow-auto">
+      <div className="max-h-[320px] overflow-auto">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-muted/50">
-            <TableRow className="bg-muted/50">
-              <TableHead data-testid="header-datum">Datum</TableHead>
-              <TableHead data-testid="header-bot-name">Bot-Name</TableHead>
-              <TableHead className="text-right" data-testid="header-investition">Investition (USDT)</TableHead>
-              <TableHead className="text-right" data-testid="header-profit-usdt">Profit (USDT)</TableHead>
-              <TableHead className="text-right" data-testid="header-profit-percent">Profit (%)</TableHead>
-              <TableHead data-testid="header-zeitraum">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-datum">Datum</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-bot-name">Bot-Name</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-investition">Investition (USDT)</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-usdt">Profit (USDT)</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-percent">Profit (%)</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-zeitraum">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-1 hover-elevate px-2 py-1 rounded-md cursor-pointer" data-testid="dropdown-zeitraum">
                     <span>Zeitraum</span>
