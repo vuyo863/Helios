@@ -278,12 +278,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <ProfitLineChart data={lineChartData} title="Profit-Verlauf" />
-          <ProfitBarChart data={barChartData} title="Profit nach Bot" />
-        </div>
-
-        <div>
+        <div className="mb-8">
           <h2 className="text-xl font-bold mb-4">
             {selectedBotName === "Gesamt" ? "Alle Einträge" : `Einträge: ${selectedBotName}`}
           </h2>
@@ -306,6 +301,11 @@ export default function Dashboard() {
               <span className="font-medium">Bot-Version hinzufügen</span>
             </div>
           </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <ProfitLineChart data={lineChartData} title="Profit-Verlauf" />
+          <ProfitBarChart data={barChartData} title="Profit nach Bot" />
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
