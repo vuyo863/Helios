@@ -69,31 +69,31 @@ export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange,
           <TableHeader>
             <TableRow>
               <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-datum">
-                <div className="flex items-center cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('date')}>
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('date')}>
                   <span>Datum</span>
                   <SortIcon column="date" />
                 </div>
               </TableHead>
               <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-bot-name">
-                <div className="flex items-center cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('botName')}>
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('botName')}>
                   <span>Bot-Name</span>
                   <SortIcon column="botName" />
                 </div>
               </TableHead>
               <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-investition">
-                <div className="flex items-center justify-end cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('investment')}>
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('investment')}>
                   <span>Investition (USDT)</span>
                   <SortIcon column="investment" />
                 </div>
               </TableHead>
               <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-usdt">
-                <div className="flex items-center justify-end cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profit')}>
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profit')}>
                   <span>Profit (USDT)</span>
                   <SortIcon column="profit" />
                 </div>
               </TableHead>
               <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-percent">
-                <div className="flex items-center justify-end cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profitPercent')}>
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profitPercent')}>
                   <span>Profit (%)</span>
                   <SortIcon column="profitPercent" />
                 </div>

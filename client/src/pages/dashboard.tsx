@@ -88,11 +88,14 @@ export default function Dashboard() {
           bValue = bValue.toLowerCase();
         }
         
-        if (sortDirection === 'asc') {
-          return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-        } else {
-          return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+        let comparison = 0;
+        if (aValue > bValue) {
+          comparison = 1;
+        } else if (aValue < bValue) {
+          comparison = -1;
         }
+        
+        return sortDirection === 'asc' ? comparison : -comparison;
       });
     }
     
