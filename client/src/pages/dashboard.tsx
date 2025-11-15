@@ -46,6 +46,8 @@ export default function Dashboard() {
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -70,8 +72,32 @@ export default function Dashboard() {
       filtered = filtered.filter(entry => entry.periodType === selectedPeriod);
     }
     
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        let aValue: any = a[sortColumn as keyof BotEntry];
+        let bValue: any = b[sortColumn as keyof BotEntry];
+        
+        if (sortColumn === 'date') {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+        } else if (sortColumn === 'investment' || sortColumn === 'profit' || sortColumn === 'profitPercent') {
+          aValue = parseFloat(aValue.toString());
+          bValue = parseFloat(bValue.toString());
+        } else if (sortColumn === 'botName') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        }
+        
+        if (sortDirection === 'asc') {
+          return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+        } else {
+          return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+        }
+      });
+    }
+    
     return filtered;
-  }, [allEntries, selectedBotsForTable, selectedPeriod]);
+  }, [allEntries, selectedBotsForTable, selectedPeriod, sortColumn, sortDirection]);
 
   const filteredEntries = useMemo(() => {
     if (selectedBotName === "Gesamt") {
@@ -104,6 +130,15 @@ export default function Dashboard() {
   const handleSaveSelection = () => {
     setSelectedBotsForTable([...tempSelectedBots]);
     setDialogOpen(false);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
   };
 
   if (isLoading) {
@@ -253,6 +288,9 @@ export default function Dashboard() {
             entries={filteredEntriesForTable} 
             selectedPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
           />
           
           <Card 

@@ -16,15 +16,18 @@ import {
 import { BotEntry } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface BotEntryTableProps {
   entries: BotEntry[];
   selectedPeriod: string | null;
   onPeriodChange: (period: string | null) => void;
+  sortColumn: string | null;
+  sortDirection: 'asc' | 'desc';
+  onSort: (column: string) => void;
 }
 
-export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange }: BotEntryTableProps) {
+export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange, sortColumn, sortDirection, onSort }: BotEntryTableProps) {
   const getPeriodBadgeVariant = (periodType: string) => {
     switch (periodType.toLowerCase()) {
       case 'tag':
@@ -43,17 +46,58 @@ export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange 
     return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return (
+        <div className="flex flex-col ml-1 opacity-40">
+          <ArrowUp className="h-3 w-3 -mb-1" />
+          <ArrowDown className="h-3 w-3" />
+        </div>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    );
+  };
+
   return (
     <div className="rounded-lg border overflow-hidden">
       <div className="max-h-[320px] overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-datum">Datum</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-bot-name">Bot-Name</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-investition">Investition (USDT)</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-usdt">Profit (USDT)</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-percent">Profit (%)</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-datum">
+                <div className="flex items-center cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('date')}>
+                  <span>Datum</span>
+                  <SortIcon column="date" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-bot-name">
+                <div className="flex items-center cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('botName')}>
+                  <span>Bot-Name</span>
+                  <SortIcon column="botName" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-investition">
+                <div className="flex items-center justify-end cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('investment')}>
+                  <span>Investition (USDT)</span>
+                  <SortIcon column="investment" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-usdt">
+                <div className="flex items-center justify-end cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profit')}>
+                  <span>Profit (USDT)</span>
+                  <SortIcon column="profit" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-percent">
+                <div className="flex items-center justify-end cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profitPercent')}>
+                  <span>Profit (%)</span>
+                  <SortIcon column="profitPercent" />
+                </div>
+              </TableHead>
               <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-zeitraum">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-1 hover-elevate px-2 py-1 rounded-md cursor-pointer" data-testid="dropdown-zeitraum">
