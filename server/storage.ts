@@ -9,6 +9,7 @@ export interface IStorage {
   getAllBotTypes(): Promise<BotType[]>;
   getBotType(id: string): Promise<BotType | undefined>;
   createBotType(botType: InsertBotType): Promise<BotType>;
+  updateBotType(id: string, updateData: Partial<InsertBotType>): Promise<BotType | undefined>;
   deleteBotType(id: string): Promise<boolean>;
   
   getAllBotEntries(): Promise<BotEntry[]>;
@@ -273,6 +274,23 @@ export class MemStorage implements IStorage {
     };
     this.botTypes.set(id, botType);
     return botType;
+  }
+
+  async updateBotType(id: string, updateData: Partial<InsertBotType>): Promise<BotType | undefined> {
+    const existingBotType = this.botTypes.get(id);
+    if (!existingBotType) {
+      return undefined;
+    }
+    
+    const updatedBotType: BotType = {
+      ...existingBotType,
+      name: updateData.name ?? existingBotType.name,
+      description: updateData.description !== undefined ? (updateData.description || null) : existingBotType.description,
+      color: updateData.color !== undefined ? (updateData.color || null) : existingBotType.color,
+    };
+    
+    this.botTypes.set(id, updatedBotType);
+    return updatedBotType;
   }
 
   async deleteBotType(id: string): Promise<boolean> {

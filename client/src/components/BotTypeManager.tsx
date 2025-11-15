@@ -37,6 +37,8 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
 
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -58,6 +60,29 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
       toast({
         title: "Fehler",
         description: "Der Bot-Typ konnte nicht erstellt werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateBotTypeMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof newBotType }) => {
+      return await apiRequest('PUT', `/api/bot-types/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
+      toast({
+        title: "Bot-Typ aktualisiert",
+        description: "Der Bot-Typ wurde erfolgreich aktualisiert.",
+      });
+      setNewBotType({ name: '', description: '', color: '#3B82F6' });
+      setEditMode(false);
+      setEditingBotTypeId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Der Bot-Typ konnte nicht aktualisiert werden.",
         variant: "destructive",
       });
     },
@@ -88,7 +113,11 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
 
   const handleCreateBotType = (e: React.FormEvent) => {
     e.preventDefault();
-    createBotTypeMutation.mutate(newBotType);
+    if (editMode && editingBotTypeId) {
+      updateBotTypeMutation.mutate({ id: editingBotTypeId, data: newBotType });
+    } else {
+      createBotTypeMutation.mutate(newBotType);
+    }
   };
 
   const handleDeleteClick = (botType: BotType, e: React.MouseEvent) => {
@@ -105,9 +134,22 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
 
   const handleEditClick = (botType: BotType, e: React.MouseEvent) => {
     e.stopPropagation();
+    setEditMode(true);
+    setEditingBotTypeId(botType.id);
+    setNewBotType({
+      name: botType.name,
+      description: botType.description || '',
+      color: botType.color || '#3B82F6',
+    });
     if (onEditBotType) {
       onEditBotType(botType);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditingBotTypeId(null);
+    setNewBotType({ name: '', description: '', color: '#3B82F6' });
   };
 
   const colorOptions = [
@@ -205,7 +247,9 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
 
         <TabsContent value="create">
           <div>
-            <h3 className="text-lg font-bold mb-4">Neuen Bot-Typ erstellen</h3>
+            <h3 className="text-lg font-bold mb-4">
+              {editMode ? 'Bot-Typ bearbeiten' : 'Neuen Bot-Typ erstellen'}
+            </h3>
             <form onSubmit={handleCreateBotType} className="space-y-4">
               <div>
                 <Label htmlFor="botTypeName">Name</Label>
@@ -251,14 +295,29 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={createBotTypeMutation.isPending}
-                data-testid="button-create-bot-type"
-              >
-                {createBotTypeMutation.isPending ? 'Wird erstellt...' : 'Bot-Typ erstellen'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={createBotTypeMutation.isPending || updateBotTypeMutation.isPending}
+                  data-testid="button-save-bot-type"
+                >
+                  {editMode 
+                    ? (updateBotTypeMutation.isPending ? 'Wird gespeichert...' : 'Save') 
+                    : (createBotTypeMutation.isPending ? 'Wird erstellt...' : 'Bot-Typ erstellen')
+                  }
+                </Button>
+                {editMode && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    data-testid="button-cancel-edit"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </form>
           </div>
         </TabsContent>

@@ -27,6 +27,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/bot-types/:id", async (req, res) => {
+    try {
+      const updateData: Partial<InsertBotType> = {
+        name: req.body.name,
+        description: req.body.description,
+        color: req.body.color,
+      };
+      const updated = await storage.updateBotType(req.params.id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Bot type not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update bot type" });
+    }
+  });
+
   app.delete("/api/bot-types/:id", async (req, res) => {
     try {
       const deleted = await storage.deleteBotType(req.params.id);

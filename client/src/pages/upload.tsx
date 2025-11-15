@@ -526,18 +526,6 @@ export default function Upload() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="notes">Notizen (optional)</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Zusätzliche Informationen..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    data-testid="textarea-notes"
-                  />
-                </div>
-
                 <Button 
                   type="submit" 
                   className="w-full" 
