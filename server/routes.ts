@@ -1,10 +1,32 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBotEntrySchema } from "@shared/schema";
+import { insertBotEntrySchema, insertBotTypeSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get("/api/bot-types", async (req, res) => {
+    try {
+      const botTypes = await storage.getAllBotTypes();
+      res.json(botTypes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bot types" });
+    }
+  });
+
+  app.post("/api/bot-types", async (req, res) => {
+    try {
+      const validatedData = insertBotTypeSchema.parse(req.body);
+      const botType = await storage.createBotType(validatedData);
+      res.status(201).json(botType);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create bot type" });
+    }
+  });
+
   app.get("/api/entries", async (req, res) => {
     try {
       const entries = await storage.getAllBotEntries();

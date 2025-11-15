@@ -15,22 +15,24 @@ import { Upload as UploadIcon, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import BotTypeManager from "@/components/BotTypeManager";
 
 export default function Upload() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
     investment: '',
     profit: '',
     profitPercent: '',
-    periodType: '',
+    periodType: 'Tag',
     notes: '',
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
       return await apiRequest('POST', '/api/upload', data);
     },
     onSuccess: () => {
@@ -47,7 +49,7 @@ export default function Upload() {
         investment: '',
         profit: '',
         profitPercent: '',
-        periodType: '',
+        periodType: 'Tag',
         notes: '',
       });
     },
@@ -73,7 +75,10 @@ export default function Upload() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    uploadMutation.mutate(formData);
+    uploadMutation.mutate({
+      ...formData,
+      botTypeId: selectedBotTypeId,
+    });
   };
 
   return (
@@ -84,160 +89,167 @@ export default function Upload() {
           Laden Sie Screenshots Ihrer Pionex-Bot-Ergebnisse hoch und geben Sie die Details manuell ein.
         </p>
 
-        <Card className="p-8 max-w-2xl mx-auto">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-8">
-              <Label className="text-base font-medium mb-3 block">Screenshot hochladen</Label>
-              <div className="border-2 border-dashed rounded-lg p-12 text-center bg-muted/30 hover-elevate">
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  data-testid="input-file-upload"
-                />
-                {selectedFile ? (
-                  <div className="flex items-center justify-center gap-4">
-                    <span className="text-sm font-medium" data-testid="text-filename">{selectedFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRemoveFile}
-                      data-testid="button-remove-file"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <UploadIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Klicken Sie hier oder ziehen Sie eine Datei hierher
-                    </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG bis zu 10MB</p>
-                  </label>
-                )}
-              </div>
-            </div>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <BotTypeManager
+            selectedBotTypeId={selectedBotTypeId}
+            onSelectBotType={setSelectedBotTypeId}
+          />
 
-            <div className="space-y-6">
-              <div>
-                <Label htmlFor="date">Datum</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
-                  data-testid="input-date"
-                />
+          <Card className="p-8">
+            <form onSubmit={handleSubmit}>
+              <div className="mb-8">
+                <Label className="text-base font-medium mb-3 block">Screenshot hochladen</Label>
+                <div className="border-2 border-dashed rounded-lg p-12 text-center bg-muted/30 hover-elevate">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    data-testid="input-file-upload"
+                  />
+                  {selectedFile ? (
+                    <div className="flex items-center justify-center gap-4">
+                      <span className="text-sm font-medium" data-testid="text-filename">{selectedFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRemoveFile}
+                        data-testid="button-remove-file"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <UploadIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Klicken Sie hier oder ziehen Sie eine Datei hierher
+                      </p>
+                      <p className="text-xs text-muted-foreground">PNG, JPG bis zu 10MB</p>
+                    </label>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="botName">Bot-Name</Label>
-                <Input
-                  id="botName"
-                  type="text"
-                  placeholder="z.B. ETH/USDT Futures Moon"
-                  value={formData.botName}
-                  onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
-                  required
-                  data-testid="input-bot-name"
-                />
-              </div>
+              <div className="space-y-6">
+                <div>
+                  <Label htmlFor="date">Datum</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    required
+                    data-testid="input-date"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="investment">Investiertes Kapital (USDT)</Label>
-                <Input
-                  id="investment"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.investment}
-                  onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
-                  required
-                  data-testid="input-investment"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="botName">Bot-Name</Label>
+                  <Input
+                    id="botName"
+                    type="text"
+                    placeholder="z.B. ETH/USDT Futures Moon"
+                    value={formData.botName}
+                    onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
+                    required
+                    data-testid="input-bot-name"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="profit">Gesamtprofit (USDT)</Label>
-                <Input
-                  id="profit"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.profit}
-                  onChange={(e) => {
-                    const profitValue = e.target.value;
-                    setFormData({ ...formData, profit: profitValue });
-                    
-                    if (profitValue && formData.investment) {
-                      const profitPercent = (parseFloat(profitValue) / parseFloat(formData.investment)) * 100;
-                      setFormData(prev => ({ ...prev, profitPercent: profitPercent.toFixed(2) }));
-                    }
-                  }}
-                  required
-                  data-testid="input-profit"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="investment">Investiertes Kapital (USDT)</Label>
+                  <Input
+                    id="investment"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.investment}
+                    onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
+                    required
+                    data-testid="input-investment"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
-                <Input
-                  id="profitPercent"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.profitPercent}
-                  onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
-                  data-testid="input-profit-percent"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="profit">Gesamtprofit (USDT)</Label>
+                  <Input
+                    id="profit"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.profit}
+                    onChange={(e) => {
+                      const profitValue = e.target.value;
+                      setFormData({ ...formData, profit: profitValue });
+                      
+                      if (profitValue && formData.investment) {
+                        const profitPercent = (parseFloat(profitValue) / parseFloat(formData.investment)) * 100;
+                        setFormData(prev => ({ ...prev, profitPercent: profitPercent.toFixed(2) }));
+                      }
+                    }}
+                    required
+                    data-testid="input-profit"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="periodType">Zeitraum-Typ</Label>
-                <Select
-                  value={formData.periodType}
-                  onValueChange={(value) => setFormData({ ...formData, periodType: value })}
-                  required
+                <div>
+                  <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
+                  <Input
+                    id="profitPercent"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.profitPercent}
+                    onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
+                    data-testid="input-profit-percent"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="periodType">Zeitraum-Typ</Label>
+                  <Select
+                    value={formData.periodType}
+                    onValueChange={(value) => setFormData({ ...formData, periodType: value })}
+                    required
+                  >
+                    <SelectTrigger id="periodType" data-testid="select-period-type">
+                      <SelectValue placeholder="Wählen Sie einen Zeitraum" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Tag" data-testid="option-tag">Tag</SelectItem>
+                      <SelectItem value="Woche" data-testid="option-woche">Woche</SelectItem>
+                      <SelectItem value="Monat" data-testid="option-monat">Monat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="notes">Notizen (optional)</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Zusätzliche Informationen..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    rows={3}
+                    data-testid="textarea-notes"
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={uploadMutation.isPending}
+                  data-testid="button-submit"
                 >
-                  <SelectTrigger id="periodType" data-testid="select-period-type">
-                    <SelectValue placeholder="Wählen Sie einen Zeitraum" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Tag" data-testid="option-tag">Tag</SelectItem>
-                    <SelectItem value="Woche" data-testid="option-woche">Woche</SelectItem>
-                    <SelectItem value="Monat" data-testid="option-monat">Monat</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {uploadMutation.isPending ? 'Wird gespeichert...' : 'Eintrag speichern'}
+                </Button>
               </div>
-
-              <div>
-                <Label htmlFor="notes">Notizen (optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Zusätzliche Informationen..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  data-testid="textarea-notes"
-                />
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={uploadMutation.isPending}
-                data-testid="button-submit"
-              >
-                {uploadMutation.isPending ? 'Wird gespeichert...' : 'Eintrag speichern'}
-              </Button>
-            </div>
-          </form>
-        </Card>
+            </form>
+          </Card>
+        </div>
       </div>
     </div>
   );
