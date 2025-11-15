@@ -24,20 +24,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Upload as UploadIcon, X, Check, ChevronsUpDown } from "lucide-react";
+import { Upload as UploadIcon, X, Check, ChevronsUpDown, Send, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import BotTypeManager from "@/components/BotTypeManager";
 import { BotEntry } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Upload() {
   const { toast } = useToast();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
+  const [chatInput, setChatInput] = useState("");
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
@@ -68,7 +71,7 @@ export default function Upload() {
         description: "Der Eintrag wurde erfolgreich hinzugefügt.",
       });
       
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setOpen(false);
       setFormData({
         date: '',
@@ -90,13 +93,42 @@ export default function Upload() {
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...newFiles]);
     }
   };
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendToAI = () => {
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "Keine Dateien",
+        description: "Bitte laden Sie mindestens einen Screenshot hoch.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setChatMessages(prev => [
+      ...prev,
+      { role: 'user', content: `${selectedFiles.length} Screenshot(s) hochgeladen` },
+      { role: 'ai', content: 'AI-Analyse wird in Zukunft verfügbar sein. Bitte geben Sie die Daten manuell in den Feldern unten ein.' }
+    ]);
+  };
+
+  const handleChatSend = () => {
+    if (!chatInput.trim()) return;
+    
+    setChatMessages(prev => [
+      ...prev,
+      { role: 'user', content: chatInput },
+      { role: 'ai', content: 'AI-Chat wird in Zukunft verfügbar sein.' }
+    ]);
+    setChatInput("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -122,53 +154,144 @@ export default function Upload() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold mb-2" data-testid="heading-upload">Screenshots hochladen</h1>
         <p className="text-muted-foreground mb-8">
-          Laden Sie Screenshots Ihrer Pionex-Bot-Ergebnisse hoch und geben Sie die Details manuell ein.
+          Laden Sie Screenshots Ihrer Pionex-Bot-Ergebnisse hoch und geben Sie die Details ein.
         </p>
 
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="space-y-6">
           <BotTypeManager
             selectedBotTypeId={selectedBotTypeId}
             onSelectBotType={setSelectedBotTypeId}
           />
 
-          <Card className="p-8">
-            <form onSubmit={handleSubmit}>
-              <div className="mb-8">
-                <Label className="text-base font-medium mb-3 block">Screenshot hochladen</Label>
-                <div className="border-2 border-dashed rounded-lg p-12 text-center bg-muted/30 hover-elevate">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Screenshot hochladen</h2>
+                
+                <div className="border-2 border-dashed rounded-lg p-6 text-center bg-muted/30 hover-elevate mb-4">
                   <input
                     type="file"
                     id="file-upload"
                     className="hidden"
                     accept="image/*"
                     onChange={handleFileChange}
+                    multiple
                     data-testid="input-file-upload"
                   />
-                  {selectedFile ? (
-                    <div className="flex items-center justify-center gap-4">
-                      <span className="text-sm font-medium" data-testid="text-filename">{selectedFile.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleRemoveFile}
-                        data-testid="button-remove-file"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <UploadIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Klicken Sie hier oder ziehen Sie eine Datei hierher
-                      </p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG bis zu 10MB</p>
-                    </label>
-                  )}
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <UploadIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Klicken Sie hier oder ziehen Sie eine Datei hierher
+                    </p>
+                    <p className="text-xs text-muted-foreground">PNG, JPG bis zu 10MB</p>
+                  </label>
                 </div>
-              </div>
 
+                {selectedFiles.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium" data-testid="text-file-count">
+                        {selectedFiles.length} {selectedFiles.length === 1 ? 'Datei' : 'Dateien'} ausgewählt
+                      </span>
+                    </div>
+                    <ScrollArea className="max-h-32">
+                      <div className="space-y-2">
+                        {selectedFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md"
+                            data-testid={`file-item-${index}`}
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                              <span className="text-sm truncate">{file.name}</span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveFile(index)}
+                              data-testid={`button-remove-file-${index}`}
+                              className="h-8 w-8 shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                <Button 
+                  onClick={handleSendToAI}
+                  className="w-full"
+                  disabled={selectedFiles.length === 0}
+                  data-testid="button-send-to-ai"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  An AI senden
+                </Button>
+              </Card>
+            </div>
+
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold mb-4">AI Chat Interface</h2>
+              
+              <ScrollArea className="h-64 mb-4 border rounded-lg p-4">
+                {chatMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Laden Sie Screenshots hoch und senden Sie diese an die AI für automatische Analyse.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {chatMessages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "p-3 rounded-lg",
+                          msg.role === 'user' 
+                            ? "bg-primary text-primary-foreground ml-8" 
+                            : "bg-muted mr-8"
+                        )}
+                        data-testid={`chat-message-${index}`}
+                      >
+                        <p className="text-sm">{msg.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nachricht an AI..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSend();
+                    }
+                  }}
+                  data-testid="input-chat"
+                />
+                <Button 
+                  onClick={handleChatSend}
+                  size="icon"
+                  data-testid="button-send-chat"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          <Card className="p-8">
+            <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
                   <Label htmlFor="date">Datum</Label>
