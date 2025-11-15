@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [selectedBotsForTable, setSelectedBotsForTable] = useState<string[]>([]);
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -59,11 +60,18 @@ export default function Dashboard() {
   }, [allEntries]);
 
   const filteredEntriesForTable = useMemo(() => {
-    if (selectedBotsForTable.length === 0) {
-      return [...allEntries].slice(0, 3);
+    let filtered = [...allEntries];
+    
+    if (selectedBotsForTable.length > 0) {
+      filtered = filtered.filter(entry => selectedBotsForTable.includes(entry.botName));
     }
-    return allEntries.filter(entry => selectedBotsForTable.includes(entry.botName));
-  }, [allEntries, selectedBotsForTable]);
+    
+    if (selectedPeriod) {
+      filtered = filtered.filter(entry => entry.periodType === selectedPeriod);
+    }
+    
+    return filtered;
+  }, [allEntries, selectedBotsForTable, selectedPeriod]);
 
   const filteredEntries = useMemo(() => {
     if (selectedBotName === "Gesamt") {
@@ -241,7 +249,11 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold mb-4">
             {selectedBotName === "Gesamt" ? "Alle Einträge" : `Einträge: ${selectedBotName}`}
           </h2>
-          <BotEntryTable entries={filteredEntriesForTable} />
+          <BotEntryTable 
+            entries={filteredEntriesForTable} 
+            selectedPeriod={selectedPeriod}
+            onPeriodChange={setSelectedPeriod}
+          />
           
           <Card 
             className="mt-4 p-6 text-center cursor-pointer hover-elevate"
