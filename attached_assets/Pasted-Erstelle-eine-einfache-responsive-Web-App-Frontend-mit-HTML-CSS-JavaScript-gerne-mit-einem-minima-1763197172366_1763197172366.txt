@@ -1,0 +1,70 @@
+Erstelle eine einfache, responsive Web-App (Frontend mit HTML/CSS/JavaScript, gerne mit einem minimalen Framework wie React; Backend mit Python und einer leichten Datenbank wie SQLite oder einer JSON-Datei).
+
+Die App hat genau DREI Seiten/Routen:
+
+1) Seite 1 – Übersicht / Dashboard
+- Zeige eine Zusammenfassung aller gespeicherten Bot-Daten:
+  - Gesamt investiertes Kapital (Summe in USDT)
+  - Gesamtprofit in USDT
+  - Gesamtprofit in Prozent (bezogen auf das insgesamt investierte Kapital)
+  - Durchschnittlicher Profit pro Tag (USDT und %)
+  - Optional: Durchschnitt pro Woche und pro Monat
+- Zeige einfache Diagramme:
+  - Liniendiagramm: Gesamtprofit über die Zeit
+  - Balkendiagramm: Profit nach Bot oder nach Tag/Woche
+- Zeige darunter eine Tabelle mit allen Einträgen:
+  - Datum
+  - Bot-Name
+  - Investition (USDT)
+  - Profit in USDT
+  - Profit in %
+  - Zeitraum-Typ (Tag / Woche / Monat)
+- Alle Texte der Oberfläche bitte auf Deutsch.
+
+2) Seite 2 – Screenshot-Upload & Dateneingabe
+- Hier lädt der Nutzer die Pionex-Bot-Screenshots hoch.
+- Elemente dieser Seite:
+  - Dateiupload-Feld für einen oder mehrere Screenshots (Bilddateien)
+  - Formularfelder für manuelle Angaben pro Screenshot/Datensatz:
+    - Datum
+    - Bot-Name (z.B. „ETH/USDT Futures Moon“)
+    - Investiertes Kapital (USDT)
+    - Gesamtprofit (USDT)
+    - Gesamtprofit (%) – optional, kann auch berechnet werden aus Profit und Kapital
+    - Zeitraum-Typ: Auswahlfeld (Tag / Woche / Monat)
+    - Freitext-Notiz (optional)
+- Beim Absenden:
+  - Die Screenshots werden gespeichert.
+  - Die Formular-Daten werden zusammen mit einer einfachen ID des Screenshots in der Datenbank gespeichert.
+  - Implementiere eine Platzhalter-Funktion `analyze_screenshot(image_path)`, die später durch eine KI/OCR ersetzt werden kann.
+  - Für jetzt reicht es, wenn die App nur die manuell eingegebenen Werte speichert und nutzt.
+- Zeige nach erfolgreichem Speichern eine Bestätigungsmeldung.
+
+3) Seite 3 – Berichte & Analyse
+- Auf dieser Seite werden Berichte angezeigt, die aus den gespeicherten Daten erstellt werden.
+- Funktionen:
+  - Liste von verfügbaren Berichten:
+    - z.B. Tagesbericht, Wochenbericht, Monatsbericht (Filter nach Datum/Zeitraum)
+  - Beim Auswählen eines Zeitraums:
+    - Berechne:
+      - Summe des investierten Kapitals in diesem Zeitraum
+      - Summe des Profits (USDT)
+      - Durchschnittlicher Profit pro Tag
+      - Profit in Prozent für diesen Zeitraum
+    - Zeige einen kurzen Textbericht (kann von einer Platzhalter-Funktion `generate_report_text(daten)` erzeugt werden, die später durch eine KI ersetzt wird).
+    - Zeige ein oder zwei Diagramme:
+      - Liniendiagramm: Profit über die Tage im Zeitraum
+      - Balkendiagramm: Profit nach Bot im Zeitraum
+  - Füge einen Button „Bericht drucken / als PDF speichern“ hinzu (z.B. über `window.print()` und ein druckfreundliches CSS).
+
+Allgemeine Anforderungen:
+- Saubere Ordnerstruktur (z.B. `frontend/`, `backend/`).
+- Frontend mit einfacher Navigation (z.B. oben eine Navbar):
+  - „Übersicht“
+  - „Screenshots hochladen“
+  - „Berichte“
+- Backend-API-Endpunkte:
+  - `POST /api/upload` zum Speichern von Screenshot + Formulardaten
+  - `GET /api/entries` um alle Datensätze zu laden
+  - `GET /api/report?from=...&to=...` um aggregierte Daten für Berichte zu liefern
+- Schreibe klaren, kommentierten Code, damit man später leicht eine echte KI/OCR für die Screenshot-Auswertung und Report-Generierung anschließen kann.
