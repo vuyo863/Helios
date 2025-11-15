@@ -162,7 +162,14 @@ export default function Upload() {
     uploadMutation.mutate({
       ...formData,
       botTypeId: selectedBotTypeId,
-    });
+      longestRuntime: formData.longestRuntime || null,
+      avgRuntime: formData.avgRuntime || null,
+      avgGridProfit: formData.avgGridProfit || null,
+      highestGridProfit: formData.highestGridProfit || null,
+      highestGridProfitPercent: formData.highestGridProfitPercent || null,
+      overallAvgGridProfit: formData.overallAvgGridProfit || null,
+      leverage: formData.leverage || null,
+    } as any);
   };
 
   return (
