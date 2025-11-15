@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +11,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload as UploadIcon, X } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Upload as UploadIcon, X, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import BotTypeManager from "@/components/BotTypeManager";
+import { BotEntry } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 export default function Upload() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
@@ -30,6 +47,15 @@ export default function Upload() {
     periodType: 'Tag',
     notes: '',
   });
+
+  const { data: entries = [] } = useQuery<BotEntry[]>({
+    queryKey: ['/api/entries'],
+  });
+
+  const existingBotNames = useMemo(() => {
+    const names = Array.from(new Set(entries.map(entry => entry.botName)));
+    return names.sort();
+  }, [entries]);
 
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
@@ -43,6 +69,7 @@ export default function Upload() {
       });
       
       setSelectedFile(null);
+      setOpen(false);
       setFormData({
         date: '',
         botName: '',
@@ -74,6 +101,15 @@ export default function Upload() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.botName.trim()) {
+      toast({
+        title: "Fehler",
+        description: "Bitte wählen Sie einen Bot-Namen aus oder geben Sie einen neuen ein.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     uploadMutation.mutate({
       ...formData,
@@ -147,16 +183,75 @@ export default function Upload() {
                 </div>
 
                 <div>
-                  <Label htmlFor="botName">Bot-Name</Label>
-                  <Input
-                    id="botName"
-                    type="text"
-                    placeholder="z.B. ETH/USDT Futures Moon"
-                    value={formData.botName}
-                    onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
-                    required
-                    data-testid="input-bot-name"
-                  />
+                  <Label>Bot-Name</Label>
+                  <Popover open={open} onOpenChange={(isOpen) => {
+                    setOpen(isOpen);
+                    if (!isOpen) {
+                      setSearchValue("");
+                    }
+                  }}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between"
+                        data-testid="button-bot-name-select"
+                      >
+                        {formData.botName || "Bot-Name auswählen oder neu eingeben..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Bot-Name suchen oder neu eingeben..." 
+                          data-testid="input-bot-name-search"
+                          value={searchValue}
+                          onValueChange={(value) => {
+                            setSearchValue(value);
+                            setFormData({ ...formData, botName: value });
+                          }}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            <div className="p-2 text-sm">
+                              {searchValue ? (
+                                <>Drücken Sie Enter um "{searchValue}" zu verwenden</>
+                              ) : (
+                                "Geben Sie einen Bot-Namen ein"
+                              )}
+                            </div>
+                          </CommandEmpty>
+                          <CommandGroup heading="Vorhandene Bot-Namen">
+                            {existingBotNames.map((name) => (
+                              <CommandItem
+                                key={name}
+                                value={name}
+                                onSelect={(currentValue) => {
+                                  const selectedName = existingBotNames.find(
+                                    n => n.toLowerCase() === currentValue.toLowerCase()
+                                  ) || currentValue;
+                                  setFormData({ ...formData, botName: selectedName });
+                                  setSearchValue("");
+                                  setOpen(false);
+                                }}
+                                data-testid={`option-bot-name-${name}`}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.botName === name ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div>
