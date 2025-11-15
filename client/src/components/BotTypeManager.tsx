@@ -7,23 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { BotType } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Check } from "lucide-react";
+import { Check, Trash2, Edit } from "lucide-react";
 
 interface BotTypeManagerProps {
   selectedBotTypeId: string | null;
   onSelectBotType: (botTypeId: string | null) => void;
+  onEditBotType?: (botType: BotType) => void;
 }
 
-export default function BotTypeManager({ selectedBotTypeId, onSelectBotType }: BotTypeManagerProps) {
+export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType }: BotTypeManagerProps) {
   const { toast } = useToast();
   const [newBotType, setNewBotType] = useState({
     name: '',
     description: '',
     color: '#3B82F6',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
 
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -50,9 +63,51 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType }: B
     },
   });
 
+  const deleteBotTypeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/bot-types/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/entries'] });
+      toast({
+        title: "Bot-Typ gelöscht",
+        description: "Der Bot-Typ wurde erfolgreich gelöscht.",
+      });
+      setDeleteDialogOpen(false);
+      setBotTypeToDelete(null);
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Der Bot-Typ konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateBotType = (e: React.FormEvent) => {
     e.preventDefault();
     createBotTypeMutation.mutate(newBotType);
+  };
+
+  const handleDeleteClick = (botType: BotType, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBotTypeToDelete(botType);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (botTypeToDelete) {
+      deleteBotTypeMutation.mutate(botTypeToDelete.id);
+    }
+  };
+
+  const handleEditClick = (botType: BotType, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEditBotType) {
+      onEditBotType(botType);
+    }
   };
 
   const colorOptions = [
@@ -100,27 +155,48 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType }: B
                 </Button>
                 
                 {botTypes.map((botType) => (
-                  <Button
-                    key={botType.id}
-                    variant={selectedBotTypeId === botType.id ? 'default' : 'outline'}
-                    className="justify-start h-auto py-3 px-4"
-                    onClick={() => onSelectBotType(botType.id)}
-                    data-testid={`button-select-bot-type-${botType.id}`}
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: botType.color || '#3B82F6' }}
-                      />
-                      <div className="flex-1 text-left">
-                        <div className="font-medium">{botType.name}</div>
-                        {botType.description && (
-                          <div className="text-xs text-muted-foreground">{botType.description}</div>
-                        )}
+                  <div key={botType.id} className="relative">
+                    <Button
+                      variant={selectedBotTypeId === botType.id ? 'default' : 'outline'}
+                      className="justify-start h-auto py-3 px-4 w-full"
+                      onClick={() => onSelectBotType(botType.id)}
+                      data-testid={`button-select-bot-type-${botType.id}`}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: botType.color || '#3B82F6' }}
+                        />
+                        <div className="flex-1 text-left">
+                          <div className="font-medium">{botType.name}</div>
+                          {botType.description && (
+                            <div className="text-xs text-muted-foreground">{botType.description}</div>
+                          )}
+                        </div>
+                        {selectedBotTypeId === botType.id && <Check className="w-4 h-4" />}
                       </div>
-                      {selectedBotTypeId === botType.id && <Check className="w-4 h-4" />}
+                    </Button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => handleEditClick(botType, e)}
+                        data-testid={`button-edit-bot-type-${botType.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={(e) => handleDeleteClick(botType, e)}
+                        data-testid={`button-delete-bot-type-${botType.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </Button>
+                  </div>
                 ))}
               </div>
             )}
@@ -202,6 +278,28 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType }: B
           </Badge>
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bot-Typ löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie die Inhalte und die Kategorie "{botTypeToDelete?.name}" sicher löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              data-testid="button-confirm-delete"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

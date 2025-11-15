@@ -11,25 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Upload as UploadIcon, X, Check, ChevronsUpDown, Send, Image as ImageIcon } from "lucide-react";
+import { Upload as UploadIcon, X, Send, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import BotTypeManager from "@/components/BotTypeManager";
-import { BotEntry } from "@shared/schema";
+import { BotEntry, BotType } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -37,8 +24,6 @@ export default function Upload() {
   const { toast } = useToast();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
   const [chatInput, setChatInput] = useState("");
   const [formData, setFormData] = useState({
@@ -59,14 +44,6 @@ export default function Upload() {
     notes: '',
   });
 
-  const { data: entries = [] } = useQuery<BotEntry[]>({
-    queryKey: ['/api/entries'],
-  });
-
-  const existingBotNames = useMemo(() => {
-    const names = Array.from(new Set(entries.map(entry => entry.botName)));
-    return names.sort();
-  }, [entries]);
 
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
@@ -80,7 +57,6 @@ export default function Upload() {
       });
       
       setSelectedFiles([]);
-      setOpen(false);
       setFormData({
         date: '',
         botName: '',
@@ -147,6 +123,30 @@ export default function Upload() {
     setChatInput("");
   };
 
+  const handleEditBotType = (botType: BotType) => {
+    setFormData({
+      date: '',
+      botName: botType.name,
+      botDirection: 'Long',
+      investment: '',
+      profit: '',
+      profitPercent: '',
+      periodType: 'Tag',
+      longestRuntime: '',
+      avgRuntime: '',
+      avgGridProfit: '',
+      highestGridProfit: '',
+      highestGridProfitPercent: '',
+      overallAvgGridProfit: '',
+      leverage: '',
+      notes: botType.description || '',
+    });
+    toast({
+      title: "Bot-Typ geladen",
+      description: `Die Informationen für "${botType.name}" wurden in die Ausgabe-Felder geladen.`,
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -184,6 +184,7 @@ export default function Upload() {
           <BotTypeManager
             selectedBotTypeId={selectedBotTypeId}
             onSelectBotType={setSelectedBotTypeId}
+            onEditBotType={handleEditBotType}
           />
 
           <div className="space-y-6">
@@ -314,6 +315,19 @@ export default function Upload() {
             <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
+                <div>
+                  <Label htmlFor="botName">Bot-Name</Label>
+                  <Input
+                    id="botName"
+                    type="text"
+                    placeholder="z.B. ETH/USDT Grid Bot"
+                    value={formData.botName}
+                    onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
+                    required
+                    data-testid="input-bot-name"
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="date">Datum</Label>
@@ -343,78 +357,6 @@ export default function Upload() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div>
-                  <Label>Bot-Name</Label>
-                  <Popover open={open} onOpenChange={(isOpen) => {
-                    setOpen(isOpen);
-                    if (!isOpen) {
-                      setSearchValue("");
-                    }
-                  }}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-full justify-between"
-                        data-testid="button-bot-name-select"
-                      >
-                        {formData.botName || "Bot-Name auswählen oder neu eingeben..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Bot-Name suchen oder neu eingeben..." 
-                          data-testid="input-bot-name-search"
-                          value={searchValue}
-                          onValueChange={(value) => {
-                            setSearchValue(value);
-                            setFormData({ ...formData, botName: value });
-                          }}
-                        />
-                        <CommandList>
-                          <CommandEmpty>
-                            <div className="p-2 text-sm">
-                              {searchValue ? (
-                                <>Drücken Sie Enter um "{searchValue}" zu verwenden</>
-                              ) : (
-                                "Geben Sie einen Bot-Namen ein"
-                              )}
-                            </div>
-                          </CommandEmpty>
-                          <CommandGroup heading="Vorhandene Bot-Namen">
-                            {existingBotNames.map((name) => (
-                              <CommandItem
-                                key={name}
-                                value={name}
-                                onSelect={(currentValue) => {
-                                  const selectedName = existingBotNames.find(
-                                    n => n.toLowerCase() === currentValue.toLowerCase()
-                                  ) || currentValue;
-                                  setFormData({ ...formData, botName: selectedName });
-                                  setSearchValue("");
-                                  setOpen(false);
-                                }}
-                                data-testid={`option-bot-name-${name}`}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    formData.botName === name ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
