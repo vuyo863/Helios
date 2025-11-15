@@ -7,15 +7,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BotEntry } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { ChevronDown } from "lucide-react";
 
 interface BotEntryTableProps {
   entries: BotEntry[];
+  selectedPeriod: string | null;
+  onPeriodChange: (period: string | null) => void;
 }
 
-export default function BotEntryTable({ entries }: BotEntryTableProps) {
+export default function BotEntryTable({ entries, selectedPeriod, onPeriodChange }: BotEntryTableProps) {
   const getPeriodBadgeVariant = (periodType: string) => {
     switch (periodType.toLowerCase()) {
       case 'tag':
@@ -45,7 +54,44 @@ export default function BotEntryTable({ entries }: BotEntryTableProps) {
               <TableHead className="text-right" data-testid="header-investition">Investition (USDT)</TableHead>
               <TableHead className="text-right" data-testid="header-profit-usdt">Profit (USDT)</TableHead>
               <TableHead className="text-right" data-testid="header-profit-percent">Profit (%)</TableHead>
-              <TableHead data-testid="header-zeitraum">Zeitraum</TableHead>
+              <TableHead data-testid="header-zeitraum">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-1 hover-elevate px-2 py-1 rounded-md cursor-pointer" data-testid="dropdown-zeitraum">
+                    <span>Zeitraum</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" data-testid="dropdown-zeitraum-content">
+                    <DropdownMenuItem 
+                      onClick={() => onPeriodChange(null)}
+                      className={selectedPeriod === null ? "bg-accent" : ""}
+                      data-testid="dropdown-option-alle"
+                    >
+                      Alle
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onPeriodChange("Tag")}
+                      className={selectedPeriod === "Tag" ? "bg-accent" : ""}
+                      data-testid="dropdown-option-tag"
+                    >
+                      Tag
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onPeriodChange("Woche")}
+                      className={selectedPeriod === "Woche" ? "bg-accent" : ""}
+                      data-testid="dropdown-option-woche"
+                    >
+                      Woche
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onPeriodChange("Monat")}
+                      className={selectedPeriod === "Monat" ? "bg-accent" : ""}
+                      data-testid="dropdown-option-monat"
+                    >
+                      Monat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
