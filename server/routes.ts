@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ error: "Bot type not found" });
       }
-      res.json({ success: true });
+      res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete bot type" });
     }

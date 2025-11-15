@@ -276,7 +276,15 @@ export class MemStorage implements IStorage {
   }
 
   async deleteBotType(id: string): Promise<boolean> {
-    return this.botTypes.delete(id);
+    const deleted = this.botTypes.delete(id);
+    if (deleted) {
+      this.botEntries.forEach((entry) => {
+        if (entry.botTypeId === id) {
+          entry.botTypeId = null;
+        }
+      });
+    }
+    return deleted;
   }
 
   async getBotEntriesByBotType(botTypeId: string): Promise<BotEntry[]> {
