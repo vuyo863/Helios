@@ -38,10 +38,18 @@ export const botEntries = pgTable("bot_entries", {
   date: date("date").notNull(),
   botName: text("bot_name").notNull(),
   botTypeId: varchar("bot_type_id"),
+  botDirection: text("bot_direction"),
   investment: numeric("investment", { precision: 12, scale: 2 }).notNull(),
   profit: numeric("profit", { precision: 12, scale: 2 }).notNull(),
   profitPercent: numeric("profit_percent", { precision: 8, scale: 2 }).notNull(),
   periodType: text("period_type").notNull(),
+  longestRuntime: numeric("longest_runtime", { precision: 10, scale: 2 }),
+  avgRuntime: numeric("avg_runtime", { precision: 10, scale: 2 }),
+  avgGridProfit: numeric("avg_grid_profit", { precision: 12, scale: 2 }),
+  highestGridProfit: numeric("highest_grid_profit", { precision: 12, scale: 2 }),
+  highestGridProfitPercent: numeric("highest_grid_profit_percent", { precision: 8, scale: 2 }),
+  overallAvgGridProfit: numeric("overall_avg_grid_profit", { precision: 12, scale: 2 }),
+  leverage: text("leverage"),
   notes: text("notes"),
   screenshotPath: text("screenshot_path"),
 });
@@ -52,6 +60,14 @@ export const insertBotEntrySchema = createInsertSchema(botEntries).omit({
   screenshotPath: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   botTypeId: z.string().optional().nullable(),
+  botDirection: z.string().optional().nullable(),
+  longestRuntime: z.string().optional().nullable(),
+  avgRuntime: z.string().optional().nullable(),
+  avgGridProfit: z.string().optional().nullable(),
+  highestGridProfit: z.string().optional().nullable(),
+  highestGridProfitPercent: z.string().optional().nullable(),
+  overallAvgGridProfit: z.string().optional().nullable(),
+  leverage: z.string().optional().nullable(),
 });
 
 export type InsertBotEntry = z.infer<typeof insertBotEntrySchema>;
