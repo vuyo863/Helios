@@ -47,7 +47,9 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/entries` - Fetch all bot entries
 - `GET /api/entries/:id` - Fetch single bot entry
 - `GET /api/report?from=&to=` - Generate reports for date ranges
-- `POST /api/upload` - Create new bot entries (planned)
+- `POST /api/upload` - Create new bot entries
+- `GET /api/bot-types` - Fetch all bot types
+- `POST /api/bot-types` - Create new bot type
 
 **Development Server**: Vite middleware integration for hot module replacement and development experience
 
@@ -66,10 +68,18 @@ Preferred communication style: Simple, everyday language.
    - username (unique)
    - password (hashed)
 
-2. **bot_entries table**: Core data structure for bot trading records
+2. **bot_types table**: Bot type/style categorization
+   - id (UUID primary key)
+   - name (unique text)
+   - description (optional text)
+   - color (optional text - hex color code)
+   - createdAt (text timestamp)
+
+3. **bot_entries table**: Core data structure for bot trading records
    - id (UUID primary key)
    - date (date field for entry timestamp)
    - botName (text)
+   - botTypeId (optional foreign key to bot_types)
    - investment (numeric with precision 12, scale 2)
    - profit (numeric with precision 12, scale 2)
    - profitPercent (numeric with precision 8, scale 2)
@@ -107,7 +117,15 @@ Preferred communication style: Simple, everyday language.
 - ESBuild for production bundling
 - TSX for TypeScript execution in development
 
+**Implemented Features** (November 2025):
+- **Bot Type Management**: Users can create and manage different bot types/styles
+  - BotTypeManager component with two tabs: "Bestehende Bots" (view existing) and "Create Bot Type" (create new)
+  - Each bot type has a name, optional description, and optional color (6 predefined colors available)
+  - Bot entries can be associated with a bot type for better categorization
+  - Mock data includes 3 predefined bot types: Grid Trading Bots (blue), Futures Bots (green), Moon Bots (purple)
+
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)
 - OCR/AI analysis placeholder for automatic data extraction from screenshots
 - User authentication system (schema exists but routes not implemented)
+- Filter/group by bot type on Dashboard and Reports pages
