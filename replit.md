@@ -50,6 +50,8 @@ Preferred communication style: Simple, everyday language.
 - `POST /api/upload` - Create new bot entries
 - `GET /api/bot-types` - Fetch all bot types
 - `POST /api/bot-types` - Create new bot type
+- `PUT /api/bot-types/:id` - Update existing bot type (with Zod validation for non-empty updates)
+- `DELETE /api/bot-types/:id` - Delete bot type (sets botTypeId to null for related entries)
 
 **Development Server**: Vite middleware integration for hot module replacement and development experience
 
@@ -118,11 +120,15 @@ Preferred communication style: Simple, everyday language.
 - TSX for TypeScript execution in development
 
 **Implemented Features** (November 2025):
-- **Bot Type Management**: Users can create and manage different bot types/styles
+- **Bot Type Management**: Full CRUD operations for bot types/styles
   - BotTypeManager component with two tabs: "Bestehende Bots" (view existing) and "Create Bot Type" (create new)
   - Each bot type has a name, optional description, and optional color (6 predefined colors available)
+  - **Edit Mode**: Click pencil icon to edit existing bot type, form auto-fills, Save button updates in-place (no duplicates), Cancel button discards changes
+  - **Delete**: Click trash icon to delete with confirmation dialog ("Möchten Sie die Inhalte und die Kategorie sicher löschen?")
   - Bot entries can be associated with a bot type for better categorization
+  - When bot type is deleted, related entries retain data but botTypeId is set to null (data integrity)
   - Mock data includes 3 predefined bot types: Grid Trading Bots (blue), Futures Bots (green), Moon Bots (purple)
+- **Upload Form Streamlined**: Notes field removed from bot entry upload form for cleaner data entry experience
 
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)
