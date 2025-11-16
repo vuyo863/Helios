@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +21,7 @@ import {
 import { BotType } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Trash2, Edit } from "lucide-react";
+import { Check, Trash2, Edit, Search } from "lucide-react";
 
 interface BotTypeManagerProps {
   selectedBotTypeId: string | null;
@@ -40,10 +41,21 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
   const [editMode, setEditMode] = useState(false);
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("existing");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
   });
+
+  const filteredBotTypes = useMemo(() => {
+    if (!searchQuery.trim()) return botTypes;
+    const query = searchQuery.toLowerCase();
+    return botTypes.filter(
+      (botType) =>
+        botType.name.toLowerCase().includes(query) ||
+        botType.description?.toLowerCase().includes(query)
+    );
+  }, [botTypes, searchQuery]);
 
   const createBotTypeMutation = useMutation({
     mutationFn: async (data: typeof newBotType) => {
@@ -56,6 +68,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
         description: "Der neue Bot-Typ wurde erfolgreich erstellt.",
       });
       setNewBotType({ name: '', description: '', color: '#3B82F6' });
+      setActiveTab("existing");
     },
     onError: () => {
       toast({
@@ -172,76 +185,111 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
 
         <TabsContent value="existing">
           <div>
-            <h3 className="text-lg font-bold mb-4">Bot-Typ auswählen</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Bot-Typ auswählen</h3>
+              <span className="text-sm text-muted-foreground">
+                {botTypes.length} {botTypes.length === 1 ? 'Typ' : 'Typen'}
+              </span>
+            </div>
+
+            {botTypes.length > 0 && (
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Bot-Typ suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-bot-type"
+                />
+              </div>
+            )}
+
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Lädt...</p>
             ) : botTypes.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Keine Bot-Typen vorhanden. Erstellen Sie einen neuen Bot-Typ.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Keine Bot-Typen vorhanden. Erstellen Sie einen neuen Bot-Typ.
+                </p>
                 <Button
-                  variant={selectedBotTypeId === null ? 'default' : 'outline'}
-                  className="justify-start h-auto py-3 px-4"
-                  onClick={() => onSelectBotType(null)}
-                  data-testid="button-select-no-type"
+                  onClick={() => setActiveTab("create")}
+                  data-testid="button-goto-create"
                 >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-4 h-4 rounded-full bg-gray-400" />
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">Kein Bot-Typ</div>
-                      <div className="text-xs text-muted-foreground">Ohne Kategorisierung</div>
-                    </div>
-                    {selectedBotTypeId === null && <Check className="w-4 h-4" />}
-                  </div>
+                  Bot-Typ erstellen
                 </Button>
-                
-                {botTypes.map((botType) => (
-                  <div key={botType.id} className="relative">
-                    <Button
-                      variant={selectedBotTypeId === botType.id ? 'default' : 'outline'}
-                      className="justify-start h-auto py-3 px-4 w-full"
-                      onClick={() => onSelectBotType(botType.id)}
-                      data-testid={`button-select-bot-type-${botType.id}`}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: botType.color || '#3B82F6' }}
-                        />
-                        <div className="flex-1 text-left">
-                          <div className="font-medium">{botType.name}</div>
-                          {botType.description && (
-                            <div className="text-xs text-muted-foreground">{botType.description}</div>
-                          )}
-                        </div>
-                        {selectedBotTypeId === botType.id && <Check className="w-4 h-4" />}
-                      </div>
-                    </Button>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => handleEditClick(botType, e)}
-                        data-testid={`button-edit-bot-type-${botType.id}`}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={(e) => handleDeleteClick(botType, e)}
-                        data-testid={`button-delete-bot-type-${botType.id}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
               </div>
+            ) : filteredBotTypes.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">
+                  Keine Bot-Typen gefunden für "{searchQuery}"
+                </p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px]">
+                <div className="grid grid-cols-1 gap-3 pr-4">
+                  <Button
+                    variant={selectedBotTypeId === null ? 'default' : 'outline'}
+                    className="justify-start h-auto py-3 px-4"
+                    onClick={() => onSelectBotType(null)}
+                    data-testid="button-select-no-type"
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-4 h-4 rounded-full bg-gray-400" />
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">Kein Bot-Typ</div>
+                        <div className="text-xs text-muted-foreground">Ohne Kategorisierung</div>
+                      </div>
+                      {selectedBotTypeId === null && <Check className="w-4 h-4" />}
+                    </div>
+                  </Button>
+                  
+                  {filteredBotTypes.map((botType) => (
+                    <div key={botType.id} className="relative">
+                      <Button
+                        variant={selectedBotTypeId === botType.id ? 'default' : 'outline'}
+                        className="justify-start h-auto py-3 px-4 w-full"
+                        onClick={() => onSelectBotType(botType.id)}
+                        data-testid={`button-select-bot-type-${botType.id}`}
+                      >
+                        <div className="flex items-center gap-3 w-full pr-16">
+                          <div
+                            className="w-4 h-4 rounded-full shrink-0"
+                            style={{ backgroundColor: botType.color || '#3B82F6' }}
+                          />
+                          <div className="flex-1 text-left min-w-0">
+                            <div className="font-medium truncate">{botType.name}</div>
+                            {botType.description && (
+                              <div className="text-xs text-muted-foreground line-clamp-1">{botType.description}</div>
+                            )}
+                          </div>
+                          {selectedBotTypeId === botType.id && <Check className="w-4 h-4 shrink-0" />}
+                        </div>
+                      </Button>
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => handleEditClick(botType, e)}
+                          data-testid={`button-edit-bot-type-${botType.id}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={(e) => handleDeleteClick(botType, e)}
+                          data-testid={`button-delete-bot-type-${botType.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
             )}
           </div>
         </TabsContent>
