@@ -172,9 +172,9 @@ export default function Upload() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold mb-2" data-testid="heading-upload">Screenshots hochladen</h1>
+        <h1 className="text-2xl font-bold mb-2" data-testid="heading-upload">AI Analyse</h1>
         <p className="text-muted-foreground mb-8">
-          Laden Sie Screenshots Ihrer Pionex-Bot-Ergebnisse hoch und geben Sie die Details ein.
+          Nutzen Sie die AI-Analyse für Ihre Pionex-Bot-Ergebnisse und geben Sie die Details ein.
         </p>
 
         <div className="space-y-6">
