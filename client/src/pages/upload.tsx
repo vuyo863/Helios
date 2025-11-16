@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload as UploadIcon, X, Send, Image as ImageIcon } from "lucide-react";
+import { Upload as UploadIcon, X, Send, Image as ImageIcon, Edit, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -19,6 +19,7 @@ import BotTypeManager from "@/components/BotTypeManager";
 import { BotEntry, BotType } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 
 export default function Upload() {
   const { toast } = useToast();
@@ -26,6 +27,7 @@ export default function Upload() {
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
   const [chatInput, setChatInput] = useState("");
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
@@ -44,34 +46,27 @@ export default function Upload() {
   });
 
 
+  const { data: allEntries = [] } = useQuery<BotEntry[]>({
+    queryKey: ['/api/entries'],
+  });
+
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
+      if (editingEntryId) {
+        return await apiRequest('PUT', `/api/entries/${editingEntryId}`, data);
+      }
       return await apiRequest('POST', '/api/upload', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries'] });
       toast({
         title: "Erfolgreich gespeichert",
-        description: "Der Eintrag wurde erfolgreich hinzugefügt.",
+        description: editingEntryId 
+          ? "Der Eintrag wurde erfolgreich aktualisiert." 
+          : "Der Eintrag wurde erfolgreich hinzugefügt.",
       });
       
-      setSelectedFiles([]);
-      setFormData({
-        date: '',
-        botName: '',
-        botDirection: 'Long',
-        investment: '',
-        profit: '',
-        profitPercent: '',
-        periodType: 'Tag',
-        longestRuntime: '',
-        avgRuntime: '',
-        avgGridProfit: '',
-        highestGridProfit: '',
-        highestGridProfitPercent: '',
-        overallAvgGridProfit: '',
-        leverage: '',
-      });
+      resetForm();
     },
     onError: () => {
       toast({
@@ -81,6 +76,48 @@ export default function Upload() {
       });
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/entries/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/entries'] });
+      toast({
+        title: "Erfolgreich gelöscht",
+        description: "Der Eintrag wurde erfolgreich gelöscht.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Der Eintrag konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setSelectedFiles([]);
+    setEditingEntryId(null);
+    setSelectedBotTypeId(null);
+    setFormData({
+      date: '',
+      botName: '',
+      botDirection: 'Long',
+      investment: '',
+      profit: '',
+      profitPercent: '',
+      periodType: 'Tag',
+      longestRuntime: '',
+      avgRuntime: '',
+      avgGridProfit: '',
+      highestGridProfit: '',
+      highestGridProfitPercent: '',
+      overallAvgGridProfit: '',
+      leverage: '',
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -169,6 +206,40 @@ export default function Upload() {
     } as any);
   };
 
+  const handleEditEntry = (entry: BotEntry) => {
+    setEditingEntryId(entry.id);
+    setSelectedBotTypeId(entry.botTypeId);
+    setFormData({
+      date: entry.date,
+      botName: entry.botName,
+      botDirection: entry.botDirection || 'Long',
+      investment: entry.investment,
+      profit: entry.profit,
+      profitPercent: entry.profitPercent,
+      periodType: entry.periodType,
+      longestRuntime: entry.longestRuntime || '',
+      avgRuntime: entry.avgRuntime || '',
+      avgGridProfit: entry.avgGridProfit || '',
+      highestGridProfit: entry.highestGridProfit || '',
+      highestGridProfitPercent: entry.highestGridProfitPercent || '',
+      overallAvgGridProfit: entry.overallAvgGridProfit || '',
+      leverage: entry.leverage || '',
+    });
+    
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    
+    toast({
+      title: "Eintrag geladen",
+      description: `"${entry.botName}" wurde zum Bearbeiten geladen.`,
+    });
+  };
+
+  const handleDeleteEntry = (id: string) => {
+    if (confirm('Möchten Sie diesen Eintrag wirklich löschen?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -183,6 +254,88 @@ export default function Upload() {
             onSelectBotType={setSelectedBotTypeId}
             onEditBotType={handleEditBotType}
           />
+
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Bestehende Einträge</h2>
+              <span className="text-sm text-muted-foreground">
+                {allEntries.length} {allEntries.length === 1 ? 'Eintrag' : 'Einträge'}
+              </span>
+            </div>
+            
+            <ScrollArea className="h-64">
+              <div className="space-y-2">
+                {allEntries.length === 0 ? (
+                  <div className="flex items-center justify-center h-32">
+                    <p className="text-sm text-muted-foreground">Noch keine Einträge vorhanden</p>
+                  </div>
+                ) : (
+                  allEntries.map((entry) => (
+                    <Card 
+                      key={entry.id} 
+                      className={cn(
+                        "p-4 hover-elevate",
+                        editingEntryId === entry.id && "border-primary border-2"
+                      )}
+                      data-testid={`entry-item-${entry.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold truncate">{entry.botName}</h3>
+                            {entry.botDirection && (
+                              <span className={cn(
+                                "text-xs px-2 py-0.5 rounded-full",
+                                entry.botDirection === 'Long' 
+                                  ? "bg-green-100 text-green-700" 
+                                  : "bg-red-100 text-red-700"
+                              )}>
+                                {entry.botDirection}
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            <p className="text-muted-foreground">
+                              Datum: <span className="text-foreground">{format(new Date(entry.date), 'dd.MM.yyyy')}</span>
+                            </p>
+                            <p className="text-muted-foreground">
+                              Investment: <span className="text-foreground">{parseFloat(entry.investment).toLocaleString('de-DE')} USDT</span>
+                            </p>
+                            <p className="text-muted-foreground">
+                              Profit: <span className="text-green-600 font-medium">{parseFloat(entry.profit).toLocaleString('de-DE')} USDT</span>
+                            </p>
+                            <p className="text-muted-foreground">
+                              Profit %: <span className="text-green-600 font-medium">{parseFloat(entry.profitPercent).toFixed(2)}%</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleEditEntry(entry)}
+                            data-testid={`button-edit-entry-${entry.id}`}
+                            className="h-8 w-8"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteEntry(entry.id)}
+                            data-testid={`button-delete-entry-${entry.id}`}
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
 
           <div className="space-y-6">
             <Card className="p-6">
@@ -309,7 +462,22 @@ export default function Upload() {
           </div>
 
           <Card className="p-8">
-            <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold">
+                {editingEntryId ? 'Eintrag bearbeiten' : 'Neuen Eintrag erstellen'}
+              </h2>
+              {editingEntryId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetForm}
+                  data-testid="button-cancel-edit"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Neu erstellen
+                </Button>
+              )}
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
@@ -523,14 +691,31 @@ export default function Upload() {
                   </Select>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={uploadMutation.isPending}
-                  data-testid="button-submit"
-                >
-                  {uploadMutation.isPending ? 'Wird gespeichert...' : 'Eintrag speichern'}
-                </Button>
+                <div className="flex gap-3">
+                  {editingEntryId && (
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      onClick={resetForm}
+                      className="flex-1"
+                      data-testid="button-cancel-form"
+                    >
+                      Abbrechen
+                    </Button>
+                  )}
+                  <Button 
+                    type="submit" 
+                    className="flex-1" 
+                    disabled={uploadMutation.isPending}
+                    data-testid="button-submit"
+                  >
+                    {uploadMutation.isPending 
+                      ? 'Wird gespeichert...' 
+                      : editingEntryId 
+                        ? 'Änderungen speichern' 
+                        : 'Eintrag erstellen'}
+                  </Button>
+                </div>
               </div>
             </form>
           </Card>

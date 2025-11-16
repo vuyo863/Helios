@@ -17,6 +17,7 @@ export interface IStorage {
   getBotEntriesByDateRange(startDate: string, endDate: string): Promise<BotEntry[]>;
   getBotEntriesByBotType(botTypeId: string): Promise<BotEntry[]>;
   createBotEntry(entry: InsertBotEntry): Promise<BotEntry>;
+  updateBotEntry(id: string, updateData: Partial<InsertBotEntry>): Promise<BotEntry | undefined>;
   deleteBotEntry(id: string): Promise<boolean>;
 }
 
@@ -247,6 +248,37 @@ export class MemStorage implements IStorage {
     };
     this.botEntries.set(id, entry);
     return entry;
+  }
+
+  async updateBotEntry(id: string, updateData: Partial<InsertBotEntry>): Promise<BotEntry | undefined> {
+    const existingEntry = this.botEntries.get(id);
+    if (!existingEntry) {
+      return undefined;
+    }
+    
+    const updatedEntry: BotEntry = {
+      ...existingEntry,
+      date: updateData.date !== undefined ? updateData.date : existingEntry.date,
+      botName: updateData.botName !== undefined ? updateData.botName : existingEntry.botName,
+      botTypeId: updateData.botTypeId !== undefined ? (updateData.botTypeId || null) : existingEntry.botTypeId,
+      botDirection: updateData.botDirection !== undefined ? (updateData.botDirection || null) : existingEntry.botDirection,
+      investment: updateData.investment !== undefined ? updateData.investment : existingEntry.investment,
+      profit: updateData.profit !== undefined ? updateData.profit : existingEntry.profit,
+      profitPercent: updateData.profitPercent !== undefined ? updateData.profitPercent : existingEntry.profitPercent,
+      periodType: updateData.periodType !== undefined ? updateData.periodType : existingEntry.periodType,
+      longestRuntime: updateData.longestRuntime !== undefined ? (updateData.longestRuntime || null) : existingEntry.longestRuntime,
+      avgRuntime: updateData.avgRuntime !== undefined ? (updateData.avgRuntime || null) : existingEntry.avgRuntime,
+      avgGridProfit: updateData.avgGridProfit !== undefined ? (updateData.avgGridProfit || null) : existingEntry.avgGridProfit,
+      highestGridProfit: updateData.highestGridProfit !== undefined ? (updateData.highestGridProfit || null) : existingEntry.highestGridProfit,
+      highestGridProfitPercent: updateData.highestGridProfitPercent !== undefined ? (updateData.highestGridProfitPercent || null) : existingEntry.highestGridProfitPercent,
+      overallAvgGridProfit: updateData.overallAvgGridProfit !== undefined ? (updateData.overallAvgGridProfit || null) : existingEntry.overallAvgGridProfit,
+      leverage: updateData.leverage !== undefined ? (updateData.leverage || null) : existingEntry.leverage,
+      notes: updateData.notes !== undefined ? (updateData.notes || null) : existingEntry.notes,
+      screenshotPath: updateData.screenshotPath !== undefined ? (updateData.screenshotPath || null) : existingEntry.screenshotPath,
+    };
+    
+    this.botEntries.set(id, updatedEntry);
+    return updatedEntry;
   }
 
   async deleteBotEntry(id: string): Promise<boolean> {

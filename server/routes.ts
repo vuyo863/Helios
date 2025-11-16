@@ -155,6 +155,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/entries/:id", async (req, res) => {
+    try {
+      const updateSchema = insertBotEntrySchema.partial();
+      const validatedData = updateSchema.parse(req.body);
+      
+      const updated = await storage.updateBotEntry(req.params.id, validatedData);
+      if (!updated) {
+        return res.status(404).json({ error: "Entry not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update entry" });
+    }
+  });
+
   app.delete("/api/entries/:id", async (req, res) => {
     try {
       const deleted = await storage.deleteBotEntry(req.params.id);
