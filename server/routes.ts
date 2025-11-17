@@ -25,6 +25,7 @@ const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Track
    - **Extra Margin**: Zusätzliche Margin in USDT (Nummer mit 2 Dezimalstellen, optional)
    - **Profit**: Absoluter Gewinn in USDT (Nummer mit 2 Dezimalstellen)
    - **Profit %**: Gewinn in Prozent (Nummer mit 2 Dezimalstellen)
+   - **Periodentyp**: Zeitraum der Performance - entweder "Tag", "Woche" oder "Monat"
    - **Längste Laufzeit**: Format "Xd Yh Zs" (z.B. "2d 5h 30s" oder "12h 0s")
    - **Durchschnittliche Laufzeit**: Format "Xd Yh Zs" (z.B. "1d 3h 15s")
    - **Durchschn. Grid Profit**: Durchschnittlicher Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
