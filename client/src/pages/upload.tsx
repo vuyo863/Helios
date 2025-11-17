@@ -39,6 +39,7 @@ export default function Upload() {
   const [waitingForConfirmation, setWaitingForConfirmation] = useState(false);
   const [phaseTwoVerified, setPhaseTwoVerified] = useState(false);
   const [isStartMetric, setIsStartMetric] = useState(false);
+  const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -191,6 +192,7 @@ export default function Upload() {
   };
 
   const handleEditClick = () => {
+    setScreenshotsBeforeEdit(screenshotsSent);
     setEditMode(true);
     setWaitingForConfirmation(false);
     setScreenshotsSent(false);
@@ -651,9 +653,23 @@ export default function Upload() {
                         
                         setBotTypeSent(true);
                         
-                        setTimeout(() => {
-                          sendPhaseOneAiResponse('botType');
-                        }, 500);
+                        if (editMode && screenshotsBeforeEdit) {
+                          setScreenshotsSent(true);
+                          setEditMode(false);
+                          setScreenshotsBeforeEdit(false);
+                          
+                          setTimeout(() => {
+                            setChatMessages(prev => [...prev, {
+                              role: 'ai',
+                              content: 'Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?'
+                            }]);
+                            setWaitingForConfirmation(true);
+                          }, 500);
+                        } else {
+                          setTimeout(() => {
+                            sendPhaseOneAiResponse('botType');
+                          }, 500);
+                        }
                         
                         toast({
                           title: "Bot Type gesendet",
