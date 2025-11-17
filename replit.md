@@ -148,6 +148,16 @@ Preferred communication style: Simple, everyday language.
   - UI displays three compact input fields side-by-side with labels "Stunde", "Tag", "Woche"
   - All three metrics available in ProfitBarChartAdvanced for multi-timeframe analysis
   - Backend mock data updated with realistic hourly/daily/weekly values across 6 entries
+- **Upload Form Section Reorganization** (November 17, 2025):
+  - Form restructured into separate cyan-bordered sections with white backgrounds:
+    1. **Bot-Name**: Single field for bot identifier
+    2. **Info**: Datum, Bot-Richtung, Hebel, Längste Laufzeit, Durchschnittliche Laufzeit
+    3. **Investment**: Investitionsmenge (USDT), Extra Margin (separated from Info section)
+    4. **Gesamter Profit / P&L**: Gesamtprofit (USDT), Gesamtprofit (%)
+    5. **Trend P&L**: Trend P&L (USDT), Trend P&L (%)
+    6. **Grid Trading**: Grid Profit metrics, Overall Grid Profit, Highest Grid Profit
+  - Each section (Info, Investment, Gesamter Profit/P&L, Trend P&L, Grid Trading) includes dropdown filter with options: "Insgesamt", "Seit letztem Update", "Startwerte"
+  - Dropdowns positioned to the right of section titles for easy time range selection
 
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)
