@@ -59,6 +59,7 @@ export default function Upload() {
   const [profitTimeRange, setProfitTimeRange] = useState("Insgesamt");
   const [trendTimeRange, setTrendTimeRange] = useState("Insgesamt");
   const [gridTimeRange, setGridTimeRange] = useState("Insgesamt");
+  const [outputMode, setOutputMode] = useState<'update-metrics' | 'closed-bots'>('update-metrics');
 
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
@@ -515,7 +516,26 @@ export default function Upload() {
           </div>
 
           <Card className="p-8">
-            <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
+            <div className="flex items-center gap-2 mb-6">
+              <Button
+                type="button"
+                variant={outputMode === 'update-metrics' ? 'default' : 'outline'}
+                onClick={() => setOutputMode('update-metrics')}
+                data-testid="button-update-metrics"
+                className="flex-1"
+              >
+                Update Metrics
+              </Button>
+              <Button
+                type="button"
+                variant={outputMode === 'closed-bots' ? 'default' : 'outline'}
+                onClick={() => setOutputMode('closed-bots')}
+                data-testid="button-closed-bots"
+                className="flex-1"
+              >
+                Closed Bots
+              </Button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="space-y-8">
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
@@ -568,21 +588,23 @@ export default function Upload() {
                   </div>
                 </div>
 
-                <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <h3 className="text-base font-semibold text-foreground">Info</h3>
-                    <Select value={infoTimeRange} onValueChange={setInfoTimeRange}>
-                      <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-info-timerange">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
-                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
-                        <SelectItem value="Startwerte">Startwerte</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {outputMode === 'update-metrics' && (
+                  <>
+                    <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <h3 className="text-base font-semibold text-foreground">Info</h3>
+                        <Select value={infoTimeRange} onValueChange={setInfoTimeRange}>
+                          <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-info-timerange">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Insgesamt">Insgesamt</SelectItem>
+                            <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                            <SelectItem value="Startwerte">Startwerte</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="date">Datum</Label>
                       <Input
@@ -909,6 +931,8 @@ export default function Upload() {
                     </div>
                   </div>
                 </div>
+                  </>
+                )}
 
                 <div className="flex gap-4">
                   <Button 
