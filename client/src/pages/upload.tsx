@@ -76,13 +76,14 @@ export default function Upload() {
       if (variables.botTypeId && variables.version) {
         setChatMessages(prev => [...prev, {
           role: 'ai',
-          content: `Update gespeichert!\n\nBot Type ID: ${selectedBotTypeColor}\nVersion: ${variables.version}\n\nDie Metriken wurden erfolgreich aktualisiert.`
+          content: `Update gespeichert!\n\nBot Type: ${variables.botType}\nID: ${selectedBotTypeColor}\nVersion: ${variables.version}\n\nDie Metriken wurden erfolgreich aktualisiert.`
         }]);
       }
       
       setSelectedFiles([]);
       setFormData(prev => ({
         ...prev,
+        version: '',
         date: '',
         botName: '',
         investment: '',
@@ -354,10 +355,10 @@ export default function Upload() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.botName.trim()) {
+    if (!formData.botType || !formData.version) {
       toast({
         title: "Fehler",
-        description: "Bitte wählen Sie einen Bot-Namen aus oder geben Sie einen neuen ein.",
+        description: "Bitte wählen Sie einen Bot-Typ aus und geben Sie eine Version ein.",
         variant: "destructive",
       });
       return;
@@ -368,6 +369,8 @@ export default function Upload() {
       botTypeId: selectedBotTypeId,
       botType: formData.botType || null,
       version: formData.version || null,
+      date: formData.date || null,
+      botName: formData.botName || formData.botType,
       extraMargin: formData.extraMargin || null,
       longestRuntime: formData.longestRuntime || null,
       avgRuntime: formData.avgRuntime || null,
@@ -629,7 +632,6 @@ export default function Upload() {
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        required
                         data-testid="input-date"
                       />
                     </div>
@@ -639,7 +641,6 @@ export default function Upload() {
                       <Select
                         value={formData.botDirection}
                         onValueChange={(value) => setFormData({ ...formData, botDirection: value })}
-                        required
                       >
                         <SelectTrigger id="botDirection" data-testid="select-bot-direction">
                           <SelectValue placeholder="Short oder Long" />
