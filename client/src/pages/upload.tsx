@@ -216,32 +216,54 @@ export default function Upload() {
     }]);
   };
 
-  const handleConfirmClick = () => {
+  const handleConfirmClick = async () => {
     setWaitingForConfirmation(false);
     setEditMode(false);
+    setIsAiLoading(true);
     
     const botTypeName = formData.botType;
+    const botTypeColor = botTypes?.find(bt => bt.name === botTypeName)?.color || 'keine Farbe';
     const updateHistory = mockUpdatesData[botTypeName];
     
-    if (updateHistory && updateHistory.length > 0) {
-      const latestUpdate = updateHistory[0];
-      const formattedDate = latestUpdate.updateDate;
-      const formattedTime = latestUpdate.updateTime;
+    try {
+      const userMessage = `Ich möchte mit Phase 2, Schritt 1 beginnen. Bitte überprüfe den Update-Verlauf für Bot Type "${botTypeName}" (ID: ${botTypeColor}).`;
       
-      setIsStartMetric(false);
-      setChatMessages(prev => [...prev, { 
-        role: 'ai', 
-        content: `Ok, ich fange an und überprüfe die Informationsquelle.\n\nIch habe die Bot Type ID überprüft. Der letzte Upload war am ${formattedDate} um ${formattedTime}.`
-      }]);
-    } else {
-      setIsStartMetric(true);
-      setChatMessages(prev => [...prev, { 
-        role: 'ai', 
-        content: 'Ok, ich fange an und überprüfe die Informationsquelle.\n\nIch sehe hier, es gibt noch keine Uploads, das heißt wir verwenden das als Startmetrik.'
-      }]);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...chatMessages, { role: 'user', content: userMessage }],
+          botTypes: botTypes,
+          updateHistory: mockUpdatesData,
+          phase: 'phase2_step1',
+          selectedBotType: botTypeName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI-Kommunikation fehlgeschlagen');
+      }
+
+      const data = await response.json();
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      
+      if (updateHistory && updateHistory.length > 0) {
+        setIsStartMetric(false);
+      } else {
+        setIsStartMetric(true);
+      }
+      
+      setPhaseTwoVerified(true);
+    } catch (error) {
+      console.error('Phase 2 Step 1 error:', error);
+      toast({
+        title: "Fehler",
+        description: "Phase 2 konnte nicht gestartet werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
     }
-    
-    setPhaseTwoVerified(true);
   };
 
   const handleChatSend = async () => {

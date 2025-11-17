@@ -10,6 +10,28 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const PHASE_2_STEP_1_PROMPT = `**PHASE 2, SCHRITT 1: Überprüfung der Bot-Type-Updates**
+
+Du wurdest aufgefordert, mit Phase 2, Schritt 1 zu beginnen.
+
+**Deine Aufgabe:**
+1. Sage: "OK, fange an mit Phase 2, Schritt 1: Überprüfung der Bot-Type-Updates"
+2. Prüfe den Update-Verlauf für die angegebene Bot Type ID
+3. Antworte basierend auf dem Ergebnis:
+
+**WENN Updates vorhanden sind:**
+- Finde das neueste Update (erstes in der Liste)
+- Antworte: "Habe folgende Informationen vom letzten Update gefunden: war am [Datum] um [Zeit] letzter Update hier gefunden"
+- Beispiel: "Habe folgende Informationen vom letzten Update gefunden: war am 15.11.2025 um 14:30 letzter Update hier gefunden"
+
+**WENN KEINE Updates vorhanden sind:**
+- Antworte: "Keine Updates gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten"
+
+**Wichtig:**
+- Sei präzise und kurz
+- Verwende das genaue Format der Antworten oben
+- Nenne immer Datum und Uhrzeit wenn Updates vorhanden sind`;
+
 const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Tracker Anwendung.
 
 **WICHTIGSTE REGEL:**
@@ -95,15 +117,28 @@ Hilf dem Benutzer auch bei allgemeinen Fragen zur Anwendung oder zur Bot-Trading
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
-      const { messages, images, botTypes, updateHistory } = req.body;
+      const { messages, images, botTypes, updateHistory, phase, selectedBotType } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages array is required" });
       }
 
-      let contextualPrompt = SYSTEM_PROMPT;
+      let contextualPrompt = phase === 'phase2_step1' ? PHASE_2_STEP_1_PROMPT : SYSTEM_PROMPT;
       
-      if (botTypes && botTypes.length > 0) {
+      if (phase === 'phase2_step1' && selectedBotType && updateHistory) {
+        const updates = updateHistory[selectedBotType];
+        contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotType}"\n\n`;
+        
+        if (updates && updates.length > 0) {
+          contextualPrompt += `**UPDATE-VERLAUF (${updates.length} Updates gefunden):**\n`;
+          updates.forEach((update: any, index: number) => {
+            contextualPrompt += `${index + 1}. "${update.updateName}" - ${update.updateDate} ${update.updateTime}\n`;
+          });
+          contextualPrompt += `\n**Das neueste Update ist das erste in der Liste oben.**`;
+        } else {
+          contextualPrompt += `**UPDATE-VERLAUF:**\nKeine Updates gefunden - dies ist eine Startmetrik.`;
+        }
+      } else if (botTypes && botTypes.length > 0) {
         contextualPrompt += `\n\n**VERFÜGBARE BOT TYPES:**\n`;
         botTypes.forEach((bt: any) => {
           contextualPrompt += `\n- Name: "${bt.name}"\n  ID: ${bt.color || 'keine Farbe'}\n  Beschreibung: ${bt.description || 'keine Beschreibung'}\n`;
