@@ -1,0 +1,33 @@
+Okay, sehr gut, sehr gut. Jetzt tatsächlich alles perfekt. Perfekt, machen wir weiter. Für dich eine kurze Information. Sie sagt die ganze Zeit, dass sie Daten extrem will. Macht sie nicht, okay? Erst kommt Phase 2. Und das auch erst, nachdem ich auf den Stifte-Icon gedrückt habe. Das heißt, sie labert nie etwas von Analysieren oder relevanten Daten, wenn sie mit Phase 2 noch nicht gemacht hat. Oder wenn sie bei Phase 1 ist und ich noch nicht einmal auf den Haken-Icon gegangen bin, heißt die Bestätigung, dass wir jetzt in Phase 2 gehen. Erst wenn wir in Phase 2 sind, nachdem ich einmal Haken gedrückt hatte, dann sozusagen sind wir in Phase 2. Wenn ich da nochmal einen Haken drücke, dann fängt Phase 3 an und sie fängt zu analysieren an, okay? Wir sind noch in Phase 1. Sie geht niemals von Phase 1 zu Phase 3, ohne mit Phase 2 zu überspringen, ja? Ist das klar? In Phase 1 muss ein Haken kommen. Dann kommt erst Phase 2. Wenn dann noch ein Haken kommt, dann kommt Phase 3, okay? So einfach. Aber ja, das anpassen und dann machen wir mit Phase 2 weiter.Aber jetzt bitte nichts an der Funktion ändern, weil die Funktion ist gut, ja? Sie kann die richtigen Bilder lesen, sie weiß genau wie viele, sie weiß genau welche Config oder welche Informationen sie bekommt. Okay, das ist alles gut, daran nichts ändern, okay? Funktion nichts ändern. Nur, was sie sagt, sozusagen, muss angepasst werden, weil sie extra jetzt keine Bilder, sondern jetzt geht sie über in Phase 2, okay? Sie sagt immer so, okay, Phase 2, oder bis jetzt, okay, wir möchten jetzt in Phase 2, ganz höflich, ganz nett, wir möchten jetzt in Phase 2, sollen wir in Phase 2 weitermachen, okay? Bis ich Harten drücke und sage, okay, Phase 2. Aber ich sage jetzt im nächsten Punkt, wie Phase 2 anfängt, okay? Das heißt, noch nichts irgendwie machen oder sagen. Wir gehen jetzt jede Phase einmal durch und dann erst am Ende funktioniert alles, okay? Weil es funktioniert auch nicht anders, ja? Wir sind erstmal bei Phase 2 jetzt.:Update Metrics
+
+Bot Type: Grid Trading Bots
+ID: #3B82F6
+Version: 2
+
+Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?
+
+Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.
+
+1 Bild wurde zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+Ok, ich sehe Sie wollen noch etwas bearbeiten. Sie können nun Screenshots erneut hochladen oder die Bot Type Informationen ändern. Schicken Sie gerne die aktualisierten Informationen.
+
+Update Metrics
+
+Bot Type: Grid Trading Bots
+ID: #3B82F6
+Version: 6
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+Ok, ich sehe Sie wollen noch etwas bearbeiten. Sie können nun Screenshots erneut hochladen oder die Bot Type Informationen ändern. Schicken Sie gerne die aktualisierten Informationen.
+
+3 Bilder wurden zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+ok wie viel bilder analysiert du jz
+
+Aktuell habe ich die Information erhalten, dass **3 Bilder** zur Analyse hochgeladen wurden. Ich werde alle drei Bilder analysieren und die relevanten Daten extrahieren. Bitte geben Sie mir einen Moment, um die Informationen genau zu verarbeiten und strukturiert auszugeben.
