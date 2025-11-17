@@ -34,6 +34,7 @@ export default function Upload() {
   
   const [screenshotsSent, setScreenshotsSent] = useState(false);
   const [botTypeSent, setBotTypeSent] = useState(false);
+  const phaseOneComplete = screenshotsSent && botTypeSent;
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -182,6 +183,10 @@ export default function Upload() {
       
       setScreenshotsSent(true);
       
+      setTimeout(() => {
+        sendPhaseOneAiResponse('screenshots');
+      }, 500);
+      
       toast({
         title: "Erfolgreich analysiert",
         description: `${fileCount} ${fileText} analysiert.`,
@@ -195,6 +200,22 @@ export default function Upload() {
       });
     } finally {
       setIsAiLoading(false);
+    }
+  };
+
+  const sendPhaseOneAiResponse = (source: 'screenshots' | 'botType') => {
+    let aiMessage = '';
+    
+    if (source === 'screenshots' && !botTypeSent) {
+      aiMessage = 'Ich habe die Screenshots erhalten. Bitte schicken Sie noch die Bot Type Informationen (Bot Type, ID, Version), damit wir Phase 1 abschließen können.';
+    } else if (source === 'botType' && !screenshotsSent) {
+      aiMessage = 'Ich habe die Bot Type Informationen erhalten. Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.';
+    } else if ((source === 'screenshots' && botTypeSent) || (source === 'botType' && screenshotsSent)) {
+      aiMessage = 'Perfekt! Phase 1 ist abgeschlossen. Bitte schicken Sie nun die restlichen Einstellungen (Info, Investment, Profit, etc.) über den "Einstellungen an AI senden" Button.';
+    }
+    
+    if (aiMessage) {
+      setChatMessages(prev => [...prev, { role: 'ai', content: aiMessage }]);
     }
   };
 
@@ -573,7 +594,6 @@ export default function Upload() {
                     <Button 
                       type="button"
                       size="sm"
-                      disabled={uploadMutation.isPending}
                       data-testid="button-save"
                       onClick={() => {
                         if (!formData.botType || !formData.version) {
@@ -593,30 +613,17 @@ export default function Upload() {
                         
                         setBotTypeSent(true);
                         
-                        uploadMutation.mutate({
-                          ...formData,
-                          botTypeId: selectedBotTypeId,
-                          botType: formData.botType || null,
-                          version: formData.version || null,
-                          date: formData.date || null,
-                          botName: formData.botName || formData.botType,
-                          extraMargin: formData.extraMargin || null,
-                          longestRuntime: formData.longestRuntime || null,
-                          avgRuntime: formData.avgRuntime || null,
-                          avgGridProfitHour: formData.avgGridProfitHour || null,
-                          avgGridProfitDay: formData.avgGridProfitDay || null,
-                          avgGridProfitWeek: formData.avgGridProfitWeek || null,
-                          overallTrendPnlUsdt: formData.overallTrendPnlUsdt || null,
-                          overallTrendPnlPercent: formData.overallTrendPnlPercent || null,
-                          highestGridProfit: formData.highestGridProfit || null,
-                          highestGridProfitPercent: formData.highestGridProfitPercent || null,
-                          overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
-                          overallGridProfitPercent: formData.overallGridProfitPercent || null,
-                          leverage: formData.leverage || null,
-                        } as any);
+                        setTimeout(() => {
+                          sendPhaseOneAiResponse('botType');
+                        }, 500);
+                        
+                        toast({
+                          title: "Bot Type gesendet",
+                          description: "Die Bot Type Informationen wurden an die AI gesendet.",
+                        });
                       }}
                     >
-                      {uploadMutation.isPending ? 'Speichert...' : 'Save'}
+                      Save
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -660,10 +667,10 @@ export default function Upload() {
 
                 {outputMode === 'update-metrics' && (
                   <>
-                    {(!screenshotsSent || !botTypeSent) && (
+                    {!phaseOneComplete && (
                       <div className="border border-yellow-500 bg-yellow-50 rounded-lg p-4">
                         <p className="text-sm text-yellow-800 font-medium">
-                          ⚠️ Bitte zuerst: {!screenshotsSent && 'Screenshots hochladen & an AI senden'}{!screenshotsSent && !botTypeSent && ' + '}{!botTypeSent && 'Bot Type speichern'}
+                          ⚠️ Phase 1: Bitte zuerst {!screenshotsSent && 'Screenshots hochladen & an AI senden'}{!screenshotsSent && !botTypeSent && ' + '}{!botTypeSent && 'Bot Type speichern'}
                         </p>
                         <p className="text-xs text-yellow-700 mt-1">
                           Die Analyse-Einstellungen können erst ausgefüllt werden, wenn beide Schritte abgeschlossen sind.
@@ -673,7 +680,7 @@ export default function Upload() {
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Info</h3>
-                        <Select value={infoTimeRange} onValueChange={setInfoTimeRange} disabled={!screenshotsSent || !botTypeSent}>
+                        <Select value={infoTimeRange} onValueChange={setInfoTimeRange} disabled={!phaseOneComplete}>
                           <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-info-timerange">
                             <SelectValue />
                           </SelectTrigger>
@@ -686,23 +693,23 @@ export default function Upload() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="date" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Datum</Label>
+                      <Label htmlFor="date" className={!phaseOneComplete ? 'text-muted-foreground' : ''}>Datum</Label>
                       <Input
                         id="date"
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        disabled={!screenshotsSent || !botTypeSent}
+                        disabled={!phaseOneComplete}
                         data-testid="input-date"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="botDirection" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Bot-Richtung</Label>
+                      <Label htmlFor="botDirection" className={!phaseOneComplete ? 'text-muted-foreground' : ''}>Bot-Richtung</Label>
                       <Select
                         value={formData.botDirection}
                         onValueChange={(value) => setFormData({ ...formData, botDirection: value })}
-                        disabled={!screenshotsSent || !botTypeSent}
+                        disabled={!phaseOneComplete}
                       >
                         <SelectTrigger id="botDirection" data-testid="select-bot-direction">
                           <SelectValue placeholder="Short oder Long" />
@@ -715,40 +722,40 @@ export default function Upload() {
                     </div>
 
                     <div>
-                      <Label htmlFor="leverage" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Hebel</Label>
+                      <Label htmlFor="leverage" className={!phaseOneComplete ? 'text-muted-foreground' : ''}>Hebel</Label>
                       <Input
                         id="leverage"
                         type="text"
                         placeholder="z.B. 1x, 5x, 10x"
                         value={formData.leverage}
                         onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
-                        disabled={!screenshotsSent || !botTypeSent}
+                        disabled={!phaseOneComplete}
                         data-testid="input-leverage"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="longestRuntime" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Label htmlFor="longestRuntime" className={!phaseOneComplete ? 'text-muted-foreground' : ''}>Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
                       <Input
                         id="longestRuntime"
                         type="text"
                         placeholder="z.B. 2d 5h 30s"
                         value={formData.longestRuntime}
                         onChange={(e) => setFormData({ ...formData, longestRuntime: e.target.value })}
-                        disabled={!screenshotsSent || !botTypeSent}
+                        disabled={!phaseOneComplete}
                         data-testid="input-longest-runtime"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="avgRuntime" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Label htmlFor="avgRuntime" className={!phaseOneComplete ? 'text-muted-foreground' : ''}>Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
                       <Input
                         id="avgRuntime"
                         type="text"
                         placeholder="z.B. 1d 3h 15s"
                         value={formData.avgRuntime}
                         onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
-                        disabled={!screenshotsSent || !botTypeSent}
+                        disabled={!phaseOneComplete}
                         data-testid="input-avg-runtime"
                       />
                     </div>
@@ -1023,7 +1030,7 @@ export default function Upload() {
                     variant="outline"
                     className="flex-1"
                     onClick={handleSendFieldsToAI}
-                    disabled={!screenshotsSent || !botTypeSent || isAiLoading}
+                    disabled={!phaseOneComplete || isAiLoading}
                     data-testid="button-send-fields-to-ai"
                   >
                     <Send className="w-4 h-4 mr-2" />
