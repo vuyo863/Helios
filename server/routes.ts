@@ -16,7 +16,26 @@ const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Track
 
 2. **Mehrere Screenshots verarbeiten**: Du kannst mehrere Screenshots gleichzeitig analysieren. Für jedes Ausgabefeld sollst du die Werte korrekt berechnen oder aggregieren.
 
-3. **Ausgabefelder (ALLE Felder kennen und verstehen)**:
+3. **Bot Types Verständnis (WICHTIG!)**:
+   - Die Anwendung hat eine "Bot Types" Seite mit Content Cards für verschiedene Bot-Kategorien
+   - Jeder Bot Type hat:
+     * **Name**: z.B. "Grid Trading Bots", "Futures Bots", "Moon Bots"
+     * **ID (Farbe)**: Die ID ist eine Hex-Farbe wie "#3B82F6", "#10B981", "#8B5CF6" - NICHT eine UUID!
+     * **Beschreibung**: Optionale Beschreibung des Bot-Typs
+     * **Update-Verlauf**: Liste aller Updates mit Namen, Datum und Uhrzeit
+   
+   - **Update-Verlauf Format**:
+     * Jedes Update hat: updateName, updateDate (DD.MM.YYYY), updateTime (HH:MM)
+     * Beispiel: "Q4 Performance Update" am "15.11.2025" um "14:30"
+     * Wenn KEINE Updates vorhanden sind, wird "Start Metric" angezeigt
+   
+   - **Wichtig bei der Analyse**:
+     * Wenn du eine Bot Type ID (z.B. "#3B82F6") erhältst, kannst du auf den Update-Verlauf zugreifen
+     * Nutze den Update-Verlauf für kontextbezogene Analyse
+     * Beziehe dich auf frühere Updates wenn relevant
+     * Die ID (Farbe) ist das stabile Identifikationsmerkmal - Namen können sich ändern!
+
+4. **Ausgabefelder (ALLE Felder kennen und verstehen)**:
    - **Datum**: Das Datum der Bot-Performance (Format: YYYY-MM-DD)
    - **Bot-Name**: Name des Trading Bots (z.B. "BTC/USDT Grid", "ETH/USDT Future")
    - **Bot-Typ**: Kategorie (Grid Trading Bots, Futures Bots, Moon Bots, etc.)
@@ -34,14 +53,15 @@ const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Track
    - **Gesamt Durchschn. Grid Profit**: Gesamter durchschnittlicher Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
    - **Leverage**: Hebelwirkung (z.B. "10x", "20x", optional)
 
-4. **Bei mehreren Screenshots**:
+5. **Bei mehreren Screenshots**:
    - Summiere: Investment, Extra Margin, Profit
    - Berechne Durchschnitt: Längste Laufzeit, Durchschnittliche Laufzeit, Grid-Profit-Werte
    - Profit % neu berechnen: (Gesamt-Profit / Gesamt-Investment) × 100
 
-5. **Antwort-Format**:
+6. **Antwort-Format**:
    - Gib die extrahierten Daten strukturiert aus
    - Erkläre kurz was du gefunden hast
+   - Beziehe dich auf Update-Verlauf wenn verfügbar und relevant
    - Sei präzise und freundlich
    - Antworte auf Deutsch
 
@@ -57,14 +77,37 @@ Hilf dem Benutzer auch bei allgemeinen Fragen zur Anwendung oder zur Bot-Trading
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
-      const { messages, images } = req.body;
+      const { messages, images, botTypes, updateHistory } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages array is required" });
       }
 
+      let contextualPrompt = SYSTEM_PROMPT;
+      
+      if (botTypes && botTypes.length > 0) {
+        contextualPrompt += `\n\n**VERFÜGBARE BOT TYPES:**\n`;
+        botTypes.forEach((bt: any) => {
+          contextualPrompt += `\n- Name: "${bt.name}"\n  ID: ${bt.color || 'keine Farbe'}\n  Beschreibung: ${bt.description || 'keine Beschreibung'}\n`;
+          
+          if (updateHistory && updateHistory[bt.name]) {
+            const updates = updateHistory[bt.name];
+            if (updates.length > 0) {
+              contextualPrompt += `  Update-Verlauf (${updates.length} Updates):\n`;
+              updates.forEach((update: any, index: number) => {
+                contextualPrompt += `    ${index + 1}. "${update.updateName}" - ${update.updateDate} ${update.updateTime}\n`;
+              });
+            } else {
+              contextualPrompt += `  Update-Verlauf: Start Metric (noch keine Updates)\n`;
+            }
+          } else {
+            contextualPrompt += `  Update-Verlauf: Start Metric (noch keine Updates)\n`;
+          }
+        });
+      }
+
       const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: contextualPrompt },
         ...messages.map((msg: any) => ({
           role: msg.role === 'ai' ? 'assistant' : msg.role,
           content: msg.content,

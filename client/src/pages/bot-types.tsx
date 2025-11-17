@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BotType } from "@shared/schema";
+import { mockUpdatesData, type BotTypeUpdate } from "@shared/bot-type-updates";
 import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -25,50 +26,6 @@ import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-
-interface BotTypeUpdate {
-  id: string;
-  updateName: string;
-  updateDate: string;
-  updateTime: string;
-}
-
-const mockUpdatesData: Record<string, BotTypeUpdate[]> = {
-  "Grid Trading Bots": [
-    {
-      id: "u1",
-      updateName: "Q4 Performance Update",
-      updateDate: "15.11.2025",
-      updateTime: "14:30"
-    },
-    {
-      id: "u2",
-      updateName: "Strategie Anpassung",
-      updateDate: "10.11.2025",
-      updateTime: "09:15"
-    },
-    {
-      id: "u3",
-      updateName: "Initiale Metriken",
-      updateDate: "05.11.2025",
-      updateTime: "16:45"
-    }
-  ],
-  "Futures Bots": [
-    {
-      id: "u4",
-      updateName: "Hebel Optimierung",
-      updateDate: "16.11.2025",
-      updateTime: "10:20"
-    },
-    {
-      id: "u5",
-      updateName: "Risiko-Analyse Update",
-      updateDate: "12.11.2025",
-      updateTime: "15:45"
-    }
-  ],
-};
 
 export default function BotTypesPage() {
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({

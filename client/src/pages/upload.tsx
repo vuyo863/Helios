@@ -17,6 +17,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import BotTypeManager from "@/components/BotTypeManager";
 import { BotEntry, BotType } from "@shared/schema";
+import { mockUpdatesData } from "@shared/bot-type-updates";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocation } from "wouter";
@@ -30,6 +31,10 @@ export default function Upload() {
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
   const [chatInput, setChatInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
+  
+  const { data: botTypes = [] } = useQuery<BotType[]>({
+    queryKey: ['/api/bot-types'],
+  });
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
@@ -165,6 +170,8 @@ export default function Upload() {
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
           images: base64Images,
+          botTypes: botTypes,
+          updateHistory: mockUpdatesData,
         }),
       });
 
@@ -206,6 +213,8 @@ export default function Upload() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
+          botTypes: botTypes,
+          updateHistory: mockUpdatesData,
         }),
       });
 
@@ -326,6 +335,8 @@ export default function Upload() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
+          botTypes: botTypes,
+          updateHistory: mockUpdatesData,
         }),
       });
 
