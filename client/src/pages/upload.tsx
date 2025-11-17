@@ -30,6 +30,8 @@ export default function Upload() {
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
+    botType: '',
+    version: '',
     botDirection: 'Long',
     investment: '',
     extraMargin: '',
@@ -71,6 +73,8 @@ export default function Upload() {
       setFormData({
         date: '',
         botName: '',
+        botType: '',
+        version: '',
         botDirection: 'Long',
         investment: '',
         extraMargin: '',
@@ -217,6 +221,8 @@ export default function Upload() {
     setFormData({
       date: '',
       botName: botType.name,
+      botType: '',
+      version: '',
       botDirection: 'Long',
       investment: '',
       extraMargin: '',
@@ -247,6 +253,8 @@ export default function Upload() {
     const fieldLabels: Record<string, string> = {
       date: 'Datum',
       botName: 'Bot-Name',
+      botType: 'Bot Type',
+      version: 'Version',
       botDirection: 'Bot-Richtung',
       investment: 'Investitionsmenge',
       extraMargin: 'Extra Margin',
@@ -340,6 +348,8 @@ export default function Upload() {
     uploadMutation.mutate({
       ...formData,
       botTypeId: selectedBotTypeId,
+      botType: formData.botType || null,
+      version: formData.version || null,
       extraMargin: formData.extraMargin || null,
       longestRuntime: formData.longestRuntime || null,
       avgRuntime: formData.avgRuntime || null,
@@ -508,7 +518,7 @@ export default function Upload() {
               <div className="space-y-8">
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                   <div className="flex items-center justify-between gap-4">
-                    <Label htmlFor="botName">Bot-Name</Label>
+                    <h3 className="text-base font-semibold text-foreground">Bot Type</h3>
                     <Button 
                       type="submit"
                       size="sm"
@@ -518,15 +528,30 @@ export default function Upload() {
                       {uploadMutation.isPending ? 'Speichert...' : 'Save'}
                     </Button>
                   </div>
-                  <Input
-                    id="botName"
-                    type="text"
-                    placeholder="z.B. ETH/USDT Grid Bot"
-                    value={formData.botName}
-                    onChange={(e) => setFormData({ ...formData, botName: e.target.value })}
-                    required
-                    data-testid="input-bot-name"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="botType">Bot Type</Label>
+                      <Input
+                        id="botType"
+                        type="text"
+                        placeholder="z.B. Grid Bot"
+                        value={formData.botType}
+                        onChange={(e) => setFormData({ ...formData, botType: e.target.value })}
+                        data-testid="input-bot-type"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="version">Version</Label>
+                      <Input
+                        id="version"
+                        type="text"
+                        placeholder="z.B. v1.0"
+                        value={formData.version}
+                        onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                        data-testid="input-version"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
