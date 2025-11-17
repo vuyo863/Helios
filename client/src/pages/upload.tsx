@@ -65,20 +65,25 @@ export default function Upload() {
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
       return await apiRequest('POST', '/api/upload', data);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries'] });
       toast({
         title: "Erfolgreich gespeichert",
         description: "Der Eintrag wurde erfolgreich hinzugefügt.",
       });
       
+      if (variables.botTypeId && variables.version) {
+        setChatMessages(prev => [...prev, {
+          role: 'ai',
+          content: `Update gespeichert!\n\nBot Type ID: ${variables.botTypeId}\nVersion: ${variables.version}\n\nDie Metriken wurden erfolgreich aktualisiert.`
+        }]);
+      }
+      
       setSelectedFiles([]);
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         date: '',
         botName: '',
-        botType: '',
-        version: '',
-        botDirection: 'Long',
         investment: '',
         extraMargin: '',
         profit: '',
@@ -96,7 +101,7 @@ export default function Upload() {
         overallGridProfitUsdt: '',
         overallGridProfitPercent: '',
         leverage: '',
-      });
+      }));
     },
     onError: () => {
       toast({
@@ -251,6 +256,14 @@ export default function Upload() {
     });
   };
 
+  const handleUpdateBotType = (botType: BotType) => {
+    setFormData(prev => ({
+      ...prev,
+      botType: botType.name,
+    }));
+    setSelectedBotTypeId(botType.id);
+  };
+
   const handleSendFieldsToAI = async () => {
     const filledFields: string[] = [];
     const fieldLabels: Record<string, string> = {
@@ -382,6 +395,7 @@ export default function Upload() {
             selectedBotTypeId={selectedBotTypeId}
             onSelectBotType={setSelectedBotTypeId}
             onEditBotType={handleEditBotType}
+            onUpdateBotType={handleUpdateBotType}
           />
 
           <div className="space-y-6">
@@ -558,7 +572,8 @@ export default function Upload() {
                         type="text"
                         placeholder="z.B. Grid Bot"
                         value={formData.botType}
-                        onChange={(e) => setFormData({ ...formData, botType: e.target.value })}
+                        readOnly
+                        className="bg-muted/50"
                         data-testid="input-bot-type"
                       />
                     </div>

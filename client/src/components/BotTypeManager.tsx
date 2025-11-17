@@ -18,9 +18,10 @@ interface BotTypeManagerProps {
   selectedBotTypeId: string | null;
   onSelectBotType: (botTypeId: string | null) => void;
   onEditBotType?: (botType: BotType) => void;
+  onUpdateBotType?: (botType: BotType) => void;
 }
 
-export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType }: BotTypeManagerProps) {
+export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType, onUpdateBotType }: BotTypeManagerProps) {
   const [location] = useLocation();
   const { toast } = useToast();
   const [newBotType, setNewBotType] = useState({
@@ -109,10 +110,13 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
 
   const handleUpdateClick = (botType: BotType, e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: "Update-Funktion",
-      description: "Update-Funktion wird implementiert.",
-    });
+    if (onUpdateBotType) {
+      onUpdateBotType(botType);
+      toast({
+        title: "Bot-Typ geladen",
+        description: `${botType.name} wurde in die Ausgabe-Felder geladen.`,
+      });
+    }
   };
 
   const handleCancelEdit = () => {
