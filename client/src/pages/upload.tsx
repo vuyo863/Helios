@@ -222,6 +222,82 @@ export default function Upload() {
     });
   };
 
+  const handleSendFieldsToAI = async () => {
+    const filledFields: string[] = [];
+    const fieldLabels: Record<string, string> = {
+      date: 'Datum',
+      botName: 'Bot-Name',
+      botDirection: 'Bot-Richtung',
+      investment: 'Investitionsmenge',
+      extraMargin: 'Extra Margin',
+      profit: 'Gesamtprofit (USDT)',
+      profitPercent: 'Gesamtprofit (%)',
+      periodType: 'Periodentyp',
+      longestRuntime: 'Längste Laufzeit',
+      avgRuntime: 'Durchschnittliche Laufzeit',
+      avgGridProfit: 'Grid Profit Durchschnitt',
+      highestGridProfit: 'Höchster Grid Profit',
+      highestGridProfitPercent: 'Höchster Grid Profit (%)',
+      overallAvgGridProfit: 'Durchschnittlicher Grid Profit (gesamt)',
+      leverage: 'Hebel',
+    };
+
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value && value.toString().trim() !== '') {
+        const label = fieldLabels[key as keyof typeof fieldLabels];
+        if (label) {
+          filledFields.push(`${label}: ${value}`);
+        }
+      }
+    });
+
+    if (filledFields.length === 0) {
+      toast({
+        title: "Keine Felder ausgefüllt",
+        description: "Bitte füllen Sie mindestens ein Feld aus, bevor Sie die Einstellungen an die AI senden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAiLoading(true);
+
+    try {
+      const userMessage = `Bitte analysiere Screenshots basierend auf diesen Einstellungen:\n\n${filledFields.join('\n')}\n\nSuche nur nach diesen spezifischen Metriken in den Screenshots.`;
+      
+      setChatMessages(prev => [...prev, { role: 'user', content: 'Einstellungen an AI gesendet' }]);
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...chatMessages, { role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI-Kommunikation fehlgeschlagen');
+      }
+
+      const data = await response.json();
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      
+      toast({
+        title: "Erfolgreich gesendet",
+        description: `${filledFields.length} Einstellungen an AI gesendet.`,
+      });
+    } catch (error) {
+      console.error('AI fields error:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Einstellungen konnten nicht an die AI gesendet werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -604,14 +680,28 @@ export default function Upload() {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={uploadMutation.isPending}
-                  data-testid="button-submit"
-                >
-                  {uploadMutation.isPending ? 'Wird gespeichert...' : 'Eintrag speichern'}
-                </Button>
+                <div className="flex gap-4">
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleSendFieldsToAI}
+                    disabled={isAiLoading}
+                    data-testid="button-send-fields-to-ai"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {isAiLoading ? 'Sende...' : 'Send to AI'}
+                  </Button>
+                  
+                  <Button 
+                    type="submit" 
+                    className="flex-1" 
+                    disabled={uploadMutation.isPending}
+                    data-testid="button-submit"
+                  >
+                    {uploadMutation.isPending ? 'Wird gespeichert...' : 'Eintrag speichern'}
+                  </Button>
+                </div>
               </div>
             </form>
           </Card>
