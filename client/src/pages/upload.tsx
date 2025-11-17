@@ -32,6 +32,9 @@ export default function Upload() {
   const [chatInput, setChatInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   
+  const [screenshotsSent, setScreenshotsSent] = useState(false);
+  const [botTypeSent, setBotTypeSent] = useState(false);
+  
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
   });
@@ -176,6 +179,8 @@ export default function Upload() {
       const data = await response.json();
       
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      
+      setScreenshotsSent(true);
       
       toast({
         title: "Erfolgreich analysiert",
@@ -586,6 +591,8 @@ export default function Upload() {
                           content: `${modeText}\n\nBot Type: ${formData.botType}\nID: ${selectedBotTypeColor}\nVersion: ${formData.version}`
                         }]);
                         
+                        setBotTypeSent(true);
+                        
                         uploadMutation.mutate({
                           ...formData,
                           botTypeId: selectedBotTypeId,
@@ -653,10 +660,20 @@ export default function Upload() {
 
                 {outputMode === 'update-metrics' && (
                   <>
+                    {(!screenshotsSent || !botTypeSent) && (
+                      <div className="border border-yellow-500 bg-yellow-50 rounded-lg p-4">
+                        <p className="text-sm text-yellow-800 font-medium">
+                          ⚠️ Bitte zuerst: {!screenshotsSent && 'Screenshots hochladen & an AI senden'}{!screenshotsSent && !botTypeSent && ' + '}{!botTypeSent && 'Bot Type speichern'}
+                        </p>
+                        <p className="text-xs text-yellow-700 mt-1">
+                          Die Analyse-Einstellungen können erst ausgefüllt werden, wenn beide Schritte abgeschlossen sind.
+                        </p>
+                      </div>
+                    )}
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Info</h3>
-                        <Select value={infoTimeRange} onValueChange={setInfoTimeRange}>
+                        <Select value={infoTimeRange} onValueChange={setInfoTimeRange} disabled={!screenshotsSent || !botTypeSent}>
                           <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-info-timerange">
                             <SelectValue />
                           </SelectTrigger>
@@ -669,21 +686,23 @@ export default function Upload() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="date">Datum</Label>
+                      <Label htmlFor="date" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Datum</Label>
                       <Input
                         id="date"
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        disabled={!screenshotsSent || !botTypeSent}
                         data-testid="input-date"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="botDirection">Bot-Richtung</Label>
+                      <Label htmlFor="botDirection" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Bot-Richtung</Label>
                       <Select
                         value={formData.botDirection}
                         onValueChange={(value) => setFormData({ ...formData, botDirection: value })}
+                        disabled={!screenshotsSent || !botTypeSent}
                       >
                         <SelectTrigger id="botDirection" data-testid="select-bot-direction">
                           <SelectValue placeholder="Short oder Long" />
@@ -696,37 +715,40 @@ export default function Upload() {
                     </div>
 
                     <div>
-                      <Label htmlFor="leverage">Hebel</Label>
+                      <Label htmlFor="leverage" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Hebel</Label>
                       <Input
                         id="leverage"
                         type="text"
                         placeholder="z.B. 1x, 5x, 10x"
                         value={formData.leverage}
                         onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
+                        disabled={!screenshotsSent || !botTypeSent}
                         data-testid="input-leverage"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="longestRuntime">Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Label htmlFor="longestRuntime" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
                       <Input
                         id="longestRuntime"
                         type="text"
                         placeholder="z.B. 2d 5h 30s"
                         value={formData.longestRuntime}
                         onChange={(e) => setFormData({ ...formData, longestRuntime: e.target.value })}
+                        disabled={!screenshotsSent || !botTypeSent}
                         data-testid="input-longest-runtime"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="avgRuntime">Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Label htmlFor="avgRuntime" className={!screenshotsSent || !botTypeSent ? 'text-muted-foreground' : ''}>Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
                       <Input
                         id="avgRuntime"
                         type="text"
                         placeholder="z.B. 1d 3h 15s"
                         value={formData.avgRuntime}
                         onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
+                        disabled={!screenshotsSent || !botTypeSent}
                         data-testid="input-avg-runtime"
                       />
                     </div>
@@ -1001,11 +1023,11 @@ export default function Upload() {
                     variant="outline"
                     className="flex-1"
                     onClick={handleSendFieldsToAI}
-                    disabled={isAiLoading}
+                    disabled={!screenshotsSent || !botTypeSent || isAiLoading}
                     data-testid="button-send-fields-to-ai"
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    {isAiLoading ? 'Sende...' : 'Send to AI'}
+                    {isAiLoading ? 'Sende...' : 'Einstellungen an AI senden'}
                   </Button>
                   
                   <Button 
