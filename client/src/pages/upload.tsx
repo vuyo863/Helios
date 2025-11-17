@@ -501,7 +501,7 @@ export default function Upload() {
             <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-8">
-                <div>
+                <div className="border border-cyan-500 rounded-lg p-4 bg-white">
                   <Label htmlFor="botName">Bot-Name</Label>
                   <Input
                     id="botName"
@@ -514,7 +514,7 @@ export default function Upload() {
                   />
                 </div>
 
-                <div className="space-y-4">
+                <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Info</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -611,7 +611,7 @@ export default function Upload() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Gesamter Profit / P&L</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -651,7 +651,7 @@ export default function Upload() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Trend P&L</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
@@ -685,7 +685,7 @@ export default function Upload() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Grid Trading</h3>
                   <div className="space-y-4">
                     <div>
