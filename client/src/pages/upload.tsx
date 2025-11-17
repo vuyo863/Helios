@@ -41,6 +41,8 @@ export default function Upload() {
     avgGridProfitHour: '',
     avgGridProfitDay: '',
     avgGridProfitWeek: '',
+    overallTrendPnlUsdt: '',
+    overallTrendPnlPercent: '',
     highestGridProfit: '',
     highestGridProfitPercent: '',
     overallGridProfitUsdt: '',
@@ -75,6 +77,8 @@ export default function Upload() {
         avgGridProfitHour: '',
         avgGridProfitDay: '',
         avgGridProfitWeek: '',
+        overallTrendPnlUsdt: '',
+        overallTrendPnlPercent: '',
         highestGridProfit: '',
         highestGridProfitPercent: '',
         overallGridProfitUsdt: '',
@@ -219,6 +223,8 @@ export default function Upload() {
       avgGridProfitHour: '',
       avgGridProfitDay: '',
       avgGridProfitWeek: '',
+      overallTrendPnlUsdt: '',
+      overallTrendPnlPercent: '',
       highestGridProfit: '',
       highestGridProfitPercent: '',
       overallGridProfitUsdt: '',
@@ -247,6 +253,8 @@ export default function Upload() {
       avgGridProfitHour: 'Grid Profit Durchschnitt (Stunde)',
       avgGridProfitDay: 'Grid Profit Durchschnitt (Tag)',
       avgGridProfitWeek: 'Grid Profit Durchschnitt (Woche)',
+      overallTrendPnlUsdt: 'Gesamter Trend P&L (USDT)',
+      overallTrendPnlPercent: 'Gesamter Trend P&L (%)',
       highestGridProfit: 'Höchster Grid Profit',
       highestGridProfitPercent: 'Höchster Grid Profit (%)',
       overallGridProfitUsdt: 'Gesamter Grid Profit (USDT)',
@@ -333,6 +341,8 @@ export default function Upload() {
       avgGridProfitHour: formData.avgGridProfitHour || null,
       avgGridProfitDay: formData.avgGridProfitDay || null,
       avgGridProfitWeek: formData.avgGridProfitWeek || null,
+      overallTrendPnlUsdt: formData.overallTrendPnlUsdt || null,
+      overallTrendPnlPercent: formData.overallTrendPnlPercent || null,
       highestGridProfit: formData.highestGridProfit || null,
       highestGridProfitPercent: formData.highestGridProfitPercent || null,
       overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
@@ -638,6 +648,40 @@ export default function Upload() {
                       onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
                       data-testid="input-avg-runtime"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label>Gesamter Trend P&L</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                        <Input
+                          id="overallTrendPnlUsdt"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="pl-7"
+                          value={formData.overallTrendPnlUsdt}
+                          onChange={(e) => setFormData({ ...formData, overallTrendPnlUsdt: e.target.value })}
+                          data-testid="input-overall-trend-pnl-usdt"
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                        <Input
+                          id="overallTrendPnlPercent"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="pr-7"
+                          value={formData.overallTrendPnlPercent}
+                          onChange={(e) => setFormData({ ...formData, overallTrendPnlPercent: e.target.value })}
+                          data-testid="input-overall-trend-pnl-percent"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
