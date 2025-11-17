@@ -1,0 +1,39 @@
+Okay, sehr, sehr, sehr gut. Das ist ein guter Resultat. Jetzt ist sie endlich selbst auch verstanden und als sie das eingetippt habe, hat sie auch sogar das drauf antworten können, okay? Sehr gut, weil ich habe eine Variationänderung gemacht, habe dann natürlich auch noch ein Bild hochgestellt, hat sie auch verstanden, sie hat zwei Bilder gesehen, dass es zwei sind und nicht mehrere, das ist auch sehr gut. Die Änderung hat sie gemerkt und gesehen, das ist auch sehr gut. Also, das ist schon mal sehr gut. Das einzige, was wir noch verändern, ist tatsächlich, wäre die Sitzung von damals, glaube ich, ihr letzter Satz. Alles sehr gut, sogar ihre Antworten sind sehr gut, perfekt. Nur, da steht zum Beispiel, wenn sie möchten, kann ich nur mit der Analyse der beiden hochgeladenen Bilder beginnen und die Daten extrahieren. Ja, nein, wir sind noch nicht bei Phase 3, okay? Phase 2 ist mal bei Überprüfung, okay? Das heißt, du darfst nur diesen kleinen Satz ändern, sagen so, okay, Phase 1 ist hiermit abgeschlossen, wenn sie wollen, kann ich jetzt mit Phase 2 beginnen. Der Überprüfung, ob ich auf alle Informationen Zugriff habe, okay? So was. Der Rest ist perfekt, okay? Der Rest ist perfekt.: Update Metrics
+
+Bot Type: Moon Bots
+ID: #8B5CF6
+Version: 5
+
+Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?
+
+Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.
+
+1 Bild wurde zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+Ok, ich sehe Sie wollen noch etwas bearbeiten. Sie können nun Screenshots erneut hochladen oder die Bot Type Informationen ändern. Schicken Sie gerne die aktualisierten Informationen.
+
+1 Bild wurde zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+Ok, ich sehe Sie wollen noch etwas bearbeiten. Sie können nun Screenshots erneut hochladen oder die Bot Type Informationen ändern. Schicken Sie gerne die aktualisierten Informationen.
+
+Update Metrics
+
+Bot Type: Moon Bots
+ID: #8B5CF6
+Version: 6
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+ok wie viel  bilder habe ich hochgeladnen und welche information habe ich gesednet 
+
+Bisher haben Sie **zwei Bilder hochgeladen**. Zusätzlich haben Sie Informationen zu einem Update für den Bot-Typ **Moon Bots** bereitgestellt:
+
+- **Bot Type**: Moon Bots
+- **ID**: #8B5CF6
+- **Version**: 6
+
+Wenn Sie möchten, kann ich nun mit der Analyse der beiden hochgeladenen Bilder beginnen und die Daten extrahieren. Bestätigen Sie einfach, und ich lege los! 😊
