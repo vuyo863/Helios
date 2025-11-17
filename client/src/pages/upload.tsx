@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload as UploadIcon, X, Send, Image as ImageIcon } from "lucide-react";
+import { Upload as UploadIcon, X, Send, Image as ImageIcon, Pencil, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -35,6 +35,8 @@ export default function Upload() {
   const [screenshotsSent, setScreenshotsSent] = useState(false);
   const [botTypeSent, setBotTypeSent] = useState(false);
   const phaseOneComplete = screenshotsSent && botTypeSent;
+  const [editMode, setEditMode] = useState(false);
+  const [waitingForConfirmation, setWaitingForConfirmation] = useState(false);
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -177,12 +179,33 @@ export default function Upload() {
     } else if (source === 'botType' && !screenshotsSent) {
       aiMessage = 'Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?\n\nBitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.';
     } else if ((source === 'screenshots' && botTypeSent) || (source === 'botType' && screenshotsSent)) {
-      aiMessage = 'Perfekt! Phase 1 ist abgeschlossen. Bitte schicken Sie nun die restlichen Einstellungen (Info, Investment, Profit, etc.) über den "Einstellungen an AI senden" Button.';
+      aiMessage = 'Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?';
+      setWaitingForConfirmation(true);
     }
     
     if (aiMessage) {
       setChatMessages(prev => [...prev, { role: 'ai', content: aiMessage }]);
     }
+  };
+
+  const handleEditClick = () => {
+    setEditMode(true);
+    setWaitingForConfirmation(false);
+    setScreenshotsSent(false);
+    setBotTypeSent(false);
+    setChatMessages(prev => [...prev, { 
+      role: 'ai', 
+      content: 'Ok, ich sehe Sie wollen noch etwas bearbeiten. Sie können nun Screenshots erneut hochladen oder die Bot Type Informationen ändern. Schicken Sie gerne die aktualisierten Informationen.'
+    }]);
+  };
+
+  const handleConfirmClick = () => {
+    setWaitingForConfirmation(false);
+    setEditMode(false);
+    setChatMessages(prev => [...prev, { 
+      role: 'ai', 
+      content: 'Ok, ich fange an und überprüfe die Informationsquelle. Bitte schicken Sie nun die restlichen Einstellungen (Info, Investment, Profit, etc.) über den "Einstellungen an AI senden" Button.'
+    }]);
   };
 
   const handleChatSend = async () => {
@@ -436,8 +459,9 @@ export default function Upload() {
                 )}
               </ScrollArea>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Input
+                  className="flex-1"
                   placeholder="Nachricht an AI..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
@@ -450,14 +474,39 @@ export default function Upload() {
                   disabled={isAiLoading}
                   data-testid="input-chat"
                 />
-                <Button 
-                  onClick={handleChatSend}
-                  size="icon"
-                  disabled={isAiLoading || !chatInput.trim()}
-                  data-testid="button-send-chat"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+                
+                {waitingForConfirmation && (
+                  <>
+                    <Button 
+                      size="icon"
+                      variant="outline"
+                      onClick={handleEditClick}
+                      data-testid="button-edit"
+                      title="Bearbeiten"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="icon"
+                      onClick={handleConfirmClick}
+                      data-testid="button-confirm"
+                      title="Bestätigen"
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+                
+                {!waitingForConfirmation && (
+                  <Button 
+                    onClick={handleChatSend}
+                    size="icon"
+                    disabled={isAiLoading || !chatInput.trim()}
+                    data-testid="button-send-chat"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </Card>
 
@@ -600,8 +649,8 @@ export default function Upload() {
                         type="text"
                         placeholder="z.B. Grid Bot"
                         value={formData.botType}
-                        readOnly
-                        className="bg-muted/50"
+                        readOnly={!editMode}
+                        className={editMode ? '' : 'bg-muted/50'}
                         data-testid="input-bot-type"
                       />
                     </div>
@@ -625,6 +674,8 @@ export default function Upload() {
                         placeholder="z.B. v1.0"
                         value={formData.version}
                         onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                        readOnly={!editMode}
+                        className={editMode ? '' : 'bg-muted/50'}
                         data-testid="input-version"
                       />
                     </div>
