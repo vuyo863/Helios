@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BotType } from "@shared/schema";
-import { Layers, Calendar } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -33,11 +34,21 @@ export default function BotTypesPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">Bot Types</h1>
-          <p className="text-muted-foreground text-lg">
-            Verwalten Sie Ihre Bot-Kategorien und Strategien
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">Bot Types</h1>
+            <p className="text-muted-foreground text-lg">
+              Verwalten Sie Ihre Bot-Kategorien und Strategien
+            </p>
+          </div>
+          <Button 
+            variant="default" 
+            className="gap-2"
+            data-testid="button-create-bot-type"
+          >
+            <Plus className="w-4 h-4" />
+            Create Bot Type
+          </Button>
         </div>
 
         {botTypes.length === 0 ? (
@@ -84,11 +95,11 @@ export default function BotTypesPage() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      Erstellt: {format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de })}
+                      Last Updated: {format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de })}
                     </span>
                   </div>
-                  {botType.color && (
-                    <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t">
+                    {botType.color && (
                       <Badge 
                         variant="outline" 
                         style={{ 
@@ -100,8 +111,26 @@ export default function BotTypesPage() {
                       >
                         {botType.color}
                       </Badge>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        className="w-8 h-8"
+                        data-testid={`button-edit-${botType.id}`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        className="w-8 h-8"
+                        data-testid={`button-view-${botType.id}`}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
