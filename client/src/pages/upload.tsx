@@ -26,6 +26,7 @@ export default function Upload() {
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
   const [chatInput, setChatInput] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
@@ -95,7 +96,19 @@ export default function Upload() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSendToAI = () => {
+  const convertFilesToBase64 = async (files: File[]): Promise<string[]> => {
+    const promises = files.map(file => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+    return Promise.all(promises);
+  };
+
+  const handleSendToAI = async () => {
     if (selectedFiles.length === 0) {
       toast({
         title: "Keine Dateien",
@@ -108,29 +121,81 @@ export default function Upload() {
     const fileCount = selectedFiles.length;
     const fileText = fileCount === 1 ? 'Bild wurde' : 'Bilder wurden';
     
-    setChatMessages(prev => [
-      ...prev,
-      { 
-        role: 'ai', 
-        content: `✓ ${fileCount} ${fileText} zur AI geschickt und werden analysiert. Die AI-Integration wird bald verfügbar sein. Bitte geben Sie vorerst die Daten manuell in den Feldern unten ein.` 
-      }
-    ]);
+    setIsAiLoading(true);
+    
+    try {
+      const base64Images = await convertFilesToBase64(selectedFiles);
+      
+      const userMessage = `Bitte analysiere ${fileCount === 1 ? 'diesen Screenshot' : 'diese Screenshots'} und extrahiere die Bot-Performance-Daten.`;
+      
+      setChatMessages(prev => [...prev, { role: 'user', content: `${fileCount} ${fileText} zur Analyse hochgeladen` }]);
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...chatMessages, { role: 'user', content: userMessage }],
+          images: base64Images,
+        }),
+      });
 
-    toast({
-      title: "Erfolgreich gesendet",
-      description: `${fileCount} ${fileText} zur AI-Analyse geschickt.`,
-    });
+      if (!response.ok) {
+        throw new Error('AI-Analyse fehlgeschlagen');
+      }
+
+      const data = await response.json();
+      
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      
+      toast({
+        title: "Erfolgreich analysiert",
+        description: `${fileCount} ${fileText} analysiert.`,
+      });
+    } catch (error) {
+      console.error('AI error:', error);
+      toast({
+        title: "Fehler",
+        description: "Die AI-Analyse ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
-  const handleChatSend = () => {
+  const handleChatSend = async () => {
     if (!chatInput.trim()) return;
     
-    setChatMessages(prev => [
-      ...prev,
-      { role: 'user', content: chatInput },
-      { role: 'ai', content: 'AI-Chat wird in Zukunft verfügbar sein.' }
-    ]);
+    const userMessage = chatInput;
     setChatInput("");
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsAiLoading(true);
+    
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...chatMessages, { role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI-Chat fehlgeschlagen');
+      }
+
+      const data = await response.json();
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+    } catch (error) {
+      console.error('AI chat error:', error);
+      toast({
+        title: "Fehler",
+        description: "Der AI-Chat ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const handleEditBotType = (botType: BotType) => {
@@ -222,9 +287,14 @@ export default function Upload() {
                         )}
                         data-testid={`chat-message-${index}`}
                       >
-                        <p className="text-sm">{msg.content}</p>
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     ))}
+                    {isAiLoading && (
+                      <div className="bg-muted p-3 rounded-lg mr-8">
+                        <p className="text-sm text-muted-foreground">AI antwortet...</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </ScrollArea>
@@ -240,11 +310,13 @@ export default function Upload() {
                       handleChatSend();
                     }
                   }}
+                  disabled={isAiLoading}
                   data-testid="input-chat"
                 />
                 <Button 
                   onClick={handleChatSend}
                   size="icon"
+                  disabled={isAiLoading || !chatInput.trim()}
                   data-testid="button-send-chat"
                 >
                   <Send className="w-4 h-4" />
@@ -313,11 +385,11 @@ export default function Upload() {
               <Button 
                 onClick={handleSendToAI}
                 className="w-full"
-                disabled={selectedFiles.length === 0}
+                disabled={selectedFiles.length === 0 || isAiLoading}
                 data-testid="button-send-to-ai"
               >
                 <Send className="w-4 h-4 mr-2" />
-                An AI senden
+                {isAiLoading ? 'Analysiere...' : 'An AI senden'}
               </Button>
             </Card>
           </div>
