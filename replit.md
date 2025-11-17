@@ -86,6 +86,17 @@ Preferred communication style: Simple, everyday language.
    - profit (numeric with precision 12, scale 2)
    - profitPercent (numeric with precision 8, scale 2)
    - periodType (text: 'Tag', 'Woche', 'Monat')
+   - avgGridProfitHour (optional numeric - average grid profit per hour)
+   - avgGridProfitDay (optional numeric - average grid profit per day)
+   - avgGridProfitWeek (optional numeric - average grid profit per week)
+   - overallGridProfitUsdt (optional numeric - overall grid profit in USDT)
+   - overallGridProfitPercent (optional numeric - overall grid profit percentage)
+   - highestGridProfit (optional numeric - highest grid profit in USDT)
+   - highestGridProfitPercent (optional numeric - highest grid profit percentage)
+   - longestRuntime (optional text - longest runtime in format "Xd Xh Xs")
+   - avgRuntime (optional text - average runtime in format "Xd Xh Xs")
+   - extraMargin (optional numeric - extra margin)
+   - leverage (optional numeric - leverage)
    - notes (optional text)
    - screenshotPath (optional text for file storage reference)
 
@@ -129,6 +140,14 @@ Preferred communication style: Simple, everyday language.
   - When bot type is deleted, related entries retain data but botTypeId is set to null (data integrity)
   - Mock data includes 3 predefined bot types: Grid Trading Bots (blue), Futures Bots (green), Moon Bots (purple)
 - **Upload Form Streamlined**: Notes field removed from bot entry upload form for cleaner data entry experience
+- **Grid Profit Metrics Enhancement** (November 17, 2025):
+  - "Grid Profit Durchschnitt" restructured from single field to three time-based metrics:
+    - avgGridProfitHour (per hour)
+    - avgGridProfitDay (per day)
+    - avgGridProfitWeek (per week)
+  - UI displays three compact input fields side-by-side with labels "Stunde", "Tag", "Woche"
+  - All three metrics available in ProfitBarChartAdvanced for multi-timeframe analysis
+  - Backend mock data updated with realistic hourly/daily/weekly values across 6 entries
 
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)
