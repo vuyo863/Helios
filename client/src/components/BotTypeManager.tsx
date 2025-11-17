@@ -187,62 +187,8 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
                   Keine Bot-Typen gefunden für "{searchQuery}"
                 </p>
               </div>
-            ) : filteredBotTypes.length + 1 <= 5 ? (
-              <div className="grid grid-cols-1 gap-3">
-                <Button
-                  variant={selectedBotTypeId === null ? 'default' : 'outline'}
-                  className="justify-start h-auto py-3 px-4"
-                  onClick={() => onSelectBotType(null)}
-                  data-testid="button-select-no-type"
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-4 h-4 rounded-full bg-gray-400" />
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">Kein Bot-Typ</div>
-                      <div className="text-xs text-muted-foreground">Ohne Kategorisierung</div>
-                    </div>
-                    {selectedBotTypeId === null && <Check className="w-4 h-4" />}
-                  </div>
-                </Button>
-                
-                {filteredBotTypes.map((botType) => (
-                  <div key={botType.id} className="relative">
-                    <Button
-                      variant={selectedBotTypeId === botType.id ? 'default' : 'outline'}
-                      className="justify-start h-auto py-3 px-4 w-full"
-                      onClick={() => onSelectBotType(botType.id)}
-                      data-testid={`button-select-bot-type-${botType.id}`}
-                    >
-                      <div className="flex items-center gap-3 w-full pr-12">
-                        <div
-                          className="w-4 h-4 rounded-full shrink-0"
-                          style={{ backgroundColor: botType.color || '#3B82F6' }}
-                        />
-                        <div className="flex-1 text-left min-w-0">
-                          <div className="font-medium truncate">{botType.name}</div>
-                          {botType.description && (
-                            <div className="text-xs text-muted-foreground line-clamp-1">{botType.description}</div>
-                          )}
-                        </div>
-                        {selectedBotTypeId === botType.id && <Check className="w-4 h-4 shrink-0" />}
-                      </div>
-                    </Button>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => handleUpdateClick(botType, e)}
-                        data-testid={`button-update-bot-type-${botType.id}`}
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             ) : (
-              <ScrollArea className="h-[380px]">
+              <ScrollArea className="h-[280px]">
                 <div className="grid grid-cols-1 gap-3 pr-4">
                   <Button
                     variant={selectedBotTypeId === null ? 'default' : 'outline'}
