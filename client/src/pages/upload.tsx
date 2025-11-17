@@ -238,7 +238,7 @@ export default function Upload() {
       avgGridProfit: 'Grid Profit Durchschnitt',
       highestGridProfit: 'Höchster Grid Profit',
       highestGridProfitPercent: 'Höchster Grid Profit (%)',
-      overallAvgGridProfit: 'Durchschnittlicher Grid Profit (gesamt)',
+      overallAvgGridProfit: 'Gesamter Grid Profit (gesamt, USDT)',
       leverage: 'Hebel',
     };
 
@@ -639,7 +639,7 @@ export default function Upload() {
                   </div>
 
                   <div>
-                    <Label htmlFor="overallAvgGridProfit">Durchschnittlicher Grid Profit (gesamt, USDT)</Label>
+                    <Label htmlFor="overallAvgGridProfit">Gesamter Grid Profit (gesamt, USDT)</Label>
                     <Input
                       id="overallAvgGridProfit"
                       type="number"
