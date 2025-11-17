@@ -79,9 +79,10 @@ export default function Upload() {
       });
       
       if (variables.botTypeId && variables.version) {
+        const modeText = outputMode === 'update-metrics' ? 'Update Metrics' : 'Closed Bots';
         setChatMessages(prev => [...prev, {
-          role: 'ai',
-          content: `Update gespeichert!\n\nBot Type: ${variables.botType}\nID: ${selectedBotTypeColor}\nVersion: ${variables.version}\n\nDie Metriken wurden erfolgreich aktualisiert.`
+          role: 'user',
+          content: `${modeText}\n\nBot Type: ${variables.botType}\nID: ${selectedBotTypeColor}\nVersion: ${variables.version}`
         }]);
       }
       
