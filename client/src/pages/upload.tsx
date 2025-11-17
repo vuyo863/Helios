@@ -26,6 +26,7 @@ export default function Upload() {
   const { toast } = useToast();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
+  const [selectedBotTypeColor, setSelectedBotTypeColor] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
   const [chatInput, setChatInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -75,7 +76,7 @@ export default function Upload() {
       if (variables.botTypeId && variables.version) {
         setChatMessages(prev => [...prev, {
           role: 'ai',
-          content: `Update gespeichert!\n\nBot Type ID: ${variables.botTypeId}\nVersion: ${variables.version}\n\nDie Metriken wurden erfolgreich aktualisiert.`
+          content: `Update gespeichert!\n\nBot Type ID: ${selectedBotTypeColor}\nVersion: ${variables.version}\n\nDie Metriken wurden erfolgreich aktualisiert.`
         }]);
       }
       
@@ -262,6 +263,7 @@ export default function Upload() {
       botType: botType.name,
     }));
     setSelectedBotTypeId(botType.id);
+    setSelectedBotTypeColor(botType.color || '');
   };
 
   const handleSendFieldsToAI = async () => {
@@ -583,7 +585,7 @@ export default function Upload() {
                         id="botTypeId"
                         type="text"
                         placeholder="Bot Type ID"
-                        value={selectedBotTypeId || ''}
+                        value={selectedBotTypeColor || ''}
                         readOnly
                         className="bg-muted/50"
                         data-testid="input-bot-type-id"
