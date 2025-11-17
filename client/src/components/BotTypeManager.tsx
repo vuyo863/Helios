@@ -46,7 +46,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    const urlParams = new URLSearchParams(window.location.search);
     const createBotType = urlParams.get('createBotType') === 'true';
     if (createBotType) {
       setActiveTab("create");
