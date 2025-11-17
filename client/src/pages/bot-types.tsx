@@ -12,6 +12,7 @@ import { de } from "date-fns/locale";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function BotTypesPage() {
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
@@ -99,14 +100,16 @@ export default function BotTypesPage() {
               Verwalten Sie Ihre Bot-Kategorien und Strategien
             </p>
           </div>
-          <Button 
-            variant="default" 
-            className="gap-2"
-            data-testid="button-create-bot-type"
-          >
-            <Plus className="w-4 h-4" />
-            Create Bot Type
-          </Button>
+          <Link href="/upload?createBotType=true">
+            <Button 
+              variant="default" 
+              className="gap-2"
+              data-testid="button-create-bot-type"
+            >
+              <Plus className="w-4 h-4" />
+              Create Bot Type
+            </Button>
+          </Link>
         </div>
 
         {botTypes.length === 0 ? (

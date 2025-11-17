@@ -27,9 +27,10 @@ interface BotTypeManagerProps {
   selectedBotTypeId: string | null;
   onSelectBotType: (botTypeId: string | null) => void;
   onEditBotType?: (botType: BotType) => void;
+  initialTab?: "existing" | "create";
 }
 
-export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType }: BotTypeManagerProps) {
+export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType, initialTab = "existing" }: BotTypeManagerProps) {
   const { toast } = useToast();
   const [newBotType, setNewBotType] = useState({
     name: '',
@@ -40,7 +41,7 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("existing");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
@@ -175,9 +176,15 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
     { name: 'Pink', value: '#EC4899' },
   ];
 
+  const handleTabChange = (value: string) => {
+    if (value === "existing" || value === "create") {
+      setActiveTab(value);
+    }
+  };
+
   return (
     <Card className="p-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="existing" data-testid="tab-existing-bots">Bestehende Bots</TabsTrigger>
           <TabsTrigger value="create" data-testid="tab-create-bot-type">Create Bot Type</TabsTrigger>
