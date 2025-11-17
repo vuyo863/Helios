@@ -7,7 +7,7 @@ export default function Navbar() {
 
   const navItems = [
     { path: '/', label: 'Übersicht', icon: BarChart3 },
-    { path: '/upload', label: 'Screenshots hochladen', icon: Upload },
+    { path: '/upload', label: 'AI Analyse', icon: Upload },
     { path: '/reports', label: 'Berichte', icon: FileText },
   ];
 

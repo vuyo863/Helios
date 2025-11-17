@@ -31,6 +31,7 @@ export default function Upload() {
     botName: '',
     botDirection: 'Long',
     investment: '',
+    extraMargin: '',
     profit: '',
     profitPercent: '',
     periodType: 'Tag',
@@ -61,6 +62,7 @@ export default function Upload() {
         botName: '',
         botDirection: 'Long',
         investment: '',
+        extraMargin: '',
         profit: '',
         profitPercent: '',
         periodType: 'Tag',
@@ -127,6 +129,7 @@ export default function Upload() {
       botName: botType.name,
       botDirection: 'Long',
       investment: '',
+      extraMargin: '',
       profit: '',
       profitPercent: '',
       periodType: 'Tag',
@@ -159,6 +162,7 @@ export default function Upload() {
     uploadMutation.mutate({
       ...formData,
       botTypeId: selectedBotTypeId,
+      extraMargin: formData.extraMargin || null,
       longestRuntime: formData.longestRuntime || null,
       avgRuntime: formData.avgRuntime || null,
       avgGridProfit: formData.avgGridProfit || null,
@@ -372,6 +376,21 @@ export default function Upload() {
                   </div>
 
                   <div>
+                    <Label htmlFor="extraMargin">Extra Margin</Label>
+                    <Input
+                      id="extraMargin"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.extraMargin}
+                      onChange={(e) => setFormData({ ...formData, extraMargin: e.target.value })}
+                      data-testid="input-extra-margin"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
                     <Label htmlFor="leverage">Hebel</Label>
                     <Input
                       id="leverage"
@@ -423,12 +442,11 @@ export default function Upload() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="longestRuntime">Längste Laufzeit (Stunden)</Label>
+                    <Label htmlFor="longestRuntime">Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
                     <Input
                       id="longestRuntime"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
+                      type="text"
+                      placeholder="z.B. 2d 5h 30s"
                       value={formData.longestRuntime}
                       onChange={(e) => setFormData({ ...formData, longestRuntime: e.target.value })}
                       data-testid="input-longest-runtime"
@@ -436,12 +454,11 @@ export default function Upload() {
                   </div>
 
                   <div>
-                    <Label htmlFor="avgRuntime">Durchschnittliche Laufzeit (Stunden)</Label>
+                    <Label htmlFor="avgRuntime">Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
                     <Input
                       id="avgRuntime"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
+                      type="text"
+                      placeholder="z.B. 1d 3h 15s"
                       value={formData.avgRuntime}
                       onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
                       data-testid="input-avg-runtime"
@@ -503,24 +520,6 @@ export default function Upload() {
                       data-testid="input-highest-grid-profit-percent"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="periodType">Zeitraum-Typ</Label>
-                  <Select
-                    value={formData.periodType}
-                    onValueChange={(value) => setFormData({ ...formData, periodType: value })}
-                    required
-                  >
-                    <SelectTrigger id="periodType" data-testid="select-period-type">
-                      <SelectValue placeholder="Wählen Sie einen Zeitraum" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Tag" data-testid="option-tag">Tag</SelectItem>
-                      <SelectItem value="Woche" data-testid="option-woche">Woche</SelectItem>
-                      <SelectItem value="Monat" data-testid="option-monat">Monat</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <Button 
