@@ -293,12 +293,7 @@ export default function BotTypesPage() {
                       <div className="flex items-center gap-2">
                         {botType.color && (
                           <Badge 
-                            variant="outline" 
-                            style={{ 
-                              backgroundColor: `${botType.color}20`, 
-                              borderColor: botType.color,
-                              color: botType.color
-                            }}
+                            variant="secondary"
                             data-testid={`badge-color-${botType.id}`}
                           >
                             {botType.color}
