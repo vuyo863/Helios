@@ -5,14 +5,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { BotType } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+
+interface BotTypeUpdate {
+  id: string;
+  updateName: string;
+  updateDate: string;
+  updateTime: string;
+}
+
+const mockUpdatesData: Record<string, BotTypeUpdate[]> = {
+  "1": [
+    {
+      id: "u1",
+      updateName: "Q4 Performance Update",
+      updateDate: "15.11.2025",
+      updateTime: "14:30"
+    },
+    {
+      id: "u2",
+      updateName: "Strategie Anpassung",
+      updateDate: "10.11.2025",
+      updateTime: "09:15"
+    },
+    {
+      id: "u3",
+      updateName: "Initiale Metriken",
+      updateDate: "05.11.2025",
+      updateTime: "16:45"
+    }
+  ],
+};
 
 export default function BotTypesPage() {
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
@@ -24,6 +56,8 @@ export default function BotTypesPage() {
     name: '',
     description: ''
   });
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedBotType, setSelectedBotType] = useState<BotType | null>(null);
 
   const { toast } = useToast();
 
@@ -70,6 +104,15 @@ export default function BotTypesPage() {
   const handleCancel = () => {
     setEditingBotTypeId(null);
     setEditedValues({ name: '', description: '' });
+  };
+
+  const handleViewClick = (botType: BotType) => {
+    setSelectedBotType(botType);
+    setViewDialogOpen(true);
+  };
+
+  const getUpdatesForBotType = (botTypeId: string): BotTypeUpdate[] => {
+    return mockUpdatesData[botTypeId] || [];
   };
 
   if (isLoading) {
@@ -243,6 +286,7 @@ export default function BotTypesPage() {
                             size="icon" 
                             variant="ghost"
                             className="w-8 h-8"
+                            onClick={() => handleViewClick(botType)}
                             data-testid={`button-view-${botType.id}`}
                           >
                             <Eye className="w-4 h-4" />
@@ -256,6 +300,100 @@ export default function BotTypesPage() {
             })}
           </div>
         )}
+
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-2xl">
+                <Layers className="w-6 h-6 text-primary" />
+                {selectedBotType?.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedBotType && (
+              <div className="space-y-4">
+                {getUpdatesForBotType(selectedBotType.id).length === 0 ? (
+                  <div className="py-12 text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                      <TrendingUp className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Noch keine Metriken</h3>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Starten Sie die Metrik-Erfassung für diesen Bot-Typ
+                      </p>
+                      <Link href={`/upload?botTypeId=${selectedBotType.id}`}>
+                        <Button 
+                          variant="default" 
+                          className="bg-green-600 hover:bg-green-700 gap-2"
+                          data-testid="button-start-metrics"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Start Metrics
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Last Updated</p>
+                        <p className="font-semibold">
+                          {getUpdatesForBotType(selectedBotType.id)[0]?.updateDate} {getUpdatesForBotType(selectedBotType.id)[0]?.updateTime}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
+                        <p className="font-semibold">
+                          {getUpdatesForBotType(selectedBotType.id)[getUpdatesForBotType(selectedBotType.id).length - 1]?.updateDate} {getUpdatesForBotType(selectedBotType.id)[getUpdatesForBotType(selectedBotType.id).length - 1]?.updateTime}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-muted-foreground mb-3">Update Verlauf</h4>
+                      {getUpdatesForBotType(selectedBotType.id).map((update) => (
+                        <Card 
+                          key={update.id} 
+                          className="hover-elevate active-elevate-2 transition-all"
+                          data-testid={`card-update-${update.id}`}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <p className="font-semibold text-sm mb-1">{update.updateName}</p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {update.updateDate}
+                                  </span>
+                                  <span>{update.updateTime}</span>
+                                </div>
+                              </div>
+                              <Link href="/reports">
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost"
+                                  className="w-8 h-8 flex-shrink-0"
+                                  data-testid={`button-view-report-${update.id}`}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
