@@ -50,6 +50,10 @@ export default function Upload() {
     leverage: '',
   });
 
+  const [infoTimeRange, setInfoTimeRange] = useState("Insgesamt");
+  const [profitTimeRange, setProfitTimeRange] = useState("Insgesamt");
+  const [trendTimeRange, setTrendTimeRange] = useState("Insgesamt");
+  const [gridTimeRange, setGridTimeRange] = useState("Insgesamt");
 
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
@@ -515,7 +519,19 @@ export default function Upload() {
                 </div>
 
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
-                  <h3 className="text-base font-semibold text-foreground">Info</h3>
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-base font-semibold text-foreground">Info</h3>
+                    <Select value={infoTimeRange} onValueChange={setInfoTimeRange}>
+                      <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-info-timerange">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
+                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Startwerte">Startwerte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="date">Datum</Label>
@@ -612,7 +628,19 @@ export default function Upload() {
                 </div>
 
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
-                  <h3 className="text-base font-semibold text-foreground">Gesamter Profit / P&L</h3>
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-base font-semibold text-foreground">Gesamter Profit / P&L</h3>
+                    <Select value={profitTimeRange} onValueChange={setProfitTimeRange}>
+                      <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-profit-timerange">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
+                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Startwerte">Startwerte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="profit">Gesamtprofit (USDT)</Label>
@@ -652,7 +680,19 @@ export default function Upload() {
                 </div>
 
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
-                  <h3 className="text-base font-semibold text-foreground">Trend P&L</h3>
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-base font-semibold text-foreground">Trend P&L</h3>
+                    <Select value={trendTimeRange} onValueChange={setTrendTimeRange}>
+                      <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-trend-timerange">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
+                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Startwerte">Startwerte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                       <Label htmlFor="overallTrendPnlUsdt">Trend P&L (USDT)</Label>
@@ -686,7 +726,19 @@ export default function Upload() {
                 </div>
 
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
-                  <h3 className="text-base font-semibold text-foreground">Grid Trading</h3>
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-base font-semibold text-foreground">Grid Trading</h3>
+                    <Select value={gridTimeRange} onValueChange={setGridTimeRange}>
+                      <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-grid-timerange">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
+                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Startwerte">Startwerte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-4">
                     <div>
                       <Label>Grid Profit Durchschnitt</Label>
