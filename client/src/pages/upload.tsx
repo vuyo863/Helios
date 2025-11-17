@@ -23,8 +23,6 @@ import { useLocation } from "wouter";
 
 export default function Upload() {
   const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const createBotType = urlParams.get('createBotType') === 'true';
   const { toast } = useToast();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
@@ -383,7 +381,6 @@ export default function Upload() {
             selectedBotTypeId={selectedBotTypeId}
             onSelectBotType={setSelectedBotTypeId}
             onEditBotType={handleEditBotType}
-            initialTab={createBotType ? "create" : "existing"}
           />
 
           <div className="space-y-6">

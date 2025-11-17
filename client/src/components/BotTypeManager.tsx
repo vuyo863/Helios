@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,15 +22,16 @@ import { BotType } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Trash2, Edit, Search } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface BotTypeManagerProps {
   selectedBotTypeId: string | null;
   onSelectBotType: (botTypeId: string | null) => void;
   onEditBotType?: (botType: BotType) => void;
-  initialTab?: "existing" | "create";
 }
 
-export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType, initialTab = "existing" }: BotTypeManagerProps) {
+export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onEditBotType }: BotTypeManagerProps) {
+  const [location] = useLocation();
   const { toast } = useToast();
   const [newBotType, setNewBotType] = useState({
     name: '',
@@ -41,8 +42,16 @@ export default function BotTypeManager({ selectedBotTypeId, onSelectBotType, onE
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState<"existing" | "create">("existing");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    const createBotType = urlParams.get('createBotType') === 'true';
+    if (createBotType) {
+      setActiveTab("create");
+    }
+  }, [location]);
 
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
