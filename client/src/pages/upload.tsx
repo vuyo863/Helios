@@ -500,7 +500,7 @@ export default function Upload() {
           <Card className="p-8">
             <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
             <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
                   <Label htmlFor="botName">Bot-Name</Label>
                   <Input
@@ -514,225 +514,226 @@ export default function Upload() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="date">Datum</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      required
-                      data-testid="input-date"
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-foreground">Info</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="date">Datum</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        required
+                        data-testid="input-date"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="botDirection">Bot-Richtung</Label>
-                    <Select
-                      value={formData.botDirection}
-                      onValueChange={(value) => setFormData({ ...formData, botDirection: value })}
-                      required
-                    >
-                      <SelectTrigger id="botDirection" data-testid="select-bot-direction">
-                        <SelectValue placeholder="Short oder Long" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Long" data-testid="option-long">Long</SelectItem>
-                        <SelectItem value="Short" data-testid="option-short">Short</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    <div>
+                      <Label htmlFor="botDirection">Bot-Richtung</Label>
+                      <Select
+                        value={formData.botDirection}
+                        onValueChange={(value) => setFormData({ ...formData, botDirection: value })}
+                        required
+                      >
+                        <SelectTrigger id="botDirection" data-testid="select-bot-direction">
+                          <SelectValue placeholder="Short oder Long" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Long" data-testid="option-long">Long</SelectItem>
+                          <SelectItem value="Short" data-testid="option-short">Short</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="investment">Investitionsmenge (USDT)</Label>
-                    <Input
-                      id="investment"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.investment}
-                      onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
-                      required
-                      data-testid="input-investment"
-                    />
-                  </div>
+                    <div>
+                      <Label htmlFor="investment">Investitionsmenge (USDT)</Label>
+                      <Input
+                        id="investment"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.investment}
+                        onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
+                        required
+                        data-testid="input-investment"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="extraMargin">Extra Margin</Label>
-                    <Input
-                      id="extraMargin"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.extraMargin}
-                      onChange={(e) => setFormData({ ...formData, extraMargin: e.target.value })}
-                      data-testid="input-extra-margin"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <Label htmlFor="extraMargin">Extra Margin</Label>
+                      <Input
+                        id="extraMargin"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.extraMargin}
+                        onChange={(e) => setFormData({ ...formData, extraMargin: e.target.value })}
+                        data-testid="input-extra-margin"
+                      />
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="leverage">Hebel</Label>
-                    <Input
-                      id="leverage"
-                      type="text"
-                      placeholder="z.B. 1x, 5x, 10x"
-                      value={formData.leverage}
-                      onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
-                      data-testid="input-leverage"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <Label htmlFor="leverage">Hebel</Label>
+                      <Input
+                        id="leverage"
+                        type="text"
+                        placeholder="z.B. 1x, 5x, 10x"
+                        value={formData.leverage}
+                        onChange={(e) => setFormData({ ...formData, leverage: e.target.value })}
+                        data-testid="input-leverage"
+                      />
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="profit">Gesamtprofit (USDT)</Label>
-                    <Input
-                      id="profit"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.profit}
-                      onChange={(e) => {
-                        const profitValue = e.target.value;
-                        setFormData({ ...formData, profit: profitValue });
-                        
-                        if (profitValue && formData.investment) {
-                          const profitPercent = (parseFloat(profitValue) / parseFloat(formData.investment)) * 100;
-                          setFormData(prev => ({ ...prev, profitPercent: profitPercent.toFixed(2) }));
-                        }
-                      }}
-                      required
-                      data-testid="input-profit"
-                    />
-                  </div>
+                    <div>
+                      <Label htmlFor="longestRuntime">Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Input
+                        id="longestRuntime"
+                        type="text"
+                        placeholder="z.B. 2d 5h 30s"
+                        value={formData.longestRuntime}
+                        onChange={(e) => setFormData({ ...formData, longestRuntime: e.target.value })}
+                        data-testid="input-longest-runtime"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
-                    <Input
-                      id="profitPercent"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.profitPercent}
-                      onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
-                      data-testid="input-profit-percent"
-                    />
+                    <div>
+                      <Label htmlFor="avgRuntime">Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Input
+                        id="avgRuntime"
+                        type="text"
+                        placeholder="z.B. 1d 3h 15s"
+                        value={formData.avgRuntime}
+                        onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
+                        data-testid="input-avg-runtime"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="longestRuntime">Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
-                    <Input
-                      id="longestRuntime"
-                      type="text"
-                      placeholder="z.B. 2d 5h 30s"
-                      value={formData.longestRuntime}
-                      onChange={(e) => setFormData({ ...formData, longestRuntime: e.target.value })}
-                      data-testid="input-longest-runtime"
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-foreground">Gesamter Profit / P&L</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="profit">Gesamtprofit (USDT)</Label>
+                      <Input
+                        id="profit"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.profit}
+                        onChange={(e) => {
+                          const profitValue = e.target.value;
+                          setFormData({ ...formData, profit: profitValue });
+                          
+                          if (profitValue && formData.investment) {
+                            const profitPercent = (parseFloat(profitValue) / parseFloat(formData.investment)) * 100;
+                            setFormData(prev => ({ ...prev, profitPercent: profitPercent.toFixed(2) }));
+                          }
+                        }}
+                        required
+                        data-testid="input-profit"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="avgRuntime">Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
-                    <Input
-                      id="avgRuntime"
-                      type="text"
-                      placeholder="z.B. 1d 3h 15s"
-                      value={formData.avgRuntime}
-                      onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
-                      data-testid="input-avg-runtime"
-                    />
+                    <div>
+                      <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
+                      <Input
+                        id="profitPercent"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.profitPercent}
+                        onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
+                        data-testid="input-profit-percent"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label>Gesamter Trend P&L</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-                        <Input
-                          id="overallTrendPnlUsdt"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          className="pl-7"
-                          value={formData.overallTrendPnlUsdt}
-                          onChange={(e) => setFormData({ ...formData, overallTrendPnlUsdt: e.target.value })}
-                          data-testid="input-overall-trend-pnl-usdt"
-                        />
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-foreground">Trend P&L</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative">
+                      <Label htmlFor="overallTrendPnlUsdt">Trend P&L (USDT)</Label>
+                      <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground">$</span>
+                      <Input
+                        id="overallTrendPnlUsdt"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="pl-7"
+                        value={formData.overallTrendPnlUsdt}
+                        onChange={(e) => setFormData({ ...formData, overallTrendPnlUsdt: e.target.value })}
+                        data-testid="input-overall-trend-pnl-usdt"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Label htmlFor="overallTrendPnlPercent">Trend P&L (%)</Label>
+                      <span className="absolute right-3 bottom-2.5 text-sm text-muted-foreground">%</span>
+                      <Input
+                        id="overallTrendPnlPercent"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className="pr-7"
+                        value={formData.overallTrendPnlPercent}
+                        onChange={(e) => setFormData({ ...formData, overallTrendPnlPercent: e.target.value })}
+                        data-testid="input-overall-trend-pnl-percent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-foreground">Grid Trading</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Grid Profit Durchschnitt</Label>
+                      <div className="grid grid-cols-3 gap-3 mt-2">
+                        <div>
+                          <Label htmlFor="avgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
+                          <Input
+                            id="avgGridProfitHour"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={formData.avgGridProfitHour}
+                            onChange={(e) => setFormData({ ...formData, avgGridProfitHour: e.target.value })}
+                            data-testid="input-avg-grid-profit-hour"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="avgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
+                          <Input
+                            id="avgGridProfitDay"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={formData.avgGridProfitDay}
+                            onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
+                            data-testid="input-avg-grid-profit-day"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="avgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
+                          <Input
+                            id="avgGridProfitWeek"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={formData.avgGridProfitWeek}
+                            onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
+                            data-testid="input-avg-grid-profit-week"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                        <Input
-                          id="overallTrendPnlPercent"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          className="pr-7"
-                          value={formData.overallTrendPnlPercent}
-                          onChange={(e) => setFormData({ ...formData, overallTrendPnlPercent: e.target.value })}
-                          data-testid="input-overall-trend-pnl-percent"
-                        />
-                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div>
-                  <Label>Grid Profit Durchschnitt</Label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <Label htmlFor="avgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
-                      <Input
-                        id="avgGridProfitHour"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.avgGridProfitHour}
-                        onChange={(e) => setFormData({ ...formData, avgGridProfitHour: e.target.value })}
-                        data-testid="input-avg-grid-profit-hour"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="avgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
-                      <Input
-                        id="avgGridProfitDay"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.avgGridProfitDay}
-                        onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
-                        data-testid="input-avg-grid-profit-day"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="avgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
-                      <Input
-                        id="avgGridProfitWeek"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.avgGridProfitWeek}
-                        onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
-                        data-testid="input-avg-grid-profit-week"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label>Gesamter Grid Profit</Label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                        <Label htmlFor="overallGridProfitUsdt">Gesamter Grid Profit (USDT)</Label>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground">$</span>
                         <Input
                           id="overallGridProfitUsdt"
                           type="number"
@@ -745,7 +746,8 @@ export default function Upload() {
                         />
                       </div>
                       <div className="relative">
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                        <Label htmlFor="overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
+                        <span className="absolute right-3 bottom-2.5 text-sm text-muted-foreground">%</span>
                         <Input
                           id="overallGridProfitPercent"
                           type="number"
@@ -758,34 +760,34 @@ export default function Upload() {
                         />
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="highestGridProfit">Höchster Grid Profit (USDT)</Label>
-                    <Input
-                      id="highestGridProfit"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.highestGridProfit}
-                      onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
-                      data-testid="input-highest-grid-profit"
-                    />
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="highestGridProfit">Höchster Grid Profit (USDT)</Label>
+                        <Input
+                          id="highestGridProfit"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.highestGridProfit}
+                          onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
+                          data-testid="input-highest-grid-profit"
+                        />
+                      </div>
 
-                  <div>
-                    <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
-                    <Input
-                      id="highestGridProfitPercent"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.highestGridProfitPercent}
-                      onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
-                      data-testid="input-highest-grid-profit-percent"
-                    />
+                      <div>
+                        <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
+                        <Input
+                          id="highestGridProfitPercent"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.highestGridProfitPercent}
+                          onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
+                          data-testid="input-highest-grid-profit-percent"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
