@@ -530,7 +530,7 @@ export default function Upload() {
                       {uploadMutation.isPending ? 'Speichert...' : 'Save'}
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="botType">Bot Type</Label>
                       <Input
@@ -540,6 +540,18 @@ export default function Upload() {
                         value={formData.botType}
                         onChange={(e) => setFormData({ ...formData, botType: e.target.value })}
                         data-testid="input-bot-type"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="botTypeId">ID</Label>
+                      <Input
+                        id="botTypeId"
+                        type="text"
+                        placeholder="Bot Type ID"
+                        value={selectedBotTypeId || ''}
+                        readOnly
+                        className="bg-muted/50"
+                        data-testid="input-bot-type-id"
                       />
                     </div>
                     <div>
