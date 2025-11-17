@@ -153,63 +153,29 @@ export default function Upload() {
     const fileCount = selectedFiles.length;
     const fileText = fileCount === 1 ? 'Bild wurde' : 'Bilder wurden';
     
-    setIsAiLoading(true);
+    setChatMessages(prev => [...prev, { role: 'user', content: `${fileCount} ${fileText} zur Analyse hochgeladen` }]);
     
-    try {
-      const base64Images = await convertFilesToBase64(selectedFiles);
-      
-      const userMessage = `Bitte analysiere ${fileCount === 1 ? 'diesen Screenshot' : 'diese Screenshots'} und extrahiere die Bot-Performance-Daten.`;
-      
-      setChatMessages(prev => [...prev, { role: 'user', content: `${fileCount} ${fileText} zur Analyse hochgeladen` }]);
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...chatMessages, { role: 'user', content: userMessage }],
-          images: base64Images,
-          botTypes: botTypes,
-          updateHistory: mockUpdatesData,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('AI-Analyse fehlgeschlagen');
-      }
-
-      const data = await response.json();
-      
-      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
-      
-      setScreenshotsSent(true);
-      
-      setTimeout(() => {
-        sendPhaseOneAiResponse('screenshots');
-      }, 500);
-      
-      toast({
-        title: "Erfolgreich analysiert",
-        description: `${fileCount} ${fileText} analysiert.`,
-      });
-    } catch (error) {
-      console.error('AI error:', error);
-      toast({
-        title: "Fehler",
-        description: "Die AI-Analyse ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
+    setScreenshotsSent(true);
+    
+    setTimeout(() => {
+      sendPhaseOneAiResponse('screenshots');
+    }, 500);
+    
+    toast({
+      title: "Screenshots gesendet",
+      description: `${fileCount} ${fileText} zur Analyse hochgeladen.`,
+    });
   };
 
   const sendPhaseOneAiResponse = (source: 'screenshots' | 'botType') => {
     let aiMessage = '';
+    const fileCount = selectedFiles.length;
+    const fileText = fileCount === 1 ? 'Bild' : 'Bilder';
     
     if (source === 'screenshots' && !botTypeSent) {
-      aiMessage = 'Ich habe die Screenshots erhalten. Bitte schicken Sie noch die Bot Type Informationen (Bot Type, ID, Version), damit wir Phase 1 abschließen können.';
+      aiMessage = `Ich habe gesehen, dass ${fileCount === 1 ? 'ein' : fileCount} ${fileText} zur Analyse hochgeladen wurde${fileCount === 1 ? '' : 'n'}. Möchten Sie noch Informationen ändern oder hinzufügen?\n\nBitte schicken Sie noch die Bot Type Informationen (Bot Type, ID, Version), damit wir Phase 1 abschließen können.`;
     } else if (source === 'botType' && !screenshotsSent) {
-      aiMessage = 'Ich habe die Bot Type Informationen erhalten. Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.';
+      aiMessage = 'Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?\n\nBitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.';
     } else if ((source === 'screenshots' && botTypeSent) || (source === 'botType' && screenshotsSent)) {
       aiMessage = 'Perfekt! Phase 1 ist abgeschlossen. Bitte schicken Sie nun die restlichen Einstellungen (Info, Investment, Profit, etc.) über den "Einstellungen an AI senden" Button.';
     }
