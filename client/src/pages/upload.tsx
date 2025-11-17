@@ -41,7 +41,8 @@ export default function Upload() {
     avgGridProfit: '',
     highestGridProfit: '',
     highestGridProfitPercent: '',
-    overallAvgGridProfit: '',
+    overallGridProfitUsdt: '',
+    overallGridProfitPercent: '',
     leverage: '',
   });
 
@@ -72,7 +73,8 @@ export default function Upload() {
         avgGridProfit: '',
         highestGridProfit: '',
         highestGridProfitPercent: '',
-        overallAvgGridProfit: '',
+        overallGridProfitUsdt: '',
+        overallGridProfitPercent: '',
         leverage: '',
       });
     },
@@ -213,7 +215,8 @@ export default function Upload() {
       avgGridProfit: '',
       highestGridProfit: '',
       highestGridProfitPercent: '',
-      overallAvgGridProfit: '',
+      overallGridProfitUsdt: '',
+      overallGridProfitPercent: '',
       leverage: '',
     });
     toast({
@@ -238,7 +241,8 @@ export default function Upload() {
       avgGridProfit: 'Grid Profit Durchschnitt',
       highestGridProfit: 'Höchster Grid Profit',
       highestGridProfitPercent: 'Höchster Grid Profit (%)',
-      overallAvgGridProfit: 'Gesamter Grid Profit (gesamt, USDT)',
+      overallGridProfitUsdt: 'Gesamter Grid Profit (USDT)',
+      overallGridProfitPercent: 'Gesamter Grid Profit (%)',
       leverage: 'Hebel',
     };
 
@@ -265,7 +269,9 @@ export default function Upload() {
     try {
       const userMessage = `Bitte analysiere Screenshots basierend auf diesen Einstellungen:\n\n${filledFields.join('\n')}\n\nSuche nur nach diesen spezifischen Metriken in den Screenshots.`;
       
-      setChatMessages(prev => [...prev, { role: 'user', content: 'Einstellungen an AI gesendet' }]);
+      const userDisplayMessage = `Einstellungen an AI gesendet:\n\n${filledFields.join('\n')}`;
+      
+      setChatMessages(prev => [...prev, { role: 'user', content: userDisplayMessage }]);
       
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -319,7 +325,8 @@ export default function Upload() {
       avgGridProfit: formData.avgGridProfit || null,
       highestGridProfit: formData.highestGridProfit || null,
       highestGridProfitPercent: formData.highestGridProfitPercent || null,
-      overallAvgGridProfit: formData.overallAvgGridProfit || null,
+      overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
+      overallGridProfitPercent: formData.overallGridProfitPercent || null,
       leverage: formData.leverage || null,
     } as any);
   };
@@ -639,16 +646,35 @@ export default function Upload() {
                   </div>
 
                   <div>
-                    <Label htmlFor="overallAvgGridProfit">Gesamter Grid Profit (gesamt, USDT)</Label>
-                    <Input
-                      id="overallAvgGridProfit"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.overallAvgGridProfit}
-                      onChange={(e) => setFormData({ ...formData, overallAvgGridProfit: e.target.value })}
-                      data-testid="input-overall-avg-grid-profit"
-                    />
+                    <Label>Gesamter Grid Profit</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                        <Input
+                          id="overallGridProfitUsdt"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="pl-7"
+                          value={formData.overallGridProfitUsdt}
+                          onChange={(e) => setFormData({ ...formData, overallGridProfitUsdt: e.target.value })}
+                          data-testid="input-overall-grid-profit-usdt"
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                        <Input
+                          id="overallGridProfitPercent"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="pr-7"
+                          value={formData.overallGridProfitPercent}
+                          onChange={(e) => setFormData({ ...formData, overallGridProfitPercent: e.target.value })}
+                          data-testid="input-overall-grid-profit-percent"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

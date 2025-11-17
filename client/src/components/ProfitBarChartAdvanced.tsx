@@ -24,7 +24,7 @@ const METRIC_OPTIONS: MetricOption[] = [
   { key: 'profitPercent', label: 'Profit %', color: '#8B5CF6' },
   { key: 'avgGridProfit', label: 'Ø Grid Profit', color: '#F59E0B' },
   { key: 'highestGridProfit', label: 'Höchster Grid Profit', color: '#EF4444' },
-  { key: 'overallAvgGridProfit', label: 'Ø Grid Profit (gesamt)', color: '#EC4899' },
+  { key: 'overallGridProfitUsdt', label: 'Gesamter Grid Profit (USDT)', color: '#EC4899' },
 ];
 
 export default function ProfitBarChartAdvanced({ entries, title }: ProfitBarChartAdvancedProps) {
