@@ -78,13 +78,6 @@ export default function Upload() {
         description: "Der Eintrag wurde erfolgreich hinzugefügt.",
       });
       
-      if (variables.botTypeId && variables.version) {
-        const modeText = outputMode === 'update-metrics' ? 'Update Metrics' : 'Closed Bots';
-        setChatMessages(prev => [...prev, {
-          role: 'user',
-          content: `${modeText}\n\nBot Type: ${variables.botType}\nID: ${selectedBotTypeColor}\nVersion: ${variables.version}`
-        }]);
-      }
       
       setSelectedFiles([]);
       setFormData(prev => ({
@@ -573,10 +566,48 @@ export default function Upload() {
                   <div className="flex items-center justify-between gap-4">
                     <h3 className="text-base font-semibold text-foreground">Bot Type</h3>
                     <Button 
-                      type="submit"
+                      type="button"
                       size="sm"
                       disabled={uploadMutation.isPending}
                       data-testid="button-save"
+                      onClick={() => {
+                        if (!formData.botType || !formData.version) {
+                          toast({
+                            title: "Fehler",
+                            description: "Bitte wählen Sie einen Bot-Typ aus und geben Sie eine Version ein.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        const modeText = outputMode === 'update-metrics' ? 'Update Metrics' : 'Closed Bots';
+                        setChatMessages(prev => [...prev, {
+                          role: 'user',
+                          content: `${modeText}\n\nBot Type: ${formData.botType}\nID: ${selectedBotTypeColor}\nVersion: ${formData.version}`
+                        }]);
+                        
+                        uploadMutation.mutate({
+                          ...formData,
+                          botTypeId: selectedBotTypeId,
+                          botType: formData.botType || null,
+                          version: formData.version || null,
+                          date: formData.date || null,
+                          botName: formData.botName || formData.botType,
+                          extraMargin: formData.extraMargin || null,
+                          longestRuntime: formData.longestRuntime || null,
+                          avgRuntime: formData.avgRuntime || null,
+                          avgGridProfitHour: formData.avgGridProfitHour || null,
+                          avgGridProfitDay: formData.avgGridProfitDay || null,
+                          avgGridProfitWeek: formData.avgGridProfitWeek || null,
+                          overallTrendPnlUsdt: formData.overallTrendPnlUsdt || null,
+                          overallTrendPnlPercent: formData.overallTrendPnlPercent || null,
+                          highestGridProfit: formData.highestGridProfit || null,
+                          highestGridProfitPercent: formData.highestGridProfitPercent || null,
+                          overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
+                          overallGridProfitPercent: formData.overallGridProfitPercent || null,
+                          leverage: formData.leverage || null,
+                        } as any);
+                      }}
                     >
                       {uploadMutation.isPending ? 'Speichert...' : 'Save'}
                     </Button>
