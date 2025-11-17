@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Dashboard from "@/pages/dashboard";
 import Upload from "@/pages/upload";
 import Reports from "@/pages/reports";
+import BotTypesPage from "@/pages/bot-types";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/upload" component={Upload} />
+      <Route path="/bot-types" component={BotTypesPage} />
       <Route path="/reports" component={Reports} />
       <Route component={NotFound} />
     </Switch>

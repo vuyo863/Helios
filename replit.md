@@ -24,9 +24,10 @@ Preferred communication style: Simple, everyday language.
 
 **Design System**: Material Design 3 principles with Roboto font family, emphasizing data clarity and professional financial aesthetics
 
-**Routing**: Client-side routing using Wouter library with three main routes:
+**Routing**: Client-side routing using Wouter library with four main routes:
 - `/` - Dashboard/Overview page
 - `/upload` - Screenshot upload and data entry page
+- `/bot-types` - Bot Types management and overview page
 - `/reports` - Reports and analytics page
 
 **State Management**: 
@@ -82,21 +83,26 @@ Preferred communication style: Simple, everyday language.
    - date (date field for entry timestamp)
    - botName (text)
    - botTypeId (optional foreign key to bot_types)
+   - botType (optional text - bot type category)
+   - version (optional text - bot version identifier)
+   - botDirection (optional text - trading direction: Long/Short)
    - investment (numeric with precision 12, scale 2)
+   - extraMargin (optional numeric - extra margin)
    - profit (numeric with precision 12, scale 2)
    - profitPercent (numeric with precision 8, scale 2)
    - periodType (text: 'Tag', 'Woche', 'Monat')
+   - longestRuntime (optional text - longest runtime in format "Xd Xh Xs")
+   - avgRuntime (optional text - average runtime in format "Xd Xh Xs")
    - avgGridProfitHour (optional numeric - average grid profit per hour)
    - avgGridProfitDay (optional numeric - average grid profit per day)
    - avgGridProfitWeek (optional numeric - average grid profit per week)
+   - overallTrendPnlUsdt (optional numeric - overall trend P&L in USDT)
+   - overallTrendPnlPercent (optional numeric - overall trend P&L percentage)
    - overallGridProfitUsdt (optional numeric - overall grid profit in USDT)
    - overallGridProfitPercent (optional numeric - overall grid profit percentage)
    - highestGridProfit (optional numeric - highest grid profit in USDT)
    - highestGridProfitPercent (optional numeric - highest grid profit percentage)
-   - longestRuntime (optional text - longest runtime in format "Xd Xh Xs")
-   - avgRuntime (optional text - average runtime in format "Xd Xh Xs")
-   - extraMargin (optional numeric - extra margin)
-   - leverage (optional numeric - leverage)
+   - leverage (optional text - leverage multiplier e.g. "5x")
    - notes (optional text)
    - screenshotPath (optional text for file storage reference)
 
@@ -131,6 +137,14 @@ Preferred communication style: Simple, everyday language.
 - TSX for TypeScript execution in development
 
 **Implemented Features** (November 2025):
+- **Bot Types Page** (November 17, 2025):
+  - Dedicated `/bot-types` route with navigation bar integration
+  - Displays all bot type categories as responsive content cards (grid layout: 1 column mobile, 2 tablet, 3 desktop)
+  - Each card shows: bot type name, description, color indicator badge, creation date
+  - Cards feature hover/active elevation effects for interactive feedback
+  - Empty state with helpful message when no bot types exist
+  - Fully integrated with existing bot type API endpoints
+  - Navigation accessible via "Bot Types" button in navbar with Layers icon
 - **Bot Type Management**: Full CRUD operations for bot types/styles
   - BotTypeManager component with two tabs: "Bestehende Bots" (view existing) and "Create Bot Type" (create new)
   - Each bot type has a name, optional description, and optional color (6 predefined colors available)
@@ -150,7 +164,7 @@ Preferred communication style: Simple, everyday language.
   - Backend mock data updated with realistic hourly/daily/weekly values across 6 entries
 - **Upload Form Section Reorganization** (November 17, 2025):
   - Form restructured into separate cyan-bordered sections with white backgrounds:
-    1. **Bot-Name**: Single field for bot identifier
+    1. **Bot Type**: Two side-by-side fields - Bot Type (category) and Version (with Save button in header)
     2. **Info**: Datum, Bot-Richtung, Hebel, Längste Laufzeit, Durchschnittliche Laufzeit
     3. **Investment**: Investitionsmenge (USDT), Extra Margin (separated from Info section)
     4. **Gesamter Profit / P&L**: Gesamtprofit (USDT), Gesamtprofit (%)
@@ -158,6 +172,7 @@ Preferred communication style: Simple, everyday language.
     6. **Grid Trading**: Grid Profit metrics, Overall Grid Profit, Highest Grid Profit
   - Each section (Info, Investment, Gesamter Profit/P&L, Trend P&L, Grid Trading) includes dropdown filter with options: "Insgesamt", "Seit letztem Update", "Startwerte"
   - Dropdowns positioned to the right of section titles for easy time range selection
+  - Bot Type and Version fields are optional text inputs stored in database
 
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)
