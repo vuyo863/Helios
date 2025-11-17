@@ -672,8 +672,8 @@ export default function Upload() {
                         type="text"
                         placeholder="z.B. Grid Bot"
                         value={formData.botType}
-                        readOnly={!editMode}
-                        className={editMode ? '' : 'bg-muted/50'}
+                        readOnly
+                        className="bg-muted/50"
                         data-testid="input-bot-type"
                       />
                     </div>
@@ -697,8 +697,8 @@ export default function Upload() {
                         placeholder="z.B. v1.0"
                         value={formData.version}
                         onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                        readOnly={!editMode}
-                        className={editMode ? '' : 'bg-muted/50'}
+                        readOnly={botTypeSent && !editMode}
+                        className={botTypeSent && !editMode ? 'bg-muted/50' : ''}
                         data-testid="input-version"
                       />
                     </div>
