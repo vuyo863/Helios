@@ -7,8 +7,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { BotType } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState } from "react";
@@ -72,6 +82,8 @@ export default function BotTypesPage() {
   });
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedBotType, setSelectedBotType] = useState<BotType | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
 
   const { toast } = useToast();
 
@@ -123,6 +135,40 @@ export default function BotTypesPage() {
   const handleViewClick = (botType: BotType) => {
     setSelectedBotType(botType);
     setViewDialogOpen(true);
+  };
+
+  const deleteBotTypeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/bot-types/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/entries'] });
+      toast({
+        title: "Bot-Typ gelöscht",
+        description: "Der Bot-Typ und alle zugehörigen Daten wurden erfolgreich gelöscht.",
+      });
+      setDeleteDialogOpen(false);
+      setBotTypeToDelete(null);
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Der Bot-Typ konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteClick = (botType: BotType) => {
+    setBotTypeToDelete(botType);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (botTypeToDelete) {
+      deleteBotTypeMutation.mutate(botTypeToDelete.id);
+    }
   };
 
   const getUpdatesForBotType = (botTypeName: string): BotTypeUpdate[] => {
@@ -305,6 +351,15 @@ export default function BotTypesPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost"
+                            className="w-8 h-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteClick(botType)}
+                            data-testid={`button-delete-${botType.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -408,6 +463,28 @@ export default function BotTypesPage() {
             )}
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Bot-Typ löschen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Möchten Sie "{botTypeToDelete?.name}" und alle zugehörigen Updates, Berichte und Informationen wirklich löschen? 
+                Diese Aktion kann nicht rückgängig gemacht werden.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-delete">Abbrechen</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteConfirm}
+                data-testid="button-confirm-delete"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Löschen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
