@@ -24,7 +24,7 @@ interface BotTypeUpdate {
 }
 
 const mockUpdatesData: Record<string, BotTypeUpdate[]> = {
-  "1": [
+  "Grid Trading Bots": [
     {
       id: "u1",
       updateName: "Q4 Performance Update",
@@ -42,6 +42,20 @@ const mockUpdatesData: Record<string, BotTypeUpdate[]> = {
       updateName: "Initiale Metriken",
       updateDate: "05.11.2025",
       updateTime: "16:45"
+    }
+  ],
+  "Futures Bots": [
+    {
+      id: "u4",
+      updateName: "Hebel Optimierung",
+      updateDate: "16.11.2025",
+      updateTime: "10:20"
+    },
+    {
+      id: "u5",
+      updateName: "Risiko-Analyse Update",
+      updateDate: "12.11.2025",
+      updateTime: "15:45"
     }
   ],
 };
@@ -111,8 +125,8 @@ export default function BotTypesPage() {
     setViewDialogOpen(true);
   };
 
-  const getUpdatesForBotType = (botTypeId: string): BotTypeUpdate[] => {
-    return mockUpdatesData[botTypeId] || [];
+  const getUpdatesForBotType = (botTypeName: string): BotTypeUpdate[] => {
+    return mockUpdatesData[botTypeName] || [];
   };
 
   if (isLoading) {
@@ -312,7 +326,7 @@ export default function BotTypesPage() {
 
             {selectedBotType && (
               <div className="space-y-4">
-                {getUpdatesForBotType(selectedBotType.id).length === 0 ? (
+                {getUpdatesForBotType(selectedBotType.name).length === 0 ? (
                   <div className="py-12 text-center space-y-4">
                     <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
                       <TrendingUp className="w-8 h-8 text-muted-foreground" />
@@ -340,13 +354,13 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Last Updated</p>
                         <p className="font-semibold">
-                          {getUpdatesForBotType(selectedBotType.id)[0]?.updateDate} {getUpdatesForBotType(selectedBotType.id)[0]?.updateTime}
+                          {getUpdatesForBotType(selectedBotType.name)[0]?.updateDate} {getUpdatesForBotType(selectedBotType.name)[0]?.updateTime}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
                         <p className="font-semibold">
-                          {getUpdatesForBotType(selectedBotType.id)[getUpdatesForBotType(selectedBotType.id).length - 1]?.updateDate} {getUpdatesForBotType(selectedBotType.id)[getUpdatesForBotType(selectedBotType.id).length - 1]?.updateTime}
+                          {getUpdatesForBotType(selectedBotType.name)[getUpdatesForBotType(selectedBotType.name).length - 1]?.updateDate} {getUpdatesForBotType(selectedBotType.name)[getUpdatesForBotType(selectedBotType.name).length - 1]?.updateTime}
                         </p>
                       </div>
                     </div>
@@ -355,7 +369,7 @@ export default function BotTypesPage() {
 
                     <div className="space-y-2">
                       <h4 className="font-semibold text-sm text-muted-foreground mb-3">Update Verlauf</h4>
-                      {getUpdatesForBotType(selectedBotType.id).map((update) => (
+                      {getUpdatesForBotType(selectedBotType.name).map((update) => (
                         <Card 
                           key={update.id} 
                           className="hover-elevate active-elevate-2 transition-all"
