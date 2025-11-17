@@ -125,11 +125,7 @@ export default function Upload() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      if (editMode) {
-        setSelectedFiles(newFiles);
-      } else {
-        setSelectedFiles(prev => [...prev, ...newFiles]);
-      }
+      setSelectedFiles(prev => [...prev, ...newFiles]);
     }
   };
 
