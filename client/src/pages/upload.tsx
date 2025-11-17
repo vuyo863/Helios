@@ -223,10 +223,20 @@ export default function Upload() {
     
     const botTypeName = formData.botType;
     const botTypeColor = botTypes?.find(bt => bt.name === botTypeName)?.color || 'keine Farbe';
-    const updateHistory = mockUpdatesData[botTypeName];
+    const selectedBotType = botTypes?.find(bt => bt.name === botTypeName);
+    
+    if (!selectedBotType) {
+      toast({
+        title: "Fehler",
+        description: "Bot Type nicht gefunden.",
+        variant: "destructive",
+      });
+      setIsAiLoading(false);
+      return;
+    }
     
     try {
-      const userMessage = `Ich möchte mit Phase 2, Schritt 1 beginnen. Bitte überprüfe den Update-Verlauf für Bot Type "${botTypeName}" (ID: ${botTypeColor}).`;
+      const userMessage = `Ich möchte mit Phase 2, Schritt 1 beginnen. Bitte überprüfe die bestehenden Metriken für Bot Type "${botTypeName}" (ID: ${botTypeColor}).`;
       
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -234,9 +244,9 @@ export default function Upload() {
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
           botTypes: botTypes,
-          updateHistory: mockUpdatesData,
           phase: 'phase2_step1',
-          selectedBotType: botTypeName,
+          selectedBotTypeId: selectedBotType.id,
+          selectedBotTypeName: botTypeName,
         }),
       });
 
@@ -247,12 +257,7 @@ export default function Upload() {
       const data = await response.json();
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
       
-      if (updateHistory && updateHistory.length > 0) {
-        setIsStartMetric(false);
-      } else {
-        setIsStartMetric(true);
-      }
-      
+      setIsStartMetric(data.isStartMetric || false);
       setPhaseTwoVerified(true);
     } catch (error) {
       console.error('Phase 2 Step 1 error:', error);

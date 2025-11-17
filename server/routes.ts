@@ -19,13 +19,13 @@ Du wurdest aufgefordert, mit Phase 2, Schritt 1 zu beginnen.
 2. Prüfe den Update-Verlauf für die angegebene Bot Type ID
 3. Antworte basierend auf dem Ergebnis:
 
-**WENN Updates vorhanden sind:**
-- Finde das neueste Update (erstes in der Liste)
-- Antworte: "Habe folgende Informationen vom letzten Update gefunden: war am [Datum] um [Zeit] letzter Update hier gefunden"
-- Beispiel: "Habe folgende Informationen vom letzten Update gefunden: war am 15.11.2025 um 14:30 letzter Update hier gefunden"
+**WENN Metriken vorhanden sind:**
+- Finde den neuesten Eintrag (erstes in der Liste)
+- Antworte: "Habe folgende Informationen vom letzten Update gefunden: war am [Datum] letzter Update hier gefunden"
+- Beispiel: "Habe folgende Informationen vom letzten Update gefunden: war am 10.01.2025 letzter Update hier gefunden"
 
-**WENN KEINE Updates vorhanden sind:**
-- Antworte: "Keine Updates gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten"
+**WENN KEINE Metriken vorhanden sind:**
+- Antworte: "Keine Metriken gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten"
 
 **Wichtig:**
 - Sei präzise und kurz
@@ -117,26 +117,43 @@ Hilf dem Benutzer auch bei allgemeinen Fragen zur Anwendung oder zur Bot-Trading
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
-      const { messages, images, botTypes, updateHistory, phase, selectedBotType } = req.body;
+      const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages array is required" });
       }
 
       let contextualPrompt = phase === 'phase2_step1' ? PHASE_2_STEP_1_PROMPT : SYSTEM_PROMPT;
+      let isStartMetric = false;
       
-      if (phase === 'phase2_step1' && selectedBotType && updateHistory) {
-        const updates = updateHistory[selectedBotType];
-        contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotType}"\n\n`;
+      if (phase === 'phase2_step1' && selectedBotTypeId && selectedBotTypeName) {
+        const existingEntries = await storage.getBotEntriesByBotType(selectedBotTypeId);
         
-        if (updates && updates.length > 0) {
-          contextualPrompt += `**UPDATE-VERLAUF (${updates.length} Updates gefunden):**\n`;
-          updates.forEach((update: any, index: number) => {
-            contextualPrompt += `${index + 1}. "${update.updateName}" - ${update.updateDate} ${update.updateTime}\n`;
+        contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotTypeName}"\nID: ${selectedBotTypeId}\n\n`;
+        
+        if (existingEntries && existingEntries.length > 0) {
+          const sortedEntries = existingEntries.sort((a, b) => {
+            const dateA = new Date(a.date || '1970-01-01');
+            const dateB = new Date(b.date || '1970-01-01');
+            return dateB.getTime() - dateA.getTime();
           });
-          contextualPrompt += `\n**Das neueste Update ist das erste in der Liste oben.**`;
+          
+          const latestEntry = sortedEntries[0];
+          const entryDate = latestEntry.date || 'Unbekannt';
+          const entryVersion = latestEntry.version || 'Keine Version';
+          const entryBotName = latestEntry.botName || 'Unbekannter Bot';
+          
+          contextualPrompt += `**BESTEHENDE METRIKEN GEFUNDEN (${existingEntries.length} Einträge):**\n`;
+          contextualPrompt += `Neuester Eintrag:\n`;
+          contextualPrompt += `- Datum: ${entryDate}\n`;
+          contextualPrompt += `- Bot Name: ${entryBotName}\n`;
+          contextualPrompt += `- Version: ${entryVersion}\n`;
+          contextualPrompt += `\n**Dies ist der letzte Update. Berichte dem Benutzer das Datum des letzten Updates.**`;
+          isStartMetric = false;
         } else {
-          contextualPrompt += `**UPDATE-VERLAUF:**\nKeine Updates gefunden - dies ist eine Startmetrik.`;
+          contextualPrompt += `**BESTEHENDE METRIKEN:**\nKeine Metriken gefunden - dies ist eine Startmetrik.\n`;
+          contextualPrompt += `\n**Berichte dem Benutzer, dass dies als Startmetrik gilt.**`;
+          isStartMetric = true;
         }
       } else if (botTypes && botTypes.length > 0) {
         contextualPrompt += `\n\n**VERFÜGBARE BOT TYPES:**\n`;
@@ -192,7 +209,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const aiResponse = completion.choices[0]?.message?.content || "Entschuldigung, ich konnte keine Antwort generieren.";
       
-      res.json({ response: aiResponse });
+      if (phase === 'phase2_step1') {
+        res.json({ response: aiResponse, isStartMetric });
+      } else {
+        res.json({ response: aiResponse });
+      }
     } catch (error: any) {
       console.error("OpenAI API error:", error);
       res.status(500).json({ 
