@@ -22,7 +22,7 @@ const METRIC_OPTIONS: MetricOption[] = [
   { key: 'profit', label: 'Profit', color: '#3B82F6' },
   { key: 'investment', label: 'Investment', color: '#10B981' },
   { key: 'profitPercent', label: 'Profit %', color: '#8B5CF6' },
-  { key: 'avgGridProfit', label: 'Ø Grid Profit', color: '#F59E0B' },
+  { key: 'avgGridProfitDay', label: 'Ø Grid Profit (Tag)', color: '#F59E0B' },
   { key: 'highestGridProfit', label: 'Höchster Grid Profit', color: '#EF4444' },
   { key: 'overallGridProfitUsdt', label: 'Gesamter Grid Profit (USDT)', color: '#EC4899' },
 ];

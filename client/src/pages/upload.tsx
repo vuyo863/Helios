@@ -38,7 +38,9 @@ export default function Upload() {
     periodType: 'Tag',
     longestRuntime: '',
     avgRuntime: '',
-    avgGridProfit: '',
+    avgGridProfitHour: '',
+    avgGridProfitDay: '',
+    avgGridProfitWeek: '',
     highestGridProfit: '',
     highestGridProfitPercent: '',
     overallGridProfitUsdt: '',
@@ -70,7 +72,9 @@ export default function Upload() {
         periodType: 'Tag',
         longestRuntime: '',
         avgRuntime: '',
-        avgGridProfit: '',
+        avgGridProfitHour: '',
+        avgGridProfitDay: '',
+        avgGridProfitWeek: '',
         highestGridProfit: '',
         highestGridProfitPercent: '',
         overallGridProfitUsdt: '',
@@ -212,7 +216,9 @@ export default function Upload() {
       periodType: 'Tag',
       longestRuntime: '',
       avgRuntime: '',
-      avgGridProfit: '',
+      avgGridProfitHour: '',
+      avgGridProfitDay: '',
+      avgGridProfitWeek: '',
       highestGridProfit: '',
       highestGridProfitPercent: '',
       overallGridProfitUsdt: '',
@@ -238,7 +244,9 @@ export default function Upload() {
       periodType: 'Periodentyp',
       longestRuntime: 'Längste Laufzeit',
       avgRuntime: 'Durchschnittliche Laufzeit',
-      avgGridProfit: 'Grid Profit Durchschnitt',
+      avgGridProfitHour: 'Grid Profit Durchschnitt (Stunde)',
+      avgGridProfitDay: 'Grid Profit Durchschnitt (Tag)',
+      avgGridProfitWeek: 'Grid Profit Durchschnitt (Woche)',
       highestGridProfit: 'Höchster Grid Profit',
       highestGridProfitPercent: 'Höchster Grid Profit (%)',
       overallGridProfitUsdt: 'Gesamter Grid Profit (USDT)',
@@ -322,7 +330,9 @@ export default function Upload() {
       extraMargin: formData.extraMargin || null,
       longestRuntime: formData.longestRuntime || null,
       avgRuntime: formData.avgRuntime || null,
-      avgGridProfit: formData.avgGridProfit || null,
+      avgGridProfitHour: formData.avgGridProfitHour || null,
+      avgGridProfitDay: formData.avgGridProfitDay || null,
+      avgGridProfitWeek: formData.avgGridProfitWeek || null,
       highestGridProfit: formData.highestGridProfit || null,
       highestGridProfitPercent: formData.highestGridProfitPercent || null,
       overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
@@ -631,20 +641,49 @@ export default function Upload() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="avgGridProfit">Grid Profit Durchschnitt (USDT)</Label>
-                    <Input
-                      id="avgGridProfit"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.avgGridProfit}
-                      onChange={(e) => setFormData({ ...formData, avgGridProfit: e.target.value })}
-                      data-testid="input-avg-grid-profit"
-                    />
+                <div>
+                  <Label>Grid Profit Durchschnitt</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="avgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
+                      <Input
+                        id="avgGridProfitHour"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.avgGridProfitHour}
+                        onChange={(e) => setFormData({ ...formData, avgGridProfitHour: e.target.value })}
+                        data-testid="input-avg-grid-profit-hour"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="avgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
+                      <Input
+                        id="avgGridProfitDay"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.avgGridProfitDay}
+                        onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
+                        data-testid="input-avg-grid-profit-day"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="avgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
+                      <Input
+                        id="avgGridProfitWeek"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.avgGridProfitWeek}
+                        onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
+                        data-testid="input-avg-grid-profit-week"
+                      />
+                    </div>
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label>Gesamter Grid Profit</Label>
                     <div className="grid grid-cols-2 gap-3">
