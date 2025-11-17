@@ -3,8 +3,108 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertBotEntrySchema, insertBotTypeSchema } from "@shared/schema";
 import { z } from "zod";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
+
+const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Tracker Anwendung. Deine Hauptaufgaben sind:
+
+1. **Screenshot-Analyse**: Du erhältst Screenshots von Pionex Trading Bot Performance-Metriken und sollst diese Daten genau extrahieren und in die Ausgabefelder übertragen.
+
+2. **Mehrere Screenshots verarbeiten**: Du kannst mehrere Screenshots gleichzeitig analysieren. Für jedes Ausgabefeld sollst du die Werte korrekt berechnen oder aggregieren.
+
+3. **Ausgabefelder (ALLE Felder kennen und verstehen)**:
+   - **Datum**: Das Datum der Bot-Performance (Format: YYYY-MM-DD)
+   - **Bot-Name**: Name des Trading Bots (z.B. "BTC/USDT Grid", "ETH/USDT Future")
+   - **Bot-Typ**: Kategorie (Grid Trading Bots, Futures Bots, Moon Bots, etc.)
+   - **Bot-Richtung**: Long oder Short
+   - **Investitionsmenge**: Investiertes Kapital in USDT (Nummer mit 2 Dezimalstellen)
+   - **Extra Margin**: Zusätzliche Margin in USDT (Nummer mit 2 Dezimalstellen, optional)
+   - **Profit**: Absoluter Gewinn in USDT (Nummer mit 2 Dezimalstellen)
+   - **Profit %**: Gewinn in Prozent (Nummer mit 2 Dezimalstellen)
+   - **Längste Laufzeit**: Format "Xd Yh Zs" (z.B. "2d 5h 30s" oder "12h 0s")
+   - **Durchschnittliche Laufzeit**: Format "Xd Yh Zs" (z.B. "1d 3h 15s")
+   - **Durchschn. Grid Profit**: Durchschnittlicher Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
+   - **Höchster Grid Profit**: Höchster Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
+   - **Höchster Grid Profit %**: Höchster Grid-Profit in Prozent (Nummer mit 2 Dezimalstellen, optional)
+   - **Gesamt Durchschn. Grid Profit**: Gesamter durchschnittlicher Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
+   - **Leverage**: Hebelwirkung (z.B. "10x", "20x", optional)
+
+4. **Bei mehreren Screenshots**:
+   - Summiere: Investment, Extra Margin, Profit
+   - Berechne Durchschnitt: Längste Laufzeit, Durchschnittliche Laufzeit, Grid-Profit-Werte
+   - Profit % neu berechnen: (Gesamt-Profit / Gesamt-Investment) × 100
+
+5. **Antwort-Format**:
+   - Gib die extrahierten Daten strukturiert aus
+   - Erkläre kurz was du gefunden hast
+   - Sei präzise und freundlich
+   - Antworte auf Deutsch
+
+Wenn du Screenshots analysierst, schaue besonders auf:
+- Performance/Profit Zahlen
+- Zeiträume und Laufzeiten
+- Investment-Beträge
+- Grid-Statistiken
+- Bot-Namen und Typen
+
+Hilf dem Benutzer auch bei allgemeinen Fragen zur Anwendung oder zur Bot-Trading-Strategie.`;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { messages, images } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages array is required" });
+      }
+
+      const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...messages.map((msg: any) => ({
+          role: msg.role === 'ai' ? 'assistant' : msg.role,
+          content: msg.content,
+        })),
+      ];
+
+      if (images && images.length > 0) {
+        const lastUserMessageIndex = chatMessages.length - 1;
+        if (chatMessages[lastUserMessageIndex].role === 'user') {
+          const textContent = chatMessages[lastUserMessageIndex].content as string;
+          chatMessages[lastUserMessageIndex] = {
+            role: 'user',
+            content: [
+              { type: 'text', text: textContent },
+              ...images.map((imageBase64: string) => ({
+                type: 'image_url' as const,
+                image_url: { url: imageBase64 },
+              })),
+            ],
+          };
+        }
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: chatMessages,
+        max_tokens: 2000,
+      });
+
+      const aiResponse = completion.choices[0]?.message?.content || "Entschuldigung, ich konnte keine Antwort generieren.";
+      
+      res.json({ response: aiResponse });
+    } catch (error: any) {
+      console.error("OpenAI API error:", error);
+      res.status(500).json({ 
+        error: "Failed to get AI response", 
+        details: error.message 
+      });
+    }
+  });
+
   app.get("/api/bot-types", async (req, res) => {
     try {
       const botTypes = await storage.getAllBotTypes();
