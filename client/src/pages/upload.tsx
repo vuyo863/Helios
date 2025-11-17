@@ -506,8 +506,18 @@ export default function Upload() {
             <h2 className="text-lg font-semibold mb-6">Ausgabe-Felder</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-8">
-                <div className="border border-cyan-500 rounded-lg p-4 bg-white">
-                  <Label htmlFor="botName">Bot-Name</Label>
+                <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="botName">Bot-Name</Label>
+                    <Button 
+                      type="submit"
+                      size="sm"
+                      disabled={uploadMutation.isPending}
+                      data-testid="button-save"
+                    >
+                      {uploadMutation.isPending ? 'Speichert...' : 'Save'}
+                    </Button>
+                  </div>
                   <Input
                     id="botName"
                     type="text"
