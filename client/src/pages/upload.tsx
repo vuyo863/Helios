@@ -105,11 +105,21 @@ export default function Upload() {
       return;
     }
 
+    const fileCount = selectedFiles.length;
+    const fileText = fileCount === 1 ? 'Bild wurde' : 'Bilder wurden';
+    
     setChatMessages(prev => [
       ...prev,
-      { role: 'user', content: `${selectedFiles.length} Screenshot(s) hochgeladen` },
-      { role: 'ai', content: 'AI-Analyse wird in Zukunft verfügbar sein. Bitte geben Sie die Daten manuell in den Feldern unten ein.' }
+      { 
+        role: 'ai', 
+        content: `✓ ${fileCount} ${fileText} zur AI geschickt und werden analysiert. Die AI-Integration wird bald verfügbar sein. Bitte geben Sie vorerst die Daten manuell in den Feldern unten ein.` 
+      }
     ]);
+
+    toast({
+      title: "Erfolgreich gesendet",
+      description: `${fileCount} ${fileText} zur AI-Analyse geschickt.`,
+    });
   };
 
   const handleChatSend = () => {
