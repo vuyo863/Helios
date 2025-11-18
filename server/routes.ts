@@ -14,9 +14,14 @@ const PHASE_2_STEP_1_PROMPT = `**PHASE 2, SCHRITT 1: Überprüfung der Bot-Type-
 
 Du wurdest aufgefordert, mit Phase 2, Schritt 1 zu beginnen.
 
+**WICHTIG - Bot Type ID:**
+- Die "ID" die der Benutzer sieht ist die FARBE (z.B. #3B82F6)
+- NIEMALS die interne UUID erwähnen
+- Wenn du die ID erwähnst, benutze die FARBE
+
 **Deine Aufgabe:**
 1. Sage: "OK, fange an mit Phase 2, Schritt 1: Überprüfung der Bot-Type-Updates"
-2. Prüfe den Update-Verlauf für die angegebene Bot Type ID
+2. Prüfe die bestehenden Metriken für diesen Bot Type
 3. Antworte basierend auf dem Ergebnis:
 
 **WENN Metriken vorhanden sind:**
@@ -30,7 +35,8 @@ Du wurdest aufgefordert, mit Phase 2, Schritt 1 zu beginnen.
 **Wichtig:**
 - Sei präzise und kurz
 - Verwende das genaue Format der Antworten oben
-- Nenne immer Datum und Uhrzeit wenn Updates vorhanden sind`;
+- Nenne NUR das Datum (keine Uhrzeit)
+- Erwähne NIEMALS die interne UUID`;
 
 const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Tracker Anwendung.
 
@@ -117,7 +123,7 @@ Hilf dem Benutzer auch bei allgemeinen Fragen zur Anwendung oder zur Bot-Trading
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
-      const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName } = req.body;
+      const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName, selectedBotTypeColor } = req.body;
       
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages array is required" });
@@ -129,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (phase === 'phase2_step1' && selectedBotTypeId && selectedBotTypeName) {
         const existingEntries = await storage.getBotEntriesByBotType(selectedBotTypeId);
         
-        contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotTypeName}"\nID: ${selectedBotTypeId}\n\n`;
+        contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotTypeName}"\nID (Farbe): ${selectedBotTypeColor || 'keine Farbe'}\n\n`;
         
         if (existingEntries && existingEntries.length > 0) {
           const sortedEntries = existingEntries.sort((a, b) => {

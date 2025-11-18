@@ -222,7 +222,6 @@ export default function Upload() {
     setIsAiLoading(true);
     
     const botTypeName = formData.botType;
-    const botTypeColor = botTypes?.find(bt => bt.name === botTypeName)?.color || 'keine Farbe';
     const selectedBotType = botTypes?.find(bt => bt.name === botTypeName);
     
     if (!selectedBotType) {
@@ -234,6 +233,8 @@ export default function Upload() {
       setIsAiLoading(false);
       return;
     }
+    
+    const botTypeColor = selectedBotType.color || 'keine Farbe';
     
     try {
       const userMessage = `Ich möchte mit Phase 2, Schritt 1 beginnen. Bitte überprüfe die bestehenden Metriken für Bot Type "${botTypeName}" (ID: ${botTypeColor}).`;
@@ -247,6 +248,7 @@ export default function Upload() {
           phase: 'phase2_step1',
           selectedBotTypeId: selectedBotType.id,
           selectedBotTypeName: botTypeName,
+          selectedBotTypeColor: botTypeColor,
         }),
       });
 
