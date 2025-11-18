@@ -38,6 +38,7 @@ export default function Upload() {
   const [editMode, setEditMode] = useState(false);
   const [waitingForConfirmation, setWaitingForConfirmation] = useState(false);
   const [phaseTwoVerified, setPhaseTwoVerified] = useState(false);
+  const [phaseTwoStep2Complete, setPhaseTwoStep2Complete] = useState(false);
   const [isStartMetric, setIsStartMetric] = useState(false);
   const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
   
@@ -209,6 +210,7 @@ export default function Upload() {
     setEditMode(true);
     setWaitingForConfirmation(false);
     setPhaseTwoVerified(false);
+    setPhaseTwoStep2Complete(false);
     setIsStartMetric(false);
     setChatMessages(prev => [...prev, { 
       role: 'ai', 
@@ -267,6 +269,51 @@ export default function Upload() {
       toast({
         title: "Fehler",
         description: "Phase 2 konnte nicht gestartet werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleStep2Click = async () => {
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "Keine Screenshots",
+        description: "Bitte laden Sie mindestens einen Screenshot hoch.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAiLoading(true);
+
+    try {
+      const base64Images = await convertFilesToBase64(selectedFiles);
+      const userMessage = `Ich möchte mit Phase 2, Schritt 2 beginnen. Bitte teste ob du die Screenshots analysieren kannst.`;
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...chatMessages, { role: 'user', content: userMessage }],
+          images: base64Images,
+          phase: 'phase2_step2',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI-Kommunikation fehlgeschlagen');
+      }
+
+      const data = await response.json();
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      setPhaseTwoStep2Complete(true);
+    } catch (error) {
+      console.error('Phase 2 Step 2 error:', error);
+      toast({
+        title: "Fehler",
+        description: "Phase 2 Schritt 2 konnte nicht durchgeführt werden.",
         variant: "destructive",
       });
     } finally {
@@ -556,14 +603,26 @@ export default function Upload() {
                       size="icon"
                       onClick={handleConfirmClick}
                       data-testid="button-confirm"
-                      title="Bestätigen"
+                      title="Phase 2 Schritt 1 starten"
                     >
                       <Check className="w-4 h-4" />
                     </Button>
                   </>
                 )}
                 
-                {!waitingForConfirmation && (
+                {phaseTwoVerified && !phaseTwoStep2Complete && (
+                  <Button 
+                    size="icon"
+                    onClick={handleStep2Click}
+                    disabled={isAiLoading}
+                    data-testid="button-confirm-step2"
+                    title="Phase 2 Schritt 2 starten"
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                )}
+                
+                {!waitingForConfirmation && !phaseTwoVerified && (
                   <Button 
                     onClick={handleChatSend}
                     size="icon"

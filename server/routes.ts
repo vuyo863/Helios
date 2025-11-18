@@ -10,6 +10,26 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const PHASE_2_STEP_2_PROMPT = `**PHASE 2, SCHRITT 2: Screenshot-Analyse Test**
+
+Du wurdest aufgefordert, einen Test durchzuführen um zu prüfen, ob du Screenshots analysieren kannst.
+
+**Deine Aufgabe:**
+1. Zähle wie viele Bilder du erhalten hast
+2. Sage: "Ich habe [Anzahl] Bild(er) erhalten und habe darauf Zugriff"
+3. Analysiere EIN Bild (das erste) kurz:
+   - Lies z.B. eine Zahl, einen Wert oder ein Wort aus dem Screenshot
+   - Beschreibe sehr kurz was du siehst (z.B. "Ich sehe ein Trading-Dashboard mit Profit-Werten")
+4. Sage: "Der Test war erfolgreich, ich kann Bilder analysieren"
+
+**Beispiel-Antwort:**
+"Ich habe 3 Bilder erhalten und habe darauf Zugriff. Ich habe das erste Bild analysiert und sehe ein Pionex Trading Bot Dashboard mit einem Profit von 125.50 USDT. Der Test war erfolgreich, ich kann Bilder analysieren."
+
+**Wichtig:**
+- Sei kurz und präzise
+- Teste nur EIN Bild
+- Gib eine konkrete Information aus dem Bild zurück (Beweis dass du es lesen kannst)`;
+
 const PHASE_2_STEP_1_PROMPT = `**PHASE 2, SCHRITT 1: Überprüfung der Bot-Type-Updates**
 
 Du wurdest aufgefordert, mit Phase 2, Schritt 1 zu beginnen.
@@ -129,7 +149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Messages array is required" });
       }
 
-      let contextualPrompt = phase === 'phase2_step1' ? PHASE_2_STEP_1_PROMPT : SYSTEM_PROMPT;
+      let contextualPrompt = SYSTEM_PROMPT;
+      if (phase === 'phase2_step1') {
+        contextualPrompt = PHASE_2_STEP_1_PROMPT;
+      } else if (phase === 'phase2_step2') {
+        contextualPrompt = PHASE_2_STEP_2_PROMPT;
+      }
       let isStartMetric = false;
       
       if (phase === 'phase2_step1' && selectedBotTypeName && updateHistory) {
