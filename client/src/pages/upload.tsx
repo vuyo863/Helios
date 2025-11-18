@@ -245,6 +245,7 @@ export default function Upload() {
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
           botTypes: botTypes,
+          updateHistory: mockUpdatesData,
           phase: 'phase2_step1',
           selectedBotTypeId: selectedBotType.id,
           selectedBotTypeName: botTypeName,

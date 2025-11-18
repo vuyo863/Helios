@@ -24,18 +24,18 @@ Du wurdest aufgefordert, mit Phase 2, Schritt 1 zu beginnen.
 2. Prüfe die bestehenden Metriken für diesen Bot Type
 3. Antworte basierend auf dem Ergebnis:
 
-**WENN Metriken vorhanden sind:**
-- Finde den neuesten Eintrag (erstes in der Liste)
-- Antworte: "Habe folgende Informationen vom letzten Update gefunden: war am [Datum] letzter Update hier gefunden"
-- Beispiel: "Habe folgende Informationen vom letzten Update gefunden: war am 10.01.2025 letzter Update hier gefunden"
+**WENN Updates vorhanden sind:**
+- Finde den neuesten Update (erstes in der Liste)
+- Antworte: "Habe folgende Informationen vom letzten Update gefunden: war am [Datum] um [Uhrzeit] letzter Update hier gefunden"
+- Beispiel: "Habe folgende Informationen vom letzten Update gefunden: war am 15.11.2025 um 14:30 letzter Update hier gefunden"
 
-**WENN KEINE Metriken vorhanden sind:**
-- Antworte: "Keine Metriken gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten"
+**WENN KEINE Updates vorhanden sind:**
+- Antworte: "Keine Updates gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten"
 
 **Wichtig:**
 - Sei präzise und kurz
 - Verwende das genaue Format der Antworten oben
-- Nenne NUR das Datum (keine Uhrzeit)
+- Nenne Datum UND Uhrzeit (z.B. "15.11.2025 um 14:30")
 - Erwähne NIEMALS die interne UUID`;
 
 const SYSTEM_PROMPT = `Du bist ein AI-Assistent für die Pionex Bot Profit Tracker Anwendung.
@@ -132,32 +132,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let contextualPrompt = phase === 'phase2_step1' ? PHASE_2_STEP_1_PROMPT : SYSTEM_PROMPT;
       let isStartMetric = false;
       
-      if (phase === 'phase2_step1' && selectedBotTypeId && selectedBotTypeName) {
-        const existingEntries = await storage.getBotEntriesByBotType(selectedBotTypeId);
+      if (phase === 'phase2_step1' && selectedBotTypeName && updateHistory) {
+        const updates = updateHistory[selectedBotTypeName];
         
         contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotTypeName}"\nID (Farbe): ${selectedBotTypeColor || 'keine Farbe'}\n\n`;
         
-        if (existingEntries && existingEntries.length > 0) {
-          const sortedEntries = existingEntries.sort((a, b) => {
-            const dateA = new Date(a.date || '1970-01-01');
-            const dateB = new Date(b.date || '1970-01-01');
-            return dateB.getTime() - dateA.getTime();
+        if (updates && updates.length > 0) {
+          const latestUpdate = updates[0];
+          
+          contextualPrompt += `**UPDATE-VERLAUF GEFUNDEN (${updates.length} Updates):**\n`;
+          contextualPrompt += `Neuester Update:\n`;
+          contextualPrompt += `- Update Name: "${latestUpdate.updateName}"\n`;
+          contextualPrompt += `- Datum: ${latestUpdate.updateDate}\n`;
+          contextualPrompt += `- Uhrzeit: ${latestUpdate.updateTime}\n`;
+          contextualPrompt += `\n**Alle Updates:**\n`;
+          updates.forEach((update: any, index: number) => {
+            contextualPrompt += `${index + 1}. "${update.updateName}" - ${update.updateDate} ${update.updateTime}\n`;
           });
-          
-          const latestEntry = sortedEntries[0];
-          const entryDate = latestEntry.date || 'Unbekannt';
-          const entryVersion = latestEntry.version || 'Keine Version';
-          const entryBotName = latestEntry.botName || 'Unbekannter Bot';
-          
-          contextualPrompt += `**BESTEHENDE METRIKEN GEFUNDEN (${existingEntries.length} Einträge):**\n`;
-          contextualPrompt += `Neuester Eintrag:\n`;
-          contextualPrompt += `- Datum: ${entryDate}\n`;
-          contextualPrompt += `- Bot Name: ${entryBotName}\n`;
-          contextualPrompt += `- Version: ${entryVersion}\n`;
-          contextualPrompt += `\n**Dies ist der letzte Update. Berichte dem Benutzer das Datum des letzten Updates.**`;
+          contextualPrompt += `\n**Dies ist der letzte Update. Berichte dem Benutzer Datum UND Uhrzeit des letzten Updates.**`;
           isStartMetric = false;
         } else {
-          contextualPrompt += `**BESTEHENDE METRIKEN:**\nKeine Metriken gefunden - dies ist eine Startmetrik.\n`;
+          contextualPrompt += `**UPDATE-VERLAUF:**\nKeine Updates gefunden - dies ist eine Startmetrik.\n`;
           contextualPrompt += `\n**Berichte dem Benutzer, dass dies als Startmetrik gilt.**`;
           isStartMetric = true;
         }
