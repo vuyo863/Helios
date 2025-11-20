@@ -257,6 +257,92 @@ export const GRID_TRADING_LOGIC = {
     modes: ['neu', 'vergleich'],
     warning: 'Do NOT use aggregated investment values for percentage calculation!',
   },
+
+  /**
+   * GRID PROFIT DURCHSCHNITT (Average Grid Profit per Hour/Day/Week)
+   * 
+   * This field has THREE sub-fields:
+   * - avgGridProfitHour (per hour)
+   * - avgGridProfitDay (per day)
+   * - avgGridProfitWeek (per week)
+   * 
+   * ⚠️ CRITICAL: Always use total_grid_profit_usdt from CURRENT upload only!
+   * 
+   * The ONLY difference between "Neu" and "Vergleich" is the TIME BASIS!
+   * 
+   * =================================================================
+   * MODE "NEU" - Average since bot START
+   * =================================================================
+   * 
+   * Time Basis: Total runtime since bots started
+   * 
+   * Calculation:
+   * - hours_total = runtime_since_start_hours
+   * - days_total = runtime_since_start_days
+   * - weeks_total = runtime_since_start_weeks
+   * 
+   * - IF hours_total >= 1:  avg_per_hour = total_grid_profit_usdt / hours_total
+   * - IF days_total >= 1:   avg_per_day = total_grid_profit_usdt / days_total
+   * - IF weeks_total >= 1:  avg_per_week = total_grid_profit_usdt / weeks_total
+   * 
+   * ⚠️ IMPORTANT: Only output fields where time basis >= 1!
+   * - Bot runs 2 days, 10 hours:
+   *   ✅ avg_per_hour = total / 58 hours
+   *   ✅ avg_per_day = total / 2.4 days
+   *   ❌ avg_per_week = EMPTY (not yet 1 week)
+   * 
+   * Example:
+   * - total_grid_profit_usdt = 120 USDT (sum of all screenshots)
+   * - runtime_since_start = 3 days, 12 hours = 84 hours = 3.5 days = 0.5 weeks
+   * 
+   * - avg_per_hour = 120 / 84 = 1.43 USDT/hour ✅
+   * - avg_per_day = 120 / 3.5 = 34.29 USDT/day ✅
+   * - avg_per_week = EMPTY (0.5 weeks < 1 week) ❌
+   * 
+   * =================================================================
+   * MODE "VERGLEICH" - Average since LAST upload
+   * =================================================================
+   * 
+   * Time Basis: Time difference between last upload and current upload
+   * 
+   * Calculation:
+   * - delta_runtime = current_upload_timestamp - last_upload_timestamp
+   * - delta_hours = delta_runtime_in_hours
+   * - delta_days = delta_runtime_in_days
+   * - delta_weeks = delta_runtime_in_weeks
+   * 
+   * - IF delta_hours >= 1:  avg_per_hour = total_grid_profit_usdt / delta_hours
+   * - IF delta_days >= 1:   avg_per_day = total_grid_profit_usdt / delta_days
+   * - IF delta_weeks >= 1:  avg_per_week = total_grid_profit_usdt / delta_weeks
+   * 
+   * ⚠️ total_grid_profit_usdt is STILL from current upload only!
+   * 
+   * Example:
+   * - Last upload: 2025-01-10 10:00
+   * - Current upload: 2025-01-12 14:00
+   * - Delta = 2 days, 4 hours = 52 hours = 2.17 days = 0.31 weeks
+   * - total_grid_profit_usdt = 120 USDT (from current upload)
+   * 
+   * - avg_per_hour = 120 / 52 = 2.31 USDT/hour ✅
+   * - avg_per_day = 120 / 2.17 = 55.30 USDT/day ✅
+   * - avg_per_week = EMPTY (0.31 weeks < 1 week) ❌
+   * 
+   * WHY THIS MAKES SENSE:
+   * - "Neu" shows: "What's the average Grid Profit rate since we started?"
+   * - "Vergleich" shows: "What's the average Grid Profit rate since last check?"
+   * 
+   * Both use the CURRENT upload's total Grid Profit, but divide by different time periods.
+   */
+  GRID_PROFIT_DURCHSCHNITT: {
+    type: 'time_based_average',
+    calculation: 'total_grid_profit / time_basis',
+    time_basis_neu: 'runtime_since_start',
+    time_basis_vergleich: 'delta_since_last_upload',
+    profit_source: 'current_upload_only',
+    modes: ['neu', 'vergleich'],
+    fields: ['avgGridProfitHour', 'avgGridProfitDay', 'avgGridProfitWeek'],
+    minimum_time_requirement: 'time_basis >= 1 for each field',
+  },
 };
 
 /**

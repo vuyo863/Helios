@@ -163,6 +163,11 @@ Preferred communication style: Simple, everyday language.
   - UI displays three compact input fields side-by-side with labels "Stunde", "Tag", "Woche"
   - All three metrics available in ProfitBarChartAdvanced for multi-timeframe analysis
   - Backend mock data updated with realistic hourly/daily/weekly values across 6 entries
+  - **AI Calculation Logic**:
+    - Mode "Neu": total_grid_profit_usdt / runtime_since_start
+    - Mode "Vergleich": total_grid_profit_usdt / delta_since_last_upload
+    - Only output fields where time_basis >= 1 (e.g., no weekly average if bot runs < 1 week)
+    - total_grid_profit_usdt ALWAYS comes from current upload only (sum of all screenshots)
 - **Upload Form Section Reorganization** (November 17, 2025):
   - Form restructured into separate cyan-bordered sections with white backgrounds:
     1. **Bot Type**: Two side-by-side fields - Bot Type (category) and Version (with Save button in header)
@@ -193,6 +198,17 @@ Preferred communication style: Simple, everyday language.
     - Dropdown is irrelevant in "Vergleich" mode
   - This applies to all percentage fields in: Profit/P&L, Trend P&L, Grid Trading (Gesamter + Höchster)
   - Documented in `shared/modes-logic.ts` for AI implementation in Phase 4
+- **Grid Trading Special Logic** (November 20, 2025):
+  - **Gesamter Grid Profit**: Sum of ALL screenshots (standard aggregation)
+  - **Höchster Grid Profit**: SINGLE screenshot with highest value (internal comparison)
+    - Percentage calculation uses INDIVIDUAL screenshot's investment, NOT sum of all investments
+    - Example: If Screenshot 2 has highest Grid Profit (75 USDT), use Screenshot 2's investment (400 USDT) for %
+    - ❌ WRONG: Using sum of all investments (1400 USDT) would show artificially low percentages
+  - **Grid Profit Durchschnitt**: Time-based average with conditional output
+    - Mode "Neu": Divide by runtime_since_start
+    - Mode "Vergleich": Divide by time_since_last_upload
+    - Only output hour/day/week fields if respective time_basis >= 1
+  - All Grid Trading logic documented in `shared/field-logic.ts`
 
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)
