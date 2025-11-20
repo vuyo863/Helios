@@ -176,14 +176,21 @@ Preferred communication style: Simple, everyday language.
   - Dropdowns positioned to the right of section titles for easy time range selection
   - Bot Type and Version fields are optional text inputs stored in database
 - **Critical Percentage Calculation Logic** (November 20, 2025):
-  - **"Neu" Mode**: Percentage = (current_value_usdt / total_investment) × 100
-    - Example: 75 USDT profit / 1200 USDT investment = 6.25%
-    - Meaning: "Current profit is 6.25% of total investment"
+  - **"Neu" Mode with TWO Dropdown Options**:
+    - Each percentage field has a dropdown: "Gesamtinvestment" or "Investitionsmenge"
+    - **Option 1 - Gesamtinvestment**: Percentage = (current_value_usdt / total_investment) × 100
+      - Example: 75 USDT profit / 700 USDT total investment = 10.71%
+      - Meaning: "Current profit is 10.71% of total capital deployed"
+    - **Option 2 - Investitionsmenge**: Percentage = (current_value_usdt / investment) × 100
+      - Example: 75 USDT profit / 500 USDT investment = 15%
+      - Meaning: "Current profit is 15% of base investment (excluding extra margin)"
+    - **AI must calculate BOTH values** - system displays selected one via dropdown
   - **"Vergleich" Mode**: Percentage = (delta_usdt / previous_value) × 100
     - Example: 50→75 USDT = +25 USDT = (25/50)×100 = +50%
     - Meaning: "Profit increased BY 50%" (growth rate!)
     - NOT based on total_investment, but on previous value
-  - This applies to all sections with modes: Profit/P&L, Trend P&L, Grid Trading
+    - Dropdown is irrelevant in "Vergleich" mode
+  - This applies to all percentage fields in: Profit/P&L, Trend P&L, Grid Trading (Gesamter + Höchster)
   - Documented in `shared/modes-logic.ts` for AI implementation in Phase 4
 
 **Planned Features**:

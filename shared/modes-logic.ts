@@ -85,19 +85,42 @@ export const MODES_LOGIC = {
    * - Upload 2 (Tag 5): Profit = 75 USDT → Neu = 75 USDT (total as shown in screenshots)
    * - Upload 3 (Tag 10): Profit = 120 USDT → Neu = 120 USDT
    * 
-   * Example for Profit (% field):
-   * - Profit = 75 USDT
-   * - Total Investment = 260 USDT (from Investment Section)
-   * - Percentage = (75 / 260) × 100 = 28.85%
-   * - This means: "Current profit is 28.85% of total investment"
+   * CRITICAL: TWO PERCENTAGE CALCULATION OPTIONS for "Neu" Mode
+   * ===========================================================
    * 
-   * CRITICAL: Percentage Calculation Formula for "Neu"
-   * ===================================================
+   * Each percentage field has a dropdown with 2 options:
+   * 
+   * Option 1: "Gesamtinvestment" (Total Investment)
+   * ------------------------------------------------
    * percentage = (current_value_usdt / total_investment) × 100
    * 
+   * Example:
+   * - Profit = 75 USDT
+   * - Investitionsmenge = 500 USDT
+   * - Extra Margin = 200 USDT
+   * - Total Investment = 700 USDT
+   * - Percentage = (75 / 700) × 100 = 10.71%
+   * - Meaning: "Profit is 10.71% of total capital deployed"
+   * 
+   * Option 2: "Investitionsmenge" (Investment Amount)
+   * --------------------------------------------------
+   * percentage = (current_value_usdt / investment) × 100
+   * 
+   * Example (same values):
+   * - Profit = 75 USDT
+   * - Investitionsmenge = 500 USDT
+   * - Percentage = (75 / 500) × 100 = 15%
+   * - Meaning: "Profit is 15% of base investment (excluding extra margin)"
+   * 
+   * IMPORTANT FOR AI IMPLEMENTATION:
+   * - The UI has a dropdown next to EVERY percentage field
+   * - The AI must calculate BOTH percentages internally
+   * - The system will display the selected one based on dropdown
+   * - This applies to: Profit %, Trend P&L %, Grid Profit %, Highest Grid Profit %
+   * 
    * This is DIFFERENT from "Vergleich" mode!
-   * - "Neu" → Percentage relative to investment
-   * - "Vergleich" → Percentage as growth rate
+   * - "Neu" → Percentage relative to investment (user chooses which investment base)
+   * - "Vergleich" → Percentage as growth rate (dropdown irrelevant)
    * 
    * Reasoning:
    * - The screenshots from Pionex already show CUMULATIVE values
@@ -115,45 +138,57 @@ export const MODES_LOGIC = {
     comparison: false,
     aggregation: 'sum_if_multiple_bots',
     description: 'Shows the current/new value from the upload (which already contains cumulative data from Pionex)',
-    percentage_formula: '(current_value_usdt / total_investment) × 100',
+    percentage_formula_option1: '(current_value_usdt / total_investment) × 100 - Gesamtinvestment',
+    percentage_formula_option2: '(current_value_usdt / investment) × 100 - Investitionsmenge',
+    percentage_note: 'User selects which base via dropdown. AI must provide both values.',
   },
 
 };
 
 /**
- * COMPARISON TABLE - WITH CORRECT PERCENTAGE FORMULAS
+ * COMPARISON TABLE - WITH TWO PERCENTAGE OPTIONS FOR "NEU" MODE
  * 
- * Scenario: 3 uploads for "Grid Trading Bots"
+ * Scenario: Current upload for "Grid Trading Bots"
  * 
- * Upload 1 (05.11.2025): Investment = 500 USDT, Profit = 25 USDT
- * Upload 2 (10.11.2025): Investment = 800 USDT, Profit = 50 USDT
- * Upload 3 (15.11.2025 - CURRENT): Investment = 1200 USDT, Profit = 75 USDT
+ * Investment Section values:
+ * - Investitionsmenge: 500 USDT (sum of all bot investments)
+ * - Extra Margin: 200 USDT (sum of all extra margins)
+ * - Gesamtinvestment: 700 USDT (500 + 200)
  * 
- * Mode       | Profit (USDT) | Profit (%)              | Calculation
- * -----------|---------------|-------------------------|----------------------------------
- * Neu        | 75 USDT       | 6.25%                   | 75 USDT, (75/1200)×100 = 6.25%
- * Vergleich  | +25 USDT      | +50%                    | 75-50 = +25, (25/50)×100 = +50%
+ * Profit Section values:
+ * - Gesamtprofit: 75 USDT
  * 
- * KEY DIFFERENCE:
- * - "Neu" %: Profit relative to current investment (75/1200 = 6.25%)
- * - "Vergleich" %: Growth rate from previous profit (25/50 = 50% increase!)
+ * Previous Upload:
+ * - Profit was: 50 USDT
  * 
+ * MODE "NEU" - TWO PERCENTAGE CALCULATION OPTIONS:
+ * ================================================
  * 
- * ANOTHER SCENARIO: Multiple bots in single upload
+ * Dropdown Option 1: "Gesamtinvestment"
+ * Mode | Profit (USDT) | Dropdown Selection  | Profit (%) | Calculation
+ * -----|---------------|---------------------|------------|---------------------------
+ * Neu  | 75 USDT       | Gesamtinvestment    | 10.71%     | (75/700)×100 = 10.71%
  * 
- * Current Upload contains 3 bot screenshots:
- * - Bot A: Investment = 400 USDT, Profit = 30 USDT
- * - Bot B: Investment = 300 USDT, Profit = 20 USDT
- * - Bot C: Investment = 500 USDT, Profit = 25 USDT
+ * Dropdown Option 2: "Investitionsmenge"
+ * Mode | Profit (USDT) | Dropdown Selection  | Profit (%) | Calculation
+ * -----|---------------|---------------------|------------|---------------------------
+ * Neu  | 75 USDT       | Investitionsmenge   | 15%        | (75/500)×100 = 15%
  * 
- * Total Investment = 1200 USDT, Total Profit = 75 USDT
+ * MODE "VERGLEICH" - DROPDOWN IRRELEVANT:
+ * =======================================
+ * Mode       | Profit (USDT) | Profit (%)  | Calculation (Growth Rate)
+ * -----------|---------------|-------------|----------------------------------
+ * Vergleich  | +25 USDT      | +50%        | (25/50)×100 = +50% ← Growth Rate!
  * 
- * Last Update (single total): Investment = 800 USDT, Profit = 50 USDT
+ * KEY DIFFERENCES:
+ * - "Neu" with "Gesamtinvestment": Profit as % of total capital (10.71%)
+ * - "Neu" with "Investitionsmenge": Profit as % of base investment only (15%)
+ * - "Vergleich": Growth rate from previous value (50% increase!)
  * 
- * Mode       | Profit (USDT) | Profit (%)              | Formula
- * -----------|---------------|-------------------------|----------------------------------
- * Neu        | 75 USDT       | 6.25%                   | (75/1200)×100
- * Vergleich  | +25 USDT      | +50%                    | (25/50)×100 ← Growth Rate!
+ * AI MUST PROVIDE BOTH PERCENTAGE VALUES FOR "NEU" MODE:
+ * - Option 1: (75 / 700) × 100 = 10.71%
+ * - Option 2: (75 / 500) × 100 = 15%
+ * - The system will display whichever the user selected via dropdown
  */
 
 /**
