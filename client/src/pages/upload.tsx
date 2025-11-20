@@ -565,7 +565,56 @@ export default function Upload() {
         content: message
       }]);
       
-      setIsAiLoading(false);
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, {
+          role: 'ai',
+          content: 'Phase 4 - Schritt 2: Screenshot-Analyse\n\nIch beginne jetzt mit der detaillierten Analyse aller hochgeladenen Screenshots. Jeder Screenshot wird zweimal analysiert, um die Genauigkeit zu gewährleisten.'
+        }]);
+        
+        const screenshotCount = selectedFiles.length;
+        let analysisDelay = 2000;
+        
+        for (let i = 0; i < screenshotCount; i++) {
+          const screenshotNum = i + 1;
+          
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Analysiere Screenshot ${screenshotNum}/${screenshotCount} - Erste Analyse läuft...`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 3000;
+          
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Screenshot ${screenshotNum}/${screenshotCount} - Zweite Analyse zur Überprüfung...`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 3000;
+          
+          setTimeout(() => {
+            const mockData = screenshotNum === 1 
+              ? `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`
+              : `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: -17.43 USDT (-14.52%)\n• Grid Profit: +5.66 USDT (+4.72%)\n• Trend PnL: -23.09 USDT (-19.23%)\n• Hebel: 75x Short\n• Laufzeit: 8h 18m`;
+            
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: mockData
+            }]);
+          }, analysisDelay);
+          analysisDelay += 2000;
+        }
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: `Schritt 2 abgeschlossen. Alle ${screenshotCount} Screenshots wurden erfolgreich analysiert und die Metriken extrahiert.`
+          }]);
+          setIsAiLoading(false);
+        }, analysisDelay);
+        
+      }, 1500);
     }, 1000);
     
     toast({
