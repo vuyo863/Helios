@@ -1,0 +1,140 @@
+✅ TECHNISCHE ZUSAMMENFASSUNG FÜR REPLIT / DIE KI
+1. Wir befinden uns in Phase 3 & 4
+
+Die KI soll NOCH NICHTS tun.
+
+Keine UI ändern.
+
+Keine Ausgabe generieren.
+
+Wir definieren erst die Logik, wie die KI später Daten verstehen und verarbeiten soll.
+
+✅ 2. Grundprinzip der Datenlogik
+
+Es gibt zwei Modi, wie Werte aus Screenshots interpretiert werden sollen:
+
+🔵 Modus A: "INSGESAMT"
+
+→ Die KI liest den gesamten aktuellen Stand des Bots.
+
+Beispiel:
+
+Tag 1: Screenshot zeigt 100
+
+Tag 2: Screenshot zeigt 200
+
+Tag 3: Screenshot zeigt 300
+
+Die KI versteht:
+
+Gesamt am Ende von Tag 1 = 100
+
+Gesamt am Ende von Tag 2 = 200
+
+Gesamt am Ende von Tag 3 = 300
+
+Die KI berechnet den Tages-Gewinn so:
+
+Tag 2 Gewinn = 200 – 100
+
+Tag 3 Gewinn = 300 – 200
+
+🟣 Modus B: "SEIT LETZTEM UPDATE"
+
+→ Die KI liest nur neue Werte seit dem letzten Screenshot.
+
+Dieser Modus wird verwendet, wenn:
+
+Der Bot weiterläuft,
+
+Aber der Benutzer zwischendurch Auszahlungen macht
+
+Dadurch der sichtbare Grid-Gewinn wieder bei 0 beginnt
+
+Beispiel:
+
+Tag 1 Screenshot zeigt 100
+
+Tag 2 → Bot wurde ausgezahlt → Anzeige wieder 0
+
+Tag 2 Screenshot zeigt 70
+
+Wenn die KI "Insgesamt" benutzen würde, denkt sie falsch:
+
+„Er war bei 100 und jetzt ist er bei 70 → -30 Verlust“
+
+Mit „Seit letztem Update“ erkennt die KI korrekt:
+
+Seit letztem Screenshot = +70
+
+✅ 3. Warum wir BEIDE Modi brauchen
+Fall 1: Der Bot läuft durchgehend – keine Auszahlung
+
+→ "Insgesamt" nutzen
+→ KI kann Trends korrekt lesen
+→ KI erkennt echte Tages-Resultate
+
+Fall 2: Der Bot läuft weiter, aber es wird ausgezahlt
+
+→ „Seit letztem Update“ nutzen
+→ KI liest nur neue Werte
+→ KI wird nicht verwirrt durch "Reset" im Grid-Profit
+
+✅ 4. Was die KI konkret tun soll (Logische Steps)
+Step A – Screenshot erhalten
+
+Die KI extrahiert:
+
+Grid Profit (gesamt)
+
+Trend PnL
+
+Gesamt Profit
+
+Laufzeit
+
+Liquidationspreis
+
+Margin
+
+usw.
+
+Step B – Der Benutzer wählt einen Modus:
+
+"Insgesamt"
+
+oder "Seit letztem Update"
+
+Step C – KI berechnet korrekt
+Wenn INSgesamt:
+daily_profit = new_total – old_total
+new_runtime = runtime_shown_in_screenshot
+
+Wenn Seit letztem Update:
+daily_profit = value_in_screenshot (direkt)
+new_runtime = time_between_screenshots
+
+Warum wichtig?
+
+Damit die KI:
+
+korrekte Tageswerte
+
+korrekte Hochrechnungen
+
+korrekte Trends
+berechnen kann, auch wenn der Bot zwischendurch ausgezahlt wurde.
+
+✅ 5. Warum Runtime-Handling wichtig ist
+
+Ein Bot kann:
+
+3 Tage laufen (Runtime steigt)
+
+aber der Gewinn wird täglich ausgezahlt (Gewinn-Anzeige reset)
+
+Darum:
+
+Runtime → immer aus "INSgesamt" lesen
+
+Gewinne → je nach Modus unterscheiden
