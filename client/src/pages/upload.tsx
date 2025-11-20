@@ -381,6 +381,13 @@ export default function Upload() {
       const data = await response.json();
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
       setPhaseTwoStep2Complete(true);
+      
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, { 
+          role: 'ai', 
+          content: 'Ausgezeichnet! Phase 2 ist erfolgreich abgeschlossen. Wir gehen jetzt zu Phase 3 über. Bitte füllen Sie unten die gewünschten Metriken und Modi aus und senden Sie diese mit dem Button "Einstellungen an AI senden".'
+        }]);
+      }, 1200);
     } catch (error) {
       console.error('Phase 2 Step 2 error:', error);
       toast({
