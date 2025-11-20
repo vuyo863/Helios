@@ -184,7 +184,8 @@ Preferred communication style: Simple, everyday language.
     - **Option 2 - Investitionsmenge**: Percentage = (current_value_usdt / investment) × 100
       - Example: 75 USDT profit / 500 USDT investment = 15%
       - Meaning: "Current profit is 15% of base investment (excluding extra margin)"
-    - **AI must calculate BOTH values** - system displays selected one via dropdown
+    - **CRITICAL: AI must ALWAYS calculate and output BOTH values** - dropdown is ONLY for UI display, NOT a filter criterion
+    - The dropdown does NOT control what AI calculates - both values are required in AI output
   - **"Vergleich" Mode**: Percentage = (delta_usdt / previous_value) × 100
     - Example: 50→75 USDT = +25 USDT = (25/50)×100 = +50%
     - Meaning: "Profit increased BY 50%" (growth rate!)

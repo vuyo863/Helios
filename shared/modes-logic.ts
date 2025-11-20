@@ -112,11 +112,25 @@ export const MODES_LOGIC = {
    * - Percentage = (75 / 500) × 100 = 15%
    * - Meaning: "Profit is 15% of base investment (excluding extra margin)"
    * 
-   * IMPORTANT FOR AI IMPLEMENTATION:
-   * - The UI has a dropdown next to EVERY percentage field
-   * - The AI must calculate BOTH percentages internally
-   * - The system will display the selected one based on dropdown
-   * - This applies to: Profit %, Trend P&L %, Grid Profit %, Highest Grid Profit %
+   * CRITICAL FOR AI IMPLEMENTATION:
+   * ================================
+   * - The AI MUST ALWAYS calculate and OUTPUT BOTH percentage values
+   * - This is NOT optional - both values are required in the output
+   * - The dropdown is ONLY a UI feature for user display preference
+   * - The dropdown does NOT control what the AI calculates
+   * 
+   * AI OUTPUT REQUIREMENT:
+   * - For every percentage field, provide BOTH values:
+   *   1. Percentage based on Gesamtinvestment (total_investment)
+   *   2. Percentage based on Investitionsmenge (investment only)
+   * - Example AI output format:
+   *   {
+   *     profit_percent_gesamtinvestment: 10.71,
+   *     profit_percent_investitionsmenge: 15.00
+   *   }
+   * - The UI will then show whichever the user selected via dropdown
+   * 
+   * This applies to: Profit %, Trend P&L %, Grid Profit %, Highest Grid Profit %
    * 
    * This is DIFFERENT from "Vergleich" mode!
    * - "Neu" → Percentage relative to investment (user chooses which investment base)
@@ -185,10 +199,38 @@ export const MODES_LOGIC = {
  * - "Neu" with "Investitionsmenge": Profit as % of base investment only (15%)
  * - "Vergleich": Growth rate from previous value (50% increase!)
  * 
- * AI MUST PROVIDE BOTH PERCENTAGE VALUES FOR "NEU" MODE:
- * - Option 1: (75 / 700) × 100 = 10.71%
- * - Option 2: (75 / 500) × 100 = 15%
- * - The system will display whichever the user selected via dropdown
+ * CRITICAL: AI MUST ALWAYS OUTPUT BOTH PERCENTAGE VALUES FOR "NEU" MODE:
+ * ========================================================================
+ * - Option 1: (75 / 700) × 100 = 10.71% ← ALWAYS calculate this
+ * - Option 2: (75 / 500) × 100 = 15% ← ALWAYS calculate this
+ * - The dropdown is ONLY for UI display, NOT for filtering AI output
+ * - Do NOT skip calculating one based on dropdown selection
+ * - Both values must be provided in every AI response
+ * 
+ * THE REAL EVALUATION CRITERIA ARE:
+ * - "Neu" vs "Vergleich" modes (different calculation methods)
+ * - Everything else is always evaluated - no optional fields
+ */
+
+/**
+ * EVALUATION CRITERIA - WHAT CONTROLS AI ANALYSIS
+ * =================================================
+ * 
+ * THE ONLY REAL SELECTION CRITERIA:
+ * - "Neu" vs "Vergleich" mode (Section-level dropdown at top right)
+ *   → This determines the calculation method
+ *   → This is what the AI evaluates
+ * 
+ * NOT SELECTION CRITERIA (UI-only features):
+ * - Percentage basis dropdown ("Gesamtinvestment" vs "Investitionsmenge")
+ *   → This is ONLY for user display preference
+ *   → AI must calculate BOTH values regardless
+ *   → Does NOT filter or change what AI outputs
+ * 
+ * EVERYTHING IS ALWAYS EVALUATED:
+ * - All fields are always analyzed
+ * - No optional calculations
+ * - Complete data output required
  */
 
 /**
