@@ -1069,10 +1069,20 @@ export default function Upload() {
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
+                      <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="profitPercent"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.profitPercent}
+                          onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
+                          data-testid="input-profit-percent"
+                          className="flex-1"
+                        />
                         <Select value={profitPercentBase} onValueChange={(val) => setProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
-                          <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-profit-percent-base">
+                          <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-profit-percent-base">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1081,15 +1091,6 @@ export default function Upload() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <Input
-                        id="profitPercent"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.profitPercent}
-                        onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
-                        data-testid="input-profit-percent"
-                      />
                     </div>
                   </div>
                 </div>
@@ -1122,11 +1123,24 @@ export default function Upload() {
                         data-testid="input-overall-trend-pnl-usdt"
                       />
                     </div>
-                    <div className="relative">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="overallTrendPnlPercent">Trend P&L (%)</Label>
+                    <div>
+                      <Label htmlFor="overallTrendPnlPercent">Trend P&L (%)</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                          <Input
+                            id="overallTrendPnlPercent"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            className="pr-7"
+                            value={formData.overallTrendPnlPercent}
+                            onChange={(e) => setFormData({ ...formData, overallTrendPnlPercent: e.target.value })}
+                            data-testid="input-overall-trend-pnl-percent"
+                          />
+                        </div>
                         <Select value={trendPercentBase} onValueChange={(val) => setTrendPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
-                          <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-trend-percent-base">
+                          <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-trend-percent-base">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1135,17 +1149,6 @@ export default function Upload() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <span className="absolute right-3 bottom-2.5 text-sm text-muted-foreground">%</span>
-                      <Input
-                        id="overallTrendPnlPercent"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        className="pr-7"
-                        value={formData.overallTrendPnlPercent}
-                        onChange={(e) => setFormData({ ...formData, overallTrendPnlPercent: e.target.value })}
-                        data-testid="input-overall-trend-pnl-percent"
-                      />
                     </div>
                   </div>
                 </div>
@@ -1221,11 +1224,24 @@ export default function Upload() {
                           data-testid="input-overall-grid-profit-usdt"
                         />
                       </div>
-                      <div className="relative">
-                        <div className="flex items-center justify-between mb-2">
-                          <Label htmlFor="overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
+                      <div>
+                        <Label htmlFor="overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                            <Input
+                              id="overallGridProfitPercent"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className="pr-7"
+                              value={formData.overallGridProfitPercent}
+                              onChange={(e) => setFormData({ ...formData, overallGridProfitPercent: e.target.value })}
+                              data-testid="input-overall-grid-profit-percent"
+                            />
+                          </div>
                           <Select value={gridProfitPercentBase} onValueChange={(val) => setGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
-                            <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-grid-profit-percent-base">
+                            <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-grid-profit-percent-base">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1234,17 +1250,6 @@ export default function Upload() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <span className="absolute right-3 bottom-2.5 text-sm text-muted-foreground">%</span>
-                        <Input
-                          id="overallGridProfitPercent"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          className="pr-7"
-                          value={formData.overallGridProfitPercent}
-                          onChange={(e) => setFormData({ ...formData, overallGridProfitPercent: e.target.value })}
-                          data-testid="input-overall-grid-profit-percent"
-                        />
                       </div>
                     </div>
 
@@ -1263,10 +1268,20 @@ export default function Upload() {
                       </div>
 
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
+                        <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="highestGridProfitPercent"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={formData.highestGridProfitPercent}
+                            onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
+                            data-testid="input-highest-grid-profit-percent"
+                            className="flex-1"
+                          />
                           <Select value={highestGridProfitPercentBase} onValueChange={(val) => setHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
-                            <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-highest-grid-profit-percent-base">
+                            <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-highest-grid-profit-percent-base">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1275,15 +1290,6 @@ export default function Upload() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Input
-                          id="highestGridProfitPercent"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={formData.highestGridProfitPercent}
-                          onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
-                          data-testid="input-highest-grid-profit-percent"
-                        />
                       </div>
                     </div>
                   </div>
