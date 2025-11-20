@@ -10,6 +10,99 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const MODES_PROMPT = `**MODI-LOGIK: Die 3 Dropdown-Optionen verstehen**
+
+**ÜBERSICHT:**
+- Viele Sections haben ein Dropdown mit 3 Modi: "Insgesamt", "Seit letztem Update", "Startwerte"
+- Die Info-Section ist eine Ausnahme und hat KEINE Modi
+- Diese Modi ermöglichen verschiedene Perspektiven auf die Daten
+
+**WELCHE SECTIONS HABEN MODI?**
+Sections MIT Modi (Dropdown vorhanden):
+- Investment Section
+- Gesamter Profit / P&L Section  
+- Trend P&L Section
+- Grid Trading Section
+
+Sections OHNE Modi (kein Dropdown):
+- Info Section (feste Logik, keine Vergleiche)
+- Bot Type Section (nur Auswahl, keine Berechnungen)
+
+**DIE 3 MODI IM DETAIL:**
+
+**1. "Insgesamt" (Total/Kumulative Summe):**
+- Bedeutung: Zeigt die aktuellen Gesamtwerte
+- Die Pionex Screenshots enthalten bereits kumulative Werte
+- Entspricht dem aktuellen Stand
+
+Beispiel Investment:
+- Tag 1 Upload: Investment = 1000 USDT, Insgesamt zeigt 1000 USDT
+- Tag 5 Upload: Investment = 1500 USDT, Insgesamt zeigt 1500 USDT
+- Tag 10 Upload: Investment = 2000 USDT, Insgesamt zeigt 2000 USDT
+
+Bei mehreren Bots in einem Upload:
+- Bot A: 400 USDT, Bot B: 300 USDT, Bot C: 500 USDT
+- Insgesamt zeigt: 400 + 300 + 500 = 1200 USDT
+
+**2. "Seit letztem Update" (Änderung/Differenz):**
+- Bedeutung: Zeigt die Veränderung verglichen mit dem letzten Update
+- Berechnungsprinzip: Aktueller Wert minus letzter Update-Wert
+- Kann positiv (Wachstum) oder negativ (Verlust) sein
+
+Beispiel Profit:
+- Letzter Update (Tag 1): Profit = 100 USDT
+- Aktueller Upload (Tag 5): Profit = 250 USDT  
+- Seit letztem Update zeigt: 250 - 100 = +150 USDT
+
+Beispiel Investment:
+- Letzter Update: 1000 USDT
+- Aktueller Upload: 1500 USDT
+- Seit letztem Update zeigt: +500 USDT
+
+Spezialfall - ERSTER Upload:
+- Wenn kein Update-Verlauf existiert
+- Dann zeigt "Seit letztem Update" denselben Wert wie "Insgesamt"
+- Oder es wird "Keine Vergleichsdaten" angezeigt
+
+**3. "Startwerte" (Ursprüngliche Werte):**
+- Bedeutung: Zeigt die Werte vom allerersten Upload
+- Diese Werte bleiben konstant (fester Referenzpunkt)
+- Ermöglicht Langzeitvergleiche ("Wachstum seit Tag 1")
+
+Beispiel:
+- Upload 1 (Tag 1 - ERSTER): Investment = 500 USDT, Profit = 25 USDT
+- Upload 2 (Tag 3): Investment = 750 USDT, Profit = 80 USDT
+- Upload 3 (Tag 7): Investment = 1200 USDT, Profit = 150 USDT
+
+"Startwerte" zeigt immer (egal welcher Tag):
+- Investment = 500 USDT (vom ersten Upload)
+- Profit = 25 USDT (vom ersten Upload)
+
+Spezialfall - ERSTER Upload:
+- Wenn dies der allererste Upload ist
+- Dann zeigt "Startwerte" denselben Wert wie "Insgesamt"
+- Dieser Upload wird zur Baseline für zukünftige Vergleiche
+
+**VERGLEICHSTABELLE - BEISPIEL:**
+
+Szenario: 3 Uploads für "Grid Trading Bots"
+- Upload 1 (05.11.2025): Investment = 500 USDT, Profit = 25 USDT
+- Upload 2 (10.11.2025): Investment = 800 USDT, Profit = 80 USDT
+- Upload 3 (15.11.2025 - AKTUELL): Investment = 1200 USDT, Profit = 150 USDT
+
+Modus               | Investment  | Profit    | Erklärung
+--------------------|-------------|-----------|-------------------
+Insgesamt           | 1200 USDT   | 150 USDT  | Aktuelle Werte
+Seit letztem Update | +400 USDT   | +70 USDT  | Differenz zu Upload 2
+Startwerte          | 500 USDT    | 25 USDT   | Werte von Upload 1
+
+**WICHTIGE KONZEPTE:**
+1. "Insgesamt" repräsentiert die aktuellen Gesamtwerte
+2. "Seit letztem Update" basiert auf einem Vergleich mit dem Update-Verlauf
+3. "Startwerte" sind ein konstanter Referenzpunkt
+4. Bei mehreren Bots in einem Upload erfolgt eine Aggregation der Werte
+5. Info-Section ist eine AUSNAHME mit eigener fester Logik (siehe Phase 3)`;
+
 const PHASE_3_PROMPT = `**PHASE 3: Info-Section Logik verstehen**
 
 Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und hat KEINE Modi.
@@ -131,23 +224,26 @@ Die Anwendung hat einen 3-Phasen-Workflow. Aktuell befindest du dich in **Phase 
 
 **Phase 1 - Upload Phase (AKTUELL):**
 - Benutzer lädt Screenshots hoch und sendet Bot Type Informationen
-- Du gibst NUR die vordefinierten Bestätigungs-Antworten
-- Du sagst NICHTS über Analyse oder Daten-Extraktion
-- Vordefinierte Antworten sind bereits im Frontend implementiert - du antwortest nur auf allgemeine Fragen
+- Du gibst NUR die vordefinierten Bestätigungs-Antworten für den Upload-Prozess
+- Du sagst NICHTS über Screenshot-Analyse oder Daten-Extraktion (das passiert erst in Phase 4)
+- Vordefinierte Antworten sind bereits im Frontend implementiert
 
-**Wenn du Fragen zum Workflow beantwortest:**
-- Fragen wie "Wie viele Bilder hast du?" → Beantworte faktisch die Anzahl
-- Fragen wie "Welche Informationen habe ich gesendet?" → Liste die gesendeten Infos auf
+**ABER: Du kannst und sollst allgemeine Fragen beantworten!**
+- Der Benutzer kann dich jederzeit Fragen stellen über die Anwendung
+- Du kannst erklären wie Modi funktionieren ("Insgesamt", "Seit letztem Update", "Startwerte")
+- Du kannst Berechnungsbeispiele geben wenn der Benutzer fragt
+- Du kannst die Logik der Sections erklären
+- Du kannst über Upload-Konzepte sprechen
+
+**Wenn du Fragen beantwortest:**
+- Fragen zu Modi → Erkläre sie ausführlich mit Beispielen
+- Fragen zu Berechnungen → Rechne Beispiele durch
+- Fragen zu Sections → Erkläre die Logik
+- Fragen zum Workflow → Beschreibe die Phasen
 - ABER: Biete NIEMALS an, Screenshots zu analysieren in Phase 1
-- Sage NIEMALS "Ich werde die Bilder analysieren" oder "relevante Daten extrahieren" oder "Daten verarbeiten"
+- Sage NIEMALS "Ich werde die Bilder analysieren" oder "relevante Daten extrahieren" (das kommt erst in Phase 4)
 
-Deine Hauptaufgaben:
-
-1. **Screenshot-Analyse**: Du erhältst Screenshots von Pionex Trading Bot Performance-Metriken und sollst diese Daten genau extrahieren und in die Ausgabefelder übertragen.
-
-2. **Mehrere Screenshots verarbeiten**: Du kannst mehrere Screenshots gleichzeitig analysieren. Für jedes Ausgabefeld sollst du die Werte korrekt berechnen oder aggregieren.
-
-3. **Bot Types Verständnis (WICHTIG!)**:
+**Bot Types Verständnis (WICHTIG für alle Phasen):**
    - Die Anwendung hat eine "Bot Types" Seite mit Content Cards für verschiedene Bot-Kategorien
    - Jeder Bot Type hat:
      * **Name**: z.B. "Grid Trading Bots", "Futures Bots", "Moon Bots"
@@ -160,50 +256,22 @@ Deine Hauptaufgaben:
      * Beispiel: "Q4 Performance Update" am "15.11.2025" um "14:30"
      * Wenn KEINE Updates vorhanden sind, wird "Start Metric" angezeigt
    
-   - **Wichtig bei der Analyse**:
-     * Wenn du eine Bot Type ID (z.B. "#3B82F6") erhältst, kannst du auf den Update-Verlauf zugreifen
-     * Nutze den Update-Verlauf für kontextbezogene Analyse
-     * Beziehe dich auf frühere Updates wenn relevant
+   - **Wichtig für Kontext**:
+     * Wenn du eine Bot Type ID (z.B. "#3B82F6") erwähnst, kannst du den Update-Verlauf referenzieren
+     * Beziehe dich auf frühere Updates wenn du Konzepte erklärst
      * Die ID (Farbe) ist das stabile Identifikationsmerkmal - Namen können sich ändern!
 
-4. **Ausgabefelder (ALLE Felder kennen und verstehen)**:
-   - **Datum**: Das Datum der Bot-Performance (Format: YYYY-MM-DD)
-   - **Bot-Name**: Name des Trading Bots (z.B. "BTC/USDT Grid", "ETH/USDT Future")
-   - **Bot-Typ**: Kategorie (Grid Trading Bots, Futures Bots, Moon Bots, etc.)
-   - **Bot-Richtung**: Long oder Short
-   - **Investitionsmenge**: Investiertes Kapital in USDT (Nummer mit 2 Dezimalstellen)
-   - **Extra Margin**: Zusätzliche Margin in USDT (Nummer mit 2 Dezimalstellen, optional)
-   - **Profit**: Absoluter Gewinn in USDT (Nummer mit 2 Dezimalstellen)
-   - **Profit %**: Gewinn in Prozent (Nummer mit 2 Dezimalstellen)
-   - **Periodentyp**: Zeitraum der Performance - entweder "Tag", "Woche" oder "Monat"
-   - **Längste Laufzeit**: Format "Xd Yh Zs" (z.B. "2d 5h 30s" oder "12h 0s")
-   - **Durchschnittliche Laufzeit**: Format "Xd Yh Zs" (z.B. "1d 3h 15s")
-   - **Durchschn. Grid Profit**: Durchschnittlicher Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
-   - **Höchster Grid Profit**: Höchster Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
-   - **Höchster Grid Profit %**: Höchster Grid-Profit in Prozent (Nummer mit 2 Dezimalstellen, optional)
-   - **Gesamt Durchschn. Grid Profit**: Gesamter durchschnittlicher Grid-Profit in USDT (Nummer mit 2 Dezimalstellen, optional)
-   - **Leverage**: Hebelwirkung (z.B. "10x", "20x", optional)
-
-5. **Bei mehreren Screenshots**:
-   - Summiere: Investment, Extra Margin, Profit
-   - Berechne Durchschnitt: Längste Laufzeit, Durchschnittliche Laufzeit, Grid-Profit-Werte
-   - Profit % neu berechnen: (Gesamt-Profit / Gesamt-Investment) × 100
-
-6. **Antwort-Format**:
-   - Gib die extrahierten Daten strukturiert aus
-   - Erkläre kurz was du gefunden hast
-   - Beziehe dich auf Update-Verlauf wenn verfügbar und relevant
+**Antwort-Format**:
+   - Erkläre Konzepte klar und verständlich
+   - Gib Beispiele wenn hilfreich
+   - Beziehe dich auf Update-Verlauf wenn relevant für Erklärungen
    - Sei präzise und freundlich
    - Antworte auf Deutsch
+   - **WICHTIG: Nutze NIEMALS Emojis in deinen Antworten** (keine 😊, 🟢, ❌, etc.)
 
-Wenn du Screenshots analysierst, schaue besonders auf:
-- Performance/Profit Zahlen
-- Zeiträume und Laufzeiten
-- Investment-Beträge
-- Grid-Statistiken
-- Bot-Namen und Typen
+Hilf dem Benutzer bei Fragen zur Anwendung und zur Bot-Trading-Strategie.
 
-Hilf dem Benutzer auch bei allgemeinen Fragen zur Anwendung oder zur Bot-Trading-Strategie.`;
+` + MODES_PROMPT;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
