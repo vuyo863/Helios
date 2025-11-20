@@ -1,0 +1,231 @@
+🧠 Kontext für Replit
+
+Du (Replit) programmierst die Logik einer Web-App, die Screenshots von Pionex-Bots auswertet.
+Jeder Screenshot = 1 Bot.
+Ein „Upload-Batch“ = mehrere Screenshots (mehrere Bots derselben Kategorie / Bot-Type).
+
+Wir sind hier ausschließlich in der Investment-Section der Auswertung.
+Diese Section soll anzeigen:
+
+Investitionsmenge (Summe aller Bot-Investments im Batch)
+
+Extra Margin (Summe aller Extra-Margins im Batch)
+
+Gesamtinvestment (Investitionsmenge + Extra Margin)
+
+Diese Werte gelten immer nur für den aktuellen Upload-Batch, nicht global über alle Zeiten.
+
+🎛 Modus-Logik in der Investment-Section
+
+Das globale System kennt zwei Modi:
+
+„Vergleich“ (früher: „Insgesamt“)
+→ Vergleicht neue Werte mit dem letzten Update und berechnet die Veränderung.
+
+„Neu“ (früher: „Seit letztem Update“)
+→ Nimmt die neuen Werte direkt so, wie sie sind, ohne Vergleich.
+
+👉 In der Investment-Section nutzen wir ausschließlich den Modus „Neu“.
+Es gibt hier bewusst keinen Vergleich, und „Vergleich“ wird für Investment nicht verwendet.
+
+Warum nur „Neu“?
+
+Die Investment-Section soll pro Upload-Batch zeigen:
+
+„Wie viel Kapital ist in diesem Batch konkret im Einsatz?“
+
+Wir brauchen diese Werte später, um z. B.:
+
+Prozentuale Gewinne für genau diesen Batch zu berechnen
+(z. B. Profit dieses Batches / Gesamtinvestment dieses Batches)
+
+Ein Vergleich wie:
+
+„+100 USDT mehr Investment als beim letzten Mal“
+
+ist für diese Auswertung nicht hilfreich und würde die Ableitung von Prozentwerten verzerren.
+
+Darum:
+
+Modus = immer „Neu“
+
+Investment-Werte = immer nur aktueller Batch (Upload)
+
+Kein Abzug, keine Differenz, kein Vergleich zu früheren Uploads
+
+🧩 Daten, die aus den Screenshots gelesen werden
+
+Für jeden Screenshot / Bot liest die KI:
+
+investment → die Investitionsmenge dieses Bots
+
+extra_margin → die Extra Margin dieses Bots
+
+Beide Werte stehen auf der jeweiligen Bot-Content-Card.
+
+📦 Felder der Investment-Section
+
+Die Investment-Section hat 3 Ausgabefelder:
+
+Investitionsmenge (Summe Investments)
+
+Extra Margin (Summe Extra Margin)
+
+Gesamtinvestment
+
+Alle drei Felder sind aggregiert pro Upload-Batch.
+
+🧮 Rechenlogik – Schritt für Schritt
+1️⃣ Investitionsmenge (Summe Investments)
+
+Funktion:
+Zeigt die gesamte investierte Menge aller Bots im aktuellen Upload-Batch.
+
+Berechnung:
+
+sum_investment = 0
+for each screenshot in upload_batch:
+    sum_investment += screenshot.investment
+
+
+Beispiel:
+
+Upload-Batch mit 4 Bots:
+
+Bot 1: 50 USDT Investment
+
+Bot 2: 50 USDT Investment
+
+Bot 3: 100 USDT Investment
+
+Bot 4: 25 USDT Investment
+
+→ sum_investment = 50 + 50 + 100 + 25 = 225 USDT
+
+Das Feld „Investitionsmenge“ zeigt:
+
+225 USDT
+
+Wichtig:
+
+Nur aktuelle Screenshots
+
+Kein Vergleich mit vorherigen Uploads
+
+Kein „Vergleich“-Modus
+
+Rein der Ist-Zustand dieses Uploads
+
+2️⃣ Extra Margin (Summe Extra-Margin)
+
+Funktion:
+Zeigt die gesamte Extra-Margin, die in diesem Upload-Batch auf allen Bots liegt.
+
+Berechnung:
+
+sum_extra_margin = 0
+for each screenshot in upload_batch:
+    sum_extra_margin += screenshot.extra_margin
+
+
+Beispiel:
+
+Gleicher Upload-Batch:
+
+Bot 1: 10 USDT Extra Margin
+
+Bot 2: 0 USDT Extra Margin
+
+Bot 3: 20 USDT Extra Margin
+
+Bot 4: 5 USDT Extra Margin
+
+→ sum_extra_margin = 10 + 0 + 20 + 5 = 35 USDT
+
+Das Feld „Extra Margin“ zeigt:
+
+35 USDT
+
+Wichtig:
+
+Wieder nur aktueller Batch
+
+Keine Historie, kein Vergleich
+
+Reine Summe aller Extra-Margin-Werte
+
+3️⃣ Gesamtinvestment
+
+Funktion:
+Zeigt, wie viel Kapital im gesamten Upload-Batch effektiv im Spiel ist, inklusive Extra Margin.
+
+Berechnung:
+
+total_investment = sum_investment + sum_extra_margin
+
+
+Mit den Zahlen aus den Beispielen:
+
+sum_investment = 225 USDT
+
+sum_extra_margin = 35 USDT
+
+→ total_investment = 225 + 35 = 260 USDT
+
+Das Feld „Gesamtinvestment“ zeigt:
+
+260 USDT
+
+🔁 Verhalten über mehrere Uploads
+
+Jeder Upload-Batch wird isoliert betrachtet:
+
+Upload 1 → eigene Investment-Section-Werte
+
+Upload 2 → neue Screenshots, neue Summen, neue Investment-Section
+
+Upload 3 → wieder unabhängig
+
+Für die Investment-Section gilt:
+
+Kein „Vergleich“ mit früheren Uploads
+
+Keine kumulierten historischen Summen
+
+Jeder Batch erzählt seine eigene Story
+
+Später können andere Sections (z. B. Profit- oder P&L-Sektion) sagen:
+
+„Mit einem Gesamtinvestment von 260 USDT hat dieser Batch 40 USDT Profit gemacht → ca. 15,38 % Rendite.“
+
+Die Investment-Section liefert dafür nur die Basis:
+die drei sauberen Kapital-Werte dieses Batches.
+
+📌 Zusammenfassung für Replit (kurz, technisch)
+
+Modus in Investment-Section:
+
+Immer „Neu“
+
+Kein „Vergleich“-Modus, keine Delta-Berechnung
+
+Pro Upload-Batch:
+
+Für jeden Screenshot → investment, extra_margin auslesen
+
+sum_investment = Summe aller investment
+
+sum_extra_margin = Summe aller extra_margin
+
+total_investment = sum_investment + sum_extra_margin
+
+Drei Ausgabefelder:
+
+Investitionsmenge → sum_investment
+
+Extra Margin → sum_extra_margin
+
+Gesamtinvestment → total_investment
+
+Keine Abhängigkeit von vorherigen Uploads.
+Jeder Upload-Batch ist eine eigene, geschlossene Auswertungseinheit.
