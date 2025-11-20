@@ -175,6 +175,16 @@ Preferred communication style: Simple, everyday language.
   - Info section has NO dropdown (fixed logic for each field, isolated per upload)
   - Dropdowns positioned to the right of section titles for easy time range selection
   - Bot Type and Version fields are optional text inputs stored in database
+- **Critical Percentage Calculation Logic** (November 20, 2025):
+  - **"Neu" Mode**: Percentage = (current_value_usdt / total_investment) × 100
+    - Example: 75 USDT profit / 1200 USDT investment = 6.25%
+    - Meaning: "Current profit is 6.25% of total investment"
+  - **"Vergleich" Mode**: Percentage = (delta_usdt / previous_value) × 100
+    - Example: 50→75 USDT = +25 USDT = (25/50)×100 = +50%
+    - Meaning: "Profit increased BY 50%" (growth rate!)
+    - NOT based on total_investment, but on previous value
+  - This applies to all sections with modes: Profit/P&L, Trend P&L, Grid Trading
+  - Documented in `shared/modes-logic.ts` for AI implementation in Phase 4
 
 **Planned Features**:
 - Screenshot upload functionality (file storage not yet implemented)

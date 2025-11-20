@@ -32,15 +32,26 @@ export const MODES_LOGIC = {
    * - Calculate: Current - Last Update = Change
    * - Can be positive (growth) or negative (loss)
    * 
-   * Example for Profit:
+   * Example for Profit (USDT field):
    * - Last Update (Tag 1): Profit = 100 USDT
    * - Current Upload (Tag 5): Profit = 250 USDT
    * - Vergleich = 250 - 100 = +150 USDT
    * 
-   * Example for Investment:
-   * - Last Update: Investment = 1000 USDT
-   * - Current Upload: Investment = 1500 USDT
-   * - Vergleich = 1500 - 1000 = +500 USDT
+   * Example for Profit (% field):
+   * - USDT Delta = +150 USDT
+   * - Percentage = (150 / 100) × 100 = +150% ← Growth Rate!
+   * - This means: "Profit increased BY 150%"
+   * 
+   * CRITICAL: Percentage Calculation Formula
+   * ==========================================
+   * percentage = (delta_usdt / previous_value) × 100
+   * 
+   * NOT: (delta_usdt / total_investment) × 100 ← WRONG!
+   * 
+   * Examples:
+   * 1) 50 USDT → 75 USDT = +25 USDT = +50% (25/50×100)
+   * 2) 100 USDT → 120 USDT = +20 USDT = +20% (20/100×100)
+   * 3) 200 USDT → 180 USDT = -20 USDT = -10% (-20/200×100)
    * 
    * Special case - FIRST upload (no previous update):
    * - There is no "last update" to compare with
@@ -57,6 +68,7 @@ export const MODES_LOGIC = {
     comparison: true,
     requires_history: true,
     description: 'Shows the change/difference since the last update',
+    percentage_formula: '(delta_usdt / previous_value) × 100',
   },
 
   /**
@@ -68,10 +80,24 @@ export const MODES_LOGIC = {
    * - Take the current upload value
    * - This IS the "Neu" value because each upload already shows cumulative data
    * 
-   * Example for Investment:
-   * - Upload 1 (Tag 1): Investment = 1000 USDT → Neu = 1000 USDT
-   * - Upload 2 (Tag 2): Investment = 1500 USDT → Neu = 1500 USDT (cumulative shown in screenshot)
-   * - Upload 3 (Tag 5): Investment = 2000 USDT → Neu = 2000 USDT
+   * Example for Profit (USDT field):
+   * - Upload 1 (Tag 1): Profit = 50 USDT → Neu = 50 USDT
+   * - Upload 2 (Tag 5): Profit = 75 USDT → Neu = 75 USDT (total as shown in screenshots)
+   * - Upload 3 (Tag 10): Profit = 120 USDT → Neu = 120 USDT
+   * 
+   * Example for Profit (% field):
+   * - Profit = 75 USDT
+   * - Total Investment = 260 USDT (from Investment Section)
+   * - Percentage = (75 / 260) × 100 = 28.85%
+   * - This means: "Current profit is 28.85% of total investment"
+   * 
+   * CRITICAL: Percentage Calculation Formula for "Neu"
+   * ===================================================
+   * percentage = (current_value_usdt / total_investment) × 100
+   * 
+   * This is DIFFERENT from "Vergleich" mode!
+   * - "Neu" → Percentage relative to investment
+   * - "Vergleich" → Percentage as growth rate
    * 
    * Reasoning:
    * - The screenshots from Pionex already show CUMULATIVE values
@@ -89,38 +115,45 @@ export const MODES_LOGIC = {
     comparison: false,
     aggregation: 'sum_if_multiple_bots',
     description: 'Shows the current/new value from the upload (which already contains cumulative data from Pionex)',
+    percentage_formula: '(current_value_usdt / total_investment) × 100',
   },
 
 };
 
 /**
- * COMPARISON TABLE
+ * COMPARISON TABLE - WITH CORRECT PERCENTAGE FORMULAS
  * 
  * Scenario: 3 uploads for "Grid Trading Bots"
  * 
  * Upload 1 (05.11.2025): Investment = 500 USDT, Profit = 25 USDT
- * Upload 2 (10.11.2025): Investment = 800 USDT, Profit = 80 USDT
- * Upload 3 (15.11.2025 - CURRENT): Investment = 1200 USDT, Profit = 150 USDT
+ * Upload 2 (10.11.2025): Investment = 800 USDT, Profit = 50 USDT
+ * Upload 3 (15.11.2025 - CURRENT): Investment = 1200 USDT, Profit = 75 USDT
  * 
- * Mode                | Investment Display | Profit Display | Calculation
- * --------------------|-------------------|----------------|-------------------
- * Neu                 | 1200 USDT         | 150 USDT       | Current value
- * Vergleich           | +400 USDT         | +70 USDT       | Current - Upload 2
+ * Mode       | Profit (USDT) | Profit (%)              | Calculation
+ * -----------|---------------|-------------------------|----------------------------------
+ * Neu        | 75 USDT       | 6.25%                   | 75 USDT, (75/1200)×100 = 6.25%
+ * Vergleich  | +25 USDT      | +50%                    | 75-50 = +25, (25/50)×100 = +50%
+ * 
+ * KEY DIFFERENCE:
+ * - "Neu" %: Profit relative to current investment (75/1200 = 6.25%)
+ * - "Vergleich" %: Growth rate from previous profit (25/50 = 50% increase!)
  * 
  * 
  * ANOTHER SCENARIO: Multiple bots in single upload
  * 
  * Current Upload contains 3 bot screenshots:
- * - Bot A: Investment = 400 USDT, Profit = 50 USDT
- * - Bot B: Investment = 300 USDT, Profit = 35 USDT
- * - Bot C: Investment = 500 USDT, Profit = 65 USDT
+ * - Bot A: Investment = 400 USDT, Profit = 30 USDT
+ * - Bot B: Investment = 300 USDT, Profit = 20 USDT
+ * - Bot C: Investment = 500 USDT, Profit = 25 USDT
  * 
- * Last Update (single total): Investment = 800 USDT, Profit = 100 USDT
+ * Total Investment = 1200 USDT, Total Profit = 75 USDT
  * 
- * Mode                | Investment Display | Profit Display | Calculation
- * --------------------|-------------------|----------------|----------------------------
- * Neu                 | 1200 USDT         | 150 USDT       | 400+300+500, 50+35+65
- * Vergleich           | +400 USDT         | +50 USDT       | 1200-800, 150-100
+ * Last Update (single total): Investment = 800 USDT, Profit = 50 USDT
+ * 
+ * Mode       | Profit (USDT) | Profit (%)              | Formula
+ * -----------|---------------|-------------------------|----------------------------------
+ * Neu        | 75 USDT       | 6.25%                   | (75/1200)×100
+ * Vergleich  | +25 USDT      | +50%                    | (25/50)×100 ← Growth Rate!
  */
 
 /**
