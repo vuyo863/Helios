@@ -23,39 +23,7 @@
 
 export const MODES_LOGIC = {
   /**
-   * MODE 1: "Insgesamt" (Total/Cumulative)
-   * 
-   * Function: Shows the SUM of ALL uploads up to now
-   * 
-   * Logic:
-   * - Take the current upload value
-   * - This IS the "Insgesamt" value because each upload already shows cumulative data
-   * 
-   * Example for Investment:
-   * - Upload 1 (Tag 1): Investment = 1000 USDT → Insgesamt = 1000 USDT
-   * - Upload 2 (Tag 2): Investment = 1500 USDT → Insgesamt = 1500 USDT (cumulative shown in screenshot)
-   * - Upload 3 (Tag 5): Investment = 2000 USDT → Insgesamt = 2000 USDT
-   * 
-   * Reasoning:
-   * - The screenshots from Pionex already show CUMULATIVE values
-   * - No addition of uploads is needed
-   * - The current total is shown directly
-   * 
-   * For multiple screenshots in one upload:
-   * - If upload contains 3 bot screenshots
-   * - Bot A: 1000 USDT, Bot B: 500 USDT, Bot C: 800 USDT
-   * - Insgesamt = 1000 + 500 + 800 = 2300 USDT
-   */
-  INSGESAMT: {
-    mode: 'total',
-    calculation: 'current_upload_value',
-    comparison: false,
-    aggregation: 'sum_if_multiple_bots',
-    description: 'Shows the cumulative value from the current upload (which already contains cumulative data from Pionex)',
-  },
-
-  /**
-   * MODE 2: "Seit letztem Update" (Since Last Update)
+   * MODE 1: "Vergleich" (Comparison/Difference)
    * 
    * Function: Shows the CHANGE/DIFFERENCE compared to the last update
    * 
@@ -67,28 +35,60 @@ export const MODES_LOGIC = {
    * Example for Profit:
    * - Last Update (Tag 1): Profit = 100 USDT
    * - Current Upload (Tag 5): Profit = 250 USDT
-   * - Seit letztem Update = 250 - 100 = +150 USDT
+   * - Vergleich = 250 - 100 = +150 USDT
    * 
    * Example for Investment:
    * - Last Update: Investment = 1000 USDT
    * - Current Upload: Investment = 1500 USDT
-   * - Seit letztem Update = 1500 - 1000 = +500 USDT
+   * - Vergleich = 1500 - 1000 = +500 USDT
    * 
    * Special case - FIRST upload (no previous update):
    * - There is no "last update" to compare with
-   * - "Seit letztem Update" = same as "Insgesamt" (current value)
+   * - "Vergleich" = same as "Neu" (current value)
    * - OR show "N/A" or "Keine Vergleichsdaten"
    * 
    * For multiple screenshots in one upload:
    * - Aggregate current upload first: Bot A + Bot B + Bot C = Current Total
    * - Then compare: Current Total - Last Update Total = Difference
    */
-  SEIT_LETZTEM_UPDATE: {
-    mode: 'since_last_update',
-    calculation: 'current_minus_last_update',
+  VERGLEICH: {
+    mode: 'comparison',
+    calculation: 'difference_since_last_update',
     comparison: true,
     requires_history: true,
     description: 'Shows the change/difference since the last update',
+  },
+
+  /**
+   * MODE 2: "Neu" (New/Current Values)
+   * 
+   * Function: Shows the current/new values from the upload
+   * 
+   * Logic:
+   * - Take the current upload value
+   * - This IS the "Neu" value because each upload already shows cumulative data
+   * 
+   * Example for Investment:
+   * - Upload 1 (Tag 1): Investment = 1000 USDT → Neu = 1000 USDT
+   * - Upload 2 (Tag 2): Investment = 1500 USDT → Neu = 1500 USDT (cumulative shown in screenshot)
+   * - Upload 3 (Tag 5): Investment = 2000 USDT → Neu = 2000 USDT
+   * 
+   * Reasoning:
+   * - The screenshots from Pionex already show CUMULATIVE values
+   * - No addition of uploads is needed
+   * - The current total is shown directly
+   * 
+   * For multiple screenshots in one upload:
+   * - If upload contains 3 bot screenshots
+   * - Bot A: 1000 USDT, Bot B: 500 USDT, Bot C: 800 USDT
+   * - Neu = 1000 + 500 + 800 = 2300 USDT
+   */
+  NEU: {
+    mode: 'new_values',
+    calculation: 'current_upload_value',
+    comparison: false,
+    aggregation: 'sum_if_multiple_bots',
+    description: 'Shows the current/new value from the upload (which already contains cumulative data from Pionex)',
   },
 
 };
@@ -104,8 +104,8 @@ export const MODES_LOGIC = {
  * 
  * Mode                | Investment Display | Profit Display | Calculation
  * --------------------|-------------------|----------------|-------------------
- * Insgesamt           | 1200 USDT         | 150 USDT       | Current value
- * Seit letztem Update | +400 USDT         | +70 USDT       | Current - Upload 2
+ * Neu                 | 1200 USDT         | 150 USDT       | Current value
+ * Vergleich           | +400 USDT         | +70 USDT       | Current - Upload 2
  * 
  * 
  * ANOTHER SCENARIO: Multiple bots in single upload
@@ -119,21 +119,21 @@ export const MODES_LOGIC = {
  * 
  * Mode                | Investment Display | Profit Display | Calculation
  * --------------------|-------------------|----------------|----------------------------
- * Insgesamt           | 1200 USDT         | 150 USDT       | 400+300+500, 50+35+65
- * Seit letztem Update | +400 USDT         | +50 USDT       | 1200-800, 150-100
+ * Neu                 | 1200 USDT         | 150 USDT       | 400+300+500, 50+35+65
+ * Vergleich           | +400 USDT         | +50 USDT       | 1200-800, 150-100
  */
 
 /**
  * KEY PRINCIPLES
  * 
- * 1. **"Insgesamt" default behavior**:
+ * 1. **"Neu" default behavior**:
  *    - Shows the CURRENT values from the upload
- *    - These represent the "Insgesamt" values automatically
+ *    - These represent the new/current values automatically
  * 
- * 2. **"Seit letztem Update" history requirement**:
+ * 2. **"Vergleich" history requirement**:
  *    - Requires updateHistory for the Bot Type
  *    - If history exists: Shows comparison with last update
- *    - If no history: Shows same as "Insgesamt" or "N/A"
+ *    - If no history: Shows same as "Neu" or "N/A"
  * 
  * 3. **Multiple screenshots in one upload**:
  *    - Values are aggregated across all bots in the upload
@@ -145,7 +145,7 @@ export const MODES_LOGIC = {
  *    - Mode logic does not apply to Info-Section
  */
 
-export type ModeType = 'insgesamt' | 'seit_letztem_update';
+export type ModeType = 'vergleich' | 'neu';
 
 export interface ModeCalculation {
   mode: ModeType;

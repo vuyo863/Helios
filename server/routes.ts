@@ -13,7 +13,7 @@ const openai = new OpenAI({
 const MODES_PROMPT = `**MODI-LOGIK: Die 2 Dropdown-Optionen verstehen**
 
 **ÜBERSICHT:**
-- Viele Sections haben ein Dropdown mit 2 Modi: "Insgesamt" und "Seit letztem Update"
+- Viele Sections haben ein Dropdown mit 2 Modi: "Vergleich" und "Neu"
 - Die Info-Section ist eine Ausnahme und hat KEINE Modi
 - Diese Modi ermöglichen verschiedene Perspektiven auf die Daten
 
@@ -30,38 +30,37 @@ Sections OHNE Modi (kein Dropdown):
 
 **DIE 2 MODI IM DETAIL:**
 
-**1. "Insgesamt" (Total/Kumulative Summe):**
-- Bedeutung: Zeigt die aktuellen Gesamtwerte
+**1. "Vergleich" (Comparison/Differenz):**
+- Bedeutung: Zeigt die Veränderung/Differenz seit dem letzten Update
+- Berechnungsprinzip: Aktueller Wert minus letzter Update-Wert
+- Kann positiv (Wachstum) oder negativ (Verlust) sein
+
+Beispiel Investment:
+- Letzter Upload: Investment = 1000 USDT
+- Aktueller Upload: Investment = 1500 USDT
+- Vergleich zeigt: +500 USDT (Differenz)
+
+Bei mehreren Bots in einem Upload:
+- Aggregiere zuerst: 400 + 300 + 500 = 1200 USDT
+- Vergleiche dann: 1200 - 800 (letzter Upload) = +400 USDT
+
+**2. "Neu" (New/Aktuelle Werte):**
+- Bedeutung: Zeigt die aktuellen/neuen Gesamtwerte aus dem Upload
 - Die Pionex Screenshots enthalten bereits kumulative Werte
 - Entspricht dem aktuellen Stand
 
 Beispiel Investment:
-- Tag 1 Upload: Investment = 1000 USDT, Insgesamt zeigt 1000 USDT
-- Tag 5 Upload: Investment = 1500 USDT, Insgesamt zeigt 1500 USDT
-- Tag 10 Upload: Investment = 2000 USDT, Insgesamt zeigt 2000 USDT
+- Tag 1 Upload: Investment = 1000 USDT, Neu zeigt 1000 USDT
+- Tag 5 Upload: Investment = 1500 USDT, Neu zeigt 1500 USDT
+- Tag 10 Upload: Investment = 2000 USDT, Neu zeigt 2000 USDT
 
 Bei mehreren Bots in einem Upload:
 - Bot A: 400 USDT, Bot B: 300 USDT, Bot C: 500 USDT
-- Insgesamt zeigt: 400 + 300 + 500 = 1200 USDT
-
-**2. "Seit letztem Update" (Änderung/Differenz):**
-- Bedeutung: Zeigt die Veränderung verglichen mit dem letzten Update
-- Berechnungsprinzip: Aktueller Wert minus letzter Update-Wert
-- Kann positiv (Wachstum) oder negativ (Verlust) sein
-
-Beispiel Profit:
-- Letzter Update (Tag 1): Profit = 100 USDT
-- Aktueller Upload (Tag 5): Profit = 250 USDT  
-- Seit letztem Update zeigt: 250 - 100 = +150 USDT
-
-Beispiel Investment:
-- Letzter Update: 1000 USDT
-- Aktueller Upload: 1500 USDT
-- Seit letztem Update zeigt: +500 USDT
+- Neu zeigt: 400 + 300 + 500 = 1200 USDT
 
 Spezialfall - ERSTER Upload:
 - Wenn kein Update-Verlauf existiert
-- Dann zeigt "Seit letztem Update" denselben Wert wie "Insgesamt"
+- Dann zeigt "Vergleich" denselben Wert wie "Neu"
 - Oder es wird "Keine Vergleichsdaten" angezeigt
 
 **VERGLEICHSTABELLE - BEISPIEL:**
@@ -73,12 +72,12 @@ Szenario: 3 Uploads für "Grid Trading Bots"
 
 Modus               | Investment  | Profit    | Erklärung
 --------------------|-------------|-----------|-------------------
-Insgesamt           | 1200 USDT   | 150 USDT  | Aktuelle Werte
-Seit letztem Update | +400 USDT   | +70 USDT  | Differenz zu Upload 2
+Neu                 | 1200 USDT   | 150 USDT  | Aktuelle/Neue Werte
+Vergleich           | +400 USDT   | +70 USDT  | Differenz zu Upload 2
 
 **WICHTIGE KONZEPTE:**
-1. "Insgesamt" repräsentiert die aktuellen Gesamtwerte
-2. "Seit letztem Update" basiert auf einem Vergleich mit dem Update-Verlauf
+1. "Neu" repräsentiert die aktuellen/neuen Gesamtwerte
+2. "Vergleich" basiert auf einem Vergleich mit dem Update-Verlauf
 3. Bei mehreren Bots in einem Upload erfolgt eine Aggregation der Werte
 4. Info-Section ist eine AUSNAHME mit eigener fester Logik (siehe Phase 3)`;
 
@@ -89,7 +88,7 @@ Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und ha
 **WICHTIG:**
 - Die Info-Section hat KEIN Dropdown-Menü
 - Jedes Feld hat eine feste, unveränderbare Funktion
-- Keine Modi wie "Insgesamt" oder "Seit letztem Update"
+- Keine Modi wie "Vergleich" oder "Neu"
 - Die Info-Section dient nur der BESCHREIBUNG der Bots, NICHT der Profit-Berechnung
 
 **DIE 5 FELDER DER INFO-SECTION:**
@@ -209,7 +208,7 @@ Die Anwendung hat einen 3-Phasen-Workflow. Aktuell befindest du dich in **Phase 
 
 **ABER: Du kannst und sollst allgemeine Fragen beantworten!**
 - Der Benutzer kann dich jederzeit Fragen stellen über die Anwendung
-- Du kannst erklären wie Modi funktionieren ("Insgesamt", "Seit letztem Update")
+- Du kannst erklären wie Modi funktionieren ("Vergleich", "Neu")
 - Du kannst Berechnungsbeispiele geben wenn der Benutzer fragt
 - Du kannst die Logik der Sections erklären
 - Du kannst über Upload-Konzepte sprechen

@@ -70,11 +70,10 @@ export default function Upload() {
     leverage: '',
   });
 
-  const [infoTimeRange, setInfoTimeRange] = useState("Insgesamt");
-  const [investmentTimeRange, setInvestmentTimeRange] = useState("Insgesamt");
-  const [profitTimeRange, setProfitTimeRange] = useState("Insgesamt");
-  const [trendTimeRange, setTrendTimeRange] = useState("Insgesamt");
-  const [gridTimeRange, setGridTimeRange] = useState("Insgesamt");
+  const [investmentTimeRange, setInvestmentTimeRange] = useState("Neu");
+  const [profitTimeRange, setProfitTimeRange] = useState("Neu");
+  const [trendTimeRange, setTrendTimeRange] = useState("Neu");
+  const [gridTimeRange, setGridTimeRange] = useState("Neu");
   const [outputMode, setOutputMode] = useState<'update-metrics' | 'closed-bots'>('update-metrics');
 
   const uploadMutation = useMutation({
@@ -921,8 +920,8 @@ export default function Upload() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
-                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Vergleich">Vergleich</SelectItem>
+                        <SelectItem value="Neu">Neu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -964,8 +963,8 @@ export default function Upload() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
-                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Vergleich">Vergleich</SelectItem>
+                        <SelectItem value="Neu">Neu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1015,8 +1014,8 @@ export default function Upload() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
-                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Vergleich">Vergleich</SelectItem>
+                        <SelectItem value="Neu">Neu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1060,8 +1059,8 @@ export default function Upload() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Insgesamt">Insgesamt</SelectItem>
-                        <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
+                        <SelectItem value="Vergleich">Vergleich</SelectItem>
+                        <SelectItem value="Neu">Neu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

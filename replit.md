@@ -170,7 +170,7 @@ Preferred communication style: Simple, everyday language.
     4. **Gesamter Profit / P&L**: Gesamtprofit (USDT), Gesamtprofit (%)
     5. **Trend P&L**: Trend P&L (USDT), Trend P&L (%)
     6. **Grid Trading**: Grid Profit metrics, Overall Grid Profit, Highest Grid Profit
-  - Most sections (Investment, Gesamter Profit/P&L, Trend P&L, Grid Trading) include dropdown filter with 2 mode options: "Insgesamt", "Seit letztem Update"
+  - Most sections (Investment, Gesamter Profit/P&L, Trend P&L, Grid Trading) include dropdown filter with 2 mode options: "Vergleich" (comparison/difference), "Neu" (new/current values)
   - Info section has NO dropdown (fixed logic for each field, isolated per upload)
   - Dropdowns positioned to the right of section titles for easy time range selection
   - Bot Type and Version fields are optional text inputs stored in database
