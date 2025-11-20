@@ -10,6 +10,71 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const PHASE_3_PROMPT = `**PHASE 3: Info-Section Logik verstehen**
+
+Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und hat KEINE Modi.
+
+**WICHTIG:**
+- Die Info-Section hat KEIN Dropdown-Menü
+- Jedes Feld hat eine feste, unveränderbare Funktion
+- Keine Modi wie "Insgesamt", "Seit letztem Update" oder "Startwerte"
+- Die Info-Section dient nur der BESCHREIBUNG der Bots, NICHT der Profit-Berechnung
+
+**DIE 5 FELDER DER INFO-SECTION:**
+
+**1. DATUM:**
+- Funktion: Zeigt IMMER das Startdatum des allerersten Uploads dieser Bot Type Kategorie
+- Beispiel: Erster Upload am 01.01.2025 → bleibt IMMER 01.01.2025
+- Logik: Einmal setzen, nie wieder ändern
+- Keine Neuberechnung, keine Updates, keine Modi
+
+**2. BOT-RICHTUNG (Long/Short/Beides):**
+- Funktion: Zeigt welche Art von Bots im aktuellen Upload vorkommen
+- Optionen:
+  - Nur Long-Bots → "Long"
+  - Nur Short-Bots → "Short"  
+  - Gemischt → "Beides"
+- Logik: Zähle Richtungen nur aus aktuellem Upload
+- Keine Modi, kein Vergleich mit vorherigen Updates
+
+**3. HEBEL:**
+- Funktion: Zeigt verwendete Hebel aus dem aktuellen Upload
+- Beispiele:
+  - Alle nutzen 5x → "5x"
+  - 8 nutzen 5x, 2 nutzen 10x → "5x, 10x"
+- Logik: Aggregiere Hebel nur aus aktuellem Upload
+- Keine Modi, kein Vergleich mit vorherigen Uploads
+
+**4. LÄNGSTE LAUFZEIT:**
+- Funktion: Höchster Runtime-Wert NUR aus dem aktuellen Upload
+- Beispiel:
+  - Upload A: Bots laufen 1d, 4d, 9d → Längste = 9d
+  - Upload B: Bots laufen 3h, 7h, 15h → Längste = 15h
+  - Wir vergleichen NICHT mit 9d von Upload A!
+- Logik: MAX(alle Laufzeiten) nur aus diesem Upload
+- Keine Modi, kein Cross-Update-Vergleich
+- Jeder Upload ist isoliert
+
+**5. DURCHSCHNITTLICHE LAUFZEIT:**
+- Funktion: Durchschnitt aller Laufzeiten aus dem aktuellen Upload
+- Beispiel:
+  - Upload mit Bots: 1d, 3d, 5d
+  - Durchschnitt = (1 + 3 + 5) / 3 = 3d
+  - Neuer Upload: 4h, 6h
+  - Durchschnitt = 5h (kein Bezug zu vorherigen Uploads)
+- Logik: AVG(alle Laufzeiten) nur aus diesem Upload
+- Keine Modi, keine Vergleichslogik
+- Jeder Upload wird isoliert berechnet
+
+**ZUSAMMENFASSUNG:**
+- Datum: Startdatum (bleibt immer gleich)
+- Bot-Richtung: Long/Short/Beides aus aktuellem Upload
+- Hebel: Hebel aus aktuellem Upload
+- Längste Laufzeit: MAX aus aktuellem Upload
+- Durchschnittliche Laufzeit: AVG aus aktuellem Upload
+
+Bestätige, dass du diese Logik verstanden hast, indem du sie in eigenen Worten erklärst.`;
+
 const PHASE_2_STEP_2_PROMPT = `**PHASE 2, SCHRITT 2: Screenshot-Analyse Test**
 
 Du wurdest aufgefordert, einen Test durchzuführen um zu prüfen, ob du Screenshots analysieren kannst.
@@ -154,6 +219,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contextualPrompt = PHASE_2_STEP_1_PROMPT;
       } else if (phase === 'phase2_step2') {
         contextualPrompt = PHASE_2_STEP_2_PROMPT;
+      } else if (phase === 'phase3') {
+        // Phase 3 ADDS to system prompt, does not replace it
+        contextualPrompt = SYSTEM_PROMPT + '\n\n' + PHASE_3_PROMPT;
       }
       let isStartMetric = false;
       
