@@ -76,6 +76,11 @@ export default function Upload() {
   const [trendTimeRange, setTrendTimeRange] = useState("Neu");
   const [gridTimeRange, setGridTimeRange] = useState("Neu");
   const [outputMode, setOutputMode] = useState<'update-metrics' | 'closed-bots'>('update-metrics');
+  
+  const [profitPercentBase, setProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [trendPercentBase, setTrendPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [gridProfitPercentBase, setGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [highestGridProfitPercentBase, setHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
 
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
@@ -1008,7 +1013,18 @@ export default function Upload() {
                     </div>
 
                     <div>
-                      <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
+                        <Select value={profitPercentBase} onValueChange={(val) => setProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
+                          <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-profit-percent-base">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
+                            <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <Input
                         id="profitPercent"
                         type="number"
@@ -1051,7 +1067,18 @@ export default function Upload() {
                       />
                     </div>
                     <div className="relative">
-                      <Label htmlFor="overallTrendPnlPercent">Trend P&L (%)</Label>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label htmlFor="overallTrendPnlPercent">Trend P&L (%)</Label>
+                        <Select value={trendPercentBase} onValueChange={(val) => setTrendPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
+                          <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-trend-percent-base">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
+                            <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <span className="absolute right-3 bottom-2.5 text-sm text-muted-foreground">%</span>
                       <Input
                         id="overallTrendPnlPercent"
@@ -1139,7 +1166,18 @@ export default function Upload() {
                         />
                       </div>
                       <div className="relative">
-                        <Label htmlFor="overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
+                          <Select value={gridProfitPercentBase} onValueChange={(val) => setGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
+                            <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-grid-profit-percent-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
+                              <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <span className="absolute right-3 bottom-2.5 text-sm text-muted-foreground">%</span>
                         <Input
                           id="overallGridProfitPercent"
@@ -1169,7 +1207,18 @@ export default function Upload() {
                       </div>
 
                       <div>
-                        <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
+                          <Select value={highestGridProfitPercentBase} onValueChange={(val) => setHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
+                            <SelectTrigger className="w-40 h-7 text-xs" data-testid="select-highest-grid-profit-percent-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
+                              <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <Input
                           id="highestGridProfitPercent"
                           type="number"
