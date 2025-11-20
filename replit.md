@@ -88,6 +88,7 @@ Preferred communication style: Simple, everyday language.
    - botDirection (optional text - trading direction: Long/Short)
    - investment (numeric with precision 12, scale 2)
    - extraMargin (optional numeric - extra margin)
+   - totalInvestment (optional numeric - total investment)
    - profit (numeric with precision 12, scale 2)
    - profitPercent (numeric with precision 8, scale 2)
    - periodType (text: 'Tag', 'Woche', 'Monat')
@@ -166,7 +167,7 @@ Preferred communication style: Simple, everyday language.
   - Form restructured into separate cyan-bordered sections with white backgrounds:
     1. **Bot Type**: Two side-by-side fields - Bot Type (category) and Version (with Save button in header)
     2. **Info**: Datum, Bot-Richtung, Hebel, Längste Laufzeit, Durchschnittliche Laufzeit
-    3. **Investment**: Investitionsmenge (USDT), Extra Margin (separated from Info section)
+    3. **Investment**: Investitionsmenge (USDT), Extra Margin, Gesamtinvestment (3 Felder; Dropdown fest auf "Neu", nicht änderbar)
     4. **Gesamter Profit / P&L**: Gesamtprofit (USDT), Gesamtprofit (%)
     5. **Trend P&L**: Trend P&L (USDT), Trend P&L (%)
     6. **Grid Trading**: Grid Profit metrics, Overall Grid Profit, Highest Grid Profit

@@ -53,6 +53,7 @@ export default function Upload() {
     botDirection: 'Long',
     investment: '',
     extraMargin: '',
+    totalInvestment: '',
     profit: '',
     profitPercent: '',
     periodType: 'Tag',
@@ -96,6 +97,7 @@ export default function Upload() {
         botName: '',
         investment: '',
         extraMargin: '',
+        totalInvestment: '',
         profit: '',
         profitPercent: '',
         periodType: 'Tag',
@@ -366,6 +368,7 @@ export default function Upload() {
       botDirection: 'Long',
       investment: '',
       extraMargin: '',
+      totalInvestment: '',
       profit: '',
       profitPercent: '',
       periodType: 'Tag',
@@ -915,7 +918,7 @@ export default function Upload() {
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <h3 className="text-base font-semibold text-foreground">Investment</h3>
-                    <Select value={investmentTimeRange} onValueChange={setInvestmentTimeRange}>
+                    <Select value={investmentTimeRange} onValueChange={setInvestmentTimeRange} disabled>
                       <SelectTrigger className="w-40 h-8 text-xs" data-testid="select-investment-timerange">
                         <SelectValue />
                       </SelectTrigger>
@@ -925,7 +928,7 @@ export default function Upload() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="investment">Investitionsmenge (USDT)</Label>
                       <Input
@@ -950,6 +953,19 @@ export default function Upload() {
                         value={formData.extraMargin}
                         onChange={(e) => setFormData({ ...formData, extraMargin: e.target.value })}
                         data-testid="input-extra-margin"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="totalInvestment">Gesamtinvestment</Label>
+                      <Input
+                        id="totalInvestment"
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.totalInvestment}
+                        onChange={(e) => setFormData({ ...formData, totalInvestment: e.target.value })}
+                        data-testid="input-total-investment"
                       />
                     </div>
                   </div>
