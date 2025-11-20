@@ -166,6 +166,100 @@ export const INFO_SECTION_LOGIC = {
 };
 
 /**
+ * GRID TRADING SECTION LOGIC
+ * 
+ * This section has TWO types of fields with DIFFERENT aggregation logic.
+ */
+
+export const GRID_TRADING_LOGIC = {
+  /**
+   * GESAMTER GRID PROFIT (Total Grid Profit)
+   * 
+   * Function: Sum of ALL Grid Profit values from all screenshots
+   * 
+   * Mode "Neu":
+   * - Sum all Grid Profit values from ALL screenshots in current upload
+   * - Example: Screenshot 1 = 50 USDT, Screenshot 2 = 75 USDT, Screenshot 3 = 30 USDT
+   * - Gesamter Grid Profit = 50 + 75 + 30 = 155 USDT
+   * 
+   * Mode "Vergleich":
+   * - Compare current total with previous upload total
+   * - Example: Previous = 120 USDT, Current = 155 USDT
+   * - Vergleich = +35 USDT
+   * 
+   * Percentage Calculation (Mode "Neu"):
+   * - Option 1 (Gesamtinvestment): (155 / sum_of_all_gesamtinvestments) × 100
+   * - Option 2 (Investitionsmenge): (155 / sum_of_all_investitionsmengen) × 100
+   * 
+   * Percentage Calculation (Mode "Vergleich"):
+   * - (35 / 120) × 100 = 29.17% ← Growth rate
+   */
+  GESAMTER_GRID_PROFIT: {
+    type: 'aggregated_sum',
+    calculation: 'sum_all_screenshots',
+    modes: ['neu', 'vergleich'],
+  },
+
+  /**
+   * HÖCHSTER GRID PROFIT (Highest Grid Profit)
+   * 
+   * ⚠️ CRITICAL: This field works DIFFERENTLY from "Gesamter Grid Profit"!
+   * 
+   * Function: Find the SINGLE screenshot with the HIGHEST Grid Profit value
+   * 
+   * Mode "Neu":
+   * - AI performs INTERNAL comparison across all screenshots
+   * - Find which screenshot has the highest Grid Profit
+   * - Return ONLY that single value
+   * - Example: Screenshot 1 = 50 USDT, Screenshot 2 = 75 USDT, Screenshot 3 = 30 USDT
+   * - Höchster Grid Profit = 75 USDT (from Screenshot 2)
+   * 
+   * Mode "Vergleich":
+   * - Find highest Grid Profit in current upload (same as "Neu")
+   * - Compare with highest Grid Profit from previous upload
+   * - Example: Previous highest = 60 USDT, Current highest = 75 USDT
+   * - Vergleich = +15 USDT
+   * 
+   * ⚠️ PERCENTAGE CALCULATION - CRITICAL DIFFERENCE:
+   * ===================================================
+   * Percentage is calculated based on the INDIVIDUAL screenshot that had the highest value!
+   * NOT based on the sum of all screenshots!
+   * 
+   * Mode "Neu" - Percentage Options:
+   * - Option 1 (Gesamtinvestment): (75 / gesamtinvestment_of_screenshot_2_only) × 100
+   * - Option 2 (Investitionsmenge): (75 / investitionsmenge_of_screenshot_2_only) × 100
+   * 
+   * Example with real numbers:
+   * - Screenshot 1: Grid Profit 50 USDT, Investment 500, Gesamt 700
+   * - Screenshot 2: Grid Profit 75 USDT, Investment 300, Gesamt 400 ← HIGHEST!
+   * - Screenshot 3: Grid Profit 30 USDT, Investment 200, Gesamt 300
+   * 
+   * Höchster Grid Profit (USDT) = 75 USDT
+   * Höchster Grid Profit (%) Gesamtinvestment = (75 / 400) × 100 = 18.75%
+   * Höchster Grid Profit (%) Investitionsmenge = (75 / 300) × 100 = 25%
+   * 
+   * ❌ WRONG: (75 / 1400) × 100 = 5.36% ← Don't use sum of all investments!
+   * ❌ WRONG: (75 / 1000) × 100 = 7.5% ← Don't use sum of all Investitionsmengen!
+   * 
+   * Mode "Vergleich" - Percentage:
+   * - Compare current highest with previous highest
+   * - (15 / 60) × 100 = 25% ← Growth rate
+   * 
+   * WHY THIS MATTERS:
+   * - Using summed investments would show artificially low percentages
+   * - The highest Grid Profit is a single bot's achievement
+   * - It should be compared to that single bot's investment
+   */
+  HOECHSTER_GRID_PROFIT: {
+    type: 'single_maximum',
+    calculation: 'max_single_screenshot',
+    percentage_basis: 'individual_screenshot_investment',
+    modes: ['neu', 'vergleich'],
+    warning: 'Do NOT use aggregated investment values for percentage calculation!',
+  },
+};
+
+/**
  * SUMMARY TABLE
  * 
  * Field                      | Function                                    | Comparison? | Modes?
