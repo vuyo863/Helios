@@ -10,10 +10,10 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-const MODES_PROMPT = `**MODI-LOGIK: Die 3 Dropdown-Optionen verstehen**
+const MODES_PROMPT = `**MODI-LOGIK: Die 2 Dropdown-Optionen verstehen**
 
 **ÜBERSICHT:**
-- Viele Sections haben ein Dropdown mit 3 Modi: "Insgesamt", "Seit letztem Update", "Startwerte"
+- Viele Sections haben ein Dropdown mit 2 Modi: "Insgesamt" und "Seit letztem Update"
 - Die Info-Section ist eine Ausnahme und hat KEINE Modi
 - Diese Modi ermöglichen verschiedene Perspektiven auf die Daten
 
@@ -28,7 +28,7 @@ Sections OHNE Modi (kein Dropdown):
 - Info Section (feste Logik, keine Vergleiche)
 - Bot Type Section (nur Auswahl, keine Berechnungen)
 
-**DIE 3 MODI IM DETAIL:**
+**DIE 2 MODI IM DETAIL:**
 
 **1. "Insgesamt" (Total/Kumulative Summe):**
 - Bedeutung: Zeigt die aktuellen Gesamtwerte
@@ -64,25 +64,6 @@ Spezialfall - ERSTER Upload:
 - Dann zeigt "Seit letztem Update" denselben Wert wie "Insgesamt"
 - Oder es wird "Keine Vergleichsdaten" angezeigt
 
-**3. "Startwerte" (Ursprüngliche Werte):**
-- Bedeutung: Zeigt die Werte vom allerersten Upload
-- Diese Werte bleiben konstant (fester Referenzpunkt)
-- Ermöglicht Langzeitvergleiche ("Wachstum seit Tag 1")
-
-Beispiel:
-- Upload 1 (Tag 1 - ERSTER): Investment = 500 USDT, Profit = 25 USDT
-- Upload 2 (Tag 3): Investment = 750 USDT, Profit = 80 USDT
-- Upload 3 (Tag 7): Investment = 1200 USDT, Profit = 150 USDT
-
-"Startwerte" zeigt immer (egal welcher Tag):
-- Investment = 500 USDT (vom ersten Upload)
-- Profit = 25 USDT (vom ersten Upload)
-
-Spezialfall - ERSTER Upload:
-- Wenn dies der allererste Upload ist
-- Dann zeigt "Startwerte" denselben Wert wie "Insgesamt"
-- Dieser Upload wird zur Baseline für zukünftige Vergleiche
-
 **VERGLEICHSTABELLE - BEISPIEL:**
 
 Szenario: 3 Uploads für "Grid Trading Bots"
@@ -94,14 +75,12 @@ Modus               | Investment  | Profit    | Erklärung
 --------------------|-------------|-----------|-------------------
 Insgesamt           | 1200 USDT   | 150 USDT  | Aktuelle Werte
 Seit letztem Update | +400 USDT   | +70 USDT  | Differenz zu Upload 2
-Startwerte          | 500 USDT    | 25 USDT   | Werte von Upload 1
 
 **WICHTIGE KONZEPTE:**
 1. "Insgesamt" repräsentiert die aktuellen Gesamtwerte
 2. "Seit letztem Update" basiert auf einem Vergleich mit dem Update-Verlauf
-3. "Startwerte" sind ein konstanter Referenzpunkt
-4. Bei mehreren Bots in einem Upload erfolgt eine Aggregation der Werte
-5. Info-Section ist eine AUSNAHME mit eigener fester Logik (siehe Phase 3)`;
+3. Bei mehreren Bots in einem Upload erfolgt eine Aggregation der Werte
+4. Info-Section ist eine AUSNAHME mit eigener fester Logik (siehe Phase 3)`;
 
 const PHASE_3_PROMPT = `**PHASE 3: Info-Section Logik verstehen**
 
@@ -110,7 +89,7 @@ Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und ha
 **WICHTIG:**
 - Die Info-Section hat KEIN Dropdown-Menü
 - Jedes Feld hat eine feste, unveränderbare Funktion
-- Keine Modi wie "Insgesamt", "Seit letztem Update" oder "Startwerte"
+- Keine Modi wie "Insgesamt" oder "Seit letztem Update"
 - Die Info-Section dient nur der BESCHREIBUNG der Bots, NICHT der Profit-Berechnung
 
 **DIE 5 FELDER DER INFO-SECTION:**
@@ -230,7 +209,7 @@ Die Anwendung hat einen 3-Phasen-Workflow. Aktuell befindest du dich in **Phase 
 
 **ABER: Du kannst und sollst allgemeine Fragen beantworten!**
 - Der Benutzer kann dich jederzeit Fragen stellen über die Anwendung
-- Du kannst erklären wie Modi funktionieren ("Insgesamt", "Seit letztem Update", "Startwerte")
+- Du kannst erklären wie Modi funktionieren ("Insgesamt", "Seit letztem Update")
 - Du kannst Berechnungsbeispiele geben wenn der Benutzer fragt
 - Du kannst die Logik der Sections erklären
 - Du kannst über Upload-Konzepte sprechen

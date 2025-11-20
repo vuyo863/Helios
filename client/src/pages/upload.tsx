@@ -923,7 +923,6 @@ export default function Upload() {
                       <SelectContent>
                         <SelectItem value="Insgesamt">Insgesamt</SelectItem>
                         <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
-                        <SelectItem value="Startwerte">Startwerte</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -967,7 +966,6 @@ export default function Upload() {
                       <SelectContent>
                         <SelectItem value="Insgesamt">Insgesamt</SelectItem>
                         <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
-                        <SelectItem value="Startwerte">Startwerte</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1019,7 +1017,6 @@ export default function Upload() {
                       <SelectContent>
                         <SelectItem value="Insgesamt">Insgesamt</SelectItem>
                         <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
-                        <SelectItem value="Startwerte">Startwerte</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1065,7 +1062,6 @@ export default function Upload() {
                       <SelectContent>
                         <SelectItem value="Insgesamt">Insgesamt</SelectItem>
                         <SelectItem value="Seit letztem Update">Seit letztem Update</SelectItem>
-                        <SelectItem value="Startwerte">Startwerte</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

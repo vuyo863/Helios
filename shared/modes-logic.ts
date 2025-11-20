@@ -1,7 +1,7 @@
 /**
  * MODES LOGIC DOCUMENTATION
  * 
- * This file documents the three modes that exist for MOST sections (EXCEPT Info-Section).
+ * This file documents the two modes that exist for MOST sections (EXCEPT Info-Section).
  * The AI must understand these modes to correctly calculate and compare values.
  * 
  * IMPORTANT: Info-Section has NO modes! Only the other sections use these modes.
@@ -10,7 +10,7 @@
 /**
  * WHICH SECTIONS HAVE MODES?
  * 
- * ✅ Sections WITH modes (dropdown with 3 options):
+ * ✅ Sections WITH modes (dropdown with 2 options):
  * - Investment Section
  * - Gesamter Profit / P&L Section
  * - Trend P&L Section
@@ -91,42 +91,6 @@ export const MODES_LOGIC = {
     description: 'Shows the change/difference since the last update',
   },
 
-  /**
-   * MODE 3: "Startwerte" (Starting Values)
-   * 
-   * Function: Shows the FIRST upload values (baseline/initial metrics)
-   * 
-   * Logic:
-   * - Find the FIRST upload for this Bot Type category
-   * - Display those original values
-   * - These values never change (fixed reference point)
-   * 
-   * Example:
-   * - Upload 1 (Tag 1 - FIRST): Investment = 500 USDT, Profit = 25 USDT
-   * - Upload 2 (Tag 3): Investment = 750 USDT, Profit = 80 USDT
-   * - Upload 3 (Tag 7): Investment = 1200 USDT, Profit = 150 USDT
-   * 
-   * When showing "Startwerte" on ANY day:
-   * - Investment = 500 USDT (from Upload 1)
-   * - Profit = 25 USDT (from Upload 1)
-   * 
-   * Special case - FIRST upload:
-   * - If this IS the first upload (no history exists)
-   * - "Startwerte" = "Insgesamt" (both show current values)
-   * - This upload becomes the baseline for future uploads
-   * 
-   * Reasoning:
-   * - Allows user to see original starting point
-   * - Useful for long-term comparison (How much growth since Day 1?)
-   * - Fixed reference that never changes
-   */
-  STARTWERTE: {
-    mode: 'starting_values',
-    calculation: 'first_upload_only',
-    comparison: false,
-    requires_history: true,
-    description: 'Shows the values from the very first upload (baseline metrics)',
-  },
 };
 
 /**
@@ -142,7 +106,6 @@ export const MODES_LOGIC = {
  * --------------------|-------------------|----------------|-------------------
  * Insgesamt           | 1200 USDT         | 150 USDT       | Current value
  * Seit letztem Update | +400 USDT         | +70 USDT       | Current - Upload 2
- * Startwerte          | 500 USDT          | 25 USDT        | Upload 1 values
  * 
  * 
  * ANOTHER SCENARIO: Multiple bots in single upload
@@ -153,13 +116,11 @@ export const MODES_LOGIC = {
  * - Bot C: Investment = 500 USDT, Profit = 65 USDT
  * 
  * Last Update (single total): Investment = 800 USDT, Profit = 100 USDT
- * First Upload (Startwerte): Investment = 500 USDT, Profit = 25 USDT
  * 
  * Mode                | Investment Display | Profit Display | Calculation
  * --------------------|-------------------|----------------|----------------------------
  * Insgesamt           | 1200 USDT         | 150 USDT       | 400+300+500, 50+35+65
  * Seit letztem Update | +400 USDT         | +50 USDT       | 1200-800, 150-100
- * Startwerte          | 500 USDT          | 25 USDT        | First upload (unchanged)
  */
 
 /**
@@ -174,28 +135,22 @@ export const MODES_LOGIC = {
  *    - If history exists: Shows comparison with last update
  *    - If no history: Shows same as "Insgesamt" or "N/A"
  * 
- * 3. **"Startwerte" fixed reference**:
- *    - References the FIRST upload in history
- *    - Shows those original values consistently
- *    - If this IS the first upload: "Startwerte" equals "Insgesamt"
- * 
- * 4. **Multiple screenshots in one upload**:
+ * 3. **Multiple screenshots in one upload**:
  *    - Values are aggregated across all bots in the upload
  *    - Mode logic is applied to the aggregated values
  * 
- * 5. **Info-Section EXCEPTION**:
+ * 4. **Info-Section EXCEPTION**:
  *    - Info-Section has NO modes
  *    - Uses different logic (see field-logic.ts)
  *    - Mode logic does not apply to Info-Section
  */
 
-export type ModeType = 'insgesamt' | 'seit_letztem_update' | 'startwerte';
+export type ModeType = 'insgesamt' | 'seit_letztem_update';
 
 export interface ModeCalculation {
   mode: ModeType;
   currentValue: number;
   lastUpdateValue?: number;
-  startValue?: number;
   displayValue: number;
   change?: number;
 }
