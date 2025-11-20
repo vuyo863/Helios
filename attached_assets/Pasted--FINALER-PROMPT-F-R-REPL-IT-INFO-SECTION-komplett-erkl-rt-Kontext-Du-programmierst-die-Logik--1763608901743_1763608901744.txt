@@ -1,0 +1,193 @@
+✅ FINALER PROMPT FÜR REPL.IT – INFO-SECTION (komplett erklärt)
+
+Kontext:
+Du programmierst die Logik einer Web-App, die Screenshots von Pionex-Bots verarbeitet.
+Jeder Screenshot = ein Bot.
+Mehrere Screenshots = mehrere Bots derselben Kategorie.
+
+Die Info-Section hat 5 Felder:
+
+Datum
+
+Bot-Richtung
+
+Hebel
+
+Längste Laufzeit
+
+Durchschnittliche Laufzeit
+
+Wichtig:
+👉 In der Info-Section gibt es KEINE Modi („Insgesamt“, „Seit letztem Update“, „Startwert“).
+👉 Jedes Feld hat eine fixe, unveränderbare Funktion.
+👉 Diese Logik ist NICHT wählbar und NICHT über Dropdown steuerbar.
+👉 Die Info-Section dient nur der Beschreibung der Bots, NICHT der Profit-Berechnung.
+
+✅ 1. DATUM
+Funktion
+
+Das Datum zeigt immer das Startdatum des allerersten Uploads einer Bot-Type-Kategorie.
+
+Begründung
+
+Wir brauchen ein konsistentes Referenzdatum, das nicht bei jedem neuen Upload wechselt.
+
+Beispiel
+
+Erster Upload: Bot gestartet am 01.01.2025
+→ Die Info-Section zeigt immer 01.01.2025
+→ Auch bei Uploads am 15.02., 18.03., usw.
+
+Wichtig für Replit
+
+Datum wird nicht neu berechnet
+
+Datum wird nicht aktualisiert
+
+Es gibt keine Modi
+
+Einfach Startdatum speichern und immer wieder ausgeben
+
+✅ 2. BOT-RICHTUNG (Long / Short / Beides)
+Funktion
+
+Zeigt an, welche Art von Bots im jeweiligen Upload vorkommen:
+
+Nur Long → „Long“
+
+Nur Short → „Short“
+
+Gemischt → „Beides“
+
+Begründung
+
+Der Nutzer soll schnell sehen, ob die Kategorie long-, short- oder mischorientiert arbeitet.
+
+Beispiel
+
+Upload enthält 3 Long-Bots → „Long“
+
+Upload enthält 6 Short-Bots → „Short“
+
+Upload enthält 2 Long + 1 Short → „Beides“
+
+Wichtig für Replit
+
+Keine Modi
+
+Kein Vergleich mit vorherigen Updates
+
+Einfach die Richtung basierend auf dem aktuellen Upload bestimmen
+
+✅ 3. HEBEL
+Funktion
+
+Zeigt die verwendeten Hebel aus dem Upload.
+
+Begründung
+
+Der Nutzer muss wissen, ob die Bots in dieser Kategorie alle denselben Hebel haben oder ob es Unterschiede gibt.
+
+Beispiel
+
+Alle Bots nutzen Hebel 5x → „5x“
+
+8 Bots nutzen 5x, 2 nutzen 10x → Ausgabe: „5x, 10x“
+
+Wichtig für Replit
+
+Keine Modi
+
+Kein Vergleich mit vorherigen Uploads
+
+Hebel nur aus dem aktuellen Upload aggregieren
+
+Wenn alle gleich → ein Wert
+
+Wenn gemischt → Liste / gruppiert
+
+🔥 4. LÄNGSTE LAUFZEIT (harte Logik)
+Funktion
+
+Ermittle die längste Laufzeit nur aus dem aktuellen Upload, ohne Vergleich zum letzten Update.
+
+Begründung
+
+Der Nutzer soll in jeder einzelnen Upload-Auswertung sehen:
+
+Wie lange ist der am längsten laufende Bot in diesem Batch schon aktiv?
+
+Es ist sinnlos, alte Laufzeiten mitzunehmen, da sie den aktuellen Zustand verfälschen.
+
+Beispiel
+
+Upload A: Bots laufen 1 Tag, 4 Tage, 9 Tage → längste Laufzeit = 9 Tage
+Upload B: Bots laufen 3h, 7h, 15h → längste Laufzeit = 15 Stunden (≈ 0,6 Tage)
+→ Wir vergleichen NICHT mit 9 Tagen
+→ Jeder Upload ist eine unabhängige Auswertung
+
+Wichtig für Replit
+
+Keine Modi
+
+Kein Cross-Update-Vergleich
+
+Runtime-Wert aus jedem Screenshot lesen
+
+Den höchsten Wert aus dem Batch nehmen und anzeigen
+
+🔥 5. DURCHSCHNITTLICHE LAUFZEIT (harte Logik)
+Funktion
+
+Berechne den Durchschnitt aller Laufzeiten aus dem aktuellen Upload.
+
+Begründung
+
+Der Durchschnitt wird später (in anderen Sections) als Grundlage für stündliche/die tägliche/wochentliche Auswertung benutzt.
+Darum muss er immer zur aktuellen Upload-Gruppe passen.
+
+Beispiel
+
+Upload enthält Bots mit:
+
+1 Tag
+
+3 Tage
+
+5 Tage
+
+Durchschnitt = (1 + 3 + 5) / 3 = 3 Tage
+
+Neuer Upload:
+
+4h
+
+6h
+
+Durchschnitt = 5h
+→ Kein Bezug zu vorherigen Uploads.
+
+Wichtig für Replit
+
+Keine Modi
+
+Keine Vergleichslogik
+
+Durchschnitt = Summe aller Laufzeiten / Anzahl Bots
+
+Jede Upload-Auswertung wird isoliert berechnet
+
+📌 GESAMTZUSAMMENFASSUNG – WAS REPL.IT UMSETZEN MUSS
+
+Die Info-Section hat keine Modi und keinen Dropdown.
+Jedes Feld hat eine feste, unveränderbare Logik:
+
+Feld	Funktion	Vergleich?	Modi?
+Datum	Startdatum des ersten Uploads	Nein	Nein
+Bot-Richtung	Long / Short / Beides aus aktuellem Upload	Nein	Nein
+Hebel	Hebelwerte aus aktuellem Upload	Nein	Nein
+Längste Laufzeit	Höchster Runtime-Wert des aktuellen Uploads	Nein	Nein
+Durchschnittliche Laufzeit	Durchschnitt aller Laufzeiten aus aktuellem Upload	Nein	Nein
+
+Jeder Upload bildet eine eigenständige Info-Auswertung.
+Keine Historienvererbung außer dem Datum.
