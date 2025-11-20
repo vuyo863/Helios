@@ -508,17 +508,69 @@ export default function Upload() {
       content: 'Ja, bitte mit Phase 4 fortfahren' 
     }]);
     
+    setIsAiLoading(true);
+    setWaitingForPhaseThreeConfirmation(false);
+    
     setTimeout(() => {
+      const filledFields: string[] = [];
+      const fieldLabels: Record<string, string> = {
+        date: 'Datum',
+        botDirection: 'Bot-Richtung',
+        investment: 'Investitionsmenge (USDT)',
+        extraMargin: 'Extra Margin',
+        totalInvestment: 'Gesamtinvestment',
+        profit: 'Gesamtprofit (USDT)',
+        profitPercent: 'Gesamtprofit (%)',
+        periodType: 'Periodentyp',
+        longestRuntime: 'Längste Laufzeit',
+        avgRuntime: 'Durchschnittliche Laufzeit',
+        avgGridProfitHour: 'Grid Profit Durchschnitt (Stunde)',
+        avgGridProfitDay: 'Grid Profit Durchschnitt (Tag)',
+        avgGridProfitWeek: 'Grid Profit Durchschnitt (Woche)',
+        overallTrendPnlUsdt: 'Trend P&L (USDT)',
+        overallTrendPnlPercent: 'Trend P&L (%)',
+        highestGridProfit: 'Höchster Grid Profit (USDT)',
+        highestGridProfitPercent: 'Höchster Grid Profit (%)',
+        overallGridProfitUsdt: 'Gesamter Grid Profit (USDT)',
+        overallGridProfitPercent: 'Gesamter Grid Profit (%)',
+        leverage: 'Hebel',
+      };
+
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value && value.toString().trim() !== '' && key !== 'botType' && key !== 'version' && key !== 'botName') {
+          const label = fieldLabels[key as keyof typeof fieldLabels];
+          if (label) {
+            filledFields.push(label);
+          }
+        }
+      });
+
+      const metricsCount = filledFields.length;
+      const hasLastUpload = !isStartMetric;
+      
+      let message = `Phase 4 - Schritt 1: Prüfung der benötigten Metriken\n\n`;
+      message += `Für den aktuellen Upload wurden ${metricsCount} Metriken konfiguriert:\n`;
+      message += filledFields.map(f => `• ${f}`).join('\n');
+      
+      if (hasLastUpload) {
+        message += `\n\nEs wurde ein vorheriger Upload erkannt. Ich werde auch die Metriken vom letzten Upload berücksichtigen, um Vergleichswerte (Modus "Vergleich") berechnen zu können.`;
+      } else {
+        message += `\n\nEs wurde kein vorheriger Upload gefunden. Dies ist der erste Upload (Modus "Neu" wird für alle Berechnungen verwendet).`;
+      }
+      
+      message += `\n\nSchritt 1 abgeschlossen. Alle benötigten Metriken wurden identifiziert.`;
+
       setChatMessages(prev => [...prev, {
         role: 'ai',
-        content: 'Ausgezeichnet! Phase 4 ist bereit. Hier würde die vollständige AI-Analyse starten.'
+        content: message
       }]);
-      setWaitingForPhaseThreeConfirmation(false);
-    }, 500);
+      
+      setIsAiLoading(false);
+    }, 1000);
     
     toast({
-      title: "Phase 3 abgeschlossen",
-      description: "Bereit für Phase 4 - AI Analyse",
+      title: "Phase 4 gestartet",
+      description: "Schritt 1: Prüfung der Metriken",
     });
   };
 
