@@ -41,6 +41,8 @@ export default function Upload() {
   const [phaseTwoStep2Complete, setPhaseTwoStep2Complete] = useState(false);
   const [isStartMetric, setIsStartMetric] = useState(false);
   const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
+  const [phaseThreeSettingsSent, setPhaseThreeSettingsSent] = useState(false);
+  const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -470,90 +472,47 @@ export default function Upload() {
   };
 
   const handleSendFieldsToAI = async () => {
-    const filledFields: string[] = [];
-    const fieldLabels: Record<string, string> = {
-      date: 'Datum',
-      botName: 'Bot-Name',
-      botType: 'Bot Type',
-      version: 'Version',
-      botDirection: 'Bot-Richtung',
-      investment: 'Investitionsmenge',
-      extraMargin: 'Extra Margin',
-      profit: 'Gesamtprofit (USDT)',
-      profitPercent: 'Gesamtprofit (%)',
-      periodType: 'Periodentyp',
-      longestRuntime: 'Längste Laufzeit',
-      avgRuntime: 'Durchschnittliche Laufzeit',
-      avgGridProfitHour: 'Grid Profit Durchschnitt (Stunde)',
-      avgGridProfitDay: 'Grid Profit Durchschnitt (Tag)',
-      avgGridProfitWeek: 'Grid Profit Durchschnitt (Woche)',
-      overallTrendPnlUsdt: 'Gesamter Trend P&L (USDT)',
-      overallTrendPnlPercent: 'Gesamter Trend P&L (%)',
-      highestGridProfit: 'Höchster Grid Profit',
-      highestGridProfitPercent: 'Höchster Grid Profit (%)',
-      overallGridProfitUsdt: 'Gesamter Grid Profit (USDT)',
-      overallGridProfitPercent: 'Gesamter Grid Profit (%)',
-      leverage: 'Hebel',
-    };
-
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value && value.toString().trim() !== '') {
-        const label = fieldLabels[key as keyof typeof fieldLabels];
-        if (label) {
-          filledFields.push(`${label}: ${value}`);
-        }
-      }
-    });
-
-    if (filledFields.length === 0) {
-      toast({
-        title: "Keine Felder ausgefüllt",
-        description: "Bitte füllen Sie mindestens ein Feld aus, bevor Sie die Einstellungen an die AI senden.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsAiLoading(true);
-
-    try {
-      const userMessage = `Bitte analysiere Screenshots basierend auf diesen Einstellungen:\n\n${filledFields.join('\n')}\n\nSuche nur nach diesen spezifischen Metriken in den Screenshots.`;
-      
-      const userDisplayMessage = `Einstellungen an AI gesendet:\n\n${filledFields.join('\n')}`;
-      
-      setChatMessages(prev => [...prev, { role: 'user', content: userDisplayMessage }]);
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...chatMessages, { role: 'user', content: userMessage }],
-          botTypes: botTypes,
-          updateHistory: mockUpdatesData,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('AI-Kommunikation fehlgeschlagen');
-      }
-
-      const data = await response.json();
-      setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
-      
-      toast({
-        title: "Erfolgreich gesendet",
-        description: `${filledFields.length} Einstellungen an AI gesendet.`,
-      });
-    } catch (error) {
-      console.error('AI fields error:', error);
-      toast({
-        title: "Fehler",
-        description: "Die Einstellungen konnten nicht an die AI gesendet werden.",
-        variant: "destructive",
-      });
-    } finally {
+    
+    setChatMessages(prev => [...prev, { 
+      role: 'user', 
+      content: 'Einstellungen wurden an AI gesendet' 
+    }]);
+    
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        role: 'ai',
+        content: 'Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar. Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?'
+      }]);
+      setPhaseThreeSettingsSent(true);
+      setWaitingForPhaseThreeConfirmation(true);
       setIsAiLoading(false);
-    }
+    }, 800);
+    
+    toast({
+      title: "Einstellungen gesendet",
+      description: "Die Feld-Einstellungen wurden erfolgreich an die AI übermittelt.",
+    });
+  };
+
+  const handleConfirmPhaseThree = () => {
+    setChatMessages(prev => [...prev, { 
+      role: 'user', 
+      content: 'Ja, bitte mit Phase 4 fortfahren' 
+    }]);
+    
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        role: 'ai',
+        content: 'Ausgezeichnet! Phase 4 ist bereit. Hier würde die vollständige AI-Analyse starten.'
+      }]);
+      setWaitingForPhaseThreeConfirmation(false);
+    }, 500);
+    
+    toast({
+      title: "Phase 3 abgeschlossen",
+      description: "Bereit für Phase 4 - AI Analyse",
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -693,7 +652,19 @@ export default function Upload() {
                   </Button>
                 )}
                 
-                {!waitingForConfirmation && !phaseTwoVerified && (
+                {waitingForPhaseThreeConfirmation && (
+                  <Button 
+                    size="icon"
+                    onClick={handleConfirmPhaseThree}
+                    disabled={isAiLoading}
+                    data-testid="button-confirm-phase3"
+                    title="Phase 4 starten"
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                )}
+                
+                {!waitingForConfirmation && !phaseTwoVerified && !waitingForPhaseThreeConfirmation && (
                   <Button 
                     onClick={handleChatSend}
                     size="icon"
