@@ -82,6 +82,70 @@ export default function Upload() {
   const [gridProfitPercentBase, setGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [highestGridProfitPercentBase, setHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
 
+  useEffect(() => {
+    if (profitTimeRange === 'Neu' && formData.profit) {
+      const profitValue = parseFloat(formData.profit);
+      const investmentValue = parseFloat(formData.investment || '0');
+      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+      
+      if (profitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        const percent = (profitValue / totalInvestmentValue) * 100;
+        setFormData(prev => ({ ...prev, profitPercent: percent.toFixed(2) }));
+      } else if (profitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        const percent = (profitValue / investmentValue) * 100;
+        setFormData(prev => ({ ...prev, profitPercent: percent.toFixed(2) }));
+      }
+    }
+  }, [profitPercentBase, formData.profit, formData.investment, formData.totalInvestment, profitTimeRange]);
+
+  useEffect(() => {
+    if (trendTimeRange === 'Neu' && formData.overallTrendPnlUsdt) {
+      const trendValue = parseFloat(formData.overallTrendPnlUsdt);
+      const investmentValue = parseFloat(formData.investment || '0');
+      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+      
+      if (trendPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        const percent = (trendValue / totalInvestmentValue) * 100;
+        setFormData(prev => ({ ...prev, overallTrendPnlPercent: percent.toFixed(2) }));
+      } else if (trendPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        const percent = (trendValue / investmentValue) * 100;
+        setFormData(prev => ({ ...prev, overallTrendPnlPercent: percent.toFixed(2) }));
+      }
+    }
+  }, [trendPercentBase, formData.overallTrendPnlUsdt, formData.investment, formData.totalInvestment, trendTimeRange]);
+
+  useEffect(() => {
+    if (gridTimeRange === 'Neu' && formData.overallGridProfitUsdt) {
+      const gridValue = parseFloat(formData.overallGridProfitUsdt);
+      const investmentValue = parseFloat(formData.investment || '0');
+      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+      
+      if (gridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        const percent = (gridValue / totalInvestmentValue) * 100;
+        setFormData(prev => ({ ...prev, overallGridProfitPercent: percent.toFixed(2) }));
+      } else if (gridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        const percent = (gridValue / investmentValue) * 100;
+        setFormData(prev => ({ ...prev, overallGridProfitPercent: percent.toFixed(2) }));
+      }
+    }
+  }, [gridProfitPercentBase, formData.overallGridProfitUsdt, formData.investment, formData.totalInvestment, gridTimeRange]);
+
+  useEffect(() => {
+    if (gridTimeRange === 'Neu' && formData.highestGridProfit) {
+      const highestValue = parseFloat(formData.highestGridProfit);
+      const investmentValue = parseFloat(formData.investment || '0');
+      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+      
+      if (highestGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        const percent = (highestValue / totalInvestmentValue) * 100;
+        setFormData(prev => ({ ...prev, highestGridProfitPercent: percent.toFixed(2) }));
+      } else if (highestGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        const percent = (highestValue / investmentValue) * 100;
+        setFormData(prev => ({ ...prev, highestGridProfitPercent: percent.toFixed(2) }));
+      }
+    }
+  }, [highestGridProfitPercentBase, formData.highestGridProfit, formData.investment, formData.totalInvestment, gridTimeRange]);
+
   const uploadMutation = useMutation({
     mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
       return await apiRequest('POST', '/api/upload', data);
@@ -998,15 +1062,7 @@ export default function Upload() {
                         step="0.01"
                         placeholder="0.00"
                         value={formData.profit}
-                        onChange={(e) => {
-                          const profitValue = e.target.value;
-                          setFormData({ ...formData, profit: profitValue });
-                          
-                          if (profitValue && formData.investment) {
-                            const profitPercent = (parseFloat(profitValue) / parseFloat(formData.investment)) * 100;
-                            setFormData(prev => ({ ...prev, profitPercent: profitPercent.toFixed(2) }));
-                          }
-                        }}
+                        onChange={(e) => setFormData({ ...formData, profit: e.target.value })}
                         required
                         data-testid="input-profit"
                       />
