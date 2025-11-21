@@ -146,6 +146,76 @@ Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und ha
 
 Bestätige, dass du diese Logik verstanden hast, indem du sie in eigenen Worten erklärst.`;
 
+const PHASE_4_PROMPT = `**PHASE 4: VOLLSTÄNDIGE BERECHNUNG UND AUSGABE**
+
+Du bist jetzt in Phase 4 - der finalen Berechnungsphase. Deine Aufgabe ist es, alle Werte zu berechnen und als strukturiertes JSON auszugeben.
+
+**WICHTIGE EINGABEDATEN:**
+1. Screenshots mit extrahierten Werten (aus Phase 2)
+2. Modi-Einstellungen für jede Sektion (aus Phase 3)
+3. isStartMetric Flag (true = erster Upload, false = Update)
+
+**DEINE AUFGABE:**
+Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-logic.ts und field-logic.ts.
+
+**JSON OUTPUT FORMAT:**
+\`\`\`json
+{
+  "date": "2025-11-18T22:42",
+  "botDirection": "Short",
+  "leverage": "75x Short",
+  "longestRuntime": "1d 6h 53m",
+  "avgRuntime": "1d 6h 53m",
+  "investment": "120.00",
+  "extraMargin": "650.00",
+  "totalInvestment": "770.00",
+  "profit": "71.03",
+  "profitPercent_gesamtinvestment": "9.22",
+  "profitPercent_investitionsmenge": "59.19",
+  "overallTrendPnlUsdt": "65.52",
+  "overallTrendPnlPercent_gesamtinvestment": "8.51",
+  "overallTrendPnlPercent_investitionsmenge": "54.60",
+  "overallGridProfitUsdt": "5.51",
+  "overallGridProfitPercent_gesamtinvestment": "0.72",
+  "overallGridProfitPercent_investitionsmenge": "4.59",
+  "highestGridProfit": "5.51",
+  "highestGridProfitPercent_gesamtinvestment": "0.72",
+  "highestGridProfitPercent_investitionsmenge": "4.59",
+  "avgGridProfitHour": "0.18",
+  "avgGridProfitDay": "4.27",
+  "avgGridProfitWeek": null
+}
+\`\`\`
+
+**KRITISCHE REGELN:**
+
+1. **MODE "NEU" - ZWEI PROZENTSÄTZE:**
+   - Für JEDEN Prozentsatz-Feld: Berechne BEIDE Optionen
+   - profitPercent_gesamtinvestment = (usdt / totalInvestment) × 100
+   - profitPercent_investitionsmenge = (usdt / investment) × 100
+   - Das Dropdown ist nur UI - AI muss BEIDE liefern!
+
+2. **MODE "VERGLEICH" - EIN PROZENTSATZ:**
+   - Nur EINE Wachstumsrate
+   - percent = (delta_usdt / previous_value) × 100
+   - Dropdown ist irrelevant
+
+3. **HÖCHSTER GRID PROFIT:**
+   - Finde Screenshot mit höchstem Grid Profit
+   - Nutze NUR DIESEN Screenshot's Investment für %
+   - NICHT die Summe aller Investments!
+
+4. **GRID PROFIT DURCHSCHNITT:**
+   - Nur Felder ausgeben wo time_basis >= 1
+   - Mode "Neu": total / runtime_since_start
+   - Mode "Vergleich": total / delta_since_last_upload
+
+5. **DATUM LOGIK (User kümmert sich später darum):**
+   - Aktuell: Nimm einfach das Datum vom Screenshot im Format "YYYY-MM-DDTHH:MM"
+
+**ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**
+`;
+
 const PHASE_2_STEP_2_PROMPT = `**PHASE 2, SCHRITT 2: Screenshot-Analyse Test**
 
 Du wurdest aufgefordert, einen Test durchzuführen um zu prüfen, ob du Screenshots analysieren kannst.
@@ -252,6 +322,69 @@ Hilf dem Benutzer bei Fragen zur Anwendung und zur Bot-Trading-Strategie.
 ` + MODES_PROMPT;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.post("/api/phase4", async (req, res) => {
+    try {
+      const { 
+        screenshotData, 
+        modes, 
+        isStartMetric,
+        previousUploadData 
+      } = req.body;
+      
+      if (!screenshotData || !modes) {
+        return res.status(400).json({ error: "Screenshot data and modes are required" });
+      }
+
+      let contextualPrompt = PHASE_4_PROMPT;
+      
+      contextualPrompt += `\n\n**SCREENSHOT-DATEN (aus Phase 2):**\n${screenshotData}\n\n`;
+      contextualPrompt += `**MODI-EINSTELLUNGEN:**\n`;
+      contextualPrompt += `- Investment: ${modes.investment}\n`;
+      contextualPrompt += `- Gesamter Profit / P&L: ${modes.profit}\n`;
+      contextualPrompt += `- Trend P&L: ${modes.trend}\n`;
+      contextualPrompt += `- Grid Trading: ${modes.grid}\n\n`;
+      contextualPrompt += `**IS START METRIC:** ${isStartMetric ? 'Ja (erster Upload)' : 'Nein (Update)'}\n\n`;
+      
+      if (!isStartMetric && previousUploadData) {
+        contextualPrompt += `**VORHERIGER UPLOAD (für Vergleichsmodus):**\n${previousUploadData}\n\n`;
+      }
+      
+      contextualPrompt += `\n**BEGINNE JETZT MIT DEN BERECHNUNGEN UND ANTWORTE NUR MIT DEM JSON!**`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: contextualPrompt },
+          { role: "user", content: "Berechne jetzt alle Werte und gib das JSON zurück." }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+      });
+
+      const aiResponse = completion.choices[0]?.message?.content || "{}";
+      
+      try {
+        const calculatedValues = JSON.parse(aiResponse);
+        res.json({ 
+          success: true,
+          values: calculatedValues
+        });
+      } catch (parseError) {
+        console.error("Failed to parse AI JSON response:", aiResponse);
+        res.status(500).json({ 
+          error: "AI returned invalid JSON",
+          raw: aiResponse
+        });
+      }
+    } catch (error: any) {
+      console.error("Phase 4 API error:", error);
+      res.status(500).json({ 
+        error: "Failed to complete Phase 4 calculations", 
+        details: error.message 
+      });
+    }
+  });
+
   app.post("/api/chat", async (req, res) => {
     try {
       const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName, selectedBotTypeColor } = req.body;

@@ -502,7 +502,7 @@ export default function Upload() {
     });
   };
 
-  const handleConfirmPhaseThree = () => {
+  const handleConfirmPhaseThree = async () => {
     setChatMessages(prev => [...prev, { 
       role: 'user', 
       content: 'Ja, bitte mit Phase 4 fortfahren' 
@@ -511,297 +511,120 @@ export default function Upload() {
     setIsAiLoading(true);
     setWaitingForPhaseThreeConfirmation(false);
     
-    setTimeout(() => {
-      const filledFields: string[] = [];
-      const sectionsWithModes = [
-        { name: 'Investment', mode: investmentTimeRange },
-        { name: 'Gesamter Profit / P&L', mode: profitTimeRange },
-        { name: 'Trend P&L', mode: trendTimeRange },
-        { name: 'Grid Trading', mode: gridTimeRange }
-      ];
+    const sectionsWithModes = [
+      { name: 'Investment', mode: investmentTimeRange },
+      { name: 'Gesamter Profit / P&L', mode: profitTimeRange },
+      { name: 'Trend P&L', mode: trendTimeRange },
+      { name: 'Grid Trading', mode: gridTimeRange }
+    ];
 
-      const metricsCount = sectionsWithModes.length;
-      const hasLastUpload = !isStartMetric;
-      
-      let message = `Phase 4 - Schritt 1: Prüfung der benötigten Metriken\n\n`;
-      message += `Für den aktuellen Upload wurden ${metricsCount} Sektionen mit Modi konfiguriert:\n`;
-      message += sectionsWithModes.map(s => `• ${s.name} (Modus: ${s.mode})`).join('\n');
-      
-      if (hasLastUpload) {
-        message += `\n\nEs wurde ein vorheriger Upload erkannt. Ich werde auch die Metriken vom letzten Upload berücksichtigen, um Vergleichswerte (Modus "Vergleich") berechnen zu können.`;
-      } else {
-        message += `\n\nEs wurde kein vorheriger Upload gefunden. Dies ist der erste Upload (Modus "Neu" wird für alle Berechnungen verwendet).`;
+    const metricsCount = sectionsWithModes.length;
+    const hasLastUpload = !isStartMetric;
+    
+    let message = `Phase 4 - Analyse und Berechnung\n\n`;
+    message += `Für den aktuellen Upload wurden ${metricsCount} Sektionen mit Modi konfiguriert:\n`;
+    message += sectionsWithModes.map(s => `• ${s.name} (Modus: ${s.mode})`).join('\n');
+    
+    if (hasLastUpload) {
+      message += `\n\nEs wurde ein vorheriger Upload erkannt. Ich werde Vergleichswerte berechnen.`;
+    } else {
+      message += `\n\nDies ist der erste Upload (Modus "Neu" für alle Berechnungen).`;
+    }
+    
+    message += `\n\nStarte jetzt die KI-gestützte Analyse und Berechnung...`;
+
+    setChatMessages(prev => [...prev, {
+      role: 'ai',
+      content: message
+    }]);
+
+    toast({
+      title: "Phase 4 gestartet",
+      description: "KI analysiert Screenshots und berechnet Werte...",
+    });
+
+    try {
+      const screenshotData = `Screenshot 1 analysiert:\n• Datum: 11/18/2025 22:42:13\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`;
+
+      const response = await fetch('/api/phase4', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          screenshotData,
+          modes: {
+            investment: investmentTimeRange,
+            profit: profitTimeRange,
+            trend: trendTimeRange,
+            grid: gridTimeRange
+          },
+          isStartMetric,
+          previousUploadData: null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Phase 4 API fehlgeschlagen');
       }
-      
-      message += `\n\nSchritt 1 abgeschlossen. Alle benötigten Metriken wurden identifiziert.`;
 
+      const data = await response.json();
+      const calculatedValues = data.values;
+      
+      const jsonOutput = JSON.stringify(calculatedValues, null, 2);
+      
       setChatMessages(prev => [...prev, {
         role: 'ai',
-        content: message
+        content: `Phase 4 - Berechnung abgeschlossen\n\nAlle Werte wurden erfolgreich berechnet:\n\n\`\`\`json\n${jsonOutput}\n\`\`\``
       }]);
       
       setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          date: calculatedValues.date || '',
+          botDirection: calculatedValues.botDirection || '',
+          leverage: calculatedValues.leverage || '',
+          longestRuntime: calculatedValues.longestRuntime || '',
+          avgRuntime: calculatedValues.avgRuntime || '',
+          investment: calculatedValues.investment || '',
+          extraMargin: calculatedValues.extraMargin || '',
+          totalInvestment: calculatedValues.totalInvestment || '',
+          profit: calculatedValues.profit || '',
+          profitPercent: calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent || '',
+          overallTrendPnlUsdt: calculatedValues.overallTrendPnlUsdt || '',
+          overallTrendPnlPercent: calculatedValues.overallTrendPnlPercent_gesamtinvestment || calculatedValues.overallTrendPnlPercent || '',
+          overallGridProfitUsdt: calculatedValues.overallGridProfitUsdt || '',
+          overallGridProfitPercent: calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent || '',
+          highestGridProfit: calculatedValues.highestGridProfit || '',
+          highestGridProfitPercent: calculatedValues.highestGridProfitPercent_investitionsmenge || calculatedValues.highestGridProfitPercent || '',
+          avgGridProfitHour: calculatedValues.avgGridProfitHour || '',
+          avgGridProfitDay: calculatedValues.avgGridProfitDay || '',
+          avgGridProfitWeek: calculatedValues.avgGridProfitWeek || ''
+        }));
+        
         setChatMessages(prev => [...prev, {
           role: 'ai',
-          content: 'Phase 4 - Schritt 2: Screenshot-Analyse\n\nIch beginne jetzt mit der detaillierten Analyse aller hochgeladenen Screenshots. Jeder Screenshot wird zweimal analysiert, um die Genauigkeit zu gewährleisten.'
+          content: 'Ausgabe abgeschlossen. Alle Werte wurden in die Formularfelder eingetragen.'
         }]);
         
-        const screenshotCount = selectedFiles.length;
-        let analysisDelay = 2000;
-        
-        for (let i = 0; i < screenshotCount; i++) {
-          const screenshotNum = i + 1;
-          
-          setTimeout(() => {
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Analysiere Screenshot ${screenshotNum}/${screenshotCount} - Erste Analyse läuft...`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 3000;
-          
-          setTimeout(() => {
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Screenshot ${screenshotNum}/${screenshotCount} - Zweite Analyse zur Überprüfung...`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 3000;
-          
-          setTimeout(() => {
-            const mockData = `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Datum: 11/18/2025 (amerikanisches Format)\n• Uhrzeit: 22:42:13\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`;
-            
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: mockData
-            }]);
-          }, analysisDelay);
-          analysisDelay += 2000;
-        }
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: `Schritt 2 abgeschlossen. Alle ${screenshotCount} Screenshots wurden erfolgreich analysiert und die Metriken extrahiert.`
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 2000;
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Phase 4 - Schritt 3: Berechnungen und Funktionen\n\nJetzt beginnt der wichtigste Teil - die eigentlichen Berechnungen. Es werden 3 Durchläufe durchgeführt, um maximale Genauigkeit zu gewährleisten.'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 2500;
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Durchlauf 1: Analyse der Berechnungsanforderungen\n\nPrüfe welche Berechnungen für welche Sektionen erforderlich sind...'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 4000;
-        
-        const sections = [
-          'Investment',
-          'Gesamter Profit / P&L',
-          'Trend P&L',
-          'Grid Trading'
-        ];
-        
-        sections.forEach((section, idx) => {
-          setTimeout(() => {
-            const hasLastUpload = !isStartMetric;
-            const mode = hasLastUpload ? 'Vergleich' : 'Neu';
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Sektion "${section}": Modus "${mode}" erkannt - Berechnungslogik wird vorbereitet`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 2000;
+        toast({
+          title: "Auto-Fill abgeschlossen",
+          description: "Alle berechneten Werte wurden in die Formularfelder eingetragen.",
         });
         
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Durchlauf 1 abgeschlossen. Alle Berechnungsanforderungen wurden identifiziert.'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 2500;
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Durchlauf 2: Ausführung der Berechnungen\n\nGehe Section für Section durch und führe die vorgesehenen Berechnungen aus...'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 3000;
-        
-        sections.forEach((section, idx) => {
-          setTimeout(() => {
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Sektion "${section}": Berechnungen werden durchgeführt...`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 2500;
-          
-          setTimeout(() => {
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Sektion "${section}": Berechnungen abgeschlossen`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 1500;
-        });
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Durchlauf 2 abgeschlossen. Alle Berechnungen wurden durchgeführt.'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 2500;
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Durchlauf 3: Überprüfung der Berechnungen\n\nWiederhole alle Berechnungen zur Verifikation...'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 3000;
-        
-        sections.forEach((section, idx) => {
-          setTimeout(() => {
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Sektion "${section}": Überprüfung läuft...`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 2000;
-          
-          setTimeout(() => {
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: `Sektion "${section}": Ergebnisse stimmen überein ✓`
-            }]);
-          }, analysisDelay);
-          analysisDelay += 1500;
-        });
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Durchlauf 3 abgeschlossen. Alle Berechnungen wurden erfolgreich verifiziert.\n\nSchritt 3 abgeschlossen. Alle Felder wurden berechnet und geprüft.'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 2000;
-        
-        setTimeout(() => {
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: 'Schritt 3 abgeschlossen. Gehe zu Schritt 4 über: Ausgabe der Werte'
-          }]);
-        }, analysisDelay);
-        
-        analysisDelay += 1500;
-        
-        setTimeout(() => {
-          const mockCalculatedValues = {
-            date: "2025-11-18T22:42",
-            botDirection: "Short",
-            leverage: "75x Short",
-            longestRuntime: "1d 6h 53m",
-            avgRuntime: "1d 6h 53m",
-            investment: "120.00",
-            extraMargin: "650.00",
-            totalInvestment: "770.00",
-            profit: "71.03",
-            profitPercent: hasLastUpload ? "185.63" : "9.22",
-            profitPercent_gesamtinvestment: hasLastUpload ? null : "9.22",
-            profitPercent_investitionsmenge: hasLastUpload ? null : "59.19",
-            overallTrendPnlUsdt: hasLastUpload ? "122.85" : "65.52",
-            overallTrendPnlPercent: hasLastUpload ? "189.47" : null,
-            overallTrendPnlPercent_gesamtinvestment: hasLastUpload ? null : "8.51",
-            overallTrendPnlPercent_investitionsmenge: hasLastUpload ? null : "54.60",
-            overallGridProfitUsdt: hasLastUpload ? "30.25" : "5.51",
-            overallGridProfitPercent: hasLastUpload ? null : null,
-            overallGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.72",
-            overallGridProfitPercent_investitionsmenge: hasLastUpload ? null : "4.59",
-            highestGridProfit: hasLastUpload ? "12.30" : "5.51",
-            highestGridProfitPercent: hasLastUpload ? null : null,
-            highestGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.72",
-            highestGridProfitPercent_investitionsmenge: hasLastUpload ? "6.15" : "4.59",
-            avgGridProfitHour: hasLastUpload ? null : "0.18",
-            avgGridProfitDay: hasLastUpload ? "15.13" : "4.27",
-            avgGridProfitWeek: null
-          };
-          
-          const jsonOutput = JSON.stringify(mockCalculatedValues, null, 2);
-          
-          setChatMessages(prev => [...prev, {
-            role: 'ai',
-            content: `Phase 4 - Schritt 4: Ausgabe in Formularfelder\n\n\`\`\`json\n${jsonOutput}\n\`\`\``
-          }]);
-          
-          setTimeout(() => {
-            setFormData(prev => ({
-              ...prev,
-              date: mockCalculatedValues.date,
-              botDirection: mockCalculatedValues.botDirection,
-              leverage: mockCalculatedValues.leverage,
-              longestRuntime: mockCalculatedValues.longestRuntime,
-              avgRuntime: mockCalculatedValues.avgRuntime,
-              investment: mockCalculatedValues.investment,
-              extraMargin: mockCalculatedValues.extraMargin,
-              totalInvestment: mockCalculatedValues.totalInvestment,
-              profit: mockCalculatedValues.profit,
-              profitPercent: mockCalculatedValues.profitPercent || 
-                           mockCalculatedValues.profitPercent_gesamtinvestment || '',
-              overallTrendPnlUsdt: mockCalculatedValues.overallTrendPnlUsdt,
-              overallTrendPnlPercent: mockCalculatedValues.overallTrendPnlPercent || 
-                                     mockCalculatedValues.overallTrendPnlPercent_gesamtinvestment || '',
-              overallGridProfitUsdt: mockCalculatedValues.overallGridProfitUsdt,
-              overallGridProfitPercent: mockCalculatedValues.overallGridProfitPercent || 
-                                       mockCalculatedValues.overallGridProfitPercent_gesamtinvestment || '',
-              highestGridProfit: mockCalculatedValues.highestGridProfit,
-              highestGridProfitPercent: mockCalculatedValues.highestGridProfitPercent || 
-                                       mockCalculatedValues.highestGridProfitPercent_investitionsmenge || '',
-              avgGridProfitHour: mockCalculatedValues.avgGridProfitHour || '',
-              avgGridProfitDay: mockCalculatedValues.avgGridProfitDay || '',
-              avgGridProfitWeek: mockCalculatedValues.avgGridProfitWeek || ''
-            }));
-            
-            setChatMessages(prev => [...prev, {
-              role: 'ai',
-              content: 'Schritt 4 abgeschlossen. Alle Werte wurden in die Felder eingetragen.'
-            }]);
-            
-            toast({
-              title: "Auto-Fill abgeschlossen",
-              description: "Alle berechneten Werte wurden in die Formularfelder eingetragen.",
-            });
-            
-            setIsAiLoading(false);
-          }, 1500);
-        }, analysisDelay);
-        
-      }, 1500);
-    }, 1000);
-    
-    toast({
-      title: "Phase 4 gestartet",
-      description: "Schritt 1: Prüfung der Metriken",
-    });
+        setIsAiLoading(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Phase 4 error:', error);
+      setChatMessages(prev => [...prev, {
+        role: 'ai',
+        content: 'Fehler bei der Berechnung. Bitte versuchen Sie es erneut.'
+      }]);
+      toast({
+        title: "Fehler",
+        description: "Phase 4 konnte nicht abgeschlossen werden.",
+        variant: "destructive",
+      });
+      setIsAiLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
