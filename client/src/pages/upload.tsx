@@ -717,7 +717,7 @@ export default function Upload() {
         
         setTimeout(() => {
           const mockCalculatedValues = {
-            date: "2025-11-18",
+            date: "2025-11-18 22:42:13",
             botDirection: "Short",
             leverage: "75x Short",
             longestRuntime: "1d 6h 53m",
