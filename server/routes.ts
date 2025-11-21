@@ -245,8 +245,11 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
    - Mode "Neu": total / runtime_since_start
    - Mode "Vergleich": total / delta_since_last_upload
 
-6. **DATUM LOGIK (User kümmert sich später darum):**
-   - Aktuell: Nimm einfach das Datum vom Screenshot im Format "YYYY-MM-DDTHH:MM"
+6. **DATUM LOGIK:**
+   - Schaue ALLE Screenshots im aktuellen Batch an
+   - Finde das ÄLTESTE (früheste) Datum
+   - Nutze dieses Datum im Format "YYYY-MM-DDTHH:MM"
+   - Beispiel: Screenshots mit "2025-11-18", "2025-11-20", "2025-11-15" → nimm "2025-11-15"
 
 **KONKRETE BEISPIELE FÜR VERGLEICH-MODUS:**
 
