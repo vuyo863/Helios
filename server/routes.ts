@@ -153,7 +153,34 @@ Du bist jetzt in Phase 4 - der finalen Berechnungsphase. Deine Aufgabe ist es, a
 **WICHTIGE EINGABEDATEN:**
 1. Screenshots mit extrahierten Werten (aus Phase 2)
 2. Modi-Einstellungen für jede Sektion (aus Phase 3)
-3. isStartMetric Flag (true = erster Upload, false = Update)
+3. **isStartMetric Flag** - DAS WICHTIGSTE KONZEPT!
+
+**WAS BEDEUTET "STARTMETRIK"?**
+
+**isStartMetric = true (JA):**
+- Dies ist der ALLERERSTE Upload für diesen Bot Type
+- Es gibt KEINE vorherigen Daten zum Vergleichen
+- VERGLEICH-Modus macht hier KEINEN Sinn
+- **WENN ein Modus auf "Vergleich" steht:**
+  - Du hast NICHTS zum Vergleichen
+  - Setze ALLE Werte dieser Sektion auf 0.00 oder null
+  - Beispiel: investment = "0.00", extraMargin = "0.00", totalInvestment = "0.00"
+  - Alle Prozentsätze dieser Sektion = null
+- **WENN ein Modus auf "Neu" steht:**
+  - Berechne normal die aktuellen Werte aus den Screenshots
+  - Das funktioniert immer, auch beim ersten Upload
+
+**isStartMetric = false (NEIN):**
+- Dies ist ein UPDATE/Re-Upload
+- Es gibt vorherige Daten (previousUploadData)
+- VERGLEICH-Modus kann jetzt funktionieren
+- **WENN ein Modus auf "Vergleich" steht:**
+  - Berechne die DIFFERENZ: aktueller Wert MINUS vorheriger Wert
+  - Beispiel: Aktuell 1500 USDT, Vorher 1000 USDT → DIFFERENZ = +500 USDT
+  - Prozentsatz = (delta / previous_value) × 100
+  - Kann positiv (+) oder negativ (-) sein
+- **WENN ein Modus auf "Neu" steht:**
+  - Berechne die aktuellen Werte aus den Screenshots (wie immer)
 
 **DEINE AUFGABE:**
 Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-logic.ts und field-logic.ts.
@@ -189,29 +216,111 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
 
 **KRITISCHE REGELN:**
 
-1. **MODE "NEU" - ZWEI PROZENTSÄTZE:**
+1. **STARTMETRIK PRÜFUNG (ZUERST!):**
+   - Prüfe isStartMetric
+   - Wenn true UND Modus = "Vergleich": Alle Werte dieser Sektion = 0.00 oder null
+   - Wenn false UND Modus = "Vergleich": Berechne Differenzen
+
+2. **MODE "NEU" - ZWEI PROZENTSÄTZE:**
    - Für JEDEN Prozentsatz-Feld: Berechne BEIDE Optionen
    - profitPercent_gesamtinvestment = (usdt / totalInvestment) × 100
    - profitPercent_investitionsmenge = (usdt / investment) × 100
    - Das Dropdown ist nur UI - AI muss BEIDE liefern!
 
-2. **MODE "VERGLEICH" - EIN PROZENTSATZ:**
-   - Nur EINE Wachstumsrate
-   - percent = (delta_usdt / previous_value) × 100
-   - Dropdown ist irrelevant
+3. **MODE "VERGLEICH" - DIFFERENZEN BERECHNEN:**
+   - Wenn isStartMetric = true: Setze alle Werte auf 0.00/null
+   - Wenn isStartMetric = false:
+     * USDT-Felder: current - previous (kann + oder - sein)
+     * Prozentsatz: (delta / previous) × 100
+     * Beispiel: Profit war 50, jetzt 75 → delta = +25 → percent = (25/50)×100 = +50%
+   - Dropdown ist irrelevant im Vergleich Modus
 
-3. **HÖCHSTER GRID PROFIT:**
+4. **HÖCHSTER GRID PROFIT:**
    - Finde Screenshot mit höchstem Grid Profit
    - Nutze NUR DIESEN Screenshot's Investment für %
    - NICHT die Summe aller Investments!
 
-4. **GRID PROFIT DURCHSCHNITT:**
+5. **GRID PROFIT DURCHSCHNITT:**
    - Nur Felder ausgeben wo time_basis >= 1
    - Mode "Neu": total / runtime_since_start
    - Mode "Vergleich": total / delta_since_last_upload
 
-5. **DATUM LOGIK (User kümmert sich später darum):**
+6. **DATUM LOGIK (User kümmert sich später darum):**
    - Aktuell: Nimm einfach das Datum vom Screenshot im Format "YYYY-MM-DDTHH:MM"
+
+**KONKRETE BEISPIELE FÜR VERGLEICH-MODUS:**
+
+**BEISPIEL 1: Investment Section**
+
+previousUploadData:
+{
+  "investment": "120.00",
+  "extraMargin": "650.00",
+  "totalInvestment": "770.00"
+}
+
+Aktueller Screenshot zeigt:
+- actualInvestment: 200
+- extraMargin: 800
+
+Wenn Investment-Modus = "Vergleich":
+- investment: 200 - 120 = "80.00" ✅
+- extraMargin: 800 - 650 = "150.00" ✅
+- totalInvestment: 1000 - 770 = "230.00" ✅
+
+**BEISPIEL 2: Profit Section**
+
+previousUploadData:
+{
+  "profit": "71.03"
+}
+
+Aktueller Screenshot zeigt:
+- totalProfitUsdt: 150
+
+Wenn Profit-Modus = "Vergleich":
+- profit: 150 - 71.03 = "78.97" ✅ (NICHT "150"!)
+- profitPercent: (78.97 / 71.03) × 100 = 111.18% (WACHSTUMSRATE!)
+
+**BEISPIEL 3: Trend P&L Section**
+
+previousUploadData:
+{
+  "overallTrendPnlUsdt": "65.52"
+}
+
+Aktueller Screenshot zeigt:
+- trendPnlUsdt: 120
+
+Wenn Trend-Modus = "Vergleich":
+- overallTrendPnlUsdt: 120 - 65.52 = "54.48" ✅ (NICHT "120"!)
+- overallTrendPnlPercent: (54.48 / 65.52) × 100 = 83.15% (WACHSTUMSRATE!)
+
+**BEISPIEL 4: Grid Profit Section**
+
+previousUploadData:
+{
+  "overallGridProfitUsdt": "5.51",
+  "highestGridProfit": "5.51"
+}
+
+Aktueller Screenshot zeigt:
+- gridProfitUsdt: 30
+
+Wenn Grid-Modus = "Vergleich":
+- overallGridProfitUsdt: 30 - 5.51 = "24.49" ✅ (NICHT "30"!)
+- overallGridProfitPercent: (24.49 / 5.51) × 100 = 444.46% (WACHSTUMSRATE!)
+- highestGridProfit: Finde höchsten Grid Profit aus AKTUELLEN Screenshots
+- highestGridProfitPercent: Nutze NUR diesen Screenshot's Investment
+
+**KRITISCH FÜR VERGLEICH-MODUS:**
+- Du musst IMMER subtrahieren: current - previous
+- previousUploadData enthält die GLEICHEN Feldnamen wie dein Output
+- Nutze die RICHTIGEN Felder aus previousUploadData:
+  * profit → profit (NICHT totalProfitUsdt)
+  * overallTrendPnlUsdt → overallTrendPnlUsdt
+  * overallGridProfitUsdt → overallGridProfitUsdt
+- Gib USDT-Differenzen zurück, KEINE Prozentsätze!
 
 **ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**
 `;
@@ -386,6 +495,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!screenshotData || !modes) {
         return res.status(400).json({ error: "Screenshot data and modes are required" });
+      }
+
+      // VALIDIERUNG: Wenn VERGLEICH-Modi aktiv sind UND es kein Start-Metric ist,
+      // müssen vorherige Daten vorhanden sein
+      if (!isStartMetric) {
+        const vergleichModes = [];
+        if (modes.investment === 'Vergleich') vergleichModes.push('Investment');
+        if (modes.profit === 'Vergleich') vergleichModes.push('Profit');
+        if (modes.trend === 'Vergleich') vergleichModes.push('Trend P&L');
+        if (modes.grid === 'Vergleich') vergleichModes.push('Grid Trading');
+        
+        if (vergleichModes.length > 0 && !previousUploadData) {
+          return res.status(400).json({ 
+            error: `VERGLEICH-Modus aktiv für ${vergleichModes.join(', ')}, aber keine vorherigen Daten vorhanden`,
+            details: "Bitte stellen Sie vorherige Upload-Daten bereit oder wechseln Sie zu 'Neu'-Modus"
+          });
+        }
+        
+        // VALIDIERUNG: Prüfe ob previousUploadData die benötigten Felder enthält
+        if (previousUploadData) {
+          let parsedPrevious;
+          try {
+            parsedPrevious = typeof previousUploadData === 'string' 
+              ? JSON.parse(previousUploadData) 
+              : previousUploadData;
+          } catch (e) {
+            return res.status(400).json({ 
+              error: "Ungültige vorherige Upload-Daten (kein gültiges JSON)" 
+            });
+          }
+          
+          const missingFields = [];
+          
+          if (modes.investment === 'Vergleich') {
+            if (!parsedPrevious.investment) missingFields.push('investment');
+            if (!parsedPrevious.extraMargin) missingFields.push('extraMargin');
+            if (!parsedPrevious.totalInvestment) missingFields.push('totalInvestment');
+          }
+          
+          if (modes.profit === 'Vergleich') {
+            if (!parsedPrevious.profit) missingFields.push('profit');
+          }
+          
+          if (modes.trend === 'Vergleich') {
+            if (!parsedPrevious.overallTrendPnlUsdt) missingFields.push('overallTrendPnlUsdt');
+          }
+          
+          if (modes.grid === 'Vergleich') {
+            if (!parsedPrevious.overallGridProfitUsdt) missingFields.push('overallGridProfitUsdt');
+          }
+          
+          if (missingFields.length > 0) {
+            return res.status(400).json({ 
+              error: `Vorherige Upload-Daten unvollständig für VERGLEICH-Modus`,
+              details: `Fehlende Felder: ${missingFields.join(', ')}`,
+              suggestion: "Verwenden Sie 'Neu'-Modus oder stellen Sie vollständige vorherige Daten bereit"
+            });
+          }
+        }
       }
 
       let contextualPrompt = PHASE_4_PROMPT;
