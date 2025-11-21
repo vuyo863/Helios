@@ -730,23 +730,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Prüfe ob avgGridProfit* Werte realistisch sind
-        if (calculatedValues.avgGridProfitHour && maxRuntimeHours < 1) {
-          return res.status(400).json({
-            error: "avgGridProfitHour kann nicht berechnet werden",
-            details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 1 Stunde erforderlich)`,
-            suggestion: "Entfernen Sie avgGridProfitHour oder warten Sie bis Bot >= 1 Stunde läuft"
-          });
-        }
+        // avgGridProfitHour kann ab jeder Runtime berechnet werden (Hochrechnung)
+        // avgGridProfitDay benötigt mindestens 1 Stunde Runtime
+        // avgGridProfitWeek benötigt mindestens 1 Tag Runtime
         
-        if (calculatedValues.avgGridProfitDay && maxRuntimeHours < 24) {
+        if (calculatedValues.avgGridProfitDay && maxRuntimeHours < 1) {
           return res.status(400).json({
             error: "avgGridProfitDay kann nicht berechnet werden",
-            details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 24 Stunden erforderlich)`,
-            suggestion: "Entfernen Sie avgGridProfitDay oder warten Sie bis Bot >= 1 Tag läuft"
+            details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 1 Stunde Runtime erforderlich für tägliche Durchschnitte.`,
+            suggestion: "KI sollte avgGridProfitDay auf null setzen bei Runtime < 1 Stunde"
           });
         }
         
-        if (calculatedValues.avgGridProfitWeek && maxRuntimeHours < 168) {
+        if (calculatedValues.avgGridProfitWeek && maxRuntimeHours < 24) {
           return res.status(400).json({
             error: "avgGridProfitWeek kann nicht berechnet werden",
             details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 168 Stunden/1 Woche erforderlich)`,

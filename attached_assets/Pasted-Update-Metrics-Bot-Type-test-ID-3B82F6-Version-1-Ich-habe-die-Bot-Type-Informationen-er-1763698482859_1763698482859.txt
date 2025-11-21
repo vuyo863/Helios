@@ -1,0 +1,61 @@
+Update Metrics
+
+Bot Type: test 
+ID: #3B82F6
+Version: 1
+
+Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?
+
+Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.
+
+1 Bild wurde zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+OK, fange an mit Phase 2, Schritt 1: Überprüfung der Bot-Type-Updates.
+
+Keine Updates gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten.
+
+Ich habe 1 Bild erhalten und habe darauf Zugriff. Ich habe das erste Bild analysiert und sehe ein ETH/USDT Futures Grid Trading-Dashboard. Es zeigt unter anderem:
+- Ein "Actual Investment (USDT)" von 1,000
+- Einen "Total profit (USDT)" von +3.75 (+0.37%)
+
+Der Test war erfolgreich, ich kann Bilder analysieren.
+
+Test erfolgreich! Starte jetzt vollständige Datenextraktion aller Screenshots...
+
+Datenextraktion abgeschlossen! Hier sind die extrahierten Daten:
+
+Screenshot 1:
+• Datum: 2025-11-21
+• Uhrzeit: 02:57:58
+• Actual Investment: 1000 USDT
+• Extra Margin: 1000
+• Total Profit: +3.75 USDT (+0.37%)
+• Grid Profit: +1.76 USDT (+0.17%)
+• Trend P&L: +1.98 USDT (+0.19%)
+• Hebel: 3x Short
+• Laufzeit: 54m 26s
+• Richtung: Short
+
+Ausgezeichnet! Phase 2 ist erfolgreich abgeschlossen. Wir gehen jetzt zu Phase 3 über. Bitte füllen Sie unten die gewünschten Metriken und Modi aus und senden Sie diese mit dem Button "Einstellungen an AI senden".
+
+Einstellungen wurden an AI gesendet
+
+Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar. Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?
+
+Ja, bitte mit Phase 4 fortfahren
+
+Phase 4 - Analyse und Berechnung
+
+Für den aktuellen Upload wurden 4 Sektionen mit Modi konfiguriert:
+• Investment (Modus: Neu)
+• Gesamter Profit / P&L (Modus: Neu)
+• Trend P&L (Modus: Neu)
+• Grid Trading (Modus: Neu)
+
+Dies ist der erste Upload (Modus "Neu" für alle Berechnungen).
+
+Starte jetzt die KI-gestützte Analyse und Berechnung...
+
+Fehler bei der Berechnung. Bitte versuchen Sie es erneut.
