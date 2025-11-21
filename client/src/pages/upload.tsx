@@ -16,8 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import BotTypeManager from "@/components/BotTypeManager";
-import { BotEntry, BotType } from "@shared/schema";
-import { mockUpdatesData } from "@shared/bot-type-updates";
+import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocation } from "wouter";
@@ -48,6 +47,29 @@ export default function Upload() {
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
   });
+  
+  // Fetch Updates für alle Bot Types
+  const botTypeUpdatesQueries = botTypes.map(bt => 
+    useQuery<BotTypeUpdate[]>({
+      queryKey: [`/api/bot-types/${bt.id}/updates`],
+      enabled: !!bt.id,
+    })
+  );
+  
+  // Erstelle updateHistory Objekt mit echten Daten aus der Datenbank
+  const updateHistory = useMemo(() => {
+    const history: Record<string, any[]> = {};
+    botTypes.forEach((bt, index) => {
+      const updates = botTypeUpdatesQueries[index]?.data || [];
+      history[bt.name] = updates.map(u => ({
+        updateName: `${u.status} #${u.version}`,
+        updateDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('de-DE') : '',
+        updateTime: u.createdAt ? new Date(u.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
+      }));
+    });
+    return history;
+  }, [botTypes, ...botTypeUpdatesQueries.map(q => q.data)]);
+  
   const [formData, setFormData] = useState({
     date: '',
     botName: '',
@@ -443,7 +465,7 @@ export default function Upload() {
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
           botTypes: botTypes,
-          updateHistory: mockUpdatesData,
+          updateHistory: updateHistory,
           phase: 'phase2_step1',
           selectedBotTypeId: selectedBotType.id,
           selectedBotTypeName: botTypeName,
@@ -596,7 +618,7 @@ export default function Upload() {
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
           botTypes: botTypes,
-          updateHistory: mockUpdatesData,
+          updateHistory: updateHistory,
         }),
       });
 
