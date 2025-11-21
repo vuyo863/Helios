@@ -363,13 +363,13 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Last Updated</p>
                         <p className="font-semibold">
-                          {updates[0]?.updateDate} {updates[0]?.updateTime}
+                          {updates[0]?.createdAt ? format(new Date(updates[0].createdAt), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
                         <p className="font-semibold">
-                          {updates[updates.length - 1]?.updateDate} {updates[updates.length - 1]?.updateTime}
+                          {updates[updates.length - 1]?.createdAt ? format(new Date(updates[updates.length - 1].createdAt), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                         </p>
                       </div>
                     </div>
@@ -387,13 +387,14 @@ export default function BotTypesPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm mb-1">{update.updateName}</p>
+                                <p className="font-semibold text-sm mb-1">
+                                  {update.status} #{update.version}
+                                </p>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    {update.updateDate}
+                                    {update.createdAt ? format(new Date(update.createdAt), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                                   </span>
-                                  <span>{update.updateTime}</span>
                                 </div>
                               </div>
                               <Link href="/reports">
