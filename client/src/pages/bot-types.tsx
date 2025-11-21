@@ -363,13 +363,13 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Last Updated</p>
                         <p className="font-semibold">
-                          {updates[0]?.createdAt ? format(new Date(updates[0].createdAt), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                          {updates[0]?.createdAt ? format(new Date(updates[0].createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
                         <p className="font-semibold">
-                          {updates[updates.length - 1]?.createdAt ? format(new Date(updates[updates.length - 1].createdAt), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                          {updates[updates.length - 1]?.createdAt ? format(new Date(updates[updates.length - 1].createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                         </p>
                       </div>
                     </div>
@@ -393,7 +393,7 @@ export default function BotTypesPage() {
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    {update.createdAt ? format(new Date(update.createdAt), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                                    {update.createdAt ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                                   </span>
                                 </div>
                               </div>

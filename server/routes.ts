@@ -260,10 +260,28 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
    - Nutze NUR DIESEN Screenshot's Investment für %
    - NICHT die Summe aller Investments!
 
-5. **GRID PROFIT DURCHSCHNITT:**
-   - Nur Felder ausgeben wo time_basis >= 1
-   - Mode "Neu": total / runtime_since_start
-   - Mode "Vergleich": total / delta_since_last_upload
+5. **GRID PROFIT DURCHSCHNITT - RUNTIME VALIDIERUNG (KRITISCH!):**
+   - **ZUERST: Finde längste Runtime in allen Screenshots**
+   - Dann prüfe GENAU:
+   
+   **avgGridProfitHour:**
+   - Kann IMMER berechnet werden (auch bei < 1h)
+   - Berechnung: total / (runtime in Stunden)
+   - Beispiel: Runtime 30min → total / 0.5
+   
+   **avgGridProfitDay:**
+   - NUR wenn längste Runtime >= 24 Stunden (1 Tag)!
+   - Wenn längste Runtime < 24h → setze auf null
+   - Beispiel: Runtime 6h → avgGridProfitDay = null ❌
+   - Beispiel: Runtime 30h → avgGridProfitDay = total / (30/24) ✅
+   
+   **avgGridProfitWeek:**
+   - NUR wenn längste Runtime >= 168 Stunden (7 Tage)!
+   - Wenn längste Runtime < 168h → setze auf null
+   - Beispiel: Runtime 5d (120h) → avgGridProfitWeek = null ❌
+   - Beispiel: Runtime 10d (240h) → avgGridProfitWeek = total / (240/168) ✅
+   
+   **WICHTIG:** Diese Regel gilt für NEU und VERGLEICH Modi!
 
 6. **DATUM LOGIK:**
    - Schaue ALLE Screenshots im aktuellen Batch an
