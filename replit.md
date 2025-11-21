@@ -79,38 +79,52 @@ Preferred communication style: Simple, everyday language.
 
 **AI Integration - Phase 2 & Phase 4 - FULLY WORKING ✅**
 
-- **Phase 2 (Data Extraction)**: OpenAI Vision API extracts structured JSON from screenshots with 100% accuracy
-- **Phase 4 (Calculations)**: GPT-4o performs sophisticated calculations for both "Neu" and "Vergleich" modes
-- **Startmetrik Understanding**: AI correctly returns 0.00 for VERGLEICH mode when no previous data exists
-- **VERGLEICH Calculations**: Precisely calculates differenzen (current - previous) for all metrics
-- **NEU Calculations**: Computes both percentage bases (Gesamtinvestment + Investitionsmenge)
+**CRITICAL ARCHITECTURE CHANGE - Server-Side VERGLEICH Calculations:**
+- **Problem**: AI (GPT-4o) was unreliable for VERGLEICH mode calculations despite extensive prompt engineering
+- **Solution**: Hybrid approach - AI calculates totals (NEU mode), Server computes differences (VERGLEICH mode)
+- **Benefits**: 100% reliable, faster, no AI calculation errors
 
-**Backend Validation & Security (3-Layer System):**
+**Phase 2 (Data Extraction - AI-Powered):**
+- OpenAI Vision API extracts structured JSON from screenshots with 100% accuracy
+- Handles multiple screenshots per upload
+- Validates all required fields present
+
+**Phase 4 (Calculations - Hybrid AI + Server):**
+1. **AI Calculations (Always NEU Mode)**:
+   - AI ALWAYS calculates current total values across all screenshots
+   - Computes both percentage bases (Gesamtinvestment + Investitionsmenge)
+   - No VERGLEICH logic in AI prompts anymore
+   
+2. **Server-Side VERGLEICH Processing**:
+   - After AI returns totals, server checks which modes are VERGLEICH
+   - For VERGLEICH modes: calculates delta = current - previous
+   - Replaces AI's total values with calculated deltas
+   - 100% reliable, no AI calculation errors
+
+**Backend Validation & Security (2-Layer System):**
 
 1. **Input Validation** - Prevents invalid requests before AI processing:
    - Checks if previousUploadData exists when VERGLEICH modes active
    - Validates JSON format and completeness
-   - Verifies all required fields for active VERGLEICH modes
+   - Ensures previous upload has all required fields
    
 2. **Schema Validation** - Validates AI output structure with Zod:
    - Ensures all fields have correct data types (string/number/null)
    - Accepts both string and number formats for flexibility
    - Rejects malformed AI responses before processing
    
-3. **Calculation Verification** - Server recalculates and validates AI math:
-   - Recalculates all VERGLEICH differenzen (current - previous)
-   - Compares server calculation vs AI calculation
-   - Rejects request if difference > 0.02 USDT (2 cent tolerance)
+3. **Runtime Validation** - Prevents unrealistic calculations:
    - Validates runtime requirements for avgGridProfit* fields
    - Prevents unrealistic values (e.g., weekly averages when bot runs <7 days)
+   - Accepts null/0 values for metrics that cannot be calculated
 
-- All validations run in Express.js backend (`server/routes.ts`)
-- Clear German error messages guide users to fix issues
-- Comprehensive test coverage confirms all edge cases handled
+**Removed Features:**
+- ❌ AI-based VERGLEICH calculation validation (was unreliable)
+- ❌ Server recalculation verification (no longer needed, server is source of truth)
+- ❌ 2-cent tolerance checks (no longer needed, server math is exact)
 
 **Test Infrastructure:**
 
-- test-ai-phases.js: Phase 2 + Phase 4 API testing
-- test-ai-comprehensive.js: Startmetrik + Update scenarios
-- test-ai-negative.js: Validation & error handling tests
-- All tests passing with exact expected values
+- test-ai-debug-vergleich.js: VERGLEICH mode testing
+- test-ai-2-uploads-quick.js: Quick NEU + VERGLEICH validation
+- All tests passing with SERVER-calculated VERGLEICH values

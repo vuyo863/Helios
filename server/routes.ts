@@ -537,86 +537,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // VALIDIERUNG: Wenn VERGLEICH-Modi aktiv sind UND es kein Start-Metric ist,
       // müssen vorherige Daten vorhanden sein
-      if (!isStartMetric) {
-        const vergleichModes = [];
-        if (modes.investment === 'Vergleich') vergleichModes.push('Investment');
-        if (modes.profit === 'Vergleich') vergleichModes.push('Profit');
-        if (modes.trend === 'Vergleich') vergleichModes.push('Trend P&L');
-        if (modes.grid === 'Vergleich') vergleichModes.push('Grid Trading');
-        
-        if (vergleichModes.length > 0 && !previousUploadData) {
+      // HINWEIS: Bei isStartMetric=true erlauben wir VERGLEICH ohne previousUploadData
+      // (der Startmetrik Guard setzt dann alle Werte auf 0.00)
+      const vergleichModes = [];
+      if (modes.investment === 'Vergleich') vergleichModes.push('Investment');
+      if (modes.profit === 'Vergleich') vergleichModes.push('Profit');
+      if (modes.trend === 'Vergleich') vergleichModes.push('Trend P&L');
+      if (modes.grid === 'Vergleich') vergleichModes.push('Grid Trading');
+      
+      if (!isStartMetric && vergleichModes.length > 0 && !previousUploadData) {
+        return res.status(400).json({ 
+          error: `VERGLEICH-Modus aktiv für ${vergleichModes.join(', ')}, aber keine vorherigen Daten vorhanden`,
+          details: "Bitte stellen Sie vorherige Upload-Daten bereit oder wechseln Sie zu 'Neu'-Modus"
+        });
+      }
+      
+      // VALIDIERUNG: Prüfe ob previousUploadData die benötigten Felder enthält
+      // Nur bei !isStartMetric (bei Startmetrik gibt es keine previous data)
+      if (!isStartMetric && previousUploadData) {
+        let parsedPrevious;
+        try {
+          parsedPrevious = typeof previousUploadData === 'string' 
+            ? JSON.parse(previousUploadData) 
+            : previousUploadData;
+        } catch (e) {
           return res.status(400).json({ 
-            error: `VERGLEICH-Modus aktiv für ${vergleichModes.join(', ')}, aber keine vorherigen Daten vorhanden`,
-            details: "Bitte stellen Sie vorherige Upload-Daten bereit oder wechseln Sie zu 'Neu'-Modus"
+            error: "Ungültige vorherige Upload-Daten (kein gültiges JSON)" 
           });
         }
         
-        // VALIDIERUNG: Prüfe ob previousUploadData die benötigten Felder enthält
-        if (previousUploadData) {
-          let parsedPrevious;
-          try {
-            parsedPrevious = typeof previousUploadData === 'string' 
-              ? JSON.parse(previousUploadData) 
-              : previousUploadData;
-          } catch (e) {
-            return res.status(400).json({ 
-              error: "Ungültige vorherige Upload-Daten (kein gültiges JSON)" 
-            });
-          }
-          
-          const missingFields = [];
-          
-          if (modes.investment === 'Vergleich') {
-            if (!parsedPrevious.investment) missingFields.push('investment');
-            if (!parsedPrevious.extraMargin) missingFields.push('extraMargin');
-            if (!parsedPrevious.totalInvestment) missingFields.push('totalInvestment');
-          }
-          
-          if (modes.profit === 'Vergleich') {
-            if (!parsedPrevious.profit) missingFields.push('profit');
-          }
-          
-          if (modes.trend === 'Vergleich') {
-            if (!parsedPrevious.overallTrendPnlUsdt) missingFields.push('overallTrendPnlUsdt');
-          }
-          
-          if (modes.grid === 'Vergleich') {
-            if (!parsedPrevious.overallGridProfitUsdt) missingFields.push('overallGridProfitUsdt');
-          }
-          
-          if (missingFields.length > 0) {
-            return res.status(400).json({ 
-              error: `Vorherige Upload-Daten unvollständig für VERGLEICH-Modus`,
-              details: `Fehlende Felder: ${missingFields.join(', ')}`,
-              suggestion: "Verwenden Sie 'Neu'-Modus oder stellen Sie vollständige vorherige Daten bereit"
-            });
-          }
+        const missingFields = [];
+        
+        if (modes.investment === 'Vergleich') {
+          if (!parsedPrevious.investment) missingFields.push('investment');
+          if (!parsedPrevious.extraMargin) missingFields.push('extraMargin');
+          if (!parsedPrevious.totalInvestment) missingFields.push('totalInvestment');
+        }
+        
+        if (modes.profit === 'Vergleich') {
+          if (!parsedPrevious.profit) missingFields.push('profit');
+        }
+        
+        if (modes.trend === 'Vergleich') {
+          if (!parsedPrevious.overallTrendPnlUsdt) missingFields.push('overallTrendPnlUsdt');
+        }
+        
+        if (modes.grid === 'Vergleich') {
+          if (!parsedPrevious.overallGridProfitUsdt) missingFields.push('overallGridProfitUsdt');
+        }
+        
+        if (missingFields.length > 0) {
+          return res.status(400).json({ 
+            error: `Vorherige Upload-Daten unvollständig für VERGLEICH-Modus`,
+            details: `Fehlende Felder: ${missingFields.join(', ')}`,
+            suggestion: "Verwenden Sie 'Neu'-Modus oder stellen Sie vollständige vorherige Daten bereit"
+          });
         }
       }
 
+      // NEUE STRATEGIE: AI berechnet IMMER im NEU Modus
+      // Server berechnet Differenzen für VERGLEICH Modi nach AI-Antwort
       let contextualPrompt = PHASE_4_PROMPT;
       
       contextualPrompt += `\n\n**SCREENSHOT-DATEN (aus Phase 2):**\n${screenshotData}\n\n`;
       contextualPrompt += `**MODI-EINSTELLUNGEN:**\n`;
-      contextualPrompt += `- Investment: ${modes.investment}\n`;
-      contextualPrompt += `- Gesamter Profit / P&L: ${modes.profit}\n`;
-      contextualPrompt += `- Trend P&L: ${modes.trend}\n`;
-      contextualPrompt += `- Grid Trading: ${modes.grid}\n\n`;
-      contextualPrompt += `**IS START METRIC:** ${isStartMetric ? 'Ja (erster Upload)' : 'Nein (Update)'}\n\n`;
-      
-      if (!isStartMetric && previousUploadData) {
-        contextualPrompt += `**VORHERIGER UPLOAD (für Vergleichsmodus):**\n${previousUploadData}\n\n`;
-      }
-      
+      contextualPrompt += `- Alle Sektionen: NEU Modus (berechne aktuelle Gesamtwerte)\n\n`;
+      contextualPrompt += `**AUFGABE:**\n`;
+      contextualPrompt += `- Summiere ALLE Screenshots für jeden Wert\n`;
+      contextualPrompt += `- Berechne Prozentsätze mit beiden Basen (Gesamtinvestment + Investitionsmenge)\n`;
+      contextualPrompt += `- Gib die AKTUELLEN GESAMTWERTE zurück\n\n`;
       contextualPrompt += `\n**BEGINNE JETZT MIT DEN BERECHNUNGEN UND ANTWORTE NUR MIT DEM JSON!**`;
-
-      // DEBUG: Log prompt for VERGLEICH debugging
-      if (!isStartMetric && modes.investment === 'Vergleich') {
-        console.log('\n🔍 DEBUG VERGLEICH PROMPT:');
-        console.log('Previous Data:', previousUploadData?.substring(0, 200));
-        console.log('Modes:', modes);
-        console.log('isStartMetric:', isStartMetric);
-      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -672,83 +662,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // VALIDIERUNG 2: Serverseitige Nachberechnung für VERGLEICH-Modus
+        // STRATEGIE: Server berechnet VERGLEICH Differenzen
+        // AI hat bereits die aktuellen Gesamtwerte berechnet (NEU Modus)
+        
+        // STARTMETRIK GUARD: Wenn erster Upload mit VERGLEICH Modi → setze auf 0.00
+        if (isStartMetric) {
+          // Für Startmetrik: setze alle VERGLEICH Felder auf "0.00"
+          if (modes.investment === 'Vergleich') {
+            calculatedValues.investment = "0.00";
+            calculatedValues.extraMargin = "0.00";
+            calculatedValues.totalInvestment = "0.00";
+          }
+          
+          if (modes.profit === 'Vergleich') {
+            calculatedValues.profit = "0.00";
+            calculatedValues.profitPercent_gesamtinvestment = "0.00";
+            calculatedValues.profitPercent_investitionsmenge = "0.00";
+          }
+          
+          if (modes.trend === 'Vergleich') {
+            calculatedValues.overallTrendPnlUsdt = "0.00";
+            calculatedValues.overallTrendPnlPercent_gesamtinvestment = "0.00";
+            calculatedValues.overallTrendPnlPercent_investitionsmenge = "0.00";
+          }
+          
+          if (modes.grid === 'Vergleich') {
+            calculatedValues.overallGridProfitUsdt = "0.00";
+            calculatedValues.overallGridProfitPercent_gesamtinvestment = "0.00";
+            calculatedValues.overallGridProfitPercent_investitionsmenge = "0.00";
+            calculatedValues.highestGridProfit = "0.00";
+            calculatedValues.highestGridProfitPercent_gesamtinvestment = "0.00";
+            calculatedValues.highestGridProfitPercent_investitionsmenge = "0.00";
+            calculatedValues.avgGridProfitHour = "0.00";
+            calculatedValues.avgGridProfitDay = "0.00";
+            calculatedValues.avgGridProfitWeek = "0.00";
+          }
+        }
+        
+        // VERGLEICH DIFFERENZEN: Nur wenn NICHT Startmetrik UND previous data vorhanden
         if (!isStartMetric && previousUploadData) {
           const parsedPrevious = typeof previousUploadData === 'string' 
             ? JSON.parse(previousUploadData) 
             : previousUploadData;
-          const parsedScreenshots = typeof screenshotData === 'string'
-            ? JSON.parse(screenshotData)
-            : screenshotData;
           
-          const tolerance = 0.02; // 2 Cent Toleranz für Rundungsfehler
+          // Helper: Berechne Differenz (current - previous)
+          const calcDelta = (current: any, previous: any): string => {
+            const curr = parseFloat(current || 0);
+            const prev = parseFloat(previous || 0);
+            return (curr - prev).toFixed(2);
+          };
           
-          // Investment Section Validierung
+          // Investment Section - Server berechnet Differenz
           if (modes.investment === 'Vergleich') {
-            const currentInvestment = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
-              sum + (s.actualInvestment || 0), 0);
-            const previousInvestment = parseFloat(parsedPrevious.investment || 0);
-            const expectedDelta = currentInvestment - previousInvestment;
-            const aiDelta = parseFloat(calculatedValues.investment || 0);
-            
-            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
-              return res.status(400).json({
-                error: "AI-Berechnung für Investment-Differenz inkorrekt",
-                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
-                suggestion: "Bitte wiederholen Sie den Upload"
-              });
-            }
+            calculatedValues.investment = calcDelta(calculatedValues.investment, parsedPrevious.investment);
+            calculatedValues.extraMargin = calcDelta(calculatedValues.extraMargin, parsedPrevious.extraMargin);
+            calculatedValues.totalInvestment = calcDelta(calculatedValues.totalInvestment, parsedPrevious.totalInvestment);
           }
           
-          // Profit Section Validierung
+          // Profit Section - Server berechnet Differenz
           if (modes.profit === 'Vergleich') {
-            const currentProfit = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
-              sum + (s.totalProfitUsdt || 0), 0);
-            const previousProfit = parseFloat(parsedPrevious.profit || 0);
-            const expectedDelta = currentProfit - previousProfit;
-            const aiDelta = parseFloat(calculatedValues.profit || 0);
-            
-            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
-              return res.status(400).json({
-                error: "AI-Berechnung für Profit-Differenz inkorrekt",
-                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
-                suggestion: "Bitte wiederholen Sie den Upload"
-              });
-            }
+            calculatedValues.profit = calcDelta(calculatedValues.profit, parsedPrevious.profit);
+            calculatedValues.profitPercent_gesamtinvestment = calcDelta(
+              calculatedValues.profitPercent_gesamtinvestment, 
+              parsedPrevious.profitPercent_gesamtinvestment
+            );
+            calculatedValues.profitPercent_investitionsmenge = calcDelta(
+              calculatedValues.profitPercent_investitionsmenge, 
+              parsedPrevious.profitPercent_investitionsmenge
+            );
           }
           
-          // Trend P&L Section Validierung
+          // Trend P&L Section - Server berechnet Differenz
           if (modes.trend === 'Vergleich') {
-            const currentTrend = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
-              sum + (s.trendPnlUsdt || 0), 0);
-            const previousTrend = parseFloat(parsedPrevious.overallTrendPnlUsdt || 0);
-            const expectedDelta = currentTrend - previousTrend;
-            const aiDelta = parseFloat(calculatedValues.overallTrendPnlUsdt || 0);
-            
-            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
-              return res.status(400).json({
-                error: "AI-Berechnung für Trend P&L-Differenz inkorrekt",
-                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
-                suggestion: "Bitte wiederholen Sie den Upload"
-              });
-            }
+            calculatedValues.overallTrendPnlUsdt = calcDelta(
+              calculatedValues.overallTrendPnlUsdt, 
+              parsedPrevious.overallTrendPnlUsdt
+            );
+            calculatedValues.overallTrendPnlPercent_gesamtinvestment = calcDelta(
+              calculatedValues.overallTrendPnlPercent_gesamtinvestment,
+              parsedPrevious.overallTrendPnlPercent_gesamtinvestment
+            );
+            calculatedValues.overallTrendPnlPercent_investitionsmenge = calcDelta(
+              calculatedValues.overallTrendPnlPercent_investitionsmenge,
+              parsedPrevious.overallTrendPnlPercent_investitionsmenge
+            );
           }
           
-          // Grid Profit Section Validierung
+          // Grid Profit Section - Server berechnet Differenz
           if (modes.grid === 'Vergleich') {
-            const currentGrid = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
-              sum + (s.gridProfitUsdt || 0), 0);
-            const previousGrid = parseFloat(parsedPrevious.overallGridProfitUsdt || 0);
-            const expectedDelta = currentGrid - previousGrid;
-            const aiDelta = parseFloat(calculatedValues.overallGridProfitUsdt || 0);
-            
-            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
-              return res.status(400).json({
-                error: "AI-Berechnung für Grid Profit-Differenz inkorrekt",
-                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
-                suggestion: "Bitte wiederholen Sie den Upload"
-              });
-            }
+            calculatedValues.overallGridProfitUsdt = calcDelta(
+              calculatedValues.overallGridProfitUsdt,
+              parsedPrevious.overallGridProfitUsdt
+            );
+            calculatedValues.overallGridProfitPercent_gesamtinvestment = calcDelta(
+              calculatedValues.overallGridProfitPercent_gesamtinvestment,
+              parsedPrevious.overallGridProfitPercent_gesamtinvestment
+            );
+            calculatedValues.overallGridProfitPercent_investitionsmenge = calcDelta(
+              calculatedValues.overallGridProfitPercent_investitionsmenge,
+              parsedPrevious.overallGridProfitPercent_investitionsmenge
+            );
+            calculatedValues.highestGridProfit = calcDelta(
+              calculatedValues.highestGridProfit,
+              parsedPrevious.highestGridProfit
+            );
+            calculatedValues.highestGridProfitPercent_gesamtinvestment = calcDelta(
+              calculatedValues.highestGridProfitPercent_gesamtinvestment,
+              parsedPrevious.highestGridProfitPercent_gesamtinvestment
+            );
+            calculatedValues.highestGridProfitPercent_investitionsmenge = calcDelta(
+              calculatedValues.highestGridProfitPercent_investitionsmenge,
+              parsedPrevious.highestGridProfitPercent_investitionsmenge
+            );
+            calculatedValues.avgGridProfitHour = calcDelta(
+              calculatedValues.avgGridProfitHour,
+              parsedPrevious.avgGridProfitHour
+            );
+            calculatedValues.avgGridProfitDay = calcDelta(
+              calculatedValues.avgGridProfitDay,
+              parsedPrevious.avgGridProfitDay
+            );
+            calculatedValues.avgGridProfitWeek = calcDelta(
+              calculatedValues.avgGridProfitWeek,
+              parsedPrevious.avgGridProfitWeek
+            );
           }
         }
         
@@ -777,7 +814,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // avgGridProfitDay benötigt mindestens 1 Stunde Runtime
         // avgGridProfitWeek benötigt mindestens 1 Tag Runtime
         
-        if (calculatedValues.avgGridProfitDay && maxRuntimeHours < 1) {
+        // Akzeptiere null, 0, oder "0.00" als "nicht berechnet"
+        const hasValue = (val: any) => {
+          if (val === null || val === undefined) return false;
+          const num = parseFloat(val);
+          return !isNaN(num) && num !== 0;
+        };
+        
+        if (hasValue(calculatedValues.avgGridProfitDay) && maxRuntimeHours < 1) {
           return res.status(400).json({
             error: "avgGridProfitDay kann nicht berechnet werden",
             details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 1 Stunde Runtime erforderlich für tägliche Durchschnitte.`,
@@ -785,7 +829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        if (calculatedValues.avgGridProfitWeek && maxRuntimeHours < 24) {
+        if (hasValue(calculatedValues.avgGridProfitWeek) && maxRuntimeHours < 24) {
           return res.status(400).json({
             error: "avgGridProfitWeek kann nicht berechnet werden",
             details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 168 Stunden/1 Woche erforderlich)`,
