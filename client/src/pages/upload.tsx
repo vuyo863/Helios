@@ -732,6 +732,34 @@ export default function Upload() {
         throw new Error('Keine Screenshot-Daten verfügbar. Bitte führen Sie zuerst Phase 2 durch.');
       }
 
+      let previousUploadData = null;
+      
+      if (!isStartMetric && selectedBotTypeId) {
+        try {
+          const updatesResponse = await fetch(`/api/bot-types/${selectedBotTypeId}/updates`);
+          if (updatesResponse.ok) {
+            const updates = await updatesResponse.json();
+            if (updates && updates.length > 0) {
+              const lastUpdate = updates[0];
+              previousUploadData = JSON.stringify({
+                investment: lastUpdate.investment,
+                extraMargin: lastUpdate.extraMargin,
+                totalInvestment: lastUpdate.totalInvestment,
+                profit: lastUpdate.profit,
+                overallTrendPnlUsdt: lastUpdate.overallTrendPnlUsdt,
+                overallGridProfitUsdt: lastUpdate.overallGridProfitUsdt,
+                highestGridProfit: lastUpdate.highestGridProfit,
+                avgGridProfitHour: lastUpdate.avgGridProfitHour,
+                avgGridProfitDay: lastUpdate.avgGridProfitDay,
+                avgGridProfitWeek: lastUpdate.avgGridProfitWeek
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Konnte vorherige Upload-Daten nicht laden:', e);
+        }
+      }
+
       const response = await fetch('/api/phase4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -744,7 +772,7 @@ export default function Upload() {
             grid: gridTimeRange
           },
           isStartMetric,
-          previousUploadData: null
+          previousUploadData
         }),
       });
 
