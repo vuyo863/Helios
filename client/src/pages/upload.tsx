@@ -788,10 +788,17 @@ export default function Upload() {
       }]);
       
       setTimeout(() => {
+        // Bot-Richtung Logik: Wenn AI mehrere Richtungen zurückgibt (z.B. "Long, Short") → setze auf "Beides"
+        let normalizedBotDirection = calculatedValues.botDirection || 'Long';
+        if (normalizedBotDirection && normalizedBotDirection.includes(',')) {
+          // Mehrere Richtungen erkannt (z.B. "Long, Short") → Dropdown kann nur "Beides" verwenden
+          normalizedBotDirection = 'Beides';
+        }
+        
         setFormData(prev => ({
           ...prev,
           date: calculatedValues.date || '',
-          botDirection: calculatedValues.botDirection || '',
+          botDirection: normalizedBotDirection,
           leverage: calculatedValues.leverage || '',
           longestRuntime: calculatedValues.longestRuntime || '',
           avgRuntime: calculatedValues.avgRuntime || '',

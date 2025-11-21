@@ -831,8 +831,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Prüfe ob avgGridProfit* Werte realistisch sind
         // avgGridProfitHour kann ab jeder Runtime berechnet werden (Hochrechnung)
-        // avgGridProfitDay benötigt mindestens 1 Stunde Runtime
-        // avgGridProfitWeek benötigt mindestens 1 Tag Runtime
+        // avgGridProfitDay benötigt mindestens 24 Stunden (1 Tag) Runtime
+        // avgGridProfitWeek benötigt mindestens 168 Stunden (7 Tage) Runtime
         
         // Akzeptiere null, 0, oder "0.00" als "nicht berechnet"
         const hasValue = (val: any) => {
@@ -841,19 +841,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return !isNaN(num) && num !== 0;
         };
         
-        if (hasValue(calculatedValues.avgGridProfitDay) && maxRuntimeHours < 1) {
+        if (hasValue(calculatedValues.avgGridProfitDay) && maxRuntimeHours < 24) {
           return res.status(400).json({
             error: "avgGridProfitDay kann nicht berechnet werden",
-            details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 1 Stunde Runtime erforderlich für tägliche Durchschnitte.`,
-            suggestion: "KI sollte avgGridProfitDay auf null setzen bei Runtime < 1 Stunde"
+            details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 24 Stunden (1 Tag) Runtime erforderlich für tägliche Durchschnitte.`,
+            suggestion: "KI sollte avgGridProfitDay auf null setzen bei Runtime < 24 Stunden"
           });
         }
         
-        if (hasValue(calculatedValues.avgGridProfitWeek) && maxRuntimeHours < 24) {
+        if (hasValue(calculatedValues.avgGridProfitWeek) && maxRuntimeHours < 168) {
           return res.status(400).json({
             error: "avgGridProfitWeek kann nicht berechnet werden",
-            details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 168 Stunden/1 Woche erforderlich)`,
-            suggestion: "Entfernen Sie avgGridProfitWeek oder warten Sie bis Bot >= 1 Woche läuft"
+            details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 168 Stunden (7 Tage) Runtime erforderlich für wöchentliche Durchschnitte.`,
+            suggestion: "KI sollte avgGridProfitWeek auf null setzen bei Runtime < 168 Stunden"
           });
         }
         
