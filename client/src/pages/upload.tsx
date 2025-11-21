@@ -717,7 +717,7 @@ export default function Upload() {
         
         setTimeout(() => {
           const mockCalculatedValues = {
-            date: "2025-11-18 22:42:13",
+            date: "2025-11-18T22:42",
             botDirection: "Short",
             leverage: "75x Short",
             longestRuntime: "1d 6h 53m",
@@ -1174,10 +1174,10 @@ export default function Upload() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="date" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Datum</Label>
+                      <Label htmlFor="date" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Datum und Uhrzeit</Label>
                       <Input
                         id="date"
-                        type="date"
+                        type="datetime-local"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         disabled={!phaseTwoVerified}

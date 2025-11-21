@@ -1,0 +1,110 @@
+Update Metrics
+
+Bot Type: Moon Bots
+ID: #8B5CF6
+Version: 1
+
+Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?
+
+Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.
+
+1 Bild wurde zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+OK, fange an mit Phase 2, Schritt 1: Überprüfung der Bot-Type-Updates.
+
+Keine Updates gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten.
+
+Ich habe 1 Bild erhalten und habe darauf Zugriff. Ich habe das erste Bild analysiert und sehe ein Trading-Dashboard (ICP/USDT Futures Grid) mit einem Total Profit von +71.03 USDT (+59.19%). Der Test war erfolgreich, ich kann Bilder analysieren.
+
+Ausgezeichnet! Phase 2 ist erfolgreich abgeschlossen. Wir gehen jetzt zu Phase 3 über. Bitte füllen Sie unten die gewünschten Metriken und Modi aus und senden Sie diese mit dem Button "Einstellungen an AI senden".
+
+Einstellungen wurden an AI gesendet
+
+Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar. Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?
+
+Ja, bitte mit Phase 4 fortfahren
+
+Phase 4 - Schritt 1: Prüfung der benötigten Metriken
+
+Für den aktuellen Upload wurden 4 Sektionen mit Modi konfiguriert:
+• Investment (Modus: Neu)
+• Gesamter Profit / P&L (Modus: Neu)
+• Trend P&L (Modus: Neu)
+• Grid Trading (Modus: Neu)
+
+Es wurde kein vorheriger Upload gefunden. Dies ist der erste Upload (Modus "Neu" wird für alle Berechnungen verwendet).
+
+Schritt 1 abgeschlossen. Alle benötigten Metriken wurden identifiziert.
+
+Phase 4 - Schritt 2: Screenshot-Analyse
+
+Ich beginne jetzt mit der detaillierten Analyse aller hochgeladenen Screenshots. Jeder Screenshot wird zweimal analysiert, um die Genauigkeit zu gewährleisten.
+
+Analysiere Screenshot 1/1 - Erste Analyse läuft...
+
+Screenshot 1/1 - Zweite Analyse zur Überprüfung...
+
+Screenshot 1 erfolgreich analysiert:
+• Datum: 11/18/2025 (amerikanisches Format)
+• Uhrzeit: 22:42:13
+• Actual Investment: 120 USDT
+• Extra Margin: 650 USDT
+• Total Profit: +71.03 USDT (+59.19%)
+• Grid Profit: +5.51 USDT (+4.59%)
+• Trend PnL: +65.52 USDT (+54.60%)
+• Hebel: 75x Short
+• Laufzeit: 1d 6h 53m
+
+Schritt 2 abgeschlossen. Alle 1 Screenshots wurden erfolgreich analysiert und die Metriken extrahiert.
+
+Phase 4 - Schritt 3: Berechnungen und Funktionen
+
+Jetzt beginnt der wichtigste Teil - die eigentlichen Berechnungen. Es werden 3 Durchläufe durchgeführt, um maximale Genauigkeit zu gewährleisten.
+
+Durchlauf 1: Analyse der Berechnungsanforderungen
+
+Prüfe welche Berechnungen für welche Sektionen erforderlich sind...
+
+Sektion "Investment": Modus "Neu" erkannt - Berechnungslogik wird vorbereitet
+
+Sektion "Gesamter Profit / P&L": Modus "Neu" erkannt - Berechnungslogik wird vorbereitet
+
+Sektion "Trend P&L": Modus "Neu" erkannt - Berechnungslogik wird vorbereitet
+
+Sektion "Grid Trading": Modus "Neu" erkannt - Berechnungslogik wird vorbereitet
+
+Durchlauf 1 abgeschlossen. Alle Berechnungsanforderungen wurden identifiziert.
+
+Durchlauf 2: Ausführung der Berechnungen
+
+Gehe Section für Section durch und führe die vorgesehenen Berechnungen aus...
+
+Sektion "Investment": Berechnungen werden durchgeführt...
+
+Sektion "Investment": Berechnungen abgeschlossen
+
+Sektion "Gesamter Profit / P&L": Berechnungen werden durchgeführt...
+
+Sektion "Gesamter Profit / P&L": Berechnungen abgeschlossen
+
+Sektion "Trend P&L": Berechnungen werden durchgeführt...
+
+Sektion "Trend P&L": Berechnungen abgeschlossen
+
+Sektion "Grid Trading": Berechnungen werden durchgeführt...
+
+Sektion "Grid Trading": Berechnungen abgeschlossen
+
+Durchlauf 2 abgeschlossen. Alle Berechnungen wurden durchgeführt.
+
+Durchlauf 3: Überprüfung der Berechnungen
+
+Wiederhole alle Berechnungen zur Verifikation...
+
+Sektion "Investment": Überprüfung läuft...
+
+Sektion "Investment": Ergebnisse stimmen überein ✓
+
+Sektion "Gesamter Profit / P&L": Überprüfung läuft...
