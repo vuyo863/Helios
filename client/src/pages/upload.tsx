@@ -569,9 +569,7 @@ export default function Upload() {
           analysisDelay += 3000;
           
           setTimeout(() => {
-            const mockData = screenshotNum === 1 
-              ? `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`
-              : `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: -17.43 USDT (-14.52%)\n• Grid Profit: +5.66 USDT (+4.72%)\n• Trend PnL: -23.09 USDT (-19.23%)\n• Hebel: 75x Short\n• Laufzeit: 8h 18m`;
+            const mockData = `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`;
             
             setChatMessages(prev => [...prev, {
               role: 'ai',
@@ -720,31 +718,31 @@ export default function Upload() {
         setTimeout(() => {
           const mockCalculatedValues = {
             date: new Date().toISOString().split('T')[0],
-            botDirection: "Beides",
-            leverage: "50x Long, 75x Short",
+            botDirection: "Short",
+            leverage: "75x Short",
             longestRuntime: "1d 6h 53m",
-            avgRuntime: "17h 35m",
-            investment: "240.00",
-            extraMargin: "1300.00",
-            totalInvestment: "1540.00",
-            profit: "53.60",
-            profitPercent: hasLastUpload ? "185.63" : "3.48",
-            profitPercent_gesamtinvestment: hasLastUpload ? null : "3.48",
-            profitPercent_investitionsmenge: hasLastUpload ? null : "22.33",
-            overallTrendPnlUsdt: hasLastUpload ? "122.85" : "42.43",
+            avgRuntime: "1d 6h 53m",
+            investment: "120.00",
+            extraMargin: "650.00",
+            totalInvestment: "770.00",
+            profit: "71.03",
+            profitPercent: hasLastUpload ? "185.63" : "9.22",
+            profitPercent_gesamtinvestment: hasLastUpload ? null : "9.22",
+            profitPercent_investitionsmenge: hasLastUpload ? null : "59.19",
+            overallTrendPnlUsdt: hasLastUpload ? "122.85" : "65.52",
             overallTrendPnlPercent: hasLastUpload ? "189.47" : null,
-            overallTrendPnlPercent_gesamtinvestment: hasLastUpload ? null : "2.75",
-            overallTrendPnlPercent_investitionsmenge: hasLastUpload ? null : "17.68",
-            overallGridProfitUsdt: hasLastUpload ? "30.25" : "11.17",
+            overallTrendPnlPercent_gesamtinvestment: hasLastUpload ? null : "8.51",
+            overallTrendPnlPercent_investitionsmenge: hasLastUpload ? null : "54.60",
+            overallGridProfitUsdt: hasLastUpload ? "30.25" : "5.51",
             overallGridProfitPercent: hasLastUpload ? null : null,
-            overallGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.73",
-            overallGridProfitPercent_investitionsmenge: hasLastUpload ? null : "4.65",
-            highestGridProfit: hasLastUpload ? "12.30" : "5.66",
+            overallGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.72",
+            overallGridProfitPercent_investitionsmenge: hasLastUpload ? null : "4.59",
+            highestGridProfit: hasLastUpload ? "12.30" : "5.51",
             highestGridProfitPercent: hasLastUpload ? null : null,
-            highestGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.73",
-            highestGridProfitPercent_investitionsmenge: hasLastUpload ? "6.15" : "9.43",
-            avgGridProfitHour: hasLastUpload ? null : "0.15",
-            avgGridProfitDay: hasLastUpload ? "15.13" : "3.60",
+            highestGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.72",
+            highestGridProfitPercent_investitionsmenge: hasLastUpload ? "6.15" : "4.59",
+            avgGridProfitHour: hasLastUpload ? null : "0.18",
+            avgGridProfitDay: hasLastUpload ? "15.13" : "4.27",
             avgGridProfitWeek: null
           };
           

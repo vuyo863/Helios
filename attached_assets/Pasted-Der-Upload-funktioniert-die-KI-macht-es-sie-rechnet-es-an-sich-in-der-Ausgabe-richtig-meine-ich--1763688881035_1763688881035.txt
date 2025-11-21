@@ -1,0 +1,70 @@
+Der Upload funktioniert, die KI macht es, sie rechnet es an sich in der Ausgabe richtig, meine ich. Aber auch die Ausgabe funktioniert. Das eigentliche Gute ist, alles funktioniert. Es ist nur nicht richtig alles. Sie zum Beispiel jetzt hier, ich habe diesen Screenshot hochgeladen, ich habe mal das gepostet, was sie zurückgegeben hat. Also ich weiß nicht, ob es daran liegt, dass da vielleicht noch Daten sind, dass sie nicht separieren können, wenn ein neuer Upload kommt. Da stehen dann irgendwie ganz andere Werte als da, als sie ausgegeben hat im Chat und als auf dem Screenshot sind. Das heißt, prüfst du ja erstmal selber, was mit dem Screenshot rauskommen würde. Danach prüfst du einmal mit dem Log, was sie zurückgegeben hat. Und dann prüfst du, was tatsächlich ankam und was ausgegeben wurde in den Ausgabefeldern. Und dann siehst du, es macht irgendwie keinen Sinn. Da steht zum Beispiel auch Datum, fängt bei Datum an. Datum hat zum Beispiel das heutige Datum genommen. Der 21.11. wurde das Screenshot gezeigt, dass der Bot gestartet wurde am 18.11. Und zum Beispiel alles von Investmentmengen in 240 ist komplett falsch, extra Margin und alles drumherum. Also das, was ausgegeben wurde, ist leider alles falsch fast.Meine Vermutung, zu einer Vermutung, zum Subrücken, ist, dass vielleicht vielleicht wie das vorherige Daten immer noch da sind, dass diese dann noch da rumliegen, das heißt, eine Überlegung wäre, dass wir was einbauen, damit es sozusagen ein Restart-Upload gibt oder Stop-Upload, so ein Stop- und Start-Upload oder halt Restart-Upload oder Cancel-Upload und Save-Upload, sowas in der Art halt, obwohl Save-Upload ist sozusagen eigentlich der Button ganz unten, man muss es nicht einbauen, jetzt haben wir ja schon diese Eintracht speichern, aber halt irgendwas, damit halt alles tatsächlich weg ist, keine Ahnung. Aber ja, wir überprüfen das mal ganz kurz bitte und warum da falsche Ausgaben sind. hier die ausgaben: Info
+Datum
+21.11.2025
+Bot-Richtung
+Beides
+
+Hebel
+50x Long, 75x Short
+Längste Laufzeit (Tage, Stunden, Sekunden)
+1d 6h 53m
+Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)
+17h 35m
+Investment
+
+Neu
+
+Investitionsmenge (USDT)
+240,00
+Extra Margin
+1300,00
+Gesamtinvestment
+1540,00
+Gesamter Profit / P&L
+
+Neu
+
+Gesamtprofit (USDT)
+53,60
+Gesamtprofit (%)
+3,48
+
+Gesamtinvestment
+
+Trend P&L
+
+Neu
+
+Trend P&L (USDT)$
+42,43
+Trend P&L (%)
+%
+2,76
+
+Gesamtinvestment
+
+Grid Trading
+
+Neu
+
+Grid Profit Durchschnitt
+Stunde
+0,15
+Tag
+3,60
+Woche
+0.00
+Gesamter Grid Profit (USDT)$
+11,17
+Gesamter Grid Profit (%)
+%
+0,73
+
+Gesamtinvestment
+
+Höchster Grid Profit (USDT)
+5,66
+Höchster Grid Profit (%)
+0,37
+
+Gesamtinvestment ; hier die ausgabe : 
