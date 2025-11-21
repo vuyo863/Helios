@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, numeric, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, numeric, date, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -95,10 +95,9 @@ export type BotEntry = typeof botEntries.$inferSelect;
 export const botTypeUpdates = pgTable("bot_type_updates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   botTypeId: varchar("bot_type_id").notNull(),
-  updateName: text("update_name").notNull(), // Version/Name des Updates
-  updateDate: text("update_date").notNull(), // Datum wann gespeichert
-  updateTime: text("update_time").notNull(), // Uhrzeit wann gespeichert
+  version: integer("version").notNull(), // Version number (1, 2, 3, ...)
   status: text("status").notNull(), // "Update Metrics" oder "Closed Bots"
+  createdAt: timestamp("created_at").defaultNow(), // Automatisch gespeichert
   
   // Info Section (keine Modi)
   date: text("date"), // Ältestes Datum aus Screenshots
