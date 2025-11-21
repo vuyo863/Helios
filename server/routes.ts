@@ -144,25 +144,49 @@ Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und ha
 - Längste Laufzeit: MAX aus aktuellem Upload
 - Durchschnittliche Laufzeit: AVG aus aktuellem Upload
 
-**KRITISCH: MEHRERE SCREENSHOTS MIT UNTERSCHIEDLICHEN WERTEN**
+**KRITISCH: INFO SECTION - AGGREGATION BEI MEHREREN SCREENSHOTS**
 
-Bei mehreren Screenshots mit UNTERSCHIEDLICHEN Werten für Hebel oder Bot-Richtung:
+Die Info Section hat KEINE Modi. Die Werte werden IMMER aggregiert (zusammengefasst).
 
-**Bot-Richtung Beispiele:**
-- Screenshot 1: Short, Screenshot 2: Short → botDirection = "Short"
-- Screenshot 1: Long, Screenshot 2: Short → botDirection = "Long, Short" (alphabetisch sortiert!)
-- Screenshot 1: Long, Screenshot 2: Long, Screenshot 3: Short → botDirection = "Long, Short"
+**AGGREGATIONS-ALGORITHMUS:**
 
-**Hebel Beispiele:**
-- Screenshot 1: "3x Short", Screenshot 2: "3x Short" → leverage = "3x Short"
-- Screenshot 1: "3x Short", Screenshot 2: "5x Long" → leverage = "3x Short, 5x Long"
-- Screenshot 1: "10x Long", Screenshot 2: "5x Short", Screenshot 3: "10x Long" → leverage = "10x Long, 5x Short"
+Schritt 1: Sammle ALLE Werte aus ALLEN Screenshots
+Schritt 2: Entferne Duplikate (nur einzigartige Werte behalten)
+Schritt 3: Sortiere alphabetisch
+Schritt 4: Verbinde mit Komma und Leerzeichen (", ")
 
-**REGEL:**
-- Sammle ALLE einzigartigen Werte
-- Entferne Duplikate
-- Sortiere alphabetisch
-- Verbinde mit Komma und Leerzeichen
+**BEISPIEL-SZENARIEN:**
+
+Szenario A - UNTERSCHIEDLICHE WERTE:
+  Screenshots: [Long mit 100x Long] + [Short mit 3x Short]
+  Ergebnis:
+    - botDirection: "Long, Short" (alphabetisch sortiert!)
+    - leverage: "100x Long, 3x Short" (alphabetisch: "1" vor "3")
+
+Szenario B - GLEICHE WERTE:
+  Screenshots: [Short mit 5x Short] + [Short mit 5x Short]
+  Ergebnis:
+    - botDirection: "Short" (Duplikat entfernt)
+    - leverage: "5x Short" (Duplikat entfernt)
+
+Szenario C - GEMISCHTE DUPLIKATE:
+  Screenshots: [Long mit 10x Long] + [Short mit 3x Short] + [Long mit 75x Long]
+  Ergebnis:
+    - botDirection: "Long, Short" (Long kommt zweimal vor, aber nur einmal ausgeben!)
+    - leverage: "10x Long, 3x Short, 75x Long" (alphabetisch sortiert)
+
+**DEIN KONKRETER FALL:**
+  Screenshot 1: direction=Long, leverage=100x Long
+  Screenshot 2: direction=Short, leverage=3x Short
+  
+  Schritt 1: Sammle [Long, Short] und [100x Long, 3x Short]
+  Schritt 2: Keine Duplikate
+  Schritt 3: Sortiere alphabetisch
+  Schritt 4: Verbinde mit ", "
+  
+  AUSGABE:
+    - botDirection: "Long, Short"
+    - leverage: "100x Long, 3x Short"
 
 Bestätige, dass du diese Logik verstanden hast, indem du sie in eigenen Worten erklärst.`;
 
