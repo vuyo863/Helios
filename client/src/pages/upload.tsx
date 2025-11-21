@@ -43,6 +43,7 @@ export default function Upload() {
   const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
   const [phaseThreeSettingsSent, setPhaseThreeSettingsSent] = useState(false);
   const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
+  const [extractedScreenshotData, setExtractedScreenshotData] = useState<string>('');
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -380,6 +381,7 @@ export default function Upload() {
 
       const data = await response.json();
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      setExtractedScreenshotData(data.response);
       setPhaseTwoStep2Complete(true);
       
       setTimeout(() => {
@@ -544,13 +546,15 @@ export default function Upload() {
     });
 
     try {
-      const screenshotData = `Screenshot 1 analysiert:\n• Datum: 11/18/2025 22:42:13\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`;
+      if (!extractedScreenshotData) {
+        throw new Error('Keine Screenshot-Daten verfügbar. Bitte führen Sie zuerst Phase 2 durch.');
+      }
 
       const response = await fetch('/api/phase4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          screenshotData,
+          screenshotData: extractedScreenshotData,
           modes: {
             investment: investmentTimeRange,
             profit: profitTimeRange,
