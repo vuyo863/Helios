@@ -271,59 +271,94 @@ Wenn Investment-Modus = "Vergleich":
 - extraMargin: 800 - 650 = "150.00" ✅
 - totalInvestment: 1000 - 770 = "230.00" ✅
 
-**BEISPIEL 2: Profit Section**
+**BEISPIEL 2: Profit Section (MEHRERE SCREENSHOTS)**
 
 previousUploadData:
 {
-  "profit": "71.03"
+  "profit": "-5.88"
 }
 
-Aktueller Screenshot zeigt:
-- totalProfitUsdt: 150
+Aktuelle Screenshots zeigen:
+- Screenshot 1: totalProfitUsdt: +4.55
+- Screenshot 2: totalProfitUsdt: -10.43
+- SUMME: 4.55 + (-10.43) = -5.88
 
 Wenn Profit-Modus = "Vergleich":
-- profit: 150 - 71.03 = "78.97" ✅ (NICHT "150"!)
-- profitPercent: (78.97 / 71.03) × 100 = 111.18% (WACHSTUMSRATE!)
+- Schritt 1: Summiere ALLE aktuellen Screenshots: -5.88
+- Schritt 2: Hole vorherigen Wert: -5.88
+- Schritt 3: Berechne Differenz: -5.88 - (-5.88) = 0.00 ✅
+- profit: "0.00" (DIFFERENZ, nicht Gesamtwert!)
+- profitPercent: Wachstumsrate basierend auf Differenz
 
-**BEISPIEL 3: Trend P&L Section**
+**BEISPIEL 3: Trend P&L Section (MEHRERE SCREENSHOTS)**
 
 previousUploadData:
 {
-  "overallTrendPnlUsdt": "65.52"
+  "overallTrendPnlUsdt": "-10.03"
 }
 
-Aktueller Screenshot zeigt:
-- trendPnlUsdt: 120
+Aktuelle Screenshots zeigen:
+- Screenshot 1: trendPnlUsdt: +1.86
+- Screenshot 2: trendPnlUsdt: -11.89
+- SUMME: 1.86 + (-11.89) = -10.03
 
 Wenn Trend-Modus = "Vergleich":
-- overallTrendPnlUsdt: 120 - 65.52 = "54.48" ✅ (NICHT "120"!)
-- overallTrendPnlPercent: (54.48 / 65.52) × 100 = 83.15% (WACHSTUMSRATE!)
+- Schritt 1: Summiere ALLE Screenshots: -10.03
+- Schritt 2: Vorheriger Wert: -10.03
+- Schritt 3: Differenz: -10.03 - (-10.03) = 0.00 ✅
+- overallTrendPnlUsdt: "0.00" (DIFFERENZ!)
 
-**BEISPIEL 4: Grid Profit Section**
+**BEISPIEL 4: Grid Profit Section (MEHRERE SCREENSHOTS)**
 
 previousUploadData:
 {
-  "overallGridProfitUsdt": "5.51",
-  "highestGridProfit": "5.51"
+  "overallGridProfitUsdt": "4.14"
 }
 
-Aktueller Screenshot zeigt:
-- gridProfitUsdt: 30
+Aktuelle Screenshots zeigen:
+- Screenshot 1: gridProfitUsdt: +2.68
+- Screenshot 2: gridProfitUsdt: +1.46
+- SUMME: 2.68 + 1.46 = 4.14
 
 Wenn Grid-Modus = "Vergleich":
-- overallGridProfitUsdt: 30 - 5.51 = "24.49" ✅ (NICHT "30"!)
-- overallGridProfitPercent: (24.49 / 5.51) × 100 = 444.46% (WACHSTUMSRATE!)
+- Schritt 1: Summiere ALLE Screenshots: 4.14
+- Schritt 2: Vorheriger Wert: 4.14
+- Schritt 3: Differenz: 4.14 - 4.14 = 0.00 ✅
+- overallGridProfitUsdt: "0.00" (DIFFERENZ!)
 - highestGridProfit: Finde höchsten Grid Profit aus AKTUELLEN Screenshots
 - highestGridProfitPercent: Nutze NUR diesen Screenshot's Investment
 
 **KRITISCH FÜR VERGLEICH-MODUS:**
-- Du musst IMMER subtrahieren: current - previous
+
+**SUBTRAKTION FORMEL:**
+- IMMER: aktueller_wert - vorheriger_wert = differenz
+- Beispiel: Aktuell 1000 USDT, Vorher 1000 USDT → 1000 - 1000 = 0.00 ✅
+- Beispiel: Aktuell 1500 USDT, Vorher 1000 USDT → 1500 - 1000 = 500.00 ✅
+- Beispiel: Aktuell 800 USDT, Vorher 1000 USDT → 800 - 1000 = -200.00 ✅
+
+**FELD-MAPPING:**
 - previousUploadData enthält die GLEICHEN Feldnamen wie dein Output
-- Nutze die RICHTIGEN Felder aus previousUploadData:
-  * profit → profit (NICHT totalProfitUsdt)
-  * overallTrendPnlUsdt → overallTrendPnlUsdt
-  * overallGridProfitUsdt → overallGridProfitUsdt
-- Gib USDT-Differenzen zurück, KEINE Prozentsätze!
+- investment → investment (NICHT actualInvestment!)
+- profit → profit (NICHT totalProfitUsdt!)
+- overallTrendPnlUsdt → overallTrendPnlUsdt
+- overallGridProfitUsdt → overallGridProfitUsdt
+
+**VERGLEICH SCHRITT-FÜR-SCHRITT:**
+1. SUMMIERE ALLE aktuellen Screenshots (genau wie bei NEU Modus!)
+   - Beispiel: Screenshot 1 (Investment 1000) + Screenshot 2 (Investment 10) = 1010
+   - WICHTIG: Auch im VERGLEICH Modus IMMER ALLE Screenshots addieren!
+2. Hole VORHERIGEN Wert aus previousUploadData mit exaktem Feldnamen
+   - Beispiel: previousUploadData.investment = "1010.00"
+3. Subtrahiere: (Summe aller aktuellen Screenshots) - (vorheriger Wert) = differenz
+   - Beispiel: 1010 - 1010 = 0.00
+   - Beispiel: 1500 - 1000 = 500.00
+4. Gib NUR die Differenz zurück (NICHT den aktuellen Gesamtwert!)
+
+**FEHLER VERMEIDEN:**
+❌ FALSCH: Gibt aktuellen Wert zurück statt Differenz
+❌ FALSCH: Subtrahiert vorherig - aktuell (falsche Reihenfolge)
+❌ FALSCH: Verwendet falsche Feldnamen aus previousUploadData
+✅ RICHTIG: aktuell - vorherig, nutzt exakte Feldnamen, gibt Differenz zurück
 
 **ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**
 `;
@@ -574,6 +609,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       contextualPrompt += `\n**BEGINNE JETZT MIT DEN BERECHNUNGEN UND ANTWORTE NUR MIT DEM JSON!**`;
+
+      // DEBUG: Log prompt for VERGLEICH debugging
+      if (!isStartMetric && modes.investment === 'Vergleich') {
+        console.log('\n🔍 DEBUG VERGLEICH PROMPT:');
+        console.log('Previous Data:', previousUploadData?.substring(0, 200));
+        console.log('Modes:', modes);
+        console.log('isStartMetric:', isStartMetric);
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
