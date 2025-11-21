@@ -17,8 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { BotType } from "@shared/schema";
-import { mockUpdatesData, type BotTypeUpdate } from "@shared/bot-type-updates";
+import { BotType, BotTypeUpdate } from "@shared/schema";
 import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -43,6 +42,12 @@ export default function BotTypesPage() {
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
 
   const { toast } = useToast();
+
+  // Fetch updates for selected bot type
+  const { data: updates = [] } = useQuery<BotTypeUpdate[]>({
+    queryKey: ['/api/bot-types', selectedBotType?.id, 'updates'],
+    enabled: !!selectedBotType?.id,
+  });
 
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; name: string; description: string }) => {
@@ -128,9 +133,6 @@ export default function BotTypesPage() {
     }
   };
 
-  const getUpdatesForBotType = (botTypeName: string): BotTypeUpdate[] => {
-    return mockUpdatesData[botTypeName] || [];
-  };
 
   if (isLoading) {
     return (
@@ -333,7 +335,7 @@ export default function BotTypesPage() {
 
             {selectedBotType && (
               <div className="space-y-4">
-                {getUpdatesForBotType(selectedBotType.name).length === 0 ? (
+                {updates.length === 0 ? (
                   <div className="py-12 text-center space-y-4">
                     <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
                       <TrendingUp className="w-8 h-8 text-muted-foreground" />
@@ -361,13 +363,13 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Last Updated</p>
                         <p className="font-semibold">
-                          {getUpdatesForBotType(selectedBotType.name)[0]?.updateDate} {getUpdatesForBotType(selectedBotType.name)[0]?.updateTime}
+                          {updates[0]?.updateDate} {updates[0]?.updateTime}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
                         <p className="font-semibold">
-                          {getUpdatesForBotType(selectedBotType.name)[getUpdatesForBotType(selectedBotType.name).length - 1]?.updateDate} {getUpdatesForBotType(selectedBotType.name)[getUpdatesForBotType(selectedBotType.name).length - 1]?.updateTime}
+                          {updates[updates.length - 1]?.updateDate} {updates[updates.length - 1]?.updateTime}
                         </p>
                       </div>
                     </div>
@@ -376,7 +378,7 @@ export default function BotTypesPage() {
 
                     <div className="space-y-2">
                       <h4 className="font-semibold text-sm text-muted-foreground mb-3">Update Verlauf</h4>
-                      {getUpdatesForBotType(selectedBotType.name).map((update) => (
+                      {updates.map((update) => (
                         <Card 
                           key={update.id} 
                           className="hover-elevate active-elevate-2 transition-all"

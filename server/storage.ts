@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType } from "@shared/schema";
+import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -19,6 +19,12 @@ export interface IStorage {
   createBotEntry(entry: InsertBotEntry): Promise<BotEntry>;
   updateBotEntry(id: string, updateData: Partial<InsertBotEntry>): Promise<BotEntry | undefined>;
   deleteBotEntry(id: string): Promise<boolean>;
+  
+  // Bot Type Updates
+  getBotTypeUpdates(botTypeId: string): Promise<BotTypeUpdate[]>;
+  getLatestBotTypeUpdate(botTypeId: string): Promise<BotTypeUpdate | undefined>;
+  createBotTypeUpdate(update: InsertBotTypeUpdate): Promise<BotTypeUpdate>;
+  deleteBotTypeUpdate(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -414,6 +420,25 @@ export class MemStorage implements IStorage {
       .filter((entry) => entry.botTypeId === botTypeId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
+
+  // Bot Type Updates Methods - Stub implementation (will use Drizzle directly in routes)
+  async getBotTypeUpdates(botTypeId: string): Promise<BotTypeUpdate[]> {
+    return [];
+  }
+
+  async getLatestBotTypeUpdate(botTypeId: string): Promise<BotTypeUpdate | undefined> {
+    return undefined;
+  }
+
+  async createBotTypeUpdate(insertUpdate: InsertBotTypeUpdate): Promise<BotTypeUpdate> {
+    throw new Error("Use Drizzle directly for bot type updates");
+  }
+
+  async deleteBotTypeUpdate(id: string): Promise<boolean> {
+    return false;
+  }
 }
 
-export const storage = new MemStorage();
+// Export DbStorage as default for production use
+import { dbStorage } from "./storage-db";
+export const storage = dbStorage;

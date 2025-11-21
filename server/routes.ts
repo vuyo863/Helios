@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBotEntrySchema, insertBotTypeSchema } from "@shared/schema";
+import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
 
@@ -898,6 +898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const botTypes = await storage.getAllBotTypes();
       res.json(botTypes);
     } catch (error) {
+      console.error("Error fetching bot types:", error);
       res.status(500).json({ error: "Failed to fetch bot types" });
     }
   });
@@ -948,6 +949,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete bot type" });
+    }
+  });
+
+  // Bot Type Updates Routes
+  app.get("/api/bot-types/:id/updates", async (req, res) => {
+    try {
+      const updates = await storage.getBotTypeUpdates(req.params.id);
+      res.json(updates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch updates" });
+    }
+  });
+
+  app.post("/api/bot-types/:id/updates", async (req, res) => {
+    try {
+      const validatedData = insertBotTypeUpdateSchema.parse({
+        ...req.body,
+        botTypeId: req.params.id,
+      });
+      const update = await storage.createBotTypeUpdate(validatedData);
+      res.status(201).json(update);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create update" });
     }
   });
 

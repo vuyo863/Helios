@@ -90,3 +90,53 @@ export const insertBotEntrySchema = createInsertSchema(botEntries).omit({
 
 export type InsertBotEntry = z.infer<typeof insertBotEntrySchema>;
 export type BotEntry = typeof botEntries.$inferSelect;
+
+// Bot Type Updates - Speichert alle Phase 4 Berechnungen pro Upload
+export const botTypeUpdates = pgTable("bot_type_updates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  botTypeId: varchar("bot_type_id").notNull(),
+  updateName: text("update_name").notNull(), // Version/Name des Updates
+  updateDate: text("update_date").notNull(), // Datum wann gespeichert
+  updateTime: text("update_time").notNull(), // Uhrzeit wann gespeichert
+  status: text("status").notNull(), // "Update Metrics" oder "Closed Bots"
+  
+  // Info Section (keine Modi)
+  date: text("date"), // Ältestes Datum aus Screenshots
+  botDirection: text("bot_direction"),
+  leverage: text("leverage"),
+  longestRuntime: text("longest_runtime"),
+  avgRuntime: text("avg_runtime"),
+  
+  // Investment Section
+  investment: text("investment"),
+  extraMargin: text("extra_margin"),
+  totalInvestment: text("total_investment"),
+  
+  // Profit Section
+  profit: text("profit"),
+  profitPercent_gesamtinvestment: text("profit_percent_gesamtinvestment"),
+  profitPercent_investitionsmenge: text("profit_percent_investitionsmenge"),
+  
+  // Trend P&L Section
+  overallTrendPnlUsdt: text("overall_trend_pnl_usdt"),
+  overallTrendPnlPercent_gesamtinvestment: text("overall_trend_pnl_percent_gesamtinvestment"),
+  overallTrendPnlPercent_investitionsmenge: text("overall_trend_pnl_percent_investitionsmenge"),
+  
+  // Grid Trading Section
+  overallGridProfitUsdt: text("overall_grid_profit_usdt"),
+  overallGridProfitPercent_gesamtinvestment: text("overall_grid_profit_percent_gesamtinvestment"),
+  overallGridProfitPercent_investitionsmenge: text("overall_grid_profit_percent_investitionsmenge"),
+  highestGridProfit: text("highest_grid_profit"),
+  highestGridProfitPercent_gesamtinvestment: text("highest_grid_profit_percent_gesamtinvestment"),
+  highestGridProfitPercent_investitionsmenge: text("highest_grid_profit_percent_investitionsmenge"),
+  avgGridProfitHour: text("avg_grid_profit_hour"),
+  avgGridProfitDay: text("avg_grid_profit_day"),
+  avgGridProfitWeek: text("avg_grid_profit_week"),
+});
+
+export const insertBotTypeUpdateSchema = createInsertSchema(botTypeUpdates).omit({
+  id: true,
+});
+
+export type InsertBotTypeUpdate = z.infer<typeof insertBotTypeUpdateSchema>;
+export type BotTypeUpdate = typeof botTypeUpdates.$inferSelect;

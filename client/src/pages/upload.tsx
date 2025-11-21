@@ -150,16 +150,120 @@ export default function Upload() {
   }, [highestGridProfitPercentBase, formData.highestGridProfit, formData.investment, formData.totalInvestment, gridTimeRange]);
 
   const uploadMutation = useMutation({
-    mutationFn: async (data: typeof formData & { botTypeId: string | null }) => {
-      return await apiRequest('POST', '/api/upload', data);
+    mutationFn: async () => {
+      if (!selectedBotTypeId) {
+        throw new Error('Kein Bot-Typ ausgewählt');
+      }
+
+      // Berechne beide Prozentbasen für alle Felder
+      const investmentValue = parseFloat(formData.investment || '0');
+      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+      const profitValue = parseFloat(formData.profit || '0');
+      const trendValue = parseFloat(formData.overallTrendPnlUsdt || '0');
+      const gridValue = parseFloat(formData.overallGridProfitUsdt || '0');
+      const highestValue = parseFloat(formData.highestGridProfit || '0');
+
+      // Profit Prozent - beide Basen
+      let profitPercent_gesamtinvestment = null;
+      let profitPercent_investitionsmenge = null;
+      if (profitTimeRange === 'Neu') {
+        if (totalInvestmentValue > 0) {
+          profitPercent_gesamtinvestment = ((profitValue / totalInvestmentValue) * 100).toFixed(2);
+        }
+        if (investmentValue > 0) {
+          profitPercent_investitionsmenge = ((profitValue / investmentValue) * 100).toFixed(2);
+        }
+      }
+
+      // Trend P&L Prozent - beide Basen
+      let trendPercent_gesamtinvestment = null;
+      let trendPercent_investitionsmenge = null;
+      if (trendTimeRange === 'Neu') {
+        if (totalInvestmentValue > 0) {
+          trendPercent_gesamtinvestment = ((trendValue / totalInvestmentValue) * 100).toFixed(2);
+        }
+        if (investmentValue > 0) {
+          trendPercent_investitionsmenge = ((trendValue / investmentValue) * 100).toFixed(2);
+        }
+      }
+
+      // Overall Grid Profit Prozent - beide Basen
+      let gridPercent_gesamtinvestment = null;
+      let gridPercent_investitionsmenge = null;
+      if (gridTimeRange === 'Neu') {
+        if (totalInvestmentValue > 0) {
+          gridPercent_gesamtinvestment = ((gridValue / totalInvestmentValue) * 100).toFixed(2);
+        }
+        if (investmentValue > 0) {
+          gridPercent_investitionsmenge = ((gridValue / investmentValue) * 100).toFixed(2);
+        }
+      }
+
+      // Highest Grid Profit Prozent - beide Basen
+      let highestPercent_gesamtinvestment = null;
+      let highestPercent_investitionsmenge = null;
+      if (gridTimeRange === 'Neu') {
+        if (totalInvestmentValue > 0) {
+          highestPercent_gesamtinvestment = ((highestValue / totalInvestmentValue) * 100).toFixed(2);
+        }
+        if (investmentValue > 0) {
+          highestPercent_investitionsmenge = ((highestValue / investmentValue) * 100).toFixed(2);
+        }
+      }
+
+      // Erstelle Update-Daten
+      const now = new Date();
+      const updateData = {
+        botTypeId: selectedBotTypeId,
+        updateName: formData.version,
+        updateDate: now.toLocaleDateString('de-DE'),
+        updateTime: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+        status: outputMode === 'update-metrics' ? 'Update Metrics' : 'Closed Bots',
+        
+        // Info Section (keine Modi)
+        date: formData.date || null,
+        botDirection: formData.botDirection || null,
+        leverage: formData.leverage || null,
+        longestRuntime: formData.longestRuntime || null,
+        avgRuntime: formData.avgRuntime || null,
+        
+        // Investment Section
+        investment: formData.investment || null,
+        extraMargin: formData.extraMargin || null,
+        totalInvestment: formData.totalInvestment || null,
+        
+        // Profit Section
+        profit: formData.profit || null,
+        profitPercent_gesamtinvestment,
+        profitPercent_investitionsmenge,
+        
+        // Trend P&L Section
+        overallTrendPnlUsdt: formData.overallTrendPnlUsdt || null,
+        overallTrendPnlPercent_gesamtinvestment: trendPercent_gesamtinvestment,
+        overallTrendPnlPercent_investitionsmenge: trendPercent_investitionsmenge,
+        
+        // Grid Trading Section
+        overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
+        overallGridProfitPercent_gesamtinvestment: gridPercent_gesamtinvestment,
+        overallGridProfitPercent_investitionsmenge: gridPercent_investitionsmenge,
+        highestGridProfit: formData.highestGridProfit || null,
+        highestGridProfitPercent_gesamtinvestment: highestPercent_gesamtinvestment,
+        highestGridProfitPercent_investitionsmenge: highestPercent_investitionsmenge,
+        avgGridProfitHour: formData.avgGridProfitHour || null,
+        avgGridProfitDay: formData.avgGridProfitDay || null,
+        avgGridProfitWeek: formData.avgGridProfitWeek || null,
+      };
+
+      return await apiRequest('POST', `/api/bot-types/${selectedBotTypeId}/updates`, updateData);
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/entries'] });
+    onSuccess: () => {
+      if (selectedBotTypeId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotTypeId, 'updates'] });
+      }
       toast({
         title: "Erfolgreich gespeichert",
-        description: "Der Eintrag wurde erfolgreich hinzugefügt.",
+        description: "Das Update wurde erfolgreich gespeichert.",
       });
-      
       
       setSelectedFiles([]);
       setFormData(prev => ({
@@ -186,11 +290,33 @@ export default function Upload() {
         overallGridProfitPercent: '',
         leverage: '',
       }));
+      
+      // Reset Modi und Prozentbasen
+      setInvestmentTimeRange("Neu");
+      setProfitTimeRange("Neu");
+      setTrendTimeRange("Neu");
+      setGridTimeRange("Neu");
+      setOutputMode('update-metrics');
+      setProfitPercentBase('gesamtinvestment');
+      setTrendPercentBase('gesamtinvestment');
+      setGridProfitPercentBase('gesamtinvestment');
+      setHighestGridProfitPercentBase('gesamtinvestment');
+      
+      // Reset AI Chat
+      setChatMessages([]);
+      setScreenshotsSent(false);
+      setBotTypeSent(false);
+      setPhaseTwoVerified(false);
+      setPhaseTwoStep2Complete(false);
+      setPhaseThreeSettingsSent(false);
+      setWaitingForPhaseThreeConfirmation(false);
+      setIsStartMetric(false);
+      setExtractedScreenshotData(null);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Fehler",
-        description: "Der Eintrag konnte nicht gespeichert werden.",
+        description: error.message || "Das Update konnte nicht gespeichert werden.",
         variant: "destructive",
       });
     },
