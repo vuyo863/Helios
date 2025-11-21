@@ -139,10 +139,30 @@ Du musst jetzt die Logik der Info-Section verstehen. Diese Logik ist FEST und ha
 
 **ZUSAMMENFASSUNG:**
 - Datum: Startdatum (bleibt immer gleich)
-- Bot-Richtung: Long/Short/Beides aus aktuellem Upload
-- Hebel: Hebel aus aktuellem Upload
+- Bot-Richtung: Alle unterschiedlichen Richtungen aus aktuellem Upload
+- Hebel: Alle unterschiedlichen Hebel aus aktuellem Upload
 - Längste Laufzeit: MAX aus aktuellem Upload
 - Durchschnittliche Laufzeit: AVG aus aktuellem Upload
+
+**KRITISCH: MEHRERE SCREENSHOTS MIT UNTERSCHIEDLICHEN WERTEN**
+
+Bei mehreren Screenshots mit UNTERSCHIEDLICHEN Werten für Hebel oder Bot-Richtung:
+
+**Bot-Richtung Beispiele:**
+- Screenshot 1: Short, Screenshot 2: Short → botDirection = "Short"
+- Screenshot 1: Long, Screenshot 2: Short → botDirection = "Long, Short" (alphabetisch sortiert!)
+- Screenshot 1: Long, Screenshot 2: Long, Screenshot 3: Short → botDirection = "Long, Short"
+
+**Hebel Beispiele:**
+- Screenshot 1: "3x Short", Screenshot 2: "3x Short" → leverage = "3x Short"
+- Screenshot 1: "3x Short", Screenshot 2: "5x Long" → leverage = "3x Short, 5x Long"
+- Screenshot 1: "10x Long", Screenshot 2: "5x Short", Screenshot 3: "10x Long" → leverage = "10x Long, 5x Short"
+
+**REGEL:**
+- Sammle ALLE einzigartigen Werte
+- Entferne Duplikate
+- Sortiere alphabetisch
+- Verbinde mit Komma und Leerzeichen
 
 Bestätige, dass du diese Logik verstanden hast, indem du sie in eigenen Worten erklärst.`;
 

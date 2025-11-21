@@ -212,12 +212,9 @@ export default function Upload() {
       }
 
       // Erstelle Update-Daten
-      const now = new Date();
       const updateData = {
         botTypeId: selectedBotTypeId,
-        updateName: formData.version,
-        updateDate: now.toLocaleDateString('de-DE'),
-        updateTime: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+        version: parseInt(formData.version) || 1,
         status: outputMode === 'update-metrics' ? 'Update Metrics' : 'Closed Bots',
         
         // Info Section (keine Modi)
