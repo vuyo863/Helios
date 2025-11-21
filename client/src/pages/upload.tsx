@@ -513,44 +513,19 @@ export default function Upload() {
     
     setTimeout(() => {
       const filledFields: string[] = [];
-      const fieldLabels: Record<string, string> = {
-        date: 'Datum',
-        botDirection: 'Bot-Richtung',
-        investment: 'Investitionsmenge (USDT)',
-        extraMargin: 'Extra Margin',
-        totalInvestment: 'Gesamtinvestment',
-        profit: 'Gesamtprofit (USDT)',
-        profitPercent: 'Gesamtprofit (%)',
-        periodType: 'Periodentyp',
-        longestRuntime: 'Längste Laufzeit',
-        avgRuntime: 'Durchschnittliche Laufzeit',
-        avgGridProfitHour: 'Grid Profit Durchschnitt (Stunde)',
-        avgGridProfitDay: 'Grid Profit Durchschnitt (Tag)',
-        avgGridProfitWeek: 'Grid Profit Durchschnitt (Woche)',
-        overallTrendPnlUsdt: 'Trend P&L (USDT)',
-        overallTrendPnlPercent: 'Trend P&L (%)',
-        highestGridProfit: 'Höchster Grid Profit (USDT)',
-        highestGridProfitPercent: 'Höchster Grid Profit (%)',
-        overallGridProfitUsdt: 'Gesamter Grid Profit (USDT)',
-        overallGridProfitPercent: 'Gesamter Grid Profit (%)',
-        leverage: 'Hebel',
-      };
+      const sectionsWithModes = [
+        { name: 'Investment', mode: investmentTimeRange },
+        { name: 'Gesamter Profit / P&L', mode: profitTimeRange },
+        { name: 'Trend P&L', mode: trendTimeRange },
+        { name: 'Grid Trading', mode: gridTimeRange }
+      ];
 
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value && value.toString().trim() !== '' && key !== 'botType' && key !== 'version' && key !== 'botName') {
-          const label = fieldLabels[key as keyof typeof fieldLabels];
-          if (label) {
-            filledFields.push(label);
-          }
-        }
-      });
-
-      const metricsCount = filledFields.length;
+      const metricsCount = sectionsWithModes.length;
       const hasLastUpload = !isStartMetric;
       
       let message = `Phase 4 - Schritt 1: Prüfung der benötigten Metriken\n\n`;
-      message += `Für den aktuellen Upload wurden ${metricsCount} Metriken konfiguriert:\n`;
-      message += filledFields.map(f => `• ${f}`).join('\n');
+      message += `Für den aktuellen Upload wurden ${metricsCount} Sektionen mit Modi konfiguriert:\n`;
+      message += sectionsWithModes.map(s => `• ${s.name} (Modus: ${s.mode})`).join('\n');
       
       if (hasLastUpload) {
         message += `\n\nEs wurde ein vorheriger Upload erkannt. Ich werde auch die Metriken vom letzten Upload berücksichtigen, um Vergleichswerte (Modus "Vergleich") berechnen zu können.`;
@@ -729,7 +704,97 @@ export default function Upload() {
             role: 'ai',
             content: 'Durchlauf 3 abgeschlossen. Alle Berechnungen wurden erfolgreich verifiziert.\n\nSchritt 3 abgeschlossen. Alle Felder wurden berechnet und geprüft.'
           }]);
-          setIsAiLoading(false);
+        }, analysisDelay);
+        
+        analysisDelay += 2000;
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Schritt 3 abgeschlossen. Gehe zu Schritt 4 über: Ausgabe der Werte'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 1500;
+        
+        setTimeout(() => {
+          const mockCalculatedValues = {
+            date: new Date().toISOString().split('T')[0],
+            botDirection: "Beides",
+            leverage: "50x Long, 75x Short",
+            longestRuntime: "1d 6h 53m",
+            avgRuntime: "17h 35m",
+            investment: "240.00",
+            extraMargin: "1300.00",
+            totalInvestment: "1540.00",
+            profit: "53.60",
+            profitPercent: hasLastUpload ? "185.63" : "3.48",
+            profitPercent_gesamtinvestment: hasLastUpload ? null : "3.48",
+            profitPercent_investitionsmenge: hasLastUpload ? null : "22.33",
+            overallTrendPnlUsdt: hasLastUpload ? "122.85" : "42.43",
+            overallTrendPnlPercent: hasLastUpload ? "189.47" : null,
+            overallTrendPnlPercent_gesamtinvestment: hasLastUpload ? null : "2.75",
+            overallTrendPnlPercent_investitionsmenge: hasLastUpload ? null : "17.68",
+            overallGridProfitUsdt: hasLastUpload ? "30.25" : "11.17",
+            overallGridProfitPercent: hasLastUpload ? null : null,
+            overallGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.73",
+            overallGridProfitPercent_investitionsmenge: hasLastUpload ? null : "4.65",
+            highestGridProfit: hasLastUpload ? "12.30" : "5.66",
+            highestGridProfitPercent: hasLastUpload ? null : null,
+            highestGridProfitPercent_gesamtinvestment: hasLastUpload ? null : "0.73",
+            highestGridProfitPercent_investitionsmenge: hasLastUpload ? "6.15" : "9.43",
+            avgGridProfitHour: hasLastUpload ? null : "0.15",
+            avgGridProfitDay: hasLastUpload ? "15.13" : "3.60",
+            avgGridProfitWeek: null
+          };
+          
+          const jsonOutput = JSON.stringify(mockCalculatedValues, null, 2);
+          
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: `Phase 4 - Schritt 4: Ausgabe in Formularfelder\n\n\`\`\`json\n${jsonOutput}\n\`\`\``
+          }]);
+          
+          setTimeout(() => {
+            setFormData(prev => ({
+              ...prev,
+              date: mockCalculatedValues.date,
+              botDirection: mockCalculatedValues.botDirection,
+              leverage: mockCalculatedValues.leverage,
+              longestRuntime: mockCalculatedValues.longestRuntime,
+              avgRuntime: mockCalculatedValues.avgRuntime,
+              investment: mockCalculatedValues.investment,
+              extraMargin: mockCalculatedValues.extraMargin,
+              totalInvestment: mockCalculatedValues.totalInvestment,
+              profit: mockCalculatedValues.profit,
+              profitPercent: mockCalculatedValues.profitPercent || 
+                           mockCalculatedValues.profitPercent_gesamtinvestment || '',
+              overallTrendPnlUsdt: mockCalculatedValues.overallTrendPnlUsdt,
+              overallTrendPnlPercent: mockCalculatedValues.overallTrendPnlPercent || 
+                                     mockCalculatedValues.overallTrendPnlPercent_gesamtinvestment || '',
+              overallGridProfitUsdt: mockCalculatedValues.overallGridProfitUsdt,
+              overallGridProfitPercent: mockCalculatedValues.overallGridProfitPercent || 
+                                       mockCalculatedValues.overallGridProfitPercent_gesamtinvestment || '',
+              highestGridProfit: mockCalculatedValues.highestGridProfit,
+              highestGridProfitPercent: mockCalculatedValues.highestGridProfitPercent || 
+                                       mockCalculatedValues.highestGridProfitPercent_investitionsmenge || '',
+              avgGridProfitHour: mockCalculatedValues.avgGridProfitHour || '',
+              avgGridProfitDay: mockCalculatedValues.avgGridProfitDay || '',
+              avgGridProfitWeek: mockCalculatedValues.avgGridProfitWeek || ''
+            }));
+            
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: 'Schritt 4 abgeschlossen. Alle Werte wurden in die Felder eingetragen.'
+            }]);
+            
+            toast({
+              title: "Auto-Fill abgeschlossen",
+              description: "Alle berechneten Werte wurden in die Formularfelder eingetragen.",
+            });
+            
+            setIsAiLoading(false);
+          }, 1500);
         }, analysisDelay);
         
       }, 1500);
