@@ -117,7 +117,7 @@ export class DbStorage implements IStorage {
       .select()
       .from(botTypeUpdates)
       .where(eq(botTypeUpdates.botTypeId, botTypeId))
-      .orderBy(desc(botTypeUpdates.updateDate), desc(botTypeUpdates.updateTime));
+      .orderBy(desc(botTypeUpdates.version));
   }
 
   async getLatestBotTypeUpdate(botTypeId: string): Promise<BotTypeUpdate | undefined> {
@@ -125,7 +125,7 @@ export class DbStorage implements IStorage {
       .select()
       .from(botTypeUpdates)
       .where(eq(botTypeUpdates.botTypeId, botTypeId))
-      .orderBy(desc(botTypeUpdates.updateDate), desc(botTypeUpdates.updateTime))
+      .orderBy(desc(botTypeUpdates.version))
       .limit(1);
     return result[0];
   }
