@@ -569,7 +569,7 @@ export default function Upload() {
           analysisDelay += 3000;
           
           setTimeout(() => {
-            const mockData = `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`;
+            const mockData = `Screenshot ${screenshotNum} erfolgreich analysiert:\n• Datum: 11/18/2025 (amerikanisches Format)\n• Uhrzeit: 22:42:13\n• Actual Investment: 120 USDT\n• Extra Margin: 650 USDT\n• Total Profit: +71.03 USDT (+59.19%)\n• Grid Profit: +5.51 USDT (+4.59%)\n• Trend PnL: +65.52 USDT (+54.60%)\n• Hebel: 75x Short\n• Laufzeit: 1d 6h 53m`;
             
             setChatMessages(prev => [...prev, {
               role: 'ai',
@@ -717,7 +717,7 @@ export default function Upload() {
         
         setTimeout(() => {
           const mockCalculatedValues = {
-            date: new Date().toISOString().split('T')[0],
+            date: "2025-11-18",
             botDirection: "Short",
             leverage: "75x Short",
             longestRuntime: "1d 6h 53m",
