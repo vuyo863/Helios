@@ -85,15 +85,28 @@ Preferred communication style: Simple, everyday language.
 - **VERGLEICH Calculations**: Precisely calculates differenzen (current - previous) for all metrics
 - **NEU Calculations**: Computes both percentage bases (Gesamtinvestment + Investitionsmenge)
 
-**Backend Validation & Security:**
+**Backend Validation & Security (3-Layer System):**
 
-- Server-side validation prevents invalid VERGLEICH requests:
-  - Checks if previousUploadData exists when required
-  - Validates JSON format and completeness
-  - Verifies all required fields for active VERGLEICH modes
-- Clear error messages guide users to fix issues or switch modes
-- Prevents division-by-zero and null reference errors
-- Comprehensive negative tests confirm validation for all edge cases
+1. **Input Validation** - Prevents invalid requests before AI processing:
+   - Checks if previousUploadData exists when VERGLEICH modes active
+   - Validates JSON format and completeness
+   - Verifies all required fields for active VERGLEICH modes
+   
+2. **Schema Validation** - Validates AI output structure with Zod:
+   - Ensures all fields have correct data types (string/number/null)
+   - Accepts both string and number formats for flexibility
+   - Rejects malformed AI responses before processing
+   
+3. **Calculation Verification** - Server recalculates and validates AI math:
+   - Recalculates all VERGLEICH differenzen (current - previous)
+   - Compares server calculation vs AI calculation
+   - Rejects request if difference > 0.02 USDT (2 cent tolerance)
+   - Validates runtime requirements for avgGridProfit* fields
+   - Prevents unrealistic values (e.g., weekly averages when bot runs <7 days)
+
+- All validations run in Express.js backend (`server/routes.ts`)
+- Clear German error messages guide users to fix issues
+- Comprehensive test coverage confirms all edge cases handled
 
 **Test Infrastructure:**
 
