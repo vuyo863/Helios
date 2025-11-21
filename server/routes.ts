@@ -586,6 +586,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         const calculatedValues = JSON.parse(aiResponse);
+        
+        // VALIDIERUNG 1: Zod Schema-Validierung des AI-Outputs
+        // Akzeptiere sowohl string als auch number (AI gibt manchmal numbers zurück)
+        const stringOrNumber = z.union([z.string(), z.number()]).nullable();
+        
+        const phase4Schema = z.object({
+          date: z.string().nullable(),
+          botDirection: z.string().nullable(),
+          leverage: z.string().nullable(),
+          longestRuntime: z.string().nullable(),
+          avgRuntime: z.string().nullable(),
+          investment: stringOrNumber,
+          extraMargin: stringOrNumber,
+          totalInvestment: stringOrNumber,
+          profit: stringOrNumber,
+          profitPercent_gesamtinvestment: stringOrNumber,
+          profitPercent_investitionsmenge: stringOrNumber,
+          overallTrendPnlUsdt: stringOrNumber,
+          overallTrendPnlPercent_gesamtinvestment: stringOrNumber,
+          overallTrendPnlPercent_investitionsmenge: stringOrNumber,
+          overallGridProfitUsdt: stringOrNumber,
+          overallGridProfitPercent_gesamtinvestment: stringOrNumber,
+          overallGridProfitPercent_investitionsmenge: stringOrNumber,
+          highestGridProfit: stringOrNumber,
+          highestGridProfitPercent_gesamtinvestment: stringOrNumber,
+          highestGridProfitPercent_investitionsmenge: stringOrNumber,
+          avgGridProfitHour: stringOrNumber,
+          avgGridProfitDay: stringOrNumber,
+          avgGridProfitWeek: stringOrNumber,
+        });
+        
+        const validationResult = phase4Schema.safeParse(calculatedValues);
+        if (!validationResult.success) {
+          console.error("AI output schema validation failed:", validationResult.error);
+          return res.status(500).json({ 
+            error: "AI-Output entspricht nicht dem erwarteten Schema",
+            details: validationResult.error.errors
+          });
+        }
+        
+        // VALIDIERUNG 2: Serverseitige Nachberechnung für VERGLEICH-Modus
+        if (!isStartMetric && previousUploadData) {
+          const parsedPrevious = typeof previousUploadData === 'string' 
+            ? JSON.parse(previousUploadData) 
+            : previousUploadData;
+          const parsedScreenshots = typeof screenshotData === 'string'
+            ? JSON.parse(screenshotData)
+            : screenshotData;
+          
+          const tolerance = 0.02; // 2 Cent Toleranz für Rundungsfehler
+          
+          // Investment Section Validierung
+          if (modes.investment === 'Vergleich') {
+            const currentInvestment = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
+              sum + (s.actualInvestment || 0), 0);
+            const previousInvestment = parseFloat(parsedPrevious.investment || 0);
+            const expectedDelta = currentInvestment - previousInvestment;
+            const aiDelta = parseFloat(calculatedValues.investment || 0);
+            
+            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
+              return res.status(400).json({
+                error: "AI-Berechnung für Investment-Differenz inkorrekt",
+                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
+                suggestion: "Bitte wiederholen Sie den Upload"
+              });
+            }
+          }
+          
+          // Profit Section Validierung
+          if (modes.profit === 'Vergleich') {
+            const currentProfit = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
+              sum + (s.totalProfitUsdt || 0), 0);
+            const previousProfit = parseFloat(parsedPrevious.profit || 0);
+            const expectedDelta = currentProfit - previousProfit;
+            const aiDelta = parseFloat(calculatedValues.profit || 0);
+            
+            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
+              return res.status(400).json({
+                error: "AI-Berechnung für Profit-Differenz inkorrekt",
+                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
+                suggestion: "Bitte wiederholen Sie den Upload"
+              });
+            }
+          }
+          
+          // Trend P&L Section Validierung
+          if (modes.trend === 'Vergleich') {
+            const currentTrend = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
+              sum + (s.trendPnlUsdt || 0), 0);
+            const previousTrend = parseFloat(parsedPrevious.overallTrendPnlUsdt || 0);
+            const expectedDelta = currentTrend - previousTrend;
+            const aiDelta = parseFloat(calculatedValues.overallTrendPnlUsdt || 0);
+            
+            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
+              return res.status(400).json({
+                error: "AI-Berechnung für Trend P&L-Differenz inkorrekt",
+                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
+                suggestion: "Bitte wiederholen Sie den Upload"
+              });
+            }
+          }
+          
+          // Grid Profit Section Validierung
+          if (modes.grid === 'Vergleich') {
+            const currentGrid = parsedScreenshots.screenshots.reduce((sum: number, s: any) => 
+              sum + (s.gridProfitUsdt || 0), 0);
+            const previousGrid = parseFloat(parsedPrevious.overallGridProfitUsdt || 0);
+            const expectedDelta = currentGrid - previousGrid;
+            const aiDelta = parseFloat(calculatedValues.overallGridProfitUsdt || 0);
+            
+            if (Math.abs(expectedDelta - aiDelta) > tolerance) {
+              return res.status(400).json({
+                error: "AI-Berechnung für Grid Profit-Differenz inkorrekt",
+                details: `Erwartet: ${expectedDelta.toFixed(2)}, AI lieferte: ${aiDelta.toFixed(2)}`,
+                suggestion: "Bitte wiederholen Sie den Upload"
+              });
+            }
+          }
+        }
+        
+        // VALIDIERUNG 3: Runtime-Validierung für avgGridProfit*
+        const parsedScreenshots = typeof screenshotData === 'string'
+          ? JSON.parse(screenshotData)
+          : screenshotData;
+        
+        // Finde längste Runtime um zu prüfen ob avgGridProfit* Sinn macht
+        let maxRuntimeHours = 0;
+        for (const screenshot of parsedScreenshots.screenshots) {
+          if (screenshot.runtime) {
+            const runtime = screenshot.runtime;
+            const match = runtime.match(/(?:(\d+)d\s*)?(?:(\d+)h\s*)?(?:(\d+)m)?/);
+            if (match) {
+              const days = parseInt(match[1] || '0');
+              const hours = parseInt(match[2] || '0');
+              const totalHours = days * 24 + hours;
+              if (totalHours > maxRuntimeHours) maxRuntimeHours = totalHours;
+            }
+          }
+        }
+        
+        // Prüfe ob avgGridProfit* Werte realistisch sind
+        if (calculatedValues.avgGridProfitHour && maxRuntimeHours < 1) {
+          return res.status(400).json({
+            error: "avgGridProfitHour kann nicht berechnet werden",
+            details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 1 Stunde erforderlich)`,
+            suggestion: "Entfernen Sie avgGridProfitHour oder warten Sie bis Bot >= 1 Stunde läuft"
+          });
+        }
+        
+        if (calculatedValues.avgGridProfitDay && maxRuntimeHours < 24) {
+          return res.status(400).json({
+            error: "avgGridProfitDay kann nicht berechnet werden",
+            details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 24 Stunden erforderlich)`,
+            suggestion: "Entfernen Sie avgGridProfitDay oder warten Sie bis Bot >= 1 Tag läuft"
+          });
+        }
+        
+        if (calculatedValues.avgGridProfitWeek && maxRuntimeHours < 168) {
+          return res.status(400).json({
+            error: "avgGridProfitWeek kann nicht berechnet werden",
+            details: `Maximale Laufzeit beträgt ${maxRuntimeHours} Stunden (< 168 Stunden/1 Woche erforderlich)`,
+            suggestion: "Entfernen Sie avgGridProfitWeek oder warten Sie bis Bot >= 1 Woche läuft"
+          });
+        }
+        
         res.json({ 
           success: true,
           values: calculatedValues
