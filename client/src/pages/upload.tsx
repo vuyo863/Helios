@@ -43,7 +43,7 @@ export default function Upload() {
   const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
   const [phaseThreeSettingsSent, setPhaseThreeSettingsSent] = useState(false);
   const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
-  const [extractedScreenshotData, setExtractedScreenshotData] = useState<string>('');
+  const [extractedScreenshotData, setExtractedScreenshotData] = useState<any>(null);
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -381,14 +381,70 @@ export default function Upload() {
 
       const data = await response.json();
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
-      setExtractedScreenshotData(data.response);
       setPhaseTwoStep2Complete(true);
       
-      setTimeout(() => {
-        setChatMessages(prev => [...prev, { 
-          role: 'ai', 
-          content: 'Ausgezeichnet! Phase 2 ist erfolgreich abgeschlossen. Wir gehen jetzt zu Phase 3 über. Bitte füllen Sie unten die gewünschten Metriken und Modi aus und senden Sie diese mit dem Button "Einstellungen an AI senden".'
-        }]);
+      setTimeout(async () => {
+        const testSuccessMessage = { 
+          role: 'ai' as const, 
+          content: 'Test erfolgreich! Starte jetzt vollständige Datenextraktion aller Screenshots...'
+        };
+        
+        setChatMessages(prev => [...prev, testSuccessMessage]);
+        
+        try {
+          const userExtractionMessage = { role: 'user' as const, content: 'Bitte extrahiere jetzt alle Daten aus allen Screenshots.' };
+          const updatedMessages = [...chatMessages, { role: 'ai' as const, content: data.response }, testSuccessMessage, userExtractionMessage];
+          
+          const extractionResponse = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: updatedMessages,
+              images: base64Images,
+              phase: 'phase2_data_extraction',
+            }),
+          });
+
+          if (!extractionResponse.ok) {
+            throw new Error('Datenextraktion fehlgeschlagen');
+          }
+
+          const extractionData = await extractionResponse.json();
+          
+          try {
+            const parsedData = JSON.parse(extractionData.response);
+            
+            setExtractedScreenshotData(parsedData);
+            
+            const formattedData = parsedData.screenshots.map((s: any, idx: number) => 
+              `Screenshot ${idx + 1}:\n• Datum: ${s.date}\n• Uhrzeit: ${s.time}\n• Actual Investment: ${s.actualInvestment} USDT\n• Extra Margin: ${s.extraMargin || 'Nicht verfügbar'}\n• Total Profit: ${s.totalProfitUsdt >= 0 ? '+' : ''}${s.totalProfitUsdt} USDT (${s.totalProfitPercent >= 0 ? '+' : ''}${s.totalProfitPercent}%)\n• Grid Profit: ${s.gridProfitUsdt !== null ? (s.gridProfitUsdt >= 0 ? '+' : '') + s.gridProfitUsdt + ' USDT (' + (s.gridProfitPercent >= 0 ? '+' : '') + s.gridProfitPercent + '%)' : 'Nicht verfügbar'}\n• Trend P&L: ${s.trendPnlUsdt !== null ? (s.trendPnlUsdt >= 0 ? '+' : '') + s.trendPnlUsdt + ' USDT (' + (s.trendPnlPercent >= 0 ? '+' : '') + s.trendPnlPercent + '%)' : 'Nicht verfügbar'}\n• Hebel: ${s.leverage}\n• Laufzeit: ${s.runtime}\n• Richtung: ${s.direction}`
+            ).join('\n\n');
+            
+            setChatMessages(prev => [...prev, { 
+              role: 'ai', 
+              content: `Datenextraktion abgeschlossen! Hier sind die extrahierten Daten:\n\n${formattedData}`
+            }]);
+          } catch (parseError) {
+            console.error('JSON Parse error:', parseError);
+            setChatMessages(prev => [...prev, { 
+              role: 'ai', 
+              content: 'Fehler beim Parsen der JSON-Daten. Rohdaten: ' + extractionData.response
+            }]);
+          }
+          
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, { 
+              role: 'ai', 
+              content: 'Ausgezeichnet! Phase 2 ist erfolgreich abgeschlossen. Wir gehen jetzt zu Phase 3 über. Bitte füllen Sie unten die gewünschten Metriken und Modi aus und senden Sie diese mit dem Button "Einstellungen an AI senden".'
+            }]);
+          }, 1000);
+        } catch (extractionError) {
+          console.error('Extraction error:', extractionError);
+          setChatMessages(prev => [...prev, { 
+            role: 'ai', 
+            content: 'Fehler bei der Datenextraktion. Bitte versuchen Sie es erneut.'
+          }]);
+        }
       }, 1200);
     } catch (error) {
       console.error('Phase 2 Step 2 error:', error);
@@ -554,7 +610,7 @@ export default function Upload() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          screenshotData: extractedScreenshotData,
+          screenshotData: JSON.stringify(extractedScreenshotData),
           modes: {
             investment: investmentTimeRange,
             profit: profitTimeRange,

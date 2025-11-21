@@ -216,6 +216,59 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
 **ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**
 `;
 
+const PHASE_2_DATA_EXTRACTION_PROMPT = `**PHASE 2: VOLLSTÄNDIGE SCREENSHOT-DATEN-EXTRAKTION**
+
+Du erhältst einen oder mehrere Screenshots von Pionex Trading Bot Dashboards. Deine Aufgabe ist es, ALLE relevanten Daten aus JEDEM Screenshot zu extrahieren und als strukturiertes JSON zurückzugeben.
+
+**FÜR JEDEN SCREENSHOT EXTRAHIERE:**
+1. **date** - Datum im Format "YYYY-MM-DD" (konvertiere von amerikanischem Format)
+2. **time** - Uhrzeit im Format "HH:MM:SS"
+3. **actualInvestment** - Actual Investment in USDT (nur Zahl)
+4. **extraMargin** - Extra Margin in USDT (nur Zahl, oder null)
+5. **totalProfitUsdt** - Total Profit in USDT (Zahl mit +/-)
+6. **totalProfitPercent** - Total Profit in % (nur Zahl)
+7. **gridProfitUsdt** - Grid Profit in USDT (Zahl mit +/-, oder null)
+8. **gridProfitPercent** - Grid Profit in % (nur Zahl, oder null)
+9. **trendPnlUsdt** - Trend P&L in USDT (Zahl mit +/-, oder null)
+10. **trendPnlPercent** - Trend P&L in % (nur Zahl, oder null)
+11. **leverage** - Hebel z.B. "75x Short", "50x Long"
+12. **runtime** - Laufzeit z.B. "1d 6h 53m"
+13. **direction** - "Long" oder "Short"
+
+**JSON-AUSGABE-FORMAT:**
+\`\`\`json
+{
+  "screenshots": [
+    {
+      "screenshotNumber": 1,
+      "date": "2025-11-18",
+      "time": "22:42:13",
+      "actualInvestment": 120.00,
+      "extraMargin": 650.00,
+      "totalProfitUsdt": 71.03,
+      "totalProfitPercent": 59.19,
+      "gridProfitUsdt": 5.51,
+      "gridProfitPercent": 4.59,
+      "trendPnlUsdt": 65.52,
+      "trendPnlPercent": 54.60,
+      "leverage": "75x Short",
+      "runtime": "1d 6h 53m",
+      "direction": "Short"
+    }
+  ]
+}
+\`\`\`
+
+**WICHTIGE HINWEISE:**
+- Extrahiere NUR Daten die tatsächlich im Screenshot sichtbar sind
+- Wenn ein Wert nicht vorhanden ist, nutze null
+- Achte genau auf Prozentsätze und USDT-Werte (nur Zahlen ohne %, ohne "USDT")
+- Konvertiere amerikanisches Datum (MM/DD/YYYY) zu ISO-Format (YYYY-MM-DD)
+- Profit/PnL-Werte: Positive Zahlen ohne +, negative mit -
+- Sei präzise bei allen Zahlen
+
+**ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**`;
+
 const PHASE_2_STEP_2_PROMPT = `**PHASE 2, SCHRITT 2: Screenshot-Analyse Test**
 
 Du wurdest aufgefordert, einen Test durchzuführen um zu prüfen, ob du Screenshots analysieren kannst.
@@ -398,6 +451,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contextualPrompt = PHASE_2_STEP_1_PROMPT;
       } else if (phase === 'phase2_step2') {
         contextualPrompt = PHASE_2_STEP_2_PROMPT;
+      } else if (phase === 'phase2_data_extraction') {
+        contextualPrompt = PHASE_2_DATA_EXTRACTION_PROMPT;
       } else if (phase === 'phase3') {
         // Phase 3 ADDS to system prompt, does not replace it
         contextualPrompt = SYSTEM_PROMPT + '\n\n' + PHASE_3_PROMPT;
@@ -474,11 +529,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const completion = await openai.chat.completions.create({
+      const completionOptions: any = {
         model: "gpt-4o",
         messages: chatMessages,
         max_tokens: 2000,
-      });
+      };
+
+      if (phase === 'phase2_data_extraction') {
+        completionOptions.response_format = { type: "json_object" };
+      }
+
+      const completion = await openai.chat.completions.create(completionOptions);
 
       const aiResponse = completion.choices[0]?.message?.content || "Entschuldigung, ich konnte keine Antwort generieren.";
       
