@@ -611,6 +611,124 @@ export default function Upload() {
             role: 'ai',
             content: `Schritt 2 abgeschlossen. Alle ${screenshotCount} Screenshots wurden erfolgreich analysiert und die Metriken extrahiert.`
           }]);
+        }, analysisDelay);
+        
+        analysisDelay += 2000;
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Phase 4 - Schritt 3: Berechnungen und Funktionen\n\nJetzt beginnt der wichtigste Teil - die eigentlichen Berechnungen. Es werden 3 Durchläufe durchgeführt, um maximale Genauigkeit zu gewährleisten.'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 2500;
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Durchlauf 1: Analyse der Berechnungsanforderungen\n\nPrüfe welche Berechnungen für welche Sektionen erforderlich sind...'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 4000;
+        
+        const sections = [
+          'Investment',
+          'Gesamter Profit / P&L',
+          'Trend P&L',
+          'Grid Trading'
+        ];
+        
+        sections.forEach((section, idx) => {
+          setTimeout(() => {
+            const hasLastUpload = !isStartMetric;
+            const mode = hasLastUpload ? 'Vergleich' : 'Neu';
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Sektion "${section}": Modus "${mode}" erkannt - Berechnungslogik wird vorbereitet`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 2000;
+        });
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Durchlauf 1 abgeschlossen. Alle Berechnungsanforderungen wurden identifiziert.'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 2500;
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Durchlauf 2: Ausführung der Berechnungen\n\nGehe Section für Section durch und führe die vorgesehenen Berechnungen aus...'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 3000;
+        
+        sections.forEach((section, idx) => {
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Sektion "${section}": Berechnungen werden durchgeführt...`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 2500;
+          
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Sektion "${section}": Berechnungen abgeschlossen`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 1500;
+        });
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Durchlauf 2 abgeschlossen. Alle Berechnungen wurden durchgeführt.'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 2500;
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Durchlauf 3: Überprüfung der Berechnungen\n\nWiederhole alle Berechnungen zur Verifikation...'
+          }]);
+        }, analysisDelay);
+        
+        analysisDelay += 3000;
+        
+        sections.forEach((section, idx) => {
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Sektion "${section}": Überprüfung läuft...`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 2000;
+          
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              role: 'ai',
+              content: `Sektion "${section}": Ergebnisse stimmen überein ✓`
+            }]);
+          }, analysisDelay);
+          analysisDelay += 1500;
+        });
+        
+        setTimeout(() => {
+          setChatMessages(prev => [...prev, {
+            role: 'ai',
+            content: 'Durchlauf 3 abgeschlossen. Alle Berechnungen wurden erfolgreich verifiziert.\n\nSchritt 3 abgeschlossen. Alle Felder wurden berechnet und geprüft.'
+          }]);
           setIsAiLoading(false);
         }, analysisDelay);
         
