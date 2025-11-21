@@ -48,27 +48,40 @@ export default function Upload() {
     queryKey: ['/api/bot-types'],
   });
   
-  // Fetch Updates für alle Bot Types
-  const botTypeUpdatesQueries = botTypes.map(bt => 
-    useQuery<BotTypeUpdate[]>({
-      queryKey: [`/api/bot-types/${bt.id}/updates`],
-      enabled: !!bt.id,
-    })
-  );
+  // State für updateHistory
+  const [updateHistory, setUpdateHistory] = useState<Record<string, any[]>>({});
   
-  // Erstelle updateHistory Objekt mit echten Daten aus der Datenbank
-  const updateHistory = useMemo(() => {
-    const history: Record<string, any[]> = {};
-    botTypes.forEach((bt, index) => {
-      const updates = botTypeUpdatesQueries[index]?.data || [];
-      history[bt.name] = updates.map(u => ({
-        updateName: `${u.status} #${u.version}`,
-        updateDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('de-DE') : '',
-        updateTime: u.createdAt ? new Date(u.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
-      }));
-    });
-    return history;
-  }, [botTypes, ...botTypeUpdatesQueries.map(q => q.data)]);
+  // Lade Updates für alle Bot Types wenn sie sich ändern
+  useEffect(() => {
+    if (botTypes.length === 0) return;
+    
+    const fetchAllUpdates = async () => {
+      const history: Record<string, any[]> = {};
+      
+      for (const bt of botTypes) {
+        try {
+          const response = await fetch(`/api/bot-types/${bt.id}/updates`);
+          if (response.ok) {
+            const updates: BotTypeUpdate[] = await response.json();
+            history[bt.name] = updates.map(u => ({
+              updateName: `${u.status} #${u.version}`,
+              updateDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('de-DE') : '',
+              updateTime: u.createdAt ? new Date(u.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
+            }));
+          } else {
+            history[bt.name] = [];
+          }
+        } catch (error) {
+          console.error(`Error fetching updates for ${bt.name}:`, error);
+          history[bt.name] = [];
+        }
+      }
+      
+      setUpdateHistory(history);
+    };
+    
+    fetchAllUpdates();
+  }, [botTypes]);
   
   const [formData, setFormData] = useState({
     date: '',
