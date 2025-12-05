@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { BotType, BotTypeUpdate } from "@shared/schema";
+import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
 import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -29,6 +29,10 @@ import { Link } from "wouter";
 export default function BotTypesPage() {
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
+  });
+
+  const { data: botEntries = [] } = useQuery<BotEntry[]>({
+    queryKey: ['/api/bot-entries'],
   });
 
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
@@ -188,6 +192,9 @@ export default function BotTypesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {botTypes.map((botType) => {
               const isEditing = editingBotTypeId === botType.id;
+              const entriesForType = botEntries.filter(entry => entry.botTypeId === botType.id);
+              const totalProfit = entriesForType.reduce((sum, entry) => sum + (parseFloat(entry.profit) || 0), 0);
+              const avgProfit = entriesForType.length > 0 ? totalProfit / entriesForType.length : 0;
               
               return (
                 <Card 
@@ -247,6 +254,20 @@ export default function BotTypesPage() {
                       <span>
                         Last Updated: {format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de })}
                       </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Gesamt Profit:</span>
+                        <span className="font-medium text-primary" data-testid={`text-total-profit-${botType.id}`}>
+                          {totalProfit.toFixed(2)} USDT
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Ø Profit:</span>
+                        <span className="font-medium" data-testid={`text-avg-profit-${botType.id}`}>
+                          {avgProfit.toFixed(2)} USDT
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-2 border-t">
                       <div className="flex items-center gap-2">
