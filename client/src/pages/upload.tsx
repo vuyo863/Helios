@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,16 @@ export default function Upload() {
   const [phaseThreeSettingsSent, setPhaseThreeSettingsSent] = useState(false);
   const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
   const [extractedScreenshotData, setExtractedScreenshotData] = useState<any>(null);
+  
+  // Ref für Auto-Scroll im Chat
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-Scroll wenn neue Nachrichten hinzugefügt werden oder AI lädt
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isAiLoading]);
   
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -986,6 +996,7 @@ export default function Upload() {
                         <p className="text-sm text-muted-foreground">AI antwortet...</p>
                       </div>
                     )}
+                    <div ref={chatEndRef} />
                   </div>
                 )}
               </ScrollArea>
