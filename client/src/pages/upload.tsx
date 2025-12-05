@@ -122,7 +122,7 @@ export default function Upload() {
     botName: '',
     botType: '',
     version: '',
-    botDirection: 'Long',
+    botDirection: '',
     investment: '',
     extraMargin: '',
     totalInvestment: '',
@@ -693,7 +693,7 @@ export default function Upload() {
       botName: botType.name,
       botType: '',
       version: '',
-      botDirection: 'Long',
+      botDirection: '',
       investment: '',
       extraMargin: '',
       totalInvestment: '',
@@ -866,11 +866,8 @@ export default function Upload() {
         console.log('setTimeout callback STARTED');
         console.log('calculatedValues inside setTimeout:', calculatedValues);
         
-        // Bot-Richtung Logik: Wenn AI mehrere Richtungen zurückgibt (z.B. "Long, Short") → setze auf "Beides"
-        let normalizedBotDirection = calculatedValues.botDirection || 'Long';
-        if (normalizedBotDirection && normalizedBotDirection.includes(',')) {
-          normalizedBotDirection = 'Beides';
-        }
+        // Bot-Richtung: Direkt von AI übernehmen (Long, Short, Neutral oder Kombinationen)
+        const botDirection = calculatedValues.botDirection || '';
         
         // Hilfsfunktion: Konvertiere Wert zu String (behandelt null, undefined, numbers)
         const toStr = (val: any): string => {
@@ -903,7 +900,7 @@ export default function Upload() {
         setFormData(prev => ({
           ...prev,
           date: toStr(calculatedValues.date),
-          botDirection: normalizedBotDirection,
+          botDirection: botDirection,
           leverage: toStr(calculatedValues.leverage),
           longestRuntime: toStr(calculatedValues.longestRuntime),
           avgRuntime: toStr(calculatedValues.avgRuntime),
@@ -1339,20 +1336,15 @@ export default function Upload() {
 
                     <div>
                       <Label htmlFor="botDirection" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Bot-Richtung</Label>
-                      <Select
+                      <Input
+                        id="botDirection"
+                        type="text"
+                        placeholder="Long, Short, Neutral"
                         value={formData.botDirection}
-                        onValueChange={(value) => setFormData({ ...formData, botDirection: value })}
-                        disabled={!phaseTwoVerified}
-                      >
-                        <SelectTrigger id="botDirection" data-testid="select-bot-direction">
-                          <SelectValue placeholder="Long, Short oder Beides" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Long" data-testid="option-long">Long</SelectItem>
-                          <SelectItem value="Short" data-testid="option-short">Short</SelectItem>
-                          <SelectItem value="Beides" data-testid="option-both">Beides</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        readOnly
+                        className="bg-muted"
+                        data-testid="input-bot-direction"
+                      />
                     </div>
 
                     <div>

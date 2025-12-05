@@ -158,35 +158,51 @@ Schritt 4: Verbinde mit Komma und Leerzeichen (", ")
 **BEISPIEL-SZENARIEN:**
 
 Szenario A - UNTERSCHIEDLICHE WERTE:
-  Screenshots: [Long mit 100x Long] + [Short mit 3x Short]
+  Screenshots: [Long mit 100x] + [Short mit 3x]
   Ergebnis:
     - botDirection: "Long, Short" (alphabetisch sortiert!)
-    - leverage: "100x Long, 3x Short" (alphabetisch: "1" vor "3")
+    - leverage: "3x, 100x" (nur Multiplikatoren, alphabetisch sortiert)
 
 Szenario B - GLEICHE WERTE:
-  Screenshots: [Short mit 5x Short] + [Short mit 5x Short]
+  Screenshots: [Short mit 5x] + [Short mit 5x]
   Ergebnis:
     - botDirection: "Short" (Duplikat entfernt)
-    - leverage: "5x Short" (Duplikat entfernt)
+    - leverage: "5x" (Duplikat entfernt)
 
 Szenario C - GEMISCHTE DUPLIKATE:
-  Screenshots: [Long mit 10x Long] + [Short mit 3x Short] + [Long mit 75x Long]
+  Screenshots: [Long mit 10x] + [Short mit 3x] + [Long mit 75x]
   Ergebnis:
     - botDirection: "Long, Short" (Long kommt zweimal vor, aber nur einmal ausgeben!)
-    - leverage: "10x Long, 3x Short, 75x Long" (alphabetisch sortiert)
+    - leverage: "10x, 3x, 75x" (alphabetisch sortiert, nur Multiplikatoren)
+
+Szenario D - MIT NEUTRAL:
+  Screenshots: [Long mit 2x] + [Neutral mit 2x] + [Short mit 5x]
+  Ergebnis:
+    - botDirection: "Long, Neutral, Short" (alle drei Richtungen!)
+    - leverage: "2x, 5x" (Duplikat 2x entfernt)
 
 **DEIN KONKRETER FALL:**
-  Screenshot 1: direction=Long, leverage=100x Long
-  Screenshot 2: direction=Short, leverage=3x Short
+  Screenshot 1: direction=Long, leverage=100x
+  Screenshot 2: direction=Short, leverage=3x
   
-  Schritt 1: Sammle [Long, Short] und [100x Long, 3x Short]
+  Schritt 1: Sammle [Long, Short] und [100x, 3x]
   Schritt 2: Keine Duplikate
   Schritt 3: Sortiere alphabetisch
   Schritt 4: Verbinde mit ", "
   
   AUSGABE:
     - botDirection: "Long, Short"
-    - leverage: "100x Long, 3x Short"
+    - leverage: "3x, 100x"
+
+**WICHTIG FÜR HEBEL (leverage):**
+- Nur den Multiplikator ausgeben (z.B. "2x", "75x", "100x")
+- KEINE Richtung beim Hebel (NICHT "75x Short", sondern nur "75x")
+- Die Richtung gehört NUR ins botDirection-Feld
+
+**WICHTIG FÜR BOT-RICHTUNG (botDirection):**
+- Moegliche Werte: "Long", "Short", "Neutral"
+- Bei mehreren verschiedenen Richtungen: alle mit Komma trennen
+- Beispiel: "Long, Neutral, Short"
 
 Bestätige, dass du diese Logik verstanden hast, indem du sie in eigenen Worten erklärst.`;
 
@@ -234,7 +250,7 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
 {
   "date": "2025-11-18T22:42",
   "botDirection": "Short",
-  "leverage": "75x Short",
+  "leverage": "75x",
   "longestRuntime": "1d 6h 53m",
   "avgRuntime": "1d 6h 53m",
   "investment": "120.00",
@@ -440,9 +456,9 @@ Du erhältst einen oder mehrere Screenshots von Pionex Trading Bot Dashboards. D
 8. **gridProfitPercent** - Grid Profit in % (nur Zahl, oder null)
 9. **trendPnlUsdt** - Trend P&L in USDT (Zahl mit +/-, oder null)
 10. **trendPnlPercent** - Trend P&L in % (nur Zahl, oder null)
-11. **leverage** - Hebel z.B. "75x Short", "50x Long"
+11. **leverage** - Hebel NUR als Multiplikator z.B. "75x", "50x", "2x" (OHNE Richtung!)
 12. **runtime** - Laufzeit z.B. "1d 6h 53m"
-13. **direction** - "Long" oder "Short"
+13. **direction** - "Long", "Short" oder "Neutral"
 
 **JSON-AUSGABE-FORMAT:**
 \`\`\`json
@@ -460,7 +476,7 @@ Du erhältst einen oder mehrere Screenshots von Pionex Trading Bot Dashboards. D
       "gridProfitPercent": 4.59,
       "trendPnlUsdt": 65.52,
       "trendPnlPercent": 54.60,
-      "leverage": "75x Short",
+      "leverage": "75x",
       "runtime": "1d 6h 53m",
       "direction": "Short"
     }
