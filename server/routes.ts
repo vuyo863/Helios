@@ -245,12 +245,30 @@ Du bist jetzt in Phase 4 - der finalen Berechnungsphase. Deine Aufgabe ist es, a
 **DEINE AUFGABE:**
 Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-logic.ts und field-logic.ts.
 
+**WICHTIG FÜR INFO-SECTION (botDirection, leverage, longestRuntime, avgRuntime):**
+Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert:
+
+1. **botDirection** - Sammle ALLE einzigartigen Richtungen aus ALLEN Screenshots:
+   - Moegliche Werte pro Screenshot: "Long", "Short", "Neutral"
+   - Bei MEHREREN Screenshots: Kombiniere alle einzigartigen Werte mit ", "
+   - Beispiel: Screenshot1=Long, Screenshot2=Short → "Long, Short"
+   - Beispiel: Screenshot1=Neutral, Screenshot2=Neutral → "Neutral" (Duplikat entfernt)
+   - Beispiel: Screenshot1=Long, Screenshot2=Neutral, Screenshot3=Short → "Long, Neutral, Short"
+
+2. **leverage** - Sammle ALLE einzigartigen Hebel (NUR Multiplikator, OHNE Richtung!):
+   - Beispiel: Screenshot1=2x, Screenshot2=75x → "2x, 75x"
+   - Beispiel: Screenshot1=5x, Screenshot2=5x → "5x" (Duplikat entfernt)
+   - WICHTIG: KEINE Richtung beim Hebel! "75x" statt "75x Short"
+
+3. **longestRuntime** - Finde die LÄNGSTE Laufzeit aus ALLEN Screenshots
+4. **avgRuntime** - Berechne den DURCHSCHNITT aller Laufzeiten
+
 **JSON OUTPUT FORMAT:**
 \`\`\`json
 {
   "date": "2025-11-18T22:42",
-  "botDirection": "Short",
-  "leverage": "75x",
+  "botDirection": "Long, Short",
+  "leverage": "2x, 75x",
   "longestRuntime": "1d 6h 53m",
   "avgRuntime": "1d 6h 53m",
   "investment": "120.00",
