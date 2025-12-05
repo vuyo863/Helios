@@ -263,7 +263,7 @@ export default function BotTypesPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Ø Profit:</span>
+                        <span className="text-muted-foreground">24h Ø Profit:</span>
                         <span className="font-medium" data-testid={`text-avg-profit-${botType.id}`}>
                           {avgProfit.toFixed(2)} USDT
                         </span>
