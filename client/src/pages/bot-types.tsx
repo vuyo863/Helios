@@ -534,22 +534,32 @@ export default function BotTypesPage() {
                         >
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-sm mb-1">
                                   {update.status} #{update.version}
                                 </p>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
                                     {update.createdAt ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
                                   </span>
                                 </div>
+                                <div className="flex items-center gap-4 text-xs">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-muted-foreground">Grid Profit:</span>
+                                    <span className="font-medium text-primary">{update.overallGridProfitUsdt || '0.00'} USDT</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-muted-foreground">Ø Laufzeit:</span>
+                                    <span className="font-medium">{update.avgRuntime || '-'}</span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 flex-shrink-0">
                                 <Button 
                                   size="icon" 
                                   variant="ghost"
-                                  className="w-8 h-8 flex-shrink-0"
+                                  className="w-8 h-8"
                                   onClick={() => {
                                     setSelectedUpdate(update);
                                     setUpdateDetailDialogOpen(true);
@@ -562,7 +572,7 @@ export default function BotTypesPage() {
                                   <Button 
                                     size="icon" 
                                     variant="ghost"
-                                    className="w-8 h-8 flex-shrink-0"
+                                    className="w-8 h-8"
                                     data-testid={`button-view-report-${update.id}`}
                                   >
                                     <FileText className="w-4 h-4" />
