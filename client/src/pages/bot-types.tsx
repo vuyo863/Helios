@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState } from "react";
@@ -128,9 +128,43 @@ export default function BotTypesPage() {
     },
   });
 
+  const archiveBotTypeMutation = useMutation({
+    mutationFn: async ({ id, isArchived }: { id: string; isArchived: boolean }) => {
+      return await apiRequest('PATCH', `/api/bot-types/${id}/archive`, { isArchived });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
+      toast({
+        title: variables.isArchived ? "Bot-Typ archiviert" : "Bot-Typ wiederhergestellt",
+        description: variables.isArchived 
+          ? "Der Bot-Typ wurde erfolgreich archiviert." 
+          : "Der Bot-Typ wurde erfolgreich wiederhergestellt.",
+      });
+      setDeleteDialogOpen(false);
+      setBotTypeToDelete(null);
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Die Aktion konnte nicht durchgeführt werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteClick = (botType: BotType) => {
     setBotTypeToDelete(botType);
     setDeleteDialogOpen(true);
+  };
+
+  const handleArchiveConfirm = () => {
+    if (botTypeToDelete) {
+      archiveBotTypeMutation.mutate({ id: botTypeToDelete.id, isArchived: true });
+    }
+  };
+
+  const handleRestoreConfirm = (botType: BotType) => {
+    archiveBotTypeMutation.mutate({ id: botType.id, isArchived: false });
   };
 
   const handleDeleteConfirm = () => {
@@ -138,6 +172,9 @@ export default function BotTypesPage() {
       deleteBotTypeMutation.mutate(botTypeToDelete.id);
     }
   };
+
+  const activeBotTypes = botTypes.filter(bt => !bt.isArchived);
+  const archivedBotTypes = botTypes.filter(bt => bt.isArchived);
 
 
   if (isLoading) {
@@ -180,7 +217,7 @@ export default function BotTypesPage() {
           </Link>
         </div>
 
-        {botTypes.length === 0 ? (
+        {activeBotTypes.length === 0 && archivedBotTypes.length === 0 ? (
           <Card className="p-12 text-center">
             <CardContent>
               <Layers className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
@@ -191,8 +228,9 @@ export default function BotTypesPage() {
             </CardContent>
           </Card>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {botTypes.map((botType) => {
+            {activeBotTypes.map((botType) => {
               const isEditing = editingBotTypeId === botType.id;
               const entriesForType = botEntries.filter(entry => entry.botTypeId === botType.id);
               const totalProfit = entriesForType.reduce((sum, entry) => sum + (parseFloat(entry.profit) || 0), 0);
@@ -345,6 +383,93 @@ export default function BotTypesPage() {
               );
             })}
           </div>
+
+          {archivedBotTypes.length > 0 && (
+            <>
+              <Separator className="my-8" />
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <Archive className="w-6 h-6 text-muted-foreground" />
+                  Archiv
+                </h2>
+                <p className="text-muted-foreground">
+                  Archivierte Bot-Types
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {archivedBotTypes.map((botType) => {
+                  const entriesForType = botEntries.filter(entry => entry.botTypeId === botType.id);
+                  const totalProfit = entriesForType.reduce((sum, entry) => sum + (parseFloat(entry.profit) || 0), 0);
+                  const avgProfit = entriesForType.length > 0 ? totalProfit / entriesForType.length : 0;
+                  
+                  return (
+                    <Card 
+                      key={botType.id} 
+                      className="opacity-60 pointer-events-none relative"
+                      data-testid={`card-bot-type-archived-${botType.id}`}
+                    >
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <CardTitle className="text-xl mb-1 flex items-center gap-2">
+                              <Layers className="w-5 h-5 text-muted-foreground" />
+                              {botType.name}
+                            </CardTitle>
+                            {botType.description && (
+                              <CardDescription className="text-sm mt-2">
+                                {botType.description}
+                              </CardDescription>
+                            )}
+                          </div>
+                          {botType.color && (
+                            <div 
+                              className="w-8 h-8 rounded-md border-2 border-border flex-shrink-0 opacity-50"
+                              style={{ backgroundColor: botType.color }}
+                            />
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            Last Updated: {format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de })}
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Gesamt Profit:</span>
+                            <span className="font-medium">
+                              {totalProfit.toFixed(2)} USDT
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">24h Ø Profit:</span>
+                            <span className="font-medium">
+                              {avgProfit.toFixed(2)} USDT
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end pt-2 border-t pointer-events-auto">
+                          <Button 
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRestoreConfirm(botType)}
+                            className="gap-2"
+                            data-testid={`button-restore-${botType.id}`}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            Wiederherstellen
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          </>
         )}
 
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
@@ -459,19 +584,27 @@ export default function BotTypesPage() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Bot-Typ löschen?</AlertDialogTitle>
+              <AlertDialogTitle>Was möchten Sie mit "{botTypeToDelete?.name}" tun?</AlertDialogTitle>
               <AlertDialogDescription>
-                Möchten Sie "{botTypeToDelete?.name}" und alle zugehörigen Updates, Berichte und Informationen wirklich löschen? 
-                Diese Aktion kann nicht rückgängig gemacht werden.
+                Wählen Sie eine Aktion für diesen Bot-Typ.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
               <AlertDialogCancel data-testid="button-cancel-delete">Abbrechen</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleArchiveConfirm}
+                data-testid="button-confirm-archive"
+                className="bg-muted text-muted-foreground hover:bg-muted/80"
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                Archivieren
+              </AlertDialogAction>
               <AlertDialogAction 
                 onClick={handleDeleteConfirm}
                 data-testid="button-confirm-delete"
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
+                <Trash2 className="w-4 h-4 mr-2" />
                 Löschen
               </AlertDialogAction>
             </AlertDialogFooter>

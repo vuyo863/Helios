@@ -11,6 +11,7 @@ export interface IStorage {
   createBotType(botType: InsertBotType): Promise<BotType>;
   updateBotType(id: string, updateData: Partial<InsertBotType>): Promise<BotType | undefined>;
   deleteBotType(id: string): Promise<boolean>;
+  archiveBotType(id: string, isArchived: boolean): Promise<BotType | undefined>;
   
   getAllBotEntries(): Promise<BotEntry[]>;
   getBotEntry(id: string): Promise<BotEntry | undefined>;
@@ -50,18 +51,21 @@ export class MemStorage implements IStorage {
         description: 'Automatische Grid-Trading-Strategie für volatile Märkte',
         color: '#3B82F6',
         createdAt: new Date('2025-01-01').toISOString(),
+        isArchived: false,
       },
       {
         name: 'Futures Bots',
         description: 'Futures-Trading mit Hebel',
         color: '#10B981',
         createdAt: new Date('2025-01-02').toISOString(),
+        isArchived: false,
       },
       {
         name: 'Moon Bots',
         description: 'Hochrisiko-Strategien für maximale Gewinne',
         color: '#8B5CF6',
         createdAt: new Date('2025-01-03').toISOString(),
+        isArchived: false,
       },
     ];
 
@@ -381,6 +385,7 @@ export class MemStorage implements IStorage {
       description: insertBotType.description ?? null,
       color: insertBotType.color ?? null,
       createdAt: new Date().toISOString(),
+      isArchived: false,
     };
     this.botTypes.set(id, botType);
     return botType;
@@ -413,6 +418,21 @@ export class MemStorage implements IStorage {
       });
     }
     return deleted;
+  }
+
+  async archiveBotType(id: string, isArchived: boolean): Promise<BotType | undefined> {
+    const existingBotType = this.botTypes.get(id);
+    if (!existingBotType) {
+      return undefined;
+    }
+    
+    const updatedBotType: BotType = {
+      ...existingBotType,
+      isArchived,
+    };
+    
+    this.botTypes.set(id, updatedBotType);
+    return updatedBotType;
   }
 
   async getBotEntriesByBotType(botTypeId: string): Promise<BotEntry[]> {

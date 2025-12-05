@@ -67,6 +67,15 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
+  async archiveBotType(id: string, isArchived: boolean): Promise<BotType | undefined> {
+    const result = await db
+      .update(botTypes)
+      .set({ isArchived })
+      .where(eq(botTypes.id, id))
+      .returning();
+    return result[0];
+  }
+
   async getAllBotEntries(): Promise<BotEntry[]> {
     return await db.select().from(botEntries).orderBy(desc(botEntries.date));
   }

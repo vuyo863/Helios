@@ -1097,6 +1097,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/bot-types/:id/archive", async (req, res) => {
+    try {
+      const { isArchived } = req.body;
+      if (typeof isArchived !== 'boolean') {
+        return res.status(400).json({ error: "isArchived must be a boolean" });
+      }
+      const updated = await storage.archiveBotType(req.params.id, isArchived);
+      if (!updated) {
+        return res.status(404).json({ error: "Bot type not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to archive bot type" });
+    }
+  });
+
   // Bot Type Updates Routes
   app.get("/api/bot-types/:id/updates", async (req, res) => {
     try {

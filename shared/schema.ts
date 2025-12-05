@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, numeric, date, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, numeric, date, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -23,6 +23,7 @@ export const botTypes = pgTable("bot_types", {
   description: text("description"),
   color: text("color"),
   createdAt: text("created_at").notNull(),
+  isArchived: boolean("is_archived").default(false),
 });
 
 export const insertBotTypeSchema = createInsertSchema(botTypes).omit({
