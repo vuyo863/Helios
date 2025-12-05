@@ -262,20 +262,27 @@ export default function BotTypesPage() {
               const updatesForType = allUpdates.filter(update => update.botTypeId === botType.id);
               const totalGridProfit = updatesForType.reduce((sum, update) => sum + (parseFloat(update.overallGridProfitUsdt || '0') || 0), 0);
               
-              // Calculate 24h average profit based on Grid Profit and average runtime
-              // For each update: calculate profit per 24h = (gridProfit / runtimeHours) * 24
-              // Then average all these values
+              // Calculate 24h average profit using WEIGHTED average (Methode 2)
+              // 1. Sum all Grid Profits
+              // 2. Sum all runtimes in hours
+              // 3. profitPerHour = totalProfit / totalHours
+              // 4. profit24h = profitPerHour * 24
               let avg24hProfit = 0;
               if (updatesForType.length > 0) {
-                const profitsPerDay = updatesForType.map(update => {
+                let totalProfit = 0;
+                let totalHours = 0;
+                
+                updatesForType.forEach(update => {
                   const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
                   const runtimeHours = parseRuntimeToHours(update.avgRuntime);
-                  if (runtimeHours > 0) {
-                    return (gridProfit / runtimeHours) * 24;
-                  }
-                  return 0;
+                  totalProfit += gridProfit;
+                  totalHours += runtimeHours;
                 });
-                avg24hProfit = profitsPerDay.reduce((sum, p) => sum + p, 0) / updatesForType.length;
+                
+                if (totalHours > 0) {
+                  const profitPerHour = totalProfit / totalHours;
+                  avg24hProfit = profitPerHour * 24;
+                }
               }
               
               return (
