@@ -168,37 +168,53 @@ export default function Upload() {
 
   // Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (profitPercentBase === 'gesamtinvestment' && calculatedPercents.profitPercent_gesamtinvestment) {
-      setFormData(prev => ({ ...prev, profitPercent: calculatedPercents.profitPercent_gesamtinvestment }));
-    } else if (profitPercentBase === 'investitionsmenge' && calculatedPercents.profitPercent_investitionsmenge) {
-      setFormData(prev => ({ ...prev, profitPercent: calculatedPercents.profitPercent_investitionsmenge }));
+    console.log('Profit useEffect triggered:', { 
+      profitPercentBase, 
+      gesamtinvestment: calculatedPercents.profitPercent_gesamtinvestment,
+      investitionsmenge: calculatedPercents.profitPercent_investitionsmenge 
+    });
+    
+    if (profitPercentBase === 'gesamtinvestment') {
+      const newValue = calculatedPercents.profitPercent_gesamtinvestment || '';
+      console.log('Setting profitPercent to gesamtinvestment value:', newValue);
+      setFormData(prev => ({ ...prev, profitPercent: newValue }));
+    } else if (profitPercentBase === 'investitionsmenge') {
+      const newValue = calculatedPercents.profitPercent_investitionsmenge || '';
+      console.log('Setting profitPercent to investitionsmenge value:', newValue);
+      setFormData(prev => ({ ...prev, profitPercent: newValue }));
     }
   }, [profitPercentBase, calculatedPercents.profitPercent_gesamtinvestment, calculatedPercents.profitPercent_investitionsmenge]);
 
   // Trend P&L Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (trendPercentBase === 'gesamtinvestment' && calculatedPercents.overallTrendPnlPercent_gesamtinvestment) {
-      setFormData(prev => ({ ...prev, overallTrendPnlPercent: calculatedPercents.overallTrendPnlPercent_gesamtinvestment }));
-    } else if (trendPercentBase === 'investitionsmenge' && calculatedPercents.overallTrendPnlPercent_investitionsmenge) {
-      setFormData(prev => ({ ...prev, overallTrendPnlPercent: calculatedPercents.overallTrendPnlPercent_investitionsmenge }));
+    if (trendPercentBase === 'gesamtinvestment') {
+      const newValue = calculatedPercents.overallTrendPnlPercent_gesamtinvestment || '';
+      setFormData(prev => ({ ...prev, overallTrendPnlPercent: newValue }));
+    } else if (trendPercentBase === 'investitionsmenge') {
+      const newValue = calculatedPercents.overallTrendPnlPercent_investitionsmenge || '';
+      setFormData(prev => ({ ...prev, overallTrendPnlPercent: newValue }));
     }
   }, [trendPercentBase, calculatedPercents.overallTrendPnlPercent_gesamtinvestment, calculatedPercents.overallTrendPnlPercent_investitionsmenge]);
 
   // Grid Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (gridProfitPercentBase === 'gesamtinvestment' && calculatedPercents.overallGridProfitPercent_gesamtinvestment) {
-      setFormData(prev => ({ ...prev, overallGridProfitPercent: calculatedPercents.overallGridProfitPercent_gesamtinvestment }));
-    } else if (gridProfitPercentBase === 'investitionsmenge' && calculatedPercents.overallGridProfitPercent_investitionsmenge) {
-      setFormData(prev => ({ ...prev, overallGridProfitPercent: calculatedPercents.overallGridProfitPercent_investitionsmenge }));
+    if (gridProfitPercentBase === 'gesamtinvestment') {
+      const newValue = calculatedPercents.overallGridProfitPercent_gesamtinvestment || '';
+      setFormData(prev => ({ ...prev, overallGridProfitPercent: newValue }));
+    } else if (gridProfitPercentBase === 'investitionsmenge') {
+      const newValue = calculatedPercents.overallGridProfitPercent_investitionsmenge || '';
+      setFormData(prev => ({ ...prev, overallGridProfitPercent: newValue }));
     }
   }, [gridProfitPercentBase, calculatedPercents.overallGridProfitPercent_gesamtinvestment, calculatedPercents.overallGridProfitPercent_investitionsmenge]);
 
   // Highest Grid Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (highestGridProfitPercentBase === 'gesamtinvestment' && calculatedPercents.highestGridProfitPercent_gesamtinvestment) {
-      setFormData(prev => ({ ...prev, highestGridProfitPercent: calculatedPercents.highestGridProfitPercent_gesamtinvestment }));
-    } else if (highestGridProfitPercentBase === 'investitionsmenge' && calculatedPercents.highestGridProfitPercent_investitionsmenge) {
-      setFormData(prev => ({ ...prev, highestGridProfitPercent: calculatedPercents.highestGridProfitPercent_investitionsmenge }));
+    if (highestGridProfitPercentBase === 'gesamtinvestment') {
+      const newValue = calculatedPercents.highestGridProfitPercent_gesamtinvestment || '';
+      setFormData(prev => ({ ...prev, highestGridProfitPercent: newValue }));
+    } else if (highestGridProfitPercentBase === 'investitionsmenge') {
+      const newValue = calculatedPercents.highestGridProfitPercent_investitionsmenge || '';
+      setFormData(prev => ({ ...prev, highestGridProfitPercent: newValue }));
     }
   }, [highestGridProfitPercentBase, calculatedPercents.highestGridProfitPercent_gesamtinvestment, calculatedPercents.highestGridProfitPercent_investitionsmenge]);
 
