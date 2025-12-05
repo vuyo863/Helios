@@ -44,13 +44,37 @@ export default function Upload() {
   const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
   const [extractedScreenshotData, setExtractedScreenshotData] = useState<any>(null);
   
-  // Ref für Auto-Scroll im Chat
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // Ref für Auto-Scroll im Chat (nur innerhalb des Chat-Containers)
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   // Auto-Scroll wenn neue Nachrichten hinzugefügt werden oder AI lädt
+  // Scrollt nur den Chat-Container, nicht die ganze Seite
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      const container = chatContainerRef.current;
+      const targetScroll = container.scrollHeight;
+      const currentScroll = container.scrollTop;
+      const distance = targetScroll - currentScroll;
+      
+      // Langsamer, sanfter Scroll über 800ms
+      const duration = 800;
+      const startTime = performance.now();
+      
+      const animateScroll = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing-Funktion für sanfteres Scrolling
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        
+        container.scrollTop = currentScroll + (distance * easeProgress);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+      
+      requestAnimationFrame(animateScroll);
     }
   }, [chatMessages, isAiLoading]);
   
@@ -968,7 +992,10 @@ export default function Upload() {
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">AI Chat Interface</h2>
               
-              <ScrollArea className="h-64 mb-4 border rounded-lg p-4">
+              <div 
+                ref={chatContainerRef}
+                className="h-64 mb-4 border rounded-lg p-4 overflow-y-auto"
+              >
                 {chatMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-center">
                     <p className="text-sm text-muted-foreground">
@@ -996,10 +1023,9 @@ export default function Upload() {
                         <p className="text-sm text-muted-foreground">AI antwortet...</p>
                       </div>
                     )}
-                    <div ref={chatEndRef} />
                   </div>
                 )}
-              </ScrollArea>
+              </div>
 
               <div className="flex gap-2 items-center">
                 <Input
