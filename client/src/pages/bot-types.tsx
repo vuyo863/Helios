@@ -26,6 +26,27 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
+// Helper function to parse runtime string like "1d 14h 28m" to hours
+function parseRuntimeToHours(runtime: string | null | undefined): number {
+  if (!runtime) return 0;
+  
+  let totalHours = 0;
+  
+  // Match days
+  const daysMatch = runtime.match(/(\d+)d/);
+  if (daysMatch) totalHours += parseInt(daysMatch[1]) * 24;
+  
+  // Match hours
+  const hoursMatch = runtime.match(/(\d+)h/);
+  if (hoursMatch) totalHours += parseInt(hoursMatch[1]);
+  
+  // Match minutes
+  const minutesMatch = runtime.match(/(\d+)m/);
+  if (minutesMatch) totalHours += parseInt(minutesMatch[1]) / 60;
+  
+  return totalHours;
+}
+
 export default function BotTypesPage() {
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -240,7 +261,22 @@ export default function BotTypesPage() {
               // Calculate total Grid Profit from all updates for this bot type
               const updatesForType = allUpdates.filter(update => update.botTypeId === botType.id);
               const totalGridProfit = updatesForType.reduce((sum, update) => sum + (parseFloat(update.overallGridProfitUsdt || '0') || 0), 0);
-              const avgProfit = updatesForType.length > 0 ? totalGridProfit / updatesForType.length : 0;
+              
+              // Calculate 24h average profit based on Grid Profit and average runtime
+              // For each update: calculate profit per 24h = (gridProfit / runtimeHours) * 24
+              // Then average all these values
+              let avg24hProfit = 0;
+              if (updatesForType.length > 0) {
+                const profitsPerDay = updatesForType.map(update => {
+                  const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+                  const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                  if (runtimeHours > 0) {
+                    return (gridProfit / runtimeHours) * 24;
+                  }
+                  return 0;
+                });
+                avg24hProfit = profitsPerDay.reduce((sum, p) => sum + p, 0) / updatesForType.length;
+              }
               
               return (
                 <Card 
@@ -311,7 +347,7 @@ export default function BotTypesPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">24h Ø Profit:</span>
                         <span className="font-medium" data-testid={`text-avg-profit-${botType.id}`}>
-                          {avgProfit.toFixed(2)} USDT
+                          {avg24hProfit.toFixed(2)} USDT
                         </span>
                       </div>
                     </div>
