@@ -120,69 +120,53 @@ export default function Upload() {
   const [gridProfitPercentBase, setGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [highestGridProfitPercentBase, setHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
 
-  useEffect(() => {
-    if (profitTimeRange === 'Neu' && formData.profit) {
-      const profitValue = parseFloat(formData.profit);
-      const investmentValue = parseFloat(formData.investment || '0');
-      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
-      
-      if (profitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
-        const percent = (profitValue / totalInvestmentValue) * 100;
-        setFormData(prev => ({ ...prev, profitPercent: percent.toFixed(2) }));
-      } else if (profitPercentBase === 'investitionsmenge' && investmentValue > 0) {
-        const percent = (profitValue / investmentValue) * 100;
-        setFormData(prev => ({ ...prev, profitPercent: percent.toFixed(2) }));
-      }
-    }
-  }, [profitPercentBase, formData.profit, formData.investment, formData.totalInvestment, profitTimeRange]);
+  // AI-berechnete Prozentwerte speichern (für Umschaltung zwischen Gesamtinvestment/Investitionsmenge)
+  const [calculatedPercents, setCalculatedPercents] = useState({
+    profitPercent_gesamtinvestment: '',
+    profitPercent_investitionsmenge: '',
+    overallTrendPnlPercent_gesamtinvestment: '',
+    overallTrendPnlPercent_investitionsmenge: '',
+    overallGridProfitPercent_gesamtinvestment: '',
+    overallGridProfitPercent_investitionsmenge: '',
+    highestGridProfitPercent_gesamtinvestment: '',
+    highestGridProfitPercent_investitionsmenge: '',
+  });
 
+  // Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (trendTimeRange === 'Neu' && formData.overallTrendPnlUsdt) {
-      const trendValue = parseFloat(formData.overallTrendPnlUsdt);
-      const investmentValue = parseFloat(formData.investment || '0');
-      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
-      
-      if (trendPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
-        const percent = (trendValue / totalInvestmentValue) * 100;
-        setFormData(prev => ({ ...prev, overallTrendPnlPercent: percent.toFixed(2) }));
-      } else if (trendPercentBase === 'investitionsmenge' && investmentValue > 0) {
-        const percent = (trendValue / investmentValue) * 100;
-        setFormData(prev => ({ ...prev, overallTrendPnlPercent: percent.toFixed(2) }));
-      }
+    if (profitPercentBase === 'gesamtinvestment' && calculatedPercents.profitPercent_gesamtinvestment) {
+      setFormData(prev => ({ ...prev, profitPercent: calculatedPercents.profitPercent_gesamtinvestment }));
+    } else if (profitPercentBase === 'investitionsmenge' && calculatedPercents.profitPercent_investitionsmenge) {
+      setFormData(prev => ({ ...prev, profitPercent: calculatedPercents.profitPercent_investitionsmenge }));
     }
-  }, [trendPercentBase, formData.overallTrendPnlUsdt, formData.investment, formData.totalInvestment, trendTimeRange]);
+  }, [profitPercentBase, calculatedPercents.profitPercent_gesamtinvestment, calculatedPercents.profitPercent_investitionsmenge]);
 
+  // Trend P&L Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (gridTimeRange === 'Neu' && formData.overallGridProfitUsdt) {
-      const gridValue = parseFloat(formData.overallGridProfitUsdt);
-      const investmentValue = parseFloat(formData.investment || '0');
-      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
-      
-      if (gridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
-        const percent = (gridValue / totalInvestmentValue) * 100;
-        setFormData(prev => ({ ...prev, overallGridProfitPercent: percent.toFixed(2) }));
-      } else if (gridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
-        const percent = (gridValue / investmentValue) * 100;
-        setFormData(prev => ({ ...prev, overallGridProfitPercent: percent.toFixed(2) }));
-      }
+    if (trendPercentBase === 'gesamtinvestment' && calculatedPercents.overallTrendPnlPercent_gesamtinvestment) {
+      setFormData(prev => ({ ...prev, overallTrendPnlPercent: calculatedPercents.overallTrendPnlPercent_gesamtinvestment }));
+    } else if (trendPercentBase === 'investitionsmenge' && calculatedPercents.overallTrendPnlPercent_investitionsmenge) {
+      setFormData(prev => ({ ...prev, overallTrendPnlPercent: calculatedPercents.overallTrendPnlPercent_investitionsmenge }));
     }
-  }, [gridProfitPercentBase, formData.overallGridProfitUsdt, formData.investment, formData.totalInvestment, gridTimeRange]);
+  }, [trendPercentBase, calculatedPercents.overallTrendPnlPercent_gesamtinvestment, calculatedPercents.overallTrendPnlPercent_investitionsmenge]);
 
+  // Grid Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
-    if (gridTimeRange === 'Neu' && formData.highestGridProfit) {
-      const highestValue = parseFloat(formData.highestGridProfit);
-      const investmentValue = parseFloat(formData.investment || '0');
-      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
-      
-      if (highestGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
-        const percent = (highestValue / totalInvestmentValue) * 100;
-        setFormData(prev => ({ ...prev, highestGridProfitPercent: percent.toFixed(2) }));
-      } else if (highestGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
-        const percent = (highestValue / investmentValue) * 100;
-        setFormData(prev => ({ ...prev, highestGridProfitPercent: percent.toFixed(2) }));
-      }
+    if (gridProfitPercentBase === 'gesamtinvestment' && calculatedPercents.overallGridProfitPercent_gesamtinvestment) {
+      setFormData(prev => ({ ...prev, overallGridProfitPercent: calculatedPercents.overallGridProfitPercent_gesamtinvestment }));
+    } else if (gridProfitPercentBase === 'investitionsmenge' && calculatedPercents.overallGridProfitPercent_investitionsmenge) {
+      setFormData(prev => ({ ...prev, overallGridProfitPercent: calculatedPercents.overallGridProfitPercent_investitionsmenge }));
     }
-  }, [highestGridProfitPercentBase, formData.highestGridProfit, formData.investment, formData.totalInvestment, gridTimeRange]);
+  }, [gridProfitPercentBase, calculatedPercents.overallGridProfitPercent_gesamtinvestment, calculatedPercents.overallGridProfitPercent_investitionsmenge]);
+
+  // Highest Grid Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
+  useEffect(() => {
+    if (highestGridProfitPercentBase === 'gesamtinvestment' && calculatedPercents.highestGridProfitPercent_gesamtinvestment) {
+      setFormData(prev => ({ ...prev, highestGridProfitPercent: calculatedPercents.highestGridProfitPercent_gesamtinvestment }));
+    } else if (highestGridProfitPercentBase === 'investitionsmenge' && calculatedPercents.highestGridProfitPercent_investitionsmenge) {
+      setFormData(prev => ({ ...prev, highestGridProfitPercent: calculatedPercents.highestGridProfitPercent_investitionsmenge }));
+    }
+  }, [highestGridProfitPercentBase, calculatedPercents.highestGridProfitPercent_gesamtinvestment, calculatedPercents.highestGridProfitPercent_investitionsmenge]);
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -815,6 +799,12 @@ export default function Upload() {
       const data = await response.json();
       const calculatedValues = data.values;
       
+      // DEBUG: Log die empfangenen Werte
+      console.log('Phase 4 API Response:', data);
+      console.log('Calculated Values:', calculatedValues);
+      console.log('Investment value:', calculatedValues?.investment);
+      console.log('Profit value:', calculatedValues?.profit);
+      
       const jsonOutput = JSON.stringify(calculatedValues, null, 2);
       
       setChatMessages(prev => [...prev, {
@@ -823,35 +813,67 @@ export default function Upload() {
       }]);
       
       setTimeout(() => {
+        console.log('setTimeout callback STARTED');
+        console.log('calculatedValues inside setTimeout:', calculatedValues);
+        
         // Bot-Richtung Logik: Wenn AI mehrere Richtungen zurückgibt (z.B. "Long, Short") → setze auf "Beides"
         let normalizedBotDirection = calculatedValues.botDirection || 'Long';
         if (normalizedBotDirection && normalizedBotDirection.includes(',')) {
-          // Mehrere Richtungen erkannt (z.B. "Long, Short") → Dropdown kann nur "Beides" verwenden
           normalizedBotDirection = 'Beides';
         }
         
+        // Hilfsfunktion: Konvertiere Wert zu String (behandelt null, undefined, numbers)
+        const toStr = (val: any): string => {
+          if (val === null || val === undefined) return '';
+          return String(val);
+        };
+        
+        // SPEICHERE alle berechneten Prozentwerte für späteren Umschalt-Zugriff
+        setCalculatedPercents({
+          profitPercent_gesamtinvestment: toStr(calculatedValues.profitPercent_gesamtinvestment),
+          profitPercent_investitionsmenge: toStr(calculatedValues.profitPercent_investitionsmenge),
+          overallTrendPnlPercent_gesamtinvestment: toStr(calculatedValues.overallTrendPnlPercent_gesamtinvestment),
+          overallTrendPnlPercent_investitionsmenge: toStr(calculatedValues.overallTrendPnlPercent_investitionsmenge),
+          overallGridProfitPercent_gesamtinvestment: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment),
+          overallGridProfitPercent_investitionsmenge: toStr(calculatedValues.overallGridProfitPercent_investitionsmenge),
+          highestGridProfitPercent_gesamtinvestment: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment),
+          highestGridProfitPercent_investitionsmenge: toStr(calculatedValues.highestGridProfitPercent_investitionsmenge),
+        });
+        
+        // DEBUG: Log vor dem Setzen
+        console.log('Setting form data with values:', {
+          investment: toStr(calculatedValues.investment),
+          profit: toStr(calculatedValues.profit),
+          profitPercent: toStr(calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent),
+          overallTrendPnlUsdt: toStr(calculatedValues.overallTrendPnlUsdt),
+          overallGridProfitUsdt: toStr(calculatedValues.overallGridProfitUsdt),
+        });
+        
+        // Setze Formularwerte - alle Werte als String konvertieren
         setFormData(prev => ({
           ...prev,
-          date: calculatedValues.date || '',
+          date: toStr(calculatedValues.date),
           botDirection: normalizedBotDirection,
-          leverage: calculatedValues.leverage || '',
-          longestRuntime: calculatedValues.longestRuntime || '',
-          avgRuntime: calculatedValues.avgRuntime || '',
-          investment: calculatedValues.investment || '',
-          extraMargin: calculatedValues.extraMargin || '',
-          totalInvestment: calculatedValues.totalInvestment || '',
-          profit: calculatedValues.profit || '',
-          profitPercent: calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent || '',
-          overallTrendPnlUsdt: calculatedValues.overallTrendPnlUsdt || '',
-          overallTrendPnlPercent: calculatedValues.overallTrendPnlPercent_gesamtinvestment || calculatedValues.overallTrendPnlPercent || '',
-          overallGridProfitUsdt: calculatedValues.overallGridProfitUsdt || '',
-          overallGridProfitPercent: calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent || '',
-          highestGridProfit: calculatedValues.highestGridProfit || '',
-          highestGridProfitPercent: calculatedValues.highestGridProfitPercent_investitionsmenge || calculatedValues.highestGridProfitPercent || '',
-          avgGridProfitHour: calculatedValues.avgGridProfitHour || '',
-          avgGridProfitDay: calculatedValues.avgGridProfitDay || '',
-          avgGridProfitWeek: calculatedValues.avgGridProfitWeek || ''
+          leverage: toStr(calculatedValues.leverage),
+          longestRuntime: toStr(calculatedValues.longestRuntime),
+          avgRuntime: toStr(calculatedValues.avgRuntime),
+          investment: toStr(calculatedValues.investment),
+          extraMargin: toStr(calculatedValues.extraMargin),
+          totalInvestment: toStr(calculatedValues.totalInvestment),
+          profit: toStr(calculatedValues.profit),
+          profitPercent: toStr(calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent),
+          overallTrendPnlUsdt: toStr(calculatedValues.overallTrendPnlUsdt),
+          overallTrendPnlPercent: toStr(calculatedValues.overallTrendPnlPercent_gesamtinvestment || calculatedValues.overallTrendPnlPercent),
+          overallGridProfitUsdt: toStr(calculatedValues.overallGridProfitUsdt),
+          overallGridProfitPercent: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent),
+          highestGridProfit: toStr(calculatedValues.highestGridProfit),
+          highestGridProfitPercent: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
+          avgGridProfitHour: toStr(calculatedValues.avgGridProfitHour),
+          avgGridProfitDay: toStr(calculatedValues.avgGridProfitDay),
+          avgGridProfitWeek: toStr(calculatedValues.avgGridProfitWeek)
         }));
+        
+        console.log('Form data UPDATED successfully');
         
         setChatMessages(prev => [...prev, {
           role: 'ai',
@@ -864,6 +886,7 @@ export default function Upload() {
         });
         
         setIsAiLoading(false);
+        console.log('setTimeout callback COMPLETED');
       }, 1000);
     } catch (error) {
       console.error('Phase 4 error:', error);

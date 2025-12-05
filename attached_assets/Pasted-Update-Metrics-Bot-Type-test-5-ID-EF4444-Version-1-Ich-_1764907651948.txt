@@ -1,0 +1,89 @@
+Update Metrics
+
+Bot Type: test 5
+ID: #EF4444
+Version: 1
+
+Ich habe die Bot Type Informationen erhalten. Möchten Sie noch Informationen ändern oder hinzufügen?
+
+Bitte schicken Sie noch die Screenshots, damit wir Phase 1 abschließen können.
+
+1 Bild wurde zur Analyse hochgeladen
+
+Perfekt! Ich habe beide Informationen erhalten. Soll ich fortfahren und diese beiden Sachen überprüfen?
+
+OK, fange an mit Phase 2, Schritt 1: Überprüfung der Bot-Type-Updates.
+
+Keine Updates gefunden in der Bot-Type Datenbank. Deswegen wird diese Metrik als Startmetrik gelten.
+
+Ich habe 1 Bild erhalten und habe darauf Zugriff. Ich habe das erste Bild analysiert und sehe ein Dashboard für einen ETH/USDT Futures Moon Trading Bot. Das Bild zeigt unter anderem ein Current Investment von 8,331.3 USDT und einen Total Profit von -1.09 USDT (-0.02%). Der Test war erfolgreich, ich kann Bilder analysieren.
+
+Test erfolgreich! Starte jetzt vollständige Datenextraktion aller Screenshots...
+
+Datenextraktion abgeschlossen! Hier sind die extrahierten Daten:
+
+Screenshot 1:
+• Datum: 2025-11-24
+• Uhrzeit: 03:04:06
+• Actual Investment: 8331.3 USDT
+• Extra Margin: Nicht verfügbar
+• Total Profit: -1.09 USDT (-0.02%)
+• Grid Profit: +63.77 USDT (+0.76%)
+• Trend P&L: -64.87 USDT (-0.77%)
+• Hebel: 2x Neutral
+• Laufzeit: 1d 21h 6m
+• Richtung: Neutral
+
+Ausgezeichnet! Phase 2 ist erfolgreich abgeschlossen. Wir gehen jetzt zu Phase 3 über. Bitte füllen Sie unten die gewünschten Metriken und Modi aus und senden Sie diese mit dem Button "Einstellungen an AI senden".
+
+Einstellungen wurden an AI gesendet
+
+Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar. Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?
+
+Ja, bitte mit Phase 4 fortfahren
+
+Phase 4 - Analyse und Berechnung
+
+Für den aktuellen Upload wurden 4 Sektionen mit Modi konfiguriert:
+• Investment (Modus: Neu)
+• Gesamter Profit / P&L (Modus: Neu)
+• Trend P&L (Modus: Neu)
+• Grid Trading (Modus: Neu)
+
+Dies ist der erste Upload (Modus "Neu" für alle Berechnungen).
+
+Starte jetzt die KI-gestützte Analyse und Berechnung...
+
+Phase 4 - Berechnung abgeschlossen
+
+Alle Werte wurden erfolgreich berechnet:
+
+```json
+{
+  "date": "2025-11-24T03:04",
+  "botDirection": "Neutral",
+  "leverage": "2x Neutral",
+  "longestRuntime": "1d 21h 6m",
+  "avgRuntime": "1d 21h 6m",
+  "investment": "8331.30",
+  "extraMargin": "0.00",
+  "totalInvestment": "8331.30",
+  "profit": "-1.09",
+  "profitPercent_gesamtinvestment": "-0.01",
+  "profitPercent_investitionsmenge": "-0.01",
+  "overallTrendPnlUsdt": "-64.87",
+  "overallTrendPnlPercent_gesamtinvestment": "-0.78",
+  "overallTrendPnlPercent_investitionsmenge": "-0.78",
+  "overallGridProfitUsdt": "63.77",
+  "overallGridProfitPercent_gesamtinvestment": "0.76",
+  "overallGridProfitPercent_investitionsmenge": "0.76",
+  "highestGridProfit": "63.77",
+  "highestGridProfitPercent_gesamtinvestment": "0.76",
+  "highestGridProfitPercent_investitionsmenge": "0.76",
+  "avgGridProfitHour": "1.40",
+  "avgGridProfitDay": "33.57",
+  "avgGridProfitWeek": null
+}
+```
+
+Ausgabe abgeschlossen. Alle Werte wurden in die Formularfelder eingetragen.
