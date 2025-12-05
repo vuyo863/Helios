@@ -22,6 +22,7 @@ export interface IStorage {
   deleteBotEntry(id: string): Promise<boolean>;
   
   // Bot Type Updates
+  getAllBotTypeUpdates(): Promise<BotTypeUpdate[]>;
   getBotTypeUpdates(botTypeId: string): Promise<BotTypeUpdate[]>;
   getLatestBotTypeUpdate(botTypeId: string): Promise<BotTypeUpdate | undefined>;
   createBotTypeUpdate(update: InsertBotTypeUpdate): Promise<BotTypeUpdate>;
@@ -442,6 +443,10 @@ export class MemStorage implements IStorage {
   }
 
   // Bot Type Updates Methods - Stub implementation (will use Drizzle directly in routes)
+  async getAllBotTypeUpdates(): Promise<BotTypeUpdate[]> {
+    return [];
+  }
+  
   async getBotTypeUpdates(botTypeId: string): Promise<BotTypeUpdate[]> {
     return [];
   }

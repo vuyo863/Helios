@@ -121,6 +121,13 @@ export class DbStorage implements IStorage {
   }
 
   // Bot Type Updates Methods
+  async getAllBotTypeUpdates(): Promise<BotTypeUpdate[]> {
+    return await db
+      .select()
+      .from(botTypeUpdates)
+      .orderBy(desc(botTypeUpdates.version));
+  }
+  
   async getBotTypeUpdates(botTypeId: string): Promise<BotTypeUpdate[]> {
     return await db
       .select()

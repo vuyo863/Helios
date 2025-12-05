@@ -1148,6 +1148,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bot Type Updates Routes
+  
+  // Get all updates for all bot types (for calculating totals on cards)
+  app.get("/api/bot-type-updates", async (req, res) => {
+    try {
+      const allUpdates = await storage.getAllBotTypeUpdates();
+      res.json(allUpdates);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all updates" });
+    }
+  });
+  
   app.get("/api/bot-types/:id/updates", async (req, res) => {
     try {
       const updates = await storage.getBotTypeUpdates(req.params.id);

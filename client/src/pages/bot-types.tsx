@@ -34,6 +34,11 @@ export default function BotTypesPage() {
   const { data: botEntries = [] } = useQuery<BotEntry[]>({
     queryKey: ['/api/bot-entries'],
   });
+  
+  // Load all updates for all bot types (for calculating totals on cards)
+  const { data: allUpdates = [] } = useQuery<BotTypeUpdate[]>({
+    queryKey: ['/api/bot-type-updates'],
+  });
 
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<{ name: string; description: string }>({
@@ -232,9 +237,10 @@ export default function BotTypesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeBotTypes.map((botType) => {
               const isEditing = editingBotTypeId === botType.id;
-              const entriesForType = botEntries.filter(entry => entry.botTypeId === botType.id);
-              const totalProfit = entriesForType.reduce((sum, entry) => sum + (parseFloat(entry.profit) || 0), 0);
-              const avgProfit = entriesForType.length > 0 ? totalProfit / entriesForType.length : 0;
+              // Calculate total Grid Profit from all updates for this bot type
+              const updatesForType = allUpdates.filter(update => update.botTypeId === botType.id);
+              const totalGridProfit = updatesForType.reduce((sum, update) => sum + (parseFloat(update.overallGridProfitUsdt || '0') || 0), 0);
+              const avgProfit = updatesForType.length > 0 ? totalGridProfit / updatesForType.length : 0;
               
               return (
                 <Card 
@@ -299,7 +305,7 @@ export default function BotTypesPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gesamt Profit:</span>
                         <span className="font-medium text-primary" data-testid={`text-total-profit-${botType.id}`}>
-                          {totalProfit.toFixed(2)} USDT
+                          {totalGridProfit.toFixed(2)} USDT
                         </span>
                       </div>
                       <div className="flex justify-between">
