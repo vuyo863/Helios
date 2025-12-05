@@ -44,6 +44,8 @@ export default function BotTypesPage() {
   const [selectedBotType, setSelectedBotType] = useState<BotType | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
+  const [updateDetailDialogOpen, setUpdateDetailDialogOpen] = useState(false);
+  const [selectedUpdate, setSelectedUpdate] = useState<BotTypeUpdate | null>(null);
 
   const { toast } = useToast();
 
@@ -423,6 +425,10 @@ export default function BotTypesPage() {
                                   size="icon" 
                                   variant="ghost"
                                   className="w-8 h-8 flex-shrink-0"
+                                  onClick={() => {
+                                    setSelectedUpdate(update);
+                                    setUpdateDetailDialogOpen(true);
+                                  }}
                                   data-testid={`button-view-update-${update.id}`}
                                 >
                                   <Eye className="w-4 h-4" />
@@ -471,6 +477,165 @@ export default function BotTypesPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={updateDetailDialogOpen} onOpenChange={setUpdateDetailDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Eye className="w-5 h-5 text-primary" />
+                {selectedUpdate?.status} #{selectedUpdate?.version}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedUpdate && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Datum und Uhrzeit</p>
+                      <p className="font-medium">{selectedUpdate.date || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Bot-Richtung</p>
+                      <p className="font-medium">{selectedUpdate.botDirection || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Hebel</p>
+                      <p className="font-medium">{selectedUpdate.leverage || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Längste Laufzeit</p>
+                      <p className="font-medium">{selectedUpdate.longestRuntime || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Durchschnittliche Laufzeit</p>
+                      <p className="font-medium">{selectedUpdate.avgRuntime || '-'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Investment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Investitionsmenge (USDT)</p>
+                      <p className="font-medium">{selectedUpdate.investment || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Extra Margin</p>
+                      <p className="font-medium">{selectedUpdate.extraMargin || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtinvestment</p>
+                      <p className="font-medium">{selectedUpdate.totalInvestment || '0.00'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Gesamter Profit / P&L</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtprofit (USDT)</p>
+                      <p className="font-medium text-primary">{selectedUpdate.profit || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Gesamtinvestment</p>
+                      <p className="font-medium">{selectedUpdate.profitPercent_gesamtinvestment || '0.00'}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Investitionsmenge</p>
+                      <p className="font-medium">{selectedUpdate.profitPercent_investitionsmenge || '0.00'}%</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Trend P&L</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Trend P&L (USDT)</p>
+                      <p className="font-medium">{selectedUpdate.overallTrendPnlUsdt || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Trend P&L (%) - Gesamtinvestment</p>
+                      <p className="font-medium">{selectedUpdate.overallTrendPnlPercent_gesamtinvestment || '0.00'}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Trend P&L (%) - Investitionsmenge</p>
+                      <p className="font-medium">{selectedUpdate.overallTrendPnlPercent_investitionsmenge || '0.00'}%</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Grid Trading</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Grid Profit (USDT)</p>
+                        <p className="font-medium">{selectedUpdate.overallGridProfitUsdt || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Grid Profit (%) - Gesamtinvestment</p>
+                        <p className="font-medium">{selectedUpdate.overallGridProfitPercent_gesamtinvestment || '0.00'}%</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Grid Profit (%) - Investitionsmenge</p>
+                        <p className="font-medium">{selectedUpdate.overallGridProfitPercent_investitionsmenge || '0.00'}%</p>
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Höchster Grid Profit (USDT)</p>
+                        <p className="font-medium">{selectedUpdate.highestGridProfit || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Höchster Grid Profit (%) - Gesamtinvestment</p>
+                        <p className="font-medium">{selectedUpdate.highestGridProfitPercent_gesamtinvestment || '0.00'}%</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Höchster Grid Profit (%) - Investitionsmenge</p>
+                        <p className="font-medium">{selectedUpdate.highestGridProfitPercent_investitionsmenge || '0.00'}%</p>
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit / Stunde</p>
+                        <p className="font-medium">{selectedUpdate.avgGridProfitHour || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit / Tag</p>
+                        <p className="font-medium">{selectedUpdate.avgGridProfitDay || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit / Woche</p>
+                        <p className="font-medium">{selectedUpdate.avgGridProfitWeek || '-'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="text-xs text-muted-foreground text-center">
+                  Erstellt am: {selectedUpdate.createdAt ? format(new Date(selectedUpdate.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
