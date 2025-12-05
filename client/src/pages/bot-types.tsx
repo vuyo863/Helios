@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2 } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState } from "react";
@@ -418,16 +418,26 @@ export default function BotTypesPage() {
                                   </span>
                                 </div>
                               </div>
-                              <Link href="/reports">
+                              <div className="flex items-center gap-1">
                                 <Button 
                                   size="icon" 
                                   variant="ghost"
                                   className="w-8 h-8 flex-shrink-0"
-                                  data-testid={`button-view-report-${update.id}`}
+                                  data-testid={`button-view-update-${update.id}`}
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
-                              </Link>
+                                <Link href="/reports">
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost"
+                                    className="w-8 h-8 flex-shrink-0"
+                                    data-testid={`button-view-report-${update.id}`}
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                  </Button>
+                                </Link>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
