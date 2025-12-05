@@ -9,7 +9,7 @@ export default function Navbar() {
     { path: '/', label: 'Übersicht', icon: BarChart3 },
     { path: '/upload', label: 'AI Analyse', icon: Upload },
     { path: '/bot-types', label: 'Bot Types', icon: Layers },
-    { path: '/analyzer', label: 'Analyzer', icon: TrendingUp },
+    { path: '/future', label: 'Future', icon: TrendingUp },
     { path: '/reports', label: 'Berichte', icon: FileText },
   ];
 

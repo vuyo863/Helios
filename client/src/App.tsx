@@ -17,7 +17,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/upload" component={Upload} />
       <Route path="/bot-types" component={BotTypesPage} />
-      <Route path="/analyzer" component={BotTypeAnalyzer} />
+      <Route path="/future" component={BotTypeAnalyzer} />
       <Route path="/reports" component={Reports} />
       <Route component={NotFound} />
     </Switch>
