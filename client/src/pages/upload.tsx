@@ -148,6 +148,14 @@ export default function Upload() {
   const [notesEditMode, setNotesEditMode] = useState(true); // Startet im Edit-Modus
   const [savedNotes, setSavedNotes] = useState(''); // Gespeicherte Notizen für Cancel
 
+  // Hilfsfunktion: Ermittelt das Vorzeichen eines Wertes für die visuelle Anzeige
+  const getSignPrefix = (value: string): string => {
+    if (!value || value === '' || value === '0' || value === '0.00') return '';
+    const num = parseFloat(value);
+    if (isNaN(num) || num === 0) return '';
+    return num > 0 ? '+' : '';  // "-" ist bereits im Wert enthalten
+  };
+
   const [investmentTimeRange, setInvestmentTimeRange] = useState("Neu");
   const [profitTimeRange, setProfitTimeRange] = useState("Neu");
   const [trendTimeRange, setTrendTimeRange] = useState("Neu");
@@ -1490,13 +1498,15 @@ export default function Upload() {
                     </Select>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                    <div className="relative">
                       <Label htmlFor="profit">Gesamtprofit (USDT)</Label>
+                      <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.profit)}</span>
                       <Input
                         id="profit"
                         type="number"
                         step="0.01"
                         placeholder="0.00"
+                        className={getSignPrefix(formData.profit) ? "pl-6" : ""}
                         value={formData.profit}
                         onChange={(e) => setFormData({ ...formData, profit: e.target.value })}
                         required
@@ -1507,16 +1517,19 @@ export default function Upload() {
                     <div>
                       <Label htmlFor="profitPercent">Gesamtprofit (%)</Label>
                       <div className="flex items-center gap-2">
-                        <Input
-                          id="profitPercent"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={formData.profitPercent}
-                          onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
-                          data-testid="input-profit-percent"
-                          className="flex-1"
-                        />
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.profitPercent)}</span>
+                          <Input
+                            id="profitPercent"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            className={getSignPrefix(formData.profitPercent) ? "pl-6" : ""}
+                            value={formData.profitPercent}
+                            onChange={(e) => setFormData({ ...formData, profitPercent: e.target.value })}
+                            data-testid="input-profit-percent"
+                          />
+                        </div>
                         <Select value={profitPercentBase} onValueChange={(val) => setProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                           <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-profit-percent-base">
                             <SelectValue />
@@ -1547,13 +1560,13 @@ export default function Upload() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                       <Label htmlFor="overallTrendPnlUsdt">Trend P&L (USDT)</Label>
-                      <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground">$</span>
+                      <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">$ {getSignPrefix(formData.overallTrendPnlUsdt)}</span>
                       <Input
                         id="overallTrendPnlUsdt"
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        className="pl-7"
+                        className={getSignPrefix(formData.overallTrendPnlUsdt) ? "pl-10" : "pl-7"}
                         value={formData.overallTrendPnlUsdt}
                         onChange={(e) => setFormData({ ...formData, overallTrendPnlUsdt: e.target.value })}
                         data-testid="input-overall-trend-pnl-usdt"
@@ -1563,13 +1576,13 @@ export default function Upload() {
                       <Label htmlFor="overallTrendPnlPercent">Trend P&L (%)</Label>
                       <div className="flex items-center gap-2">
                         <div className="relative flex-1">
-                          <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                          <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.overallTrendPnlPercent)}</span>
                           <Input
                             id="overallTrendPnlPercent"
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="pr-7"
+                            className={getSignPrefix(formData.overallTrendPnlPercent) ? "pl-6" : ""}
                             value={formData.overallTrendPnlPercent}
                             onChange={(e) => setFormData({ ...formData, overallTrendPnlPercent: e.target.value })}
                             data-testid="input-overall-trend-pnl-percent"
@@ -1606,37 +1619,43 @@ export default function Upload() {
                     <div>
                       <Label>Grid Profit Durchschnitt</Label>
                       <div className="grid grid-cols-3 gap-3 mt-2">
-                        <div>
+                        <div className="relative">
                           <Label htmlFor="avgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitHour)}</span>
                           <Input
                             id="avgGridProfitHour"
                             type="number"
                             step="0.01"
                             placeholder="0.00"
+                            className={getSignPrefix(formData.avgGridProfitHour) ? "pl-6" : ""}
                             value={formData.avgGridProfitHour}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitHour: e.target.value })}
                             data-testid="input-avg-grid-profit-hour"
                           />
                         </div>
-                        <div>
+                        <div className="relative">
                           <Label htmlFor="avgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitDay)}</span>
                           <Input
                             id="avgGridProfitDay"
                             type="number"
                             step="0.01"
                             placeholder="0.00"
+                            className={getSignPrefix(formData.avgGridProfitDay) ? "pl-6" : ""}
                             value={formData.avgGridProfitDay}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
                             data-testid="input-avg-grid-profit-day"
                           />
                         </div>
-                        <div>
+                        <div className="relative">
                           <Label htmlFor="avgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitWeek)}</span>
                           <Input
                             id="avgGridProfitWeek"
                             type="number"
                             step="0.01"
                             placeholder="0.00"
+                            className={getSignPrefix(formData.avgGridProfitWeek) ? "pl-6" : ""}
                             value={formData.avgGridProfitWeek}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
                             data-testid="input-avg-grid-profit-week"
@@ -1648,13 +1667,13 @@ export default function Upload() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <Label htmlFor="overallGridProfitUsdt">Gesamter Grid Profit (USDT)</Label>
-                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground">$</span>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">$ {getSignPrefix(formData.overallGridProfitUsdt)}</span>
                         <Input
                           id="overallGridProfitUsdt"
                           type="number"
                           step="0.01"
                           placeholder="0.00"
-                          className="pl-7"
+                          className={getSignPrefix(formData.overallGridProfitUsdt) ? "pl-10" : "pl-7"}
                           value={formData.overallGridProfitUsdt}
                           onChange={(e) => setFormData({ ...formData, overallGridProfitUsdt: e.target.value })}
                           data-testid="input-overall-grid-profit-usdt"
@@ -1664,13 +1683,13 @@ export default function Upload() {
                         <Label htmlFor="overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
-                            <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.overallGridProfitPercent)}</span>
                             <Input
                               id="overallGridProfitPercent"
                               type="number"
                               step="0.01"
                               placeholder="0.00"
-                              className="pr-7"
+                              className={getSignPrefix(formData.overallGridProfitPercent) ? "pl-6" : ""}
                               value={formData.overallGridProfitPercent}
                               onChange={(e) => setFormData({ ...formData, overallGridProfitPercent: e.target.value })}
                               data-testid="input-overall-grid-profit-percent"
@@ -1690,13 +1709,15 @@ export default function Upload() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
+                      <div className="relative">
                         <Label htmlFor="highestGridProfit">Höchster Grid Profit (USDT)</Label>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfit)}</span>
                         <Input
                           id="highestGridProfit"
                           type="number"
                           step="0.01"
                           placeholder="0.00"
+                          className={getSignPrefix(formData.highestGridProfit) ? "pl-6" : ""}
                           value={formData.highestGridProfit}
                           onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
                           data-testid="input-highest-grid-profit"
@@ -1706,16 +1727,19 @@ export default function Upload() {
                       <div>
                         <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
                         <div className="flex items-center gap-2">
-                          <Input
-                            id="highestGridProfitPercent"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={formData.highestGridProfitPercent}
-                            onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
-                            data-testid="input-highest-grid-profit-percent"
-                            className="flex-1"
-                          />
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfitPercent)}</span>
+                            <Input
+                              id="highestGridProfitPercent"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={getSignPrefix(formData.highestGridProfitPercent) ? "pl-6" : ""}
+                              value={formData.highestGridProfitPercent}
+                              onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
+                              data-testid="input-highest-grid-profit-percent"
+                            />
+                          </div>
                           <Select value={highestGridProfitPercentBase} onValueChange={(val) => setHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                             <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-highest-grid-profit-percent-base">
                               <SelectValue />
