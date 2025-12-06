@@ -149,3 +149,34 @@ Preferred communication style: Simple, everyday language.
 **Database Schema:**
 - All upload timing fields are nullable (text type)
 - Compatible with existing data
+
+## Recent Updates (December 6, 2025 - Continued)
+
+**Last Grid Profit Durchschnitt & Change Implementation:**
+
+**New UI Features:**
+- Last Grid Profit Durchschnitt section with 3 clickable time period fields (Stunde, Tag, Woche)
+- Clicking on a time period highlights it with a blue ring
+- Change field shows the corresponding value for the selected time period
+- Toggle between Dollar ($) and Prozent (%) display for Change values
+
+**Change Calculation Logic (Frontend-Calculated):**
+- 6 Change values calculated (3 time periods x 2 units):
+  - `changeHourDollar`: Current Stunde - Previous Stunde
+  - `changeHourPercent`: ((Current - Previous) / |Previous|) x 100
+  - `changeDayDollar`, `changeDayPercent`: Same logic for Tag
+  - `changeWeekDollar`, `changeWeekPercent`: Same logic for Woche
+- Empty at Startmetrik (no previous values to compare)
+- Values from previous upload loaded from database
+
+**Database Schema Updates:**
+- Added to `bot_type_updates`:
+  - `lastAvgGridProfitHour`, `lastAvgGridProfitDay`, `lastAvgGridProfitWeek`
+  - `changeHourDollar`, `changeHourPercent`
+  - `changeDayDollar`, `changeDayPercent`
+  - `changeWeekDollar`, `changeWeekPercent`
+
+**Bot Types Page Display:**
+- Last Grid Profit Durchschnitt section (shows previous upload values)
+- Change section with all 6 values (3 Dollar, 3 Prozent)
+- Conditional display: sections only shown if values exist

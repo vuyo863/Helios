@@ -136,6 +136,19 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   avgGridProfitDay: text("avg_grid_profit_day"),
   avgGridProfitWeek: text("avg_grid_profit_week"),
   
+  // Last Grid Profit Durchschnitt (vom vorherigen Upload)
+  lastAvgGridProfitHour: text("last_avg_grid_profit_hour"),
+  lastAvgGridProfitDay: text("last_avg_grid_profit_day"),
+  lastAvgGridProfitWeek: text("last_avg_grid_profit_week"),
+  
+  // Change-Werte (6 Kombinationen: 3 Zeiträume × 2 Einheiten)
+  changeHourDollar: text("change_hour_dollar"),
+  changeHourPercent: text("change_hour_percent"),
+  changeDayDollar: text("change_day_dollar"),
+  changeDayPercent: text("change_day_percent"),
+  changeWeekDollar: text("change_week_dollar"),
+  changeWeekPercent: text("change_week_percent"),
+  
   // Notizen Section (wird NICHT an AI gesendet, keine Modi)
   notes: text("notes"),
 });

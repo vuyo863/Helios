@@ -953,6 +953,63 @@ export default function BotTypesPage() {
                       </div>
                     </div>
                     
+                    {/* Last Grid Profit Durchschnitt (vom vorherigen Upload) */}
+                    {(selectedUpdate.lastAvgGridProfitHour || selectedUpdate.lastAvgGridProfitDay || selectedUpdate.lastAvgGridProfitWeek) && (
+                      <>
+                        <Separator />
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground mb-1">Last Ø Grid Profit / Stunde</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.lastAvgGridProfitHour)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Last Ø Grid Profit / Tag</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.lastAvgGridProfitDay)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Last Ø Grid Profit / Woche</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.lastAvgGridProfitWeek)}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Change-Werte (Differenz zum vorherigen Upload) */}
+                    {(selectedUpdate.changeHourDollar || selectedUpdate.changeDayDollar || selectedUpdate.changeWeekDollar) && (
+                      <>
+                        <Separator />
+                        <p className="text-sm font-semibold text-muted-foreground">Change (Differenz zum vorherigen Upload)</p>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground mb-1">Change / Stunde ($)</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.changeHourDollar)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Change / Tag ($)</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.changeDayDollar)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Change / Woche ($)</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.changeWeekDollar)}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground mb-1">Change / Stunde (%)</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.changeHourPercent, '%')}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Change / Tag (%)</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.changeDayPercent, '%')}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Change / Woche (%)</p>
+                            <p className="font-medium">{formatWithSign(selectedUpdate.changeWeekPercent, '%')}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
                     {/* Notizen Section */}
                     {selectedUpdate.notes && (
                       <>

@@ -372,6 +372,19 @@ export default function Upload() {
         avgGridProfitDay: formData.avgGridProfitDay || null,
         avgGridProfitWeek: formData.avgGridProfitWeek || null,
         
+        // Last Grid Profit Durchschnitt (vom vorherigen Upload)
+        lastAvgGridProfitHour: formData.lastAvgGridProfitHour || null,
+        lastAvgGridProfitDay: formData.lastAvgGridProfitDay || null,
+        lastAvgGridProfitWeek: formData.lastAvgGridProfitWeek || null,
+        
+        // Change-Werte (6 Kombinationen: 3 Zeiträume × 2 Einheiten)
+        changeHourDollar: formData.changeHourDollar || null,
+        changeHourPercent: formData.changeHourPercent || null,
+        changeDayDollar: formData.changeDayDollar || null,
+        changeDayPercent: formData.changeDayPercent || null,
+        changeWeekDollar: formData.changeWeekDollar || null,
+        changeWeekPercent: formData.changeWeekPercent || null,
+        
         // Notizen Section (keine Modi, wird NICHT an AI gesendet)
         notes: formData.notes || null,
       };
@@ -412,6 +425,15 @@ export default function Upload() {
         avgGridProfitHour: '',
         avgGridProfitDay: '',
         avgGridProfitWeek: '',
+        lastAvgGridProfitHour: '',
+        lastAvgGridProfitDay: '',
+        lastAvgGridProfitWeek: '',
+        changeHourDollar: '',
+        changeHourPercent: '',
+        changeDayDollar: '',
+        changeDayPercent: '',
+        changeWeekDollar: '',
+        changeWeekPercent: '',
         overallTrendPnlUsdt: '',
         overallTrendPnlPercent: '',
         highestGridProfit: '',
