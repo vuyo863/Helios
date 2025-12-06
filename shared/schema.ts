@@ -132,6 +132,9 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   avgGridProfitHour: text("avg_grid_profit_hour"),
   avgGridProfitDay: text("avg_grid_profit_day"),
   avgGridProfitWeek: text("avg_grid_profit_week"),
+  
+  // Notizen Section (wird NICHT an AI gesendet, keine Modi)
+  notes: text("notes"),
 });
 
 export const insertBotTypeUpdateSchema = createInsertSchema(botTypeUpdates).omit({

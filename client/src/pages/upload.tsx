@@ -141,7 +141,12 @@ export default function Upload() {
     overallGridProfitUsdt: '',
     overallGridProfitPercent: '',
     leverage: '',
+    notes: '', // Notizen (wird NICHT an AI gesendet)
   });
+  
+  // Notizen-Section State
+  const [notesEditMode, setNotesEditMode] = useState(true); // Startet im Edit-Modus
+  const [savedNotes, setSavedNotes] = useState(''); // Gespeicherte Notizen für Cancel
 
   const [investmentTimeRange, setInvestmentTimeRange] = useState("Neu");
   const [profitTimeRange, setProfitTimeRange] = useState("Neu");
@@ -334,6 +339,9 @@ export default function Upload() {
         avgGridProfitHour: formData.avgGridProfitHour || null,
         avgGridProfitDay: formData.avgGridProfitDay || null,
         avgGridProfitWeek: formData.avgGridProfitWeek || null,
+        
+        // Notizen Section (keine Modi, wird NICHT an AI gesendet)
+        notes: formData.notes || null,
       };
 
       return await apiRequest('POST', `/api/bot-types/${selectedBotTypeId}/updates`, updateData);
@@ -371,7 +379,11 @@ export default function Upload() {
         overallGridProfitUsdt: '',
         overallGridProfitPercent: '',
         leverage: '',
+        notes: '',
       }));
+      // Reset Notizen-State
+      setNotesEditMode(true);
+      setSavedNotes('');
       
       // Reset Modi und Prozentbasen
       setInvestmentTimeRange("Neu");
@@ -1728,6 +1740,71 @@ export default function Upload() {
                 </div>
                   </>
                 )}
+
+                {/* Notizen Section - keine Modi, wird NICHT an AI gesendet */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-sm">Notizen</h3>
+                    <div className="flex gap-2">
+                      {notesEditMode ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, notes: savedNotes }));
+                              setNotesEditMode(false);
+                            }}
+                            disabled={savedNotes === ''}
+                            data-testid="button-notes-cancel"
+                          >
+                            Abbrechen
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setSavedNotes(formData.notes);
+                              setNotesEditMode(false);
+                            }}
+                            data-testid="button-notes-save"
+                          >
+                            Speichern
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setNotesEditMode(true)}
+                          data-testid="button-notes-edit"
+                        >
+                          Bearbeiten
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {notesEditMode ? (
+                    <Textarea
+                      id="notes"
+                      placeholder="Notizen zum Update hinzufuegen..."
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      className="min-h-[100px] resize-y"
+                      data-testid="input-notes"
+                    />
+                  ) : (
+                    <div className="text-sm text-foreground whitespace-pre-wrap min-h-[50px] p-2 rounded bg-background">
+                      {formData.notes || <span className="text-muted-foreground italic">Keine Notizen vorhanden</span>}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Notizen werden mit dem Update gespeichert, aber nicht an die AI gesendet.
+                  </p>
+                </div>
 
                 <div className="flex gap-4">
                   <Button 

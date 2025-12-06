@@ -832,6 +832,19 @@ export default function BotTypesPage() {
                         <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitWeek)}</p>
                       </div>
                     </div>
+                    
+                    {/* Notizen Section */}
+                    {selectedUpdate.notes && (
+                      <>
+                        <Separator />
+                        <div className="text-sm">
+                          <p className="text-muted-foreground mb-2 font-medium">Notizen</p>
+                          <div className="whitespace-pre-wrap bg-muted/30 p-3 rounded-md">
+                            {selectedUpdate.notes}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
