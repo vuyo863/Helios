@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState } from "react";
@@ -88,6 +88,11 @@ export default function BotTypesPage() {
   const [botTypeToDelete, setBotTypeToDelete] = useState<BotType | null>(null);
   const [updateDetailDialogOpen, setUpdateDetailDialogOpen] = useState(false);
   const [selectedUpdate, setSelectedUpdate] = useState<BotTypeUpdate | null>(null);
+  
+  // Notizen-Dialog State
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [notesUpdate, setNotesUpdate] = useState<BotTypeUpdate | null>(null);
+  const [editingNotes, setEditingNotes] = useState('');
 
   const { toast } = useToast();
 
@@ -145,6 +150,47 @@ export default function BotTypesPage() {
   const handleViewClick = (botType: BotType) => {
     setSelectedBotType(botType);
     setViewDialogOpen(true);
+  };
+  
+  // Notizen bearbeiten
+  const handleNotesClick = (update: BotTypeUpdate) => {
+    setNotesUpdate(update);
+    setEditingNotes(update.notes || '');
+    setNotesDialogOpen(true);
+  };
+  
+  const updateNotesMutation = useMutation({
+    mutationFn: async (data: { updateId: string; notes: string }) => {
+      return await apiRequest('PATCH', `/api/bot-type-updates/${data.updateId}/notes`, {
+        notes: data.notes
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotType?.id, 'updates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-type-updates'] });
+      setNotesDialogOpen(false);
+      setNotesUpdate(null);
+      toast({
+        title: "Notizen gespeichert",
+        description: "Die Notizen wurden erfolgreich aktualisiert.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Die Notizen konnten nicht gespeichert werden.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const handleNotesSave = () => {
+    if (notesUpdate) {
+      updateNotesMutation.mutate({
+        updateId: notesUpdate.id,
+        notes: editingNotes
+      });
+    }
   };
 
   const deleteBotTypeMutation = useMutation({
@@ -623,6 +669,16 @@ export default function BotTypesPage() {
                                   size="icon" 
                                   variant="ghost"
                                   className="w-8 h-8"
+                                  onClick={() => handleNotesClick(update)}
+                                  data-testid={`button-notes-update-${update.id}`}
+                                  title="Notizen bearbeiten"
+                                >
+                                  <MessageCircle className={`w-4 h-4 ${update.notes ? 'text-primary' : ''}`} />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost"
+                                  className="w-8 h-8"
                                   onClick={() => {
                                     setSelectedUpdate(update);
                                     setUpdateDetailDialogOpen(true);
@@ -853,6 +909,43 @@ export default function BotTypesPage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+        
+        {/* Notizen bearbeiten Dialog */}
+        <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-primary" />
+                Notizen - {notesUpdate?.status} #{notesUpdate?.version}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Textarea
+                value={editingNotes}
+                onChange={(e) => setEditingNotes(e.target.value)}
+                placeholder="Notizen hinzufuegen..."
+                className="min-h-[150px] resize-y"
+                data-testid="textarea-edit-notes"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setNotesDialogOpen(false)}
+                  data-testid="button-notes-dialog-cancel"
+                >
+                  Abbrechen
+                </Button>
+                <Button 
+                  onClick={handleNotesSave}
+                  disabled={updateNotesMutation.isPending}
+                  data-testid="button-notes-dialog-save"
+                >
+                  {updateNotesMutation.isPending ? 'Speichern...' : 'Speichern'}
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

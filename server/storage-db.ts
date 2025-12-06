@@ -155,6 +155,15 @@ export class DbStorage implements IStorage {
     const result = await db.delete(botTypeUpdates).where(eq(botTypeUpdates.id, id)).returning();
     return result.length > 0;
   }
+  
+  async updateBotTypeUpdateNotes(updateId: string, notes: string): Promise<BotTypeUpdate | undefined> {
+    const result = await db
+      .update(botTypeUpdates)
+      .set({ notes })
+      .where(eq(botTypeUpdates.id, updateId))
+      .returning();
+    return result[0];
+  }
 }
 
 export const dbStorage = new DbStorage();

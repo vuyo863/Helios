@@ -27,6 +27,7 @@ export interface IStorage {
   getLatestBotTypeUpdate(botTypeId: string): Promise<BotTypeUpdate | undefined>;
   createBotTypeUpdate(update: InsertBotTypeUpdate): Promise<BotTypeUpdate>;
   deleteBotTypeUpdate(id: string): Promise<boolean>;
+  updateBotTypeUpdateNotes(updateId: string, notes: string): Promise<BotTypeUpdate | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -461,6 +462,10 @@ export class MemStorage implements IStorage {
 
   async deleteBotTypeUpdate(id: string): Promise<boolean> {
     return false;
+  }
+  
+  async updateBotTypeUpdateNotes(updateId: string, notes: string): Promise<BotTypeUpdate | undefined> {
+    return undefined;
   }
 }
 

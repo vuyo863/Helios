@@ -1178,6 +1178,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create update" });
     }
   });
+  
+  // Update notes for a specific bot type update
+  app.patch("/api/bot-type-updates/:updateId/notes", async (req, res) => {
+    try {
+      const { notes } = req.body;
+      if (typeof notes !== 'string') {
+        return res.status(400).json({ error: "notes must be a string" });
+      }
+      const updated = await storage.updateBotTypeUpdateNotes(req.params.updateId, notes);
+      if (!updated) {
+        return res.status(404).json({ error: "Update not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update notes" });
+    }
+  });
 
   app.get("/api/entries", async (req, res) => {
     try {
