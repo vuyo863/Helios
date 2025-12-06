@@ -132,6 +132,8 @@ export default function Upload() {
     longestRuntime: '',
     avgRuntime: '',
     uploadRuntime: '',
+    lastUpload: '',
+    thisUpload: '',
     avgGridProfitHour: '',
     avgGridProfitDay: '',
     avgGridProfitWeek: '',
@@ -384,6 +386,8 @@ export default function Upload() {
         longestRuntime: '',
         avgRuntime: '',
         uploadRuntime: '',
+        lastUpload: '',
+        thisUpload: '',
         avgGridProfitHour: '',
         avgGridProfitDay: '',
         avgGridProfitWeek: '',
@@ -746,6 +750,8 @@ export default function Upload() {
       longestRuntime: '',
       avgRuntime: '',
       uploadRuntime: '',
+      lastUpload: '',
+      thisUpload: '',
       avgGridProfitHour: '',
       avgGridProfitDay: '',
       avgGridProfitWeek: '',
@@ -1425,8 +1431,10 @@ export default function Upload() {
                       />
                     </div>
 
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <Label htmlFor="avgRuntime" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Durchschnittliche Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Label htmlFor="avgRuntime" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Durchschn. Laufzeit</Label>
                       <Input
                         id="avgRuntime"
                         type="text"
@@ -1448,6 +1456,32 @@ export default function Upload() {
                         onChange={(e) => setFormData({ ...formData, uploadRuntime: e.target.value })}
                         disabled={!phaseTwoVerified}
                         data-testid="input-upload-runtime"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="lastUpload" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Last Upload</Label>
+                      <Input
+                        id="lastUpload"
+                        type="text"
+                        placeholder="TT.MM.JJJJ HH:MM"
+                        value={formData.lastUpload}
+                        onChange={(e) => setFormData({ ...formData, lastUpload: e.target.value })}
+                        disabled={!phaseTwoVerified}
+                        data-testid="input-last-upload"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="thisUpload" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>This Upload</Label>
+                      <Input
+                        id="thisUpload"
+                        type="text"
+                        placeholder="TT.MM.JJJJ HH:MM"
+                        value={formData.thisUpload}
+                        onChange={(e) => setFormData({ ...formData, thisUpload: e.target.value })}
+                        disabled={!phaseTwoVerified}
+                        data-testid="input-this-upload"
                       />
                     </div>
                   </div>
