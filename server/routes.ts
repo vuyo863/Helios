@@ -705,6 +705,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       contextualPrompt += `\n\n**SCREENSHOT-DATEN (aus Phase 2):**\n${screenshotData}\n\n`;
       contextualPrompt += `**MODI-EINSTELLUNGEN:**\n`;
       contextualPrompt += `- Alle Sektionen: NEU Modus (berechne aktuelle Gesamtwerte)\n\n`;
+      
+      // Datum-Logik: Nur bei Startmetrik berechnen, sonst null lassen
+      contextualPrompt += `**STARTMETRIK-FLAG:** ${isStartMetric ? 'JA' : 'NEIN'}\n\n`;
+      if (isStartMetric) {
+        contextualPrompt += `**DATUM-LOGIK (STARTMETRIK):**\n`;
+        contextualPrompt += `- Dies ist der ERSTE Upload (Startmetrik)\n`;
+        contextualPrompt += `- Berechne das Datum: Aktuelles Datum MINUS längste Runtime\n`;
+        contextualPrompt += `- Format: "YYYY-MM-DDTHH:MM"\n\n`;
+      } else {
+        contextualPrompt += `**DATUM-LOGIK (NORMALER UPLOAD):**\n`;
+        contextualPrompt += `- Dies ist ein UPDATE (nicht Startmetrik)\n`;
+        contextualPrompt += `- Setze date auf null - das Frontend wird das aktuelle Datum verwenden\n\n`;
+      }
+      
       contextualPrompt += `**AUFGABE:**\n`;
       contextualPrompt += `- Summiere ALLE Screenshots für jeden Wert\n`;
       contextualPrompt += `- Berechne Prozentsätze mit beiden Basen (Gesamtinvestment + Investitionsmenge)\n`;
@@ -763,6 +777,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             error: "AI-Output entspricht nicht dem erwarteten Schema",
             details: validationResult.error.errors
           });
+        }
+        
+        // DATUM-LOGIK (Server-seitig):
+        // - Bei Startmetrik: KI berechnet das Datum (ältestes Startdatum basierend auf Runtime)
+        // - Bei normalem Upload: Datum auf null setzen - Frontend verwendet aktuelles Echtzeit-Datum
+        if (!isStartMetric) {
+          calculatedValues.date = null;
         }
         
         // STRATEGIE: Server berechnet VERGLEICH Differenzen
