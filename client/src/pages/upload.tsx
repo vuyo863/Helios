@@ -1002,16 +1002,19 @@ export default function Upload() {
         // Bei Startmetrik: AI-Datum verwenden, sonst aktuelles Datum
         const dateValue = isStartMetric ? toStr(calculatedValues.date) : currentDateTime;
         
-        // Upload Laufzeit berechnen: This Upload - Last Upload
+        // Upload Laufzeit berechnen:
+        // - Bei Startmetrik: Jetzt - Datum und Uhrzeit (= längste Bot-Laufzeit)
+        // - Bei normalem Upload: Jetzt - Last Upload
         let uploadRuntimeValue = '';
-        if (lastUploadDateTime) {
-          const diffMs = now.getTime() - lastUploadDateTime.getTime();
+        
+        // Funktion zur Berechnung der Laufzeit-Differenz
+        const calculateRuntimeDiff = (startDate: Date) => {
+          const diffMs = now.getTime() - startDate.getTime();
           const diffMinutes = Math.floor(diffMs / (1000 * 60));
           const diffHours = Math.floor(diffMinutes / 60);
           const diffDays = Math.floor(diffHours / 24);
           const diffWeeks = Math.floor(diffDays / 7);
           
-          // Format: Xw Xd Xh Xm
           const weeks = diffWeeks;
           const days = diffDays % 7;
           const hours = diffHours % 24;
@@ -1023,7 +1026,18 @@ export default function Upload() {
           if (hours > 0) parts.push(`${hours}h`);
           if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
           
-          uploadRuntimeValue = parts.join(' ');
+          return parts.join(' ');
+        };
+        
+        if (isStartMetric && calculatedValues.date) {
+          // Bei Startmetrik: Upload Laufzeit = Jetzt - Datum und Uhrzeit (AI-berechnetes Startdatum)
+          const aiDate = new Date(calculatedValues.date);
+          if (!isNaN(aiDate.getTime())) {
+            uploadRuntimeValue = calculateRuntimeDiff(aiDate);
+          }
+        } else if (lastUploadDateTime) {
+          // Bei normalem Upload: Upload Laufzeit = Jetzt - Last Upload
+          uploadRuntimeValue = calculateRuntimeDiff(lastUploadDateTime);
         }
         
         setFormData(prev => ({
