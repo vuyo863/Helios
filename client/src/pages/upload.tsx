@@ -1933,55 +1933,61 @@ export default function Upload() {
                       <Label>Last Grid Profit Durchschnitt</Label>
                       <div className="grid grid-cols-4 gap-2 mt-2">
                         <div 
-                          className={`relative cursor-pointer rounded-md transition-all ${selectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''}`}
+                          className="relative cursor-pointer"
                           onClick={() => setSelectedChangeTimeframe('hour')}
                         >
                           <Label htmlFor="lastAvgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
-                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitHour)}</span>
-                          <Input
-                            id="lastAvgGridProfitHour"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className={`bg-muted/50 cursor-pointer ${getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
-                            value={formData.lastAvgGridProfitHour}
-                            readOnly
-                            data-testid="input-last-avg-grid-profit-hour"
-                          />
+                          <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitHour)}</span>
+                            <Input
+                              id="lastAvgGridProfitHour"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
+                              value={formData.lastAvgGridProfitHour}
+                              readOnly
+                              data-testid="input-last-avg-grid-profit-hour"
+                            />
+                          </div>
                         </div>
                         <div 
-                          className={`relative cursor-pointer rounded-md transition-all ${selectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''}`}
+                          className="relative cursor-pointer"
                           onClick={() => setSelectedChangeTimeframe('day')}
                         >
                           <Label htmlFor="lastAvgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
-                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
-                          <Input
-                            id="lastAvgGridProfitDay"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className={`bg-muted/50 cursor-pointer ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
-                            value={formData.lastAvgGridProfitDay}
-                            readOnly
-                            data-testid="input-last-avg-grid-profit-day"
-                          />
+                          <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
+                            <Input
+                              id="lastAvgGridProfitDay"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
+                              value={formData.lastAvgGridProfitDay}
+                              readOnly
+                              data-testid="input-last-avg-grid-profit-day"
+                            />
+                          </div>
                         </div>
                         <div 
-                          className={`relative cursor-pointer rounded-md transition-all ${selectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''}`}
+                          className="relative cursor-pointer"
                           onClick={() => setSelectedChangeTimeframe('week')}
                         >
                           <Label htmlFor="lastAvgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
-                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitWeek)}</span>
-                          <Input
-                            id="lastAvgGridProfitWeek"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className={`bg-muted/50 cursor-pointer ${getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
-                            value={formData.lastAvgGridProfitWeek}
-                            readOnly
-                            data-testid="input-last-avg-grid-profit-week"
-                          />
+                          <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitWeek)}</span>
+                            <Input
+                              id="lastAvgGridProfitWeek"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
+                              value={formData.lastAvgGridProfitWeek}
+                              readOnly
+                              data-testid="input-last-avg-grid-profit-week"
+                            />
+                          </div>
                         </div>
                         <div className="relative">
                           <Label htmlFor="changeDisplay" className="text-xs text-muted-foreground">Change</Label>
