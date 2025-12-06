@@ -1719,7 +1719,7 @@ export default function Upload() {
                           />
                         </div>
                         <div className="relative">
-                          <Label htmlFor="lastAvgGridProfitChained" className="text-xs text-muted-foreground">Chained</Label>
+                          <Label htmlFor="lastAvgGridProfitChained" className="text-xs text-muted-foreground">Change</Label>
                           <div className="flex gap-1">
                             <Input
                               id="lastAvgGridProfitChained"
