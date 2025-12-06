@@ -1569,13 +1569,13 @@ export default function Upload() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                       <Label htmlFor="overallTrendPnlUsdt">Trend P&L (USDT)</Label>
-                      <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">$ {getSignPrefix(formData.overallTrendPnlUsdt)}</span>
+                      <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.overallTrendPnlUsdt)}</span>
                       <Input
                         id="overallTrendPnlUsdt"
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        className={getSignPrefix(formData.overallTrendPnlUsdt) ? "pl-10" : "pl-7"}
+                        className={getSignPrefix(formData.overallTrendPnlUsdt) ? "pl-6" : ""}
                         value={formData.overallTrendPnlUsdt}
                         onChange={(e) => setFormData({ ...formData, overallTrendPnlUsdt: e.target.value })}
                         data-testid="input-overall-trend-pnl-usdt"
@@ -1757,13 +1757,13 @@ export default function Upload() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <Label htmlFor="overallGridProfitUsdt">Gesamter Grid Profit (USDT)</Label>
-                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">$ {getSignPrefix(formData.overallGridProfitUsdt)}</span>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.overallGridProfitUsdt)}</span>
                         <Input
                           id="overallGridProfitUsdt"
                           type="number"
                           step="0.01"
                           placeholder="0.00"
-                          className={getSignPrefix(formData.overallGridProfitUsdt) ? "pl-10" : "pl-7"}
+                          className={getSignPrefix(formData.overallGridProfitUsdt) ? "pl-6" : ""}
                           value={formData.overallGridProfitUsdt}
                           onChange={(e) => setFormData({ ...formData, overallGridProfitUsdt: e.target.value })}
                           data-testid="input-overall-grid-profit-usdt"
