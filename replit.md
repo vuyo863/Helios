@@ -128,3 +128,24 @@ Preferred communication style: Simple, everyday language.
 - test-ai-debug-vergleich.js: VERGLEICH mode testing
 - test-ai-2-uploads-quick.js: Quick NEU + VERGLEICH validation
 - All tests passing with SERVER-calculated VERGLEICH values
+
+## Recent Updates (December 6, 2025)
+
+**Upload Timing Fields Implementation:**
+- Added new fields: `uploadRuntime`, `lastUpload`, `thisUpload` to bot_type_updates schema
+- Upload Laufzeit: Calculates time difference between Last Upload and This Upload
+- Last Upload: Shows previous upload date/time (empty for Startmetrik)
+- This Upload: Always shows current real-time date
+
+**Date Logic Fix (Server + Frontend):**
+- **Startmetrik**: AI calculates the date (current date minus longest runtime from screenshots)
+- **Normal Uploads**: Server sets `date = null`, Frontend uses current real-time date
+- Server-side enforcement ensures consistent date handling regardless of AI response
+
+**Bot Types Page Enhancements:**
+- Update history modal now displays upload timing fields
+- Format: "From [Last Upload] Until [This Upload]" with Upload Laufzeit
+
+**Database Schema:**
+- All upload timing fields are nullable (text type)
+- Compatible with existing data
