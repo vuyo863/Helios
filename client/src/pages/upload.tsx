@@ -855,6 +855,7 @@ export default function Upload() {
 
       let previousUploadData = null;
       let lastUploadDate = '';
+      let lastUploadDateTime: Date | null = null; // Für Upload Laufzeit Berechnung
       
       if (!isStartMetric && selectedBotTypeId) {
         try {
@@ -866,9 +867,11 @@ export default function Upload() {
               // Speichere das Datum des letzten Uploads für das "Last Upload" Feld
               if (lastUpdate.date) {
                 const d = new Date(lastUpdate.date);
+                lastUploadDateTime = d;
                 lastUploadDate = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
               } else if (lastUpdate.createdAt) {
                 const d = new Date(lastUpdate.createdAt);
+                lastUploadDateTime = d;
                 lastUploadDate = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
               }
               previousUploadData = JSON.stringify({
@@ -969,12 +972,37 @@ export default function Upload() {
         // - Startmetrik: AI liefert das früheste Bot-Startdatum aus Screenshots
         // - Normale Uploads: Aktuelles Echtzeit-Datum des Uploads
         // - thisUpload: Immer aktuelles Echtzeit-Datum
+        // - uploadRuntime: Zeitdifferenz zwischen Last Upload und This Upload
         const now = new Date();
         const currentDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM für datetime-local
         const currentDateTimeDisplay = now.toLocaleDateString('de-DE') + ' ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         
         // Bei Startmetrik: AI-Datum verwenden, sonst aktuelles Datum
         const dateValue = isStartMetric ? toStr(calculatedValues.date) : currentDateTime;
+        
+        // Upload Laufzeit berechnen: This Upload - Last Upload
+        let uploadRuntimeValue = '';
+        if (lastUploadDateTime) {
+          const diffMs = now.getTime() - lastUploadDateTime.getTime();
+          const diffMinutes = Math.floor(diffMs / (1000 * 60));
+          const diffHours = Math.floor(diffMinutes / 60);
+          const diffDays = Math.floor(diffHours / 24);
+          const diffWeeks = Math.floor(diffDays / 7);
+          
+          // Format: Xw Xd Xh Xm
+          const weeks = diffWeeks;
+          const days = diffDays % 7;
+          const hours = diffHours % 24;
+          const minutes = diffMinutes % 60;
+          
+          const parts = [];
+          if (weeks > 0) parts.push(`${weeks}w`);
+          if (days > 0) parts.push(`${days}d`);
+          if (hours > 0) parts.push(`${hours}h`);
+          if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+          
+          uploadRuntimeValue = parts.join(' ');
+        }
         
         setFormData(prev => ({
           ...prev,
@@ -983,6 +1011,7 @@ export default function Upload() {
           leverage: toStr(calculatedValues.leverage),
           longestRuntime: toStr(calculatedValues.longestRuntime),
           avgRuntime: toStr(calculatedValues.avgRuntime),
+          uploadRuntime: uploadRuntimeValue, // Upload Laufzeit = Differenz zwischen Last Upload und This Upload
           thisUpload: currentDateTimeDisplay, // This Upload = immer aktuelles Datum
           lastUpload: lastUploadDate, // Last Upload = Datum des letzten Uploads (leer bei Startmetrik)
           investment: toStr(calculatedValues.investment),
