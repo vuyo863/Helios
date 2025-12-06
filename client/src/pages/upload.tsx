@@ -369,6 +369,9 @@ export default function Upload() {
       if (selectedBotTypeId) {
         queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotTypeId, 'updates'] });
       }
+      // Auto-refresh Bot Types page data
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-type-updates'] });
       toast({
         title: "Erfolgreich gespeichert",
         description: "Das Update wurde erfolgreich gespeichert.",
