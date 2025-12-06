@@ -150,6 +150,7 @@ export default function Upload() {
     overallGridProfitUsdt: '',
     overallGridProfitPercent: '',
     avgGridProfitPercent: '',
+    avgGridProfitChange: '',
     leverage: '',
     notes: '', // Notizen (wird NICHT an AI gesendet)
   });
@@ -177,6 +178,7 @@ export default function Upload() {
   const [gridProfitPercentBase, setGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [highestGridProfitPercentBase, setHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [avgGridProfitPercentBase, setAvgGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge' | 'vergleich'>('gesamtinvestment');
+  const [avgGridProfitChangeUnit, setAvgGridProfitChangeUnit] = useState<'%' | '$'>('%');
   const [chainedUnit, setChainedUnit] = useState<'%' | '$'>('%');
 
   // AI-berechnete Prozentwerte speichern (für Umschaltung zwischen Gesamtinvestment/Investitionsmenge)
@@ -778,6 +780,7 @@ export default function Upload() {
       overallGridProfitUsdt: '',
       overallGridProfitPercent: '',
       avgGridProfitPercent: '',
+      avgGridProfitChange: '',
       leverage: '',
       notes: '',
     });
@@ -1978,6 +1981,43 @@ export default function Upload() {
                           readOnly
                           data-testid="input-last-upload-avg-grid-profit"
                         />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="avgGridProfitChange">Change</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitChange)}</span>
+                            <Input
+                              id="avgGridProfitChange"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={`bg-muted/50 ${getSignPrefix(formData.avgGridProfitChange) ? "pl-6" : ""}`}
+                              value={formData.avgGridProfitChange || ''}
+                              readOnly
+                              data-testid="input-avg-grid-profit-change"
+                            />
+                          </div>
+                          <div className="flex border rounded-md overflow-hidden">
+                            <button
+                              type="button"
+                              className={`px-3 py-2 text-sm font-medium transition-colors ${avgGridProfitChangeUnit === '%' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+                              onClick={() => setAvgGridProfitChangeUnit('%')}
+                              data-testid="button-change-unit-percent"
+                            >
+                              %
+                            </button>
+                            <button
+                              type="button"
+                              className={`px-3 py-2 text-sm font-medium transition-colors ${avgGridProfitChangeUnit === '$' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+                              onClick={() => setAvgGridProfitChangeUnit('$')}
+                              data-testid="button-change-unit-dollar"
+                            >
+                              $
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
