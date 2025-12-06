@@ -1046,8 +1046,8 @@ export default function Upload() {
         const dateValue = isStartMetric ? toStr(calculatedValues.date) : currentDateTime;
         
         // Upload Laufzeit berechnen:
-        // - Bei Startmetrik: Jetzt - Datum und Uhrzeit (= längste Bot-Laufzeit)
-        // - Bei normalem Upload: Jetzt - Last Upload
+        // - Bei Startmetrik: LEER (kein vorheriger Upload zum Vergleichen)
+        // - Bei normalem Upload: This Upload - Last Upload
         let uploadRuntimeValue = '';
         
         // Funktion zur Berechnung der Laufzeit-Differenz
@@ -1072,20 +1072,38 @@ export default function Upload() {
           return parts.join(' ');
         };
         
-        // Variable für Upload-Laufzeit in Stunden (für Grid Profit Durchschnitt Berechnung)
-        let uploadRuntimeHours = 0;
+        // Variable für Grid Profit Durchschnitt Berechnung (in Stunden)
+        // - Bei Startmetrik: Längste Laufzeit aus Screenshots verwenden
+        // - Bei normalem Upload: Upload Laufzeit (This Upload - Last Upload) verwenden
+        let runtimeHoursForGridProfit = 0;
         
-        if (isStartMetric && calculatedValues.date) {
-          // Bei Startmetrik: Upload Laufzeit = Jetzt - Datum und Uhrzeit (AI-berechnetes Startdatum)
-          const aiDate = new Date(calculatedValues.date);
-          if (!isNaN(aiDate.getTime())) {
-            uploadRuntimeValue = calculateRuntimeDiff(aiDate);
-            uploadRuntimeHours = (now.getTime() - aiDate.getTime()) / (1000 * 60 * 60);
-          }
+        // Parse die längste Laufzeit aus dem AI-Ergebnis für Startmetrik
+        const parseLongestRuntime = (runtime: string): number => {
+          if (!runtime) return 0;
+          // Format: "4h 46m 6s" oder "1d 2h 30m" oder "16h 28m"
+          let totalHours = 0;
+          const dayMatch = runtime.match(/(\d+)d/);
+          const hourMatch = runtime.match(/(\d+)h/);
+          const minMatch = runtime.match(/(\d+)m/);
+          const secMatch = runtime.match(/(\d+)s/);
+          
+          if (dayMatch) totalHours += parseInt(dayMatch[1]) * 24;
+          if (hourMatch) totalHours += parseInt(hourMatch[1]);
+          if (minMatch) totalHours += parseInt(minMatch[1]) / 60;
+          if (secMatch) totalHours += parseInt(secMatch[1]) / 3600;
+          
+          return totalHours;
+        };
+        
+        if (isStartMetric) {
+          // Bei Startmetrik: Upload Laufzeit bleibt LEER (kein Last Upload)
+          // Für Grid Profit Durchschnitt: Längste Laufzeit aus Screenshots verwenden
+          const longestRuntimeStr = toStr(calculatedValues.longestRuntime);
+          runtimeHoursForGridProfit = parseLongestRuntime(longestRuntimeStr);
         } else if (lastUploadDateTime) {
-          // Bei normalem Upload: Upload Laufzeit = Jetzt - Last Upload
+          // Bei normalem Upload: Upload Laufzeit = This Upload - Last Upload
           uploadRuntimeValue = calculateRuntimeDiff(lastUploadDateTime);
-          uploadRuntimeHours = (now.getTime() - lastUploadDateTime.getTime()) / (1000 * 60 * 60);
+          runtimeHoursForGridProfit = (now.getTime() - lastUploadDateTime.getTime()) / (1000 * 60 * 60);
         }
         
         // Grid Profit Durchschnitt berechnen (Frontend-Berechnung, NICHT von Modi beeinflusst)
@@ -1096,8 +1114,8 @@ export default function Upload() {
         
         const overallGridProfitValue = parseFloat(toStr(calculatedValues.overallGridProfitUsdt)) || 0;
         
-        if (uploadRuntimeHours > 0 && overallGridProfitValue !== 0) {
-          const perHour = overallGridProfitValue / uploadRuntimeHours;
+        if (runtimeHoursForGridProfit > 0 && overallGridProfitValue !== 0) {
+          const perHour = overallGridProfitValue / runtimeHoursForGridProfit;
           const perDay = perHour * 24;
           const perWeek = perHour * 168; // 24 * 7
           
