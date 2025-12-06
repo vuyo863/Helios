@@ -910,30 +910,30 @@ export default function BotTypesPage() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground mb-1">Grid Profit (USDT)</p>
+                        <p className="text-muted-foreground mb-1">Gesamter Grid Profit (USDT)</p>
                         <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitUsdt)}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground mb-1">Grid Profit (%) - Gesamtinvestment</p>
+                        <p className="text-muted-foreground mb-1">Gesamter Grid Profit (%) - Gesamtinvestment</p>
                         <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitPercent_gesamtinvestment, '%')}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground mb-1">Grid Profit (%) - Investitionsmenge</p>
+                        <p className="text-muted-foreground mb-1">Gesamter Grid Profit (%) - Investitionsmenge</p>
                         <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitPercent_investitionsmenge, '%')}</p>
                       </div>
                     </div>
                     <Separator />
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground mb-1">Höchster Grid Profit (USDT)</p>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit (USDT)</p>
                         <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfit)}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground mb-1">Höchster Grid Profit (%) - Gesamtinvestment</p>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Gesamtinvestment</p>
                         <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfitPercent_gesamtinvestment, '%')}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground mb-1">Höchster Grid Profit (%) - Investitionsmenge</p>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Investitionsmenge</p>
                         <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfitPercent_investitionsmenge, '%')}</p>
                       </div>
                     </div>
