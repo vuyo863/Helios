@@ -131,6 +131,7 @@ export default function Upload() {
     periodType: 'Tag',
     longestRuntime: '',
     avgRuntime: '',
+    uploadRuntime: '',
     avgGridProfitHour: '',
     avgGridProfitDay: '',
     avgGridProfitWeek: '',
@@ -382,6 +383,7 @@ export default function Upload() {
         periodType: 'Tag',
         longestRuntime: '',
         avgRuntime: '',
+        uploadRuntime: '',
         avgGridProfitHour: '',
         avgGridProfitDay: '',
         avgGridProfitWeek: '',
@@ -743,6 +745,7 @@ export default function Upload() {
       periodType: 'Tag',
       longestRuntime: '',
       avgRuntime: '',
+      uploadRuntime: '',
       avgGridProfitHour: '',
       avgGridProfitDay: '',
       avgGridProfitWeek: '',
@@ -1432,6 +1435,19 @@ export default function Upload() {
                         onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
                         disabled={!phaseTwoVerified}
                         data-testid="input-avg-runtime"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="uploadRuntime" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Upload Laufzeit</Label>
+                      <Input
+                        id="uploadRuntime"
+                        type="text"
+                        placeholder="z.B. 1d 3h 15s"
+                        value={formData.uploadRuntime}
+                        onChange={(e) => setFormData({ ...formData, uploadRuntime: e.target.value })}
+                        disabled={!phaseTwoVerified}
+                        data-testid="input-upload-runtime"
                       />
                     </div>
                   </div>
