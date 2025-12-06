@@ -740,6 +740,7 @@ export default function Upload() {
       overallGridProfitUsdt: '',
       overallGridProfitPercent: '',
       leverage: '',
+      notes: '',
     });
     toast({
       title: "Bot-Typ geladen",
@@ -903,26 +904,18 @@ export default function Upload() {
           return String(val);
         };
         
-        // Hilfsfunktion: Konvertiere mit Vorzeichen (+ bei positiv, - bei negativ)
-        // NICHT für Investment/Mengenangaben verwenden!
-        const toStrWithSign = (val: any): string => {
-          if (val === null || val === undefined || val === '') return '';
-          const numVal = typeof val === 'string' ? parseFloat(val) : val;
-          if (isNaN(numVal)) return '';
-          if (numVal > 0) return `+${numVal}`;
-          return String(numVal);
-        };
-        
-        // SPEICHERE alle berechneten Prozentwerte für späteren Umschalt-Zugriff (mit Vorzeichen)
+        // SPEICHERE alle berechneten Prozentwerte für späteren Umschalt-Zugriff
+        // WICHTIG: Formularfelder (type="number") akzeptieren kein "+" Zeichen!
+        // Daher nur den numerischen Wert speichern, das "+" wird bei der Anzeige hinzugefügt
         setCalculatedPercents({
-          profitPercent_gesamtinvestment: toStrWithSign(calculatedValues.profitPercent_gesamtinvestment),
-          profitPercent_investitionsmenge: toStrWithSign(calculatedValues.profitPercent_investitionsmenge),
-          overallTrendPnlPercent_gesamtinvestment: toStrWithSign(calculatedValues.overallTrendPnlPercent_gesamtinvestment),
-          overallTrendPnlPercent_investitionsmenge: toStrWithSign(calculatedValues.overallTrendPnlPercent_investitionsmenge),
-          overallGridProfitPercent_gesamtinvestment: toStrWithSign(calculatedValues.overallGridProfitPercent_gesamtinvestment),
-          overallGridProfitPercent_investitionsmenge: toStrWithSign(calculatedValues.overallGridProfitPercent_investitionsmenge),
-          highestGridProfitPercent_gesamtinvestment: toStrWithSign(calculatedValues.highestGridProfitPercent_gesamtinvestment),
-          highestGridProfitPercent_investitionsmenge: toStrWithSign(calculatedValues.highestGridProfitPercent_investitionsmenge),
+          profitPercent_gesamtinvestment: toStr(calculatedValues.profitPercent_gesamtinvestment),
+          profitPercent_investitionsmenge: toStr(calculatedValues.profitPercent_investitionsmenge),
+          overallTrendPnlPercent_gesamtinvestment: toStr(calculatedValues.overallTrendPnlPercent_gesamtinvestment),
+          overallTrendPnlPercent_investitionsmenge: toStr(calculatedValues.overallTrendPnlPercent_investitionsmenge),
+          overallGridProfitPercent_gesamtinvestment: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment),
+          overallGridProfitPercent_investitionsmenge: toStr(calculatedValues.overallGridProfitPercent_investitionsmenge),
+          highestGridProfitPercent_gesamtinvestment: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment),
+          highestGridProfitPercent_investitionsmenge: toStr(calculatedValues.highestGridProfitPercent_investitionsmenge),
         });
         
         // DEBUG: Log vor dem Setzen
@@ -934,7 +927,8 @@ export default function Upload() {
           overallGridProfitUsdt: toStr(calculatedValues.overallGridProfitUsdt),
         });
         
-        // Setze Formularwerte - mit Vorzeichen für Profit/Prozent, ohne für Investment-Mengen
+        // Setze Formularwerte - OHNE "+" Vorzeichen (type="number" akzeptiert es nicht)
+        // Das "+" Vorzeichen wird nur bei der Anzeige in Reports hinzugefügt
         setFormData(prev => ({
           ...prev,
           date: toStr(calculatedValues.date),
@@ -942,22 +936,20 @@ export default function Upload() {
           leverage: toStr(calculatedValues.leverage),
           longestRuntime: toStr(calculatedValues.longestRuntime),
           avgRuntime: toStr(calculatedValues.avgRuntime),
-          // Investment-Mengen: OHNE Vorzeichen
           investment: toStr(calculatedValues.investment),
           extraMargin: toStr(calculatedValues.extraMargin),
           totalInvestment: toStr(calculatedValues.totalInvestment),
-          // Profit/P&L Werte: MIT Vorzeichen
-          profit: toStrWithSign(calculatedValues.profit),
-          profitPercent: toStrWithSign(calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent),
-          overallTrendPnlUsdt: toStrWithSign(calculatedValues.overallTrendPnlUsdt),
-          overallTrendPnlPercent: toStrWithSign(calculatedValues.overallTrendPnlPercent_gesamtinvestment || calculatedValues.overallTrendPnlPercent),
-          overallGridProfitUsdt: toStrWithSign(calculatedValues.overallGridProfitUsdt),
-          overallGridProfitPercent: toStrWithSign(calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent),
-          highestGridProfit: toStrWithSign(calculatedValues.highestGridProfit),
-          highestGridProfitPercent: toStrWithSign(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
-          avgGridProfitHour: toStrWithSign(calculatedValues.avgGridProfitHour),
-          avgGridProfitDay: toStrWithSign(calculatedValues.avgGridProfitDay),
-          avgGridProfitWeek: toStrWithSign(calculatedValues.avgGridProfitWeek)
+          profit: toStr(calculatedValues.profit),
+          profitPercent: toStr(calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent),
+          overallTrendPnlUsdt: toStr(calculatedValues.overallTrendPnlUsdt),
+          overallTrendPnlPercent: toStr(calculatedValues.overallTrendPnlPercent_gesamtinvestment || calculatedValues.overallTrendPnlPercent),
+          overallGridProfitUsdt: toStr(calculatedValues.overallGridProfitUsdt),
+          overallGridProfitPercent: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent),
+          highestGridProfit: toStr(calculatedValues.highestGridProfit),
+          highestGridProfitPercent: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
+          avgGridProfitHour: toStr(calculatedValues.avgGridProfitHour),
+          avgGridProfitDay: toStr(calculatedValues.avgGridProfitDay),
+          avgGridProfitWeek: toStr(calculatedValues.avgGridProfitWeek)
         }));
         
         console.log('Form data UPDATED successfully');
