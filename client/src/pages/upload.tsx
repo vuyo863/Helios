@@ -149,6 +149,7 @@ export default function Upload() {
     highestGridProfitPercent: '',
     overallGridProfitUsdt: '',
     overallGridProfitPercent: '',
+    avgGridProfitPercent: '',
     leverage: '',
     notes: '', // Notizen (wird NICHT an AI gesendet)
   });
@@ -175,6 +176,7 @@ export default function Upload() {
   const [trendPercentBase, setTrendPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [gridProfitPercentBase, setGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [highestGridProfitPercentBase, setHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [avgGridProfitPercentBase, setAvgGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge' | 'vergleich'>('gesamtinvestment');
   const [chainedUnit, setChainedUnit] = useState<'%' | '$'>('%');
 
   // AI-berechnete Prozentwerte speichern (für Umschaltung zwischen Gesamtinvestment/Investitionsmenge)
@@ -775,6 +777,7 @@ export default function Upload() {
       highestGridProfitPercent: '',
       overallGridProfitUsdt: '',
       overallGridProfitPercent: '',
+      avgGridProfitPercent: '',
       leverage: '',
       notes: '',
     });
@@ -1932,6 +1935,37 @@ export default function Upload() {
                         />
                       </div>
 
+                      <div>
+                        <Label htmlFor="avgGridProfitPercent">Durchschnittlicher Grid Profit (%)</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitPercent)}</span>
+                            <Input
+                              id="avgGridProfitPercent"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={getSignPrefix(formData.avgGridProfitPercent) ? "pl-6" : ""}
+                              value={formData.avgGridProfitPercent || ''}
+                              onChange={(e) => setFormData({ ...formData, avgGridProfitPercent: e.target.value })}
+                              data-testid="input-avg-grid-profit-percent"
+                            />
+                          </div>
+                          <Select value={avgGridProfitPercentBase} onValueChange={(val) => setAvgGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge' | 'vergleich')}>
+                            <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-avg-grid-profit-percent-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
+                              <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
+                              <SelectItem value="vergleich">Vergleich</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Durchschnittlicher Grid Profit)</Label>
                         <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
