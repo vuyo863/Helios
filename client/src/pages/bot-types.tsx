@@ -47,6 +47,22 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
   return totalHours;
 }
 
+// Formatiert Werte mit "+" Präfix bei positiven Zahlen (für USDT und Prozent)
+// NICHT für Mengenangaben wie Investment/Gesamtinvestment verwenden!
+function formatWithSign(value: string | number | null | undefined, suffix: string = ''): string {
+  if (value === null || value === undefined || value === '' || value === '-') {
+    return '-';
+  }
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(numValue)) return '-';
+  
+  const formatted = numValue.toFixed(2);
+  if (numValue > 0) {
+    return `+${formatted}${suffix}`;
+  }
+  return `${formatted}${suffix}`;
+}
+
 export default function BotTypesPage() {
   const { data: botTypes = [], isLoading } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
@@ -348,13 +364,13 @@ export default function BotTypesPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gesamt Profit:</span>
                         <span className="font-medium text-primary" data-testid={`text-total-profit-${botType.id}`}>
-                          {totalGridProfit.toFixed(2)} USDT
+                          {totalGridProfit > 0 ? '+' : ''}{totalGridProfit.toFixed(2)} USDT
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">24h Ø Profit:</span>
                         <span className="font-medium" data-testid={`text-avg-profit-${botType.id}`}>
-                          {avg24hProfit.toFixed(2)} USDT
+                          {avg24hProfit > 0 ? '+' : ''}{avg24hProfit.toFixed(2)} USDT
                         </span>
                       </div>
                     </div>
@@ -489,13 +505,13 @@ export default function BotTypesPage() {
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Gesamt Profit:</span>
                             <span className="font-medium">
-                              {totalProfit.toFixed(2)} USDT
+                              {totalProfit > 0 ? '+' : ''}{totalProfit.toFixed(2)} USDT
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">24h Ø Profit:</span>
                             <span className="font-medium">
-                              {avgProfit.toFixed(2)} USDT
+                              {avgProfit > 0 ? '+' : ''}{avgProfit.toFixed(2)} USDT
                             </span>
                           </div>
                         </div>
@@ -594,7 +610,7 @@ export default function BotTypesPage() {
                                   </span>
                                   <span className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground">Grid Profit:</span>
-                                    <span className="font-medium text-primary">{update.overallGridProfitUsdt || '0.00'} USDT</span>
+                                    <span className="font-medium text-primary">{formatWithSign(update.overallGridProfitUsdt)} USDT</span>
                                   </span>
                                   <span className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground">Ø Laufzeit:</span>
@@ -734,15 +750,15 @@ export default function BotTypesPage() {
                   <CardContent className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground mb-1">Gesamtprofit (USDT)</p>
-                      <p className="font-medium text-primary">{selectedUpdate.profit || '0.00'}</p>
+                      <p className="font-medium text-primary">{formatWithSign(selectedUpdate.profit)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Gesamtinvestment</p>
-                      <p className="font-medium">{selectedUpdate.profitPercent_gesamtinvestment || '0.00'}%</p>
+                      <p className="font-medium">{formatWithSign(selectedUpdate.profitPercent_gesamtinvestment, '%')}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Investitionsmenge</p>
-                      <p className="font-medium">{selectedUpdate.profitPercent_investitionsmenge || '0.00'}%</p>
+                      <p className="font-medium">{formatWithSign(selectedUpdate.profitPercent_investitionsmenge, '%')}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -754,15 +770,15 @@ export default function BotTypesPage() {
                   <CardContent className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground mb-1">Trend P&L (USDT)</p>
-                      <p className="font-medium">{selectedUpdate.overallTrendPnlUsdt || '0.00'}</p>
+                      <p className="font-medium">{formatWithSign(selectedUpdate.overallTrendPnlUsdt)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-1">Trend P&L (%) - Gesamtinvestment</p>
-                      <p className="font-medium">{selectedUpdate.overallTrendPnlPercent_gesamtinvestment || '0.00'}%</p>
+                      <p className="font-medium">{formatWithSign(selectedUpdate.overallTrendPnlPercent_gesamtinvestment, '%')}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-1">Trend P&L (%) - Investitionsmenge</p>
-                      <p className="font-medium">{selectedUpdate.overallTrendPnlPercent_investitionsmenge || '0.00'}%</p>
+                      <p className="font-medium">{formatWithSign(selectedUpdate.overallTrendPnlPercent_investitionsmenge, '%')}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -775,45 +791,45 @@ export default function BotTypesPage() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Grid Profit (USDT)</p>
-                        <p className="font-medium">{selectedUpdate.overallGridProfitUsdt || '0.00'}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitUsdt)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Grid Profit (%) - Gesamtinvestment</p>
-                        <p className="font-medium">{selectedUpdate.overallGridProfitPercent_gesamtinvestment || '0.00'}%</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitPercent_gesamtinvestment, '%')}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Grid Profit (%) - Investitionsmenge</p>
-                        <p className="font-medium">{selectedUpdate.overallGridProfitPercent_investitionsmenge || '0.00'}%</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitPercent_investitionsmenge, '%')}</p>
                       </div>
                     </div>
                     <Separator />
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Höchster Grid Profit (USDT)</p>
-                        <p className="font-medium">{selectedUpdate.highestGridProfit || '0.00'}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfit)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Höchster Grid Profit (%) - Gesamtinvestment</p>
-                        <p className="font-medium">{selectedUpdate.highestGridProfitPercent_gesamtinvestment || '0.00'}%</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfitPercent_gesamtinvestment, '%')}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Höchster Grid Profit (%) - Investitionsmenge</p>
-                        <p className="font-medium">{selectedUpdate.highestGridProfitPercent_investitionsmenge || '0.00'}%</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfitPercent_investitionsmenge, '%')}</p>
                       </div>
                     </div>
                     <Separator />
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit / Stunde</p>
-                        <p className="font-medium">{selectedUpdate.avgGridProfitHour || '-'}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitHour)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit / Tag</p>
-                        <p className="font-medium">{selectedUpdate.avgGridProfitDay || '-'}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitDay)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit / Woche</p>
-                        <p className="font-medium">{selectedUpdate.avgGridProfitWeek || '-'}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitWeek)}</p>
                       </div>
                     </div>
                   </CardContent>
