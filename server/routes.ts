@@ -908,53 +908,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // VALIDIERUNG 3: Runtime-Validierung für avgGridProfit*
-        const parsedScreenshots = typeof screenshotData === 'string'
-          ? JSON.parse(screenshotData)
-          : screenshotData;
-        
-        // Finde längste Runtime um zu prüfen ob avgGridProfit* Sinn macht
-        let maxRuntimeHours = 0;
-        for (const screenshot of parsedScreenshots.screenshots) {
-          if (screenshot.runtime) {
-            const runtime = screenshot.runtime;
-            const match = runtime.match(/(?:(\d+)d\s*)?(?:(\d+)h\s*)?(?:(\d+)m)?/);
-            if (match) {
-              const days = parseInt(match[1] || '0');
-              const hours = parseInt(match[2] || '0');
-              const totalHours = days * 24 + hours;
-              if (totalHours > maxRuntimeHours) maxRuntimeHours = totalHours;
-            }
-          }
-        }
-        
-        // Prüfe ob avgGridProfit* Werte realistisch sind
-        // avgGridProfitHour kann ab jeder Runtime berechnet werden (Hochrechnung)
-        // avgGridProfitDay benötigt mindestens 24 Stunden (1 Tag) Runtime
-        // avgGridProfitWeek benötigt mindestens 168 Stunden (7 Tage) Runtime
-        
-        // Akzeptiere null, 0, oder "0.00" als "nicht berechnet"
-        const hasValue = (val: any) => {
-          if (val === null || val === undefined) return false;
-          const num = parseFloat(val);
-          return !isNaN(num) && num !== 0;
-        };
-        
-        if (hasValue(calculatedValues.avgGridProfitDay) && maxRuntimeHours < 24) {
-          return res.status(400).json({
-            error: "avgGridProfitDay kann nicht berechnet werden",
-            details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 24 Stunden (1 Tag) Runtime erforderlich für tägliche Durchschnitte.`,
-            suggestion: "KI sollte avgGridProfitDay auf null setzen bei Runtime < 24 Stunden"
-          });
-        }
-        
-        if (hasValue(calculatedValues.avgGridProfitWeek) && maxRuntimeHours < 168) {
-          return res.status(400).json({
-            error: "avgGridProfitWeek kann nicht berechnet werden",
-            details: `Maximale Laufzeit beträgt ${maxRuntimeHours.toFixed(2)} Stunden. Mindestens 168 Stunden (7 Tage) Runtime erforderlich für wöchentliche Durchschnitte.`,
-            suggestion: "KI sollte avgGridProfitWeek auf null setzen bei Runtime < 168 Stunden"
-          });
-        }
+        // HINWEIS: avgGridProfit* (Stunde/Tag/Woche) wird jetzt im Frontend berechnet
+        // basierend auf: Gesamter Grid Profit / Upload-Laufzeit
+        // Daher keine Server-Validierung mehr für diese Felder erforderlich
         
         res.json({ 
           success: true,

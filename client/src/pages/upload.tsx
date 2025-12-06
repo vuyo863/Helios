@@ -1029,15 +1029,38 @@ export default function Upload() {
           return parts.join(' ');
         };
         
+        // Variable für Upload-Laufzeit in Stunden (für Grid Profit Durchschnitt Berechnung)
+        let uploadRuntimeHours = 0;
+        
         if (isStartMetric && calculatedValues.date) {
           // Bei Startmetrik: Upload Laufzeit = Jetzt - Datum und Uhrzeit (AI-berechnetes Startdatum)
           const aiDate = new Date(calculatedValues.date);
           if (!isNaN(aiDate.getTime())) {
             uploadRuntimeValue = calculateRuntimeDiff(aiDate);
+            uploadRuntimeHours = (now.getTime() - aiDate.getTime()) / (1000 * 60 * 60);
           }
         } else if (lastUploadDateTime) {
           // Bei normalem Upload: Upload Laufzeit = Jetzt - Last Upload
           uploadRuntimeValue = calculateRuntimeDiff(lastUploadDateTime);
+          uploadRuntimeHours = (now.getTime() - lastUploadDateTime.getTime()) / (1000 * 60 * 60);
+        }
+        
+        // Grid Profit Durchschnitt berechnen (Frontend-Berechnung, NICHT von Modi beeinflusst)
+        // Formel: Gesamter Grid Profit (USDT) / Upload-Laufzeit (Stunden)
+        let avgGridProfitHourCalc = '';
+        let avgGridProfitDayCalc = '';
+        let avgGridProfitWeekCalc = '';
+        
+        const overallGridProfitValue = parseFloat(toStr(calculatedValues.overallGridProfitUsdt)) || 0;
+        
+        if (uploadRuntimeHours > 0 && overallGridProfitValue !== 0) {
+          const perHour = overallGridProfitValue / uploadRuntimeHours;
+          const perDay = perHour * 24;
+          const perWeek = perHour * 168; // 24 * 7
+          
+          avgGridProfitHourCalc = perHour.toFixed(2);
+          avgGridProfitDayCalc = perDay.toFixed(2);
+          avgGridProfitWeekCalc = perWeek.toFixed(2);
         }
         
         setFormData(prev => ({
@@ -1061,9 +1084,9 @@ export default function Upload() {
           overallGridProfitPercent: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent),
           highestGridProfit: toStr(calculatedValues.highestGridProfit),
           highestGridProfitPercent: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
-          avgGridProfitHour: toStr(calculatedValues.avgGridProfitHour),
-          avgGridProfitDay: toStr(calculatedValues.avgGridProfitDay),
-          avgGridProfitWeek: toStr(calculatedValues.avgGridProfitWeek)
+          avgGridProfitHour: avgGridProfitHourCalc, // Frontend-berechnet: Gesamter Grid Profit / Upload-Laufzeit
+          avgGridProfitDay: avgGridProfitDayCalc,   // = Stunde × 24
+          avgGridProfitWeek: avgGridProfitWeekCalc  // = Stunde × 168
         }));
         
         console.log('Form data UPDATED successfully');
