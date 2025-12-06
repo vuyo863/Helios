@@ -15,6 +15,7 @@ import { Upload as UploadIcon, X, Send, Image as ImageIcon, Pencil, Check } from
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useUpdateNotification } from "@/lib/update-notification-context";
 import BotTypeManager from "@/components/BotTypeManager";
 import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ import { useLocation } from "wouter";
 export default function Upload() {
   const [location] = useLocation();
   const { toast } = useToast();
+  const { notifyUpdate } = useUpdateNotification();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
   const [selectedBotTypeColor, setSelectedBotTypeColor] = useState<string>('');
@@ -366,15 +368,14 @@ export default function Upload() {
       return await apiRequest('POST', `/api/bot-types/${selectedBotTypeId}/updates`, updateData);
     },
     onSuccess: () => {
-      // Invalidate ALL bot-type related queries to ensure Bot Types page refreshes
-      // This includes the specific bot type updates and the general lists
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          // Invalidate all queries starting with /api/bot-types
-          return Array.isArray(key) && typeof key[0] === 'string' && key[0].startsWith('/api/bot-type');
-        }
-      });
+      // Notify Bot Types page about the update (will show confirmation dialog if modal is open)
+      notifyUpdate();
+      
+      // Also invalidate queries for this page's own data
+      if (selectedBotTypeId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotTypeId, 'updates'] });
+      }
+      
       toast({
         title: "Erfolgreich gespeichert",
         description: "Das Update wurde erfolgreich gespeichert.",

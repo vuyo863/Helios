@@ -18,13 +18,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive, MessageCircle } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive, MessageCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useUpdateNotification } from "@/lib/update-notification-context";
 
 // Helper function to parse runtime string like "1d 14h 28m" to hours
 function parseRuntimeToHours(runtime: string | null | undefined): number {
@@ -93,8 +94,59 @@ export default function BotTypesPage() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [notesUpdate, setNotesUpdate] = useState<BotTypeUpdate | null>(null);
   const [editingNotes, setEditingNotes] = useState('');
+  
+  // Update Notification State
+  const [updateConfirmDialogOpen, setUpdateConfirmDialogOpen] = useState(false);
+  const { pendingUpdate, clearPendingUpdate } = useUpdateNotification();
 
   const { toast } = useToast();
+  
+  // Check if any modal is open
+  const anyModalOpen = viewDialogOpen || deleteDialogOpen || updateDetailDialogOpen || notesDialogOpen;
+  
+  // Listen for pending updates and show confirmation dialog if a modal is open
+  useEffect(() => {
+    if (pendingUpdate && anyModalOpen) {
+      setUpdateConfirmDialogOpen(true);
+      clearPendingUpdate();
+    } else if (pendingUpdate && !anyModalOpen) {
+      // No modal open, just refresh data silently
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && typeof key[0] === 'string' && key[0].startsWith('/api/bot-type');
+        }
+      });
+      clearPendingUpdate();
+    }
+  }, [pendingUpdate, anyModalOpen, clearPendingUpdate]);
+  
+  // Handle update confirmation
+  const handleUpdateConfirm = () => {
+    // Invalidate all bot-type queries
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && typeof key[0] === 'string' && key[0].startsWith('/api/bot-type');
+      }
+    });
+    // Close all modals
+    setViewDialogOpen(false);
+    setDeleteDialogOpen(false);
+    setUpdateDetailDialogOpen(false);
+    setNotesDialogOpen(false);
+    setUpdateConfirmDialogOpen(false);
+    toast({
+      title: "Daten aktualisiert",
+      description: "Die Daten wurden erfolgreich aktualisiert.",
+    });
+  };
+  
+  // Handle update dismiss
+  const handleUpdateDismiss = () => {
+    setUpdateConfirmDialogOpen(false);
+    // Do nothing - just close the confirmation dialog
+  };
 
   // Fetch updates for selected bot type
   const { data: updates = [] } = useQuery<BotTypeUpdate[]>({
@@ -960,6 +1012,30 @@ export default function BotTypesPage() {
             </div>
           </DialogContent>
         </Dialog>
+        
+        {/* Update Confirmation Dialog */}
+        <AlertDialog open={updateConfirmDialogOpen} onOpenChange={setUpdateConfirmDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-primary" />
+                Neue Daten verfuegbar
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Es wurden neue Daten auf der Upload-Seite gespeichert. Moechten Sie die Ansicht aktualisieren?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleUpdateDismiss} data-testid="button-update-dismiss">
+                Abbrechen
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleUpdateConfirm} data-testid="button-update-confirm">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Update now
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
