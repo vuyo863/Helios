@@ -366,12 +366,15 @@ export default function Upload() {
       return await apiRequest('POST', `/api/bot-types/${selectedBotTypeId}/updates`, updateData);
     },
     onSuccess: () => {
-      if (selectedBotTypeId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotTypeId, 'updates'] });
-      }
-      // Auto-refresh Bot Types page data
-      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bot-type-updates'] });
+      // Invalidate ALL bot-type related queries to ensure Bot Types page refreshes
+      // This includes the specific bot type updates and the general lists
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          // Invalidate all queries starting with /api/bot-types
+          return Array.isArray(key) && typeof key[0] === 'string' && key[0].startsWith('/api/bot-type');
+        }
+      });
       toast({
         title: "Erfolgreich gespeichert",
         description: "Das Update wurde erfolgreich gespeichert.",
