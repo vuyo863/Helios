@@ -1918,46 +1918,32 @@ export default function Upload() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
-                        <Label htmlFor="highestGridProfit">Höchster Grid Profit (USDT)</Label>
-                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfit)}</span>
+                        <Label htmlFor="avgGridProfitUsdt">Durchschnittlicher Grid Profit (USDT)</Label>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitDay)}</span>
                         <Input
-                          id="highestGridProfit"
+                          id="avgGridProfitUsdt"
                           type="number"
                           step="0.01"
                           placeholder="0.00"
-                          className={getSignPrefix(formData.highestGridProfit) ? "pl-6" : ""}
-                          value={formData.highestGridProfit}
-                          onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
-                          data-testid="input-highest-grid-profit"
+                          className={getSignPrefix(formData.avgGridProfitDay) ? "pl-6" : ""}
+                          value={formData.avgGridProfitDay}
+                          onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
+                          data-testid="input-avg-grid-profit-usdt"
                         />
                       </div>
 
-                      <div>
-                        <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfitPercent)}</span>
-                            <Input
-                              id="highestGridProfitPercent"
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              className={getSignPrefix(formData.highestGridProfitPercent) ? "pl-6" : ""}
-                              value={formData.highestGridProfitPercent}
-                              onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
-                              data-testid="input-highest-grid-profit-percent"
-                            />
-                          </div>
-                          <Select value={highestGridProfitPercentBase} onValueChange={(val) => setHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
-                            <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-highest-grid-profit-percent-base">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
-                              <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="relative">
+                        <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Durchschnittlicher Grid Profit)</Label>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
+                        <Input
+                          id="lastUploadAvgGridProfit"
+                          type="text"
+                          placeholder="-"
+                          className={`bg-muted/50 ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
+                          value={formData.lastAvgGridProfitDay || '-'}
+                          readOnly
+                          data-testid="input-last-upload-avg-grid-profit"
+                        />
                       </div>
                     </div>
                   </div>
