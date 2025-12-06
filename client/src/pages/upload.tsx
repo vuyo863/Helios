@@ -134,6 +134,10 @@ export default function Upload() {
     avgGridProfitHour: '',
     avgGridProfitDay: '',
     avgGridProfitWeek: '',
+    lastAvgGridProfitHour: '',
+    lastAvgGridProfitDay: '',
+    lastAvgGridProfitWeek: '',
+    lastAvgGridProfitChained: '',
     overallTrendPnlUsdt: '',
     overallTrendPnlPercent: '',
     highestGridProfit: '',
@@ -166,6 +170,7 @@ export default function Upload() {
   const [trendPercentBase, setTrendPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [gridProfitPercentBase, setGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [highestGridProfitPercentBase, setHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [chainedUnit, setChainedUnit] = useState<'%' | '$'>('%');
 
   // AI-berechnete Prozentwerte speichern (für Umschaltung zwischen Gesamtinvestment/Investitionsmenge)
   const [calculatedPercents, setCalculatedPercents] = useState({
@@ -741,6 +746,10 @@ export default function Upload() {
       avgGridProfitHour: '',
       avgGridProfitDay: '',
       avgGridProfitWeek: '',
+      lastAvgGridProfitHour: '',
+      lastAvgGridProfitDay: '',
+      lastAvgGridProfitWeek: '',
+      lastAvgGridProfitChained: '',
       overallTrendPnlUsdt: '',
       overallTrendPnlPercent: '',
       highestGridProfit: '',
@@ -1660,6 +1669,87 @@ export default function Upload() {
                             onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
                             data-testid="input-avg-grid-profit-week"
                           />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Last Grid Profit Durchschnitt</Label>
+                      <div className="grid grid-cols-4 gap-2 mt-2">
+                        <div className="relative">
+                          <Label htmlFor="lastAvgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitHour)}</span>
+                          <Input
+                            id="lastAvgGridProfitHour"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            className={getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}
+                            value={formData.lastAvgGridProfitHour}
+                            onChange={(e) => setFormData({ ...formData, lastAvgGridProfitHour: e.target.value })}
+                            data-testid="input-last-avg-grid-profit-hour"
+                          />
+                        </div>
+                        <div className="relative">
+                          <Label htmlFor="lastAvgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
+                          <Input
+                            id="lastAvgGridProfitDay"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            className={getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}
+                            value={formData.lastAvgGridProfitDay}
+                            onChange={(e) => setFormData({ ...formData, lastAvgGridProfitDay: e.target.value })}
+                            data-testid="input-last-avg-grid-profit-day"
+                          />
+                        </div>
+                        <div className="relative">
+                          <Label htmlFor="lastAvgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitWeek)}</span>
+                          <Input
+                            id="lastAvgGridProfitWeek"
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            className={getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}
+                            value={formData.lastAvgGridProfitWeek}
+                            onChange={(e) => setFormData({ ...formData, lastAvgGridProfitWeek: e.target.value })}
+                            data-testid="input-last-avg-grid-profit-week"
+                          />
+                        </div>
+                        <div className="relative">
+                          <Label htmlFor="lastAvgGridProfitChained" className="text-xs text-muted-foreground">Chained</Label>
+                          <div className="flex gap-1">
+                            <Input
+                              id="lastAvgGridProfitChained"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className="flex-1"
+                              value={formData.lastAvgGridProfitChained}
+                              onChange={(e) => setFormData({ ...formData, lastAvgGridProfitChained: e.target.value })}
+                              data-testid="input-last-avg-grid-profit-chained"
+                            />
+                            <div className="flex border rounded-md overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setChainedUnit('%')}
+                                className={`px-2 py-1 text-xs font-medium transition-colors ${chainedUnit === '%' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                data-testid="toggle-chained-percent"
+                              >
+                                %
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setChainedUnit('$')}
+                                className={`px-2 py-1 text-xs font-medium transition-colors ${chainedUnit === '$' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                data-testid="toggle-chained-dollar"
+                              >
+                                $
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
