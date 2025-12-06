@@ -233,8 +233,8 @@ export default function Upload() {
       const highestValue = parseFloat(formData.highestGridProfit || '0');
 
       // Profit Prozent - beide Basen
-      let profitPercent_gesamtinvestment = null;
-      let profitPercent_investitionsmenge = null;
+      let profitPercent_gesamtinvestment: string | null = null;
+      let profitPercent_investitionsmenge: string | null = null;
       if (profitTimeRange === 'Neu') {
         if (totalInvestmentValue > 0) {
           profitPercent_gesamtinvestment = ((profitValue / totalInvestmentValue) * 100).toFixed(2);
@@ -242,11 +242,15 @@ export default function Upload() {
         if (investmentValue > 0) {
           profitPercent_investitionsmenge = ((profitValue / investmentValue) * 100).toFixed(2);
         }
+      } else if (profitTimeRange === 'Vergleich') {
+        // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
+        profitPercent_gesamtinvestment = calculatedPercents.profitPercent_gesamtinvestment || null;
+        profitPercent_investitionsmenge = calculatedPercents.profitPercent_investitionsmenge || null;
       }
 
       // Trend P&L Prozent - beide Basen
-      let trendPercent_gesamtinvestment = null;
-      let trendPercent_investitionsmenge = null;
+      let trendPercent_gesamtinvestment: string | null = null;
+      let trendPercent_investitionsmenge: string | null = null;
       if (trendTimeRange === 'Neu') {
         if (totalInvestmentValue > 0) {
           trendPercent_gesamtinvestment = ((trendValue / totalInvestmentValue) * 100).toFixed(2);
@@ -254,11 +258,15 @@ export default function Upload() {
         if (investmentValue > 0) {
           trendPercent_investitionsmenge = ((trendValue / investmentValue) * 100).toFixed(2);
         }
+      } else if (trendTimeRange === 'Vergleich') {
+        // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
+        trendPercent_gesamtinvestment = calculatedPercents.overallTrendPnlPercent_gesamtinvestment || null;
+        trendPercent_investitionsmenge = calculatedPercents.overallTrendPnlPercent_investitionsmenge || null;
       }
 
       // Overall Grid Profit Prozent - beide Basen
-      let gridPercent_gesamtinvestment = null;
-      let gridPercent_investitionsmenge = null;
+      let gridPercent_gesamtinvestment: string | null = null;
+      let gridPercent_investitionsmenge: string | null = null;
       if (gridTimeRange === 'Neu') {
         if (totalInvestmentValue > 0) {
           gridPercent_gesamtinvestment = ((gridValue / totalInvestmentValue) * 100).toFixed(2);
@@ -266,11 +274,15 @@ export default function Upload() {
         if (investmentValue > 0) {
           gridPercent_investitionsmenge = ((gridValue / investmentValue) * 100).toFixed(2);
         }
+      } else if (gridTimeRange === 'Vergleich') {
+        // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
+        gridPercent_gesamtinvestment = calculatedPercents.overallGridProfitPercent_gesamtinvestment || null;
+        gridPercent_investitionsmenge = calculatedPercents.overallGridProfitPercent_investitionsmenge || null;
       }
 
       // Highest Grid Profit Prozent - beide Basen
-      let highestPercent_gesamtinvestment = null;
-      let highestPercent_investitionsmenge = null;
+      let highestPercent_gesamtinvestment: string | null = null;
+      let highestPercent_investitionsmenge: string | null = null;
       if (gridTimeRange === 'Neu') {
         if (totalInvestmentValue > 0) {
           highestPercent_gesamtinvestment = ((highestValue / totalInvestmentValue) * 100).toFixed(2);
@@ -278,6 +290,10 @@ export default function Upload() {
         if (investmentValue > 0) {
           highestPercent_investitionsmenge = ((highestValue / investmentValue) * 100).toFixed(2);
         }
+      } else if (gridTimeRange === 'Vergleich') {
+        // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
+        highestPercent_gesamtinvestment = calculatedPercents.highestGridProfitPercent_gesamtinvestment || null;
+        highestPercent_investitionsmenge = calculatedPercents.highestGridProfitPercent_investitionsmenge || null;
       }
 
       // Erstelle Update-Daten
