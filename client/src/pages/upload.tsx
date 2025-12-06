@@ -142,7 +142,13 @@ export default function Upload() {
     lastAvgGridProfitHour: '',
     lastAvgGridProfitDay: '',
     lastAvgGridProfitWeek: '',
-    lastAvgGridProfitChained: '',
+    // Change-Werte für alle 6 Kombinationen (3 Zeiträume × 2 Einheiten)
+    changeHourDollar: '',
+    changeHourPercent: '',
+    changeDayDollar: '',
+    changeDayPercent: '',
+    changeWeekDollar: '',
+    changeWeekPercent: '',
     overallTrendPnlUsdt: '',
     overallTrendPnlPercent: '',
     highestGridProfit: '',
@@ -180,6 +186,7 @@ export default function Upload() {
   const [avgGridProfitPercentBase, setAvgGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge' | 'vergleich'>('gesamtinvestment');
   const [avgGridProfitChangeUnit, setAvgGridProfitChangeUnit] = useState<'%' | '$'>('%');
   const [chainedUnit, setChainedUnit] = useState<'%' | '$'>('%');
+  const [selectedChangeTimeframe, setSelectedChangeTimeframe] = useState<'hour' | 'day' | 'week'>('hour');
 
   // AI-berechnete Prozentwerte speichern (für Umschaltung zwischen Gesamtinvestment/Investitionsmenge)
   const [calculatedPercents, setCalculatedPercents] = useState({
@@ -772,7 +779,12 @@ export default function Upload() {
       lastAvgGridProfitHour: '',
       lastAvgGridProfitDay: '',
       lastAvgGridProfitWeek: '',
-      lastAvgGridProfitChained: '',
+      changeHourDollar: '',
+      changeHourPercent: '',
+      changeDayDollar: '',
+      changeDayPercent: '',
+      changeWeekDollar: '',
+      changeWeekPercent: '',
       overallTrendPnlUsdt: '',
       overallTrendPnlPercent: '',
       highestGridProfit: '',
@@ -872,6 +884,10 @@ export default function Upload() {
       let previousUploadData = null;
       let lastUploadDate = '';
       let lastUploadDateTime: Date | null = null; // Für Upload Laufzeit Berechnung
+      // Speichere die Last Grid Profit Durchschnitt Werte für die Anzeige
+      let lastAvgGridProfitHourValue = '';
+      let lastAvgGridProfitDayValue = '';
+      let lastAvgGridProfitWeekValue = '';
       
       if (!isStartMetric && selectedBotTypeId) {
         try {
@@ -896,6 +912,11 @@ export default function Upload() {
                 lastUploadDateTime = d;
                 lastUploadDate = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
               }
+              // Last Grid Profit Durchschnitt Werte speichern
+              lastAvgGridProfitHourValue = lastUpdate.avgGridProfitHour?.toString() || '';
+              lastAvgGridProfitDayValue = lastUpdate.avgGridProfitDay?.toString() || '';
+              lastAvgGridProfitWeekValue = lastUpdate.avgGridProfitWeek?.toString() || '';
+              
               previousUploadData = JSON.stringify({
                 investment: lastUpdate.investment,
                 extraMargin: lastUpdate.extraMargin,
@@ -1063,6 +1084,47 @@ export default function Upload() {
           avgGridProfitWeekCalc = perWeek.toFixed(2);
         }
         
+        // Change-Werte berechnen (alle 6 Kombinationen: 3 Zeiträume × 2 Einheiten)
+        // Formel: Change $ = Aktueller Wert - Letzter Wert
+        // Formel: Change % = ((Aktueller Wert - Letzter Wert) / |Letzter Wert|) × 100
+        let changeHourDollarCalc = '';
+        let changeHourPercentCalc = '';
+        let changeDayDollarCalc = '';
+        let changeDayPercentCalc = '';
+        let changeWeekDollarCalc = '';
+        let changeWeekPercentCalc = '';
+        
+        const currentHour = parseFloat(avgGridProfitHourCalc) || 0;
+        const currentDay = parseFloat(avgGridProfitDayCalc) || 0;
+        const currentWeek = parseFloat(avgGridProfitWeekCalc) || 0;
+        const lastHour = parseFloat(lastAvgGridProfitHourValue) || 0;
+        const lastDay = parseFloat(lastAvgGridProfitDayValue) || 0;
+        const lastWeek = parseFloat(lastAvgGridProfitWeekValue) || 0;
+        
+        // Nur berechnen wenn es vorherige Werte gibt (nicht bei Startmetrik)
+        if (!isStartMetric && (lastHour !== 0 || lastDay !== 0 || lastWeek !== 0)) {
+          // Stunde
+          const diffHour = currentHour - lastHour;
+          changeHourDollarCalc = diffHour.toFixed(2);
+          if (lastHour !== 0) {
+            changeHourPercentCalc = ((diffHour / Math.abs(lastHour)) * 100).toFixed(2);
+          }
+          
+          // Tag
+          const diffDay = currentDay - lastDay;
+          changeDayDollarCalc = diffDay.toFixed(2);
+          if (lastDay !== 0) {
+            changeDayPercentCalc = ((diffDay / Math.abs(lastDay)) * 100).toFixed(2);
+          }
+          
+          // Woche
+          const diffWeek = currentWeek - lastWeek;
+          changeWeekDollarCalc = diffWeek.toFixed(2);
+          if (lastWeek !== 0) {
+            changeWeekPercentCalc = ((diffWeek / Math.abs(lastWeek)) * 100).toFixed(2);
+          }
+        }
+        
         setFormData(prev => ({
           ...prev,
           date: dateValue,
@@ -1086,7 +1148,18 @@ export default function Upload() {
           highestGridProfitPercent: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
           avgGridProfitHour: avgGridProfitHourCalc, // Frontend-berechnet: Gesamter Grid Profit / Upload-Laufzeit
           avgGridProfitDay: avgGridProfitDayCalc,   // = Stunde × 24
-          avgGridProfitWeek: avgGridProfitWeekCalc  // = Stunde × 168
+          avgGridProfitWeek: avgGridProfitWeekCalc, // = Stunde × 168
+          // Last Grid Profit Durchschnitt (vom vorherigen Upload)
+          lastAvgGridProfitHour: lastAvgGridProfitHourValue,
+          lastAvgGridProfitDay: lastAvgGridProfitDayValue,
+          lastAvgGridProfitWeek: lastAvgGridProfitWeekValue,
+          // Change-Werte (alle 6 Kombinationen)
+          changeHourDollar: changeHourDollarCalc,
+          changeHourPercent: changeHourPercentCalc,
+          changeDayDollar: changeDayDollarCalc,
+          changeDayPercent: changeDayPercentCalc,
+          changeWeekDollar: changeWeekDollarCalc,
+          changeWeekPercent: changeWeekPercentCalc
         }));
         
         console.log('Form data UPDATED successfully');
@@ -1837,7 +1910,10 @@ export default function Upload() {
                     <div>
                       <Label>Last Grid Profit Durchschnitt</Label>
                       <div className="grid grid-cols-4 gap-2 mt-2">
-                        <div className="relative">
+                        <div 
+                          className={`relative cursor-pointer rounded-md transition-all ${selectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''}`}
+                          onClick={() => setSelectedChangeTimeframe('hour')}
+                        >
                           <Label htmlFor="lastAvgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
                           <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitHour)}</span>
                           <Input
@@ -1845,13 +1921,16 @@ export default function Upload() {
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className={getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}
+                            className={`bg-muted/50 cursor-pointer ${getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
                             value={formData.lastAvgGridProfitHour}
-                            onChange={(e) => setFormData({ ...formData, lastAvgGridProfitHour: e.target.value })}
+                            readOnly
                             data-testid="input-last-avg-grid-profit-hour"
                           />
                         </div>
-                        <div className="relative">
+                        <div 
+                          className={`relative cursor-pointer rounded-md transition-all ${selectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''}`}
+                          onClick={() => setSelectedChangeTimeframe('day')}
+                        >
                           <Label htmlFor="lastAvgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
                           <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
                           <Input
@@ -1859,13 +1938,16 @@ export default function Upload() {
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className={getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}
+                            className={`bg-muted/50 cursor-pointer ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
                             value={formData.lastAvgGridProfitDay}
-                            onChange={(e) => setFormData({ ...formData, lastAvgGridProfitDay: e.target.value })}
+                            readOnly
                             data-testid="input-last-avg-grid-profit-day"
                           />
                         </div>
-                        <div className="relative">
+                        <div 
+                          className={`relative cursor-pointer rounded-md transition-all ${selectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''}`}
+                          onClick={() => setSelectedChangeTimeframe('week')}
+                        >
                           <Label htmlFor="lastAvgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
                           <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitWeek)}</span>
                           <Input
@@ -1873,25 +1955,43 @@ export default function Upload() {
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className={getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}
+                            className={`bg-muted/50 cursor-pointer ${getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
                             value={formData.lastAvgGridProfitWeek}
-                            onChange={(e) => setFormData({ ...formData, lastAvgGridProfitWeek: e.target.value })}
+                            readOnly
                             data-testid="input-last-avg-grid-profit-week"
                           />
                         </div>
                         <div className="relative">
-                          <Label htmlFor="lastAvgGridProfitChained" className="text-xs text-muted-foreground">Change</Label>
+                          <Label htmlFor="changeDisplay" className="text-xs text-muted-foreground">Change</Label>
                           <div className="flex gap-1">
-                            <Input
-                              id="lastAvgGridProfitChained"
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              className="flex-1"
-                              value={formData.lastAvgGridProfitChained}
-                              onChange={(e) => setFormData({ ...formData, lastAvgGridProfitChained: e.target.value })}
-                              data-testid="input-last-avg-grid-profit-chained"
-                            />
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">
+                                {getSignPrefix(
+                                  chainedUnit === '$' 
+                                    ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
+                                    : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)
+                                )}
+                              </span>
+                              <Input
+                                id="changeDisplay"
+                                type="text"
+                                placeholder="0.00"
+                                className={`bg-muted/50 ring-2 ring-primary ${
+                                  getSignPrefix(
+                                    chainedUnit === '$' 
+                                      ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
+                                      : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)
+                                  ) ? "pl-6" : ""
+                                }`}
+                                value={
+                                  chainedUnit === '$' 
+                                    ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
+                                    : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)
+                                }
+                                readOnly
+                                data-testid="input-change-display"
+                              />
+                            </div>
                             <div className="flex border rounded-md overflow-hidden">
                               <button
                                 type="button"
