@@ -871,10 +871,16 @@ export default function Upload() {
             if (updates && updates.length > 0) {
               const lastUpdate = updates[0];
               // Speichere das Datum des letzten Uploads für das "Last Upload" Feld
-              if (lastUpdate.date) {
-                const d = new Date(lastUpdate.date);
-                lastUploadDateTime = d;
-                lastUploadDate = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+              // Priorität: thisUpload > createdAt (thisUpload enthält den tatsächlichen Upload-Zeitpunkt)
+              if (lastUpdate.thisUpload) {
+                // thisUpload ist bereits im Format "TT.MM.JJJJ HH:MM"
+                lastUploadDate = lastUpdate.thisUpload;
+                // Parse für Upload Laufzeit Berechnung
+                const parts = lastUpdate.thisUpload.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})/);
+                if (parts) {
+                  const [, day, month, year, hour, minute] = parts;
+                  lastUploadDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+                }
               } else if (lastUpdate.createdAt) {
                 const d = new Date(lastUpdate.createdAt);
                 lastUploadDateTime = d;
