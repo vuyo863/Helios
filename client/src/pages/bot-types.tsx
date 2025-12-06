@@ -776,6 +776,18 @@ export default function BotTypesPage() {
                       <p className="text-muted-foreground mb-1">Durchschnittliche Laufzeit</p>
                       <p className="font-medium">{selectedUpdate.avgRuntime || '-'}</p>
                     </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Upload Laufzeit</p>
+                      <p className="font-medium">{selectedUpdate.uploadRuntime || '-'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground mb-1">Upload Zeitraum</p>
+                      <p className="font-medium">
+                        {selectedUpdate.lastUpload || selectedUpdate.thisUpload ? (
+                          <>From {selectedUpdate.lastUpload || '-'} Until {selectedUpdate.thisUpload || '-'}</>
+                        ) : '-'}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
 

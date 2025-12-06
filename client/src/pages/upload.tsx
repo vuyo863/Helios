@@ -329,6 +329,9 @@ export default function Upload() {
         leverage: formData.leverage || null,
         longestRuntime: formData.longestRuntime || null,
         avgRuntime: formData.avgRuntime || null,
+        uploadRuntime: formData.uploadRuntime || null,
+        lastUpload: formData.lastUpload || null,
+        thisUpload: formData.thisUpload || null,
         
         // Investment Section
         investment: formData.investment || null,

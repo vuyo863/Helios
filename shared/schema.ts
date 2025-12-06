@@ -106,6 +106,9 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   leverage: text("leverage"),
   longestRuntime: text("longest_runtime"),
   avgRuntime: text("avg_runtime"),
+  uploadRuntime: text("upload_runtime"), // Zeitdifferenz: This Upload - Last Upload
+  lastUpload: text("last_upload"), // Datum/Uhrzeit des letzten Uploads
+  thisUpload: text("this_upload"), // Datum/Uhrzeit des aktuellen Uploads
   
   // Investment Section
   investment: text("investment"),
