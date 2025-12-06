@@ -786,9 +786,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             calculatedValues.overallGridProfitUsdt = "0.00";
             calculatedValues.overallGridProfitPercent_gesamtinvestment = "0.00";
             calculatedValues.overallGridProfitPercent_investitionsmenge = "0.00";
-            calculatedValues.highestGridProfit = "0.00";
-            calculatedValues.highestGridProfitPercent_gesamtinvestment = "0.00";
-            calculatedValues.highestGridProfitPercent_investitionsmenge = "0.00";
+            // WICHTIG: highestGridProfit wird NICHT auf 0 gesetzt!
+            // Der höchste Grid Profit ist immer der absolute Wert vom aktuellen Upload
+            // calculatedValues.highestGridProfit bleibt unverändert (absoluter Wert)
+            // calculatedValues.highestGridProfitPercent_* bleibt unverändert (absoluter Wert)
             calculatedValues.avgGridProfitHour = "0.00";
             calculatedValues.avgGridProfitDay = "0.00";
             calculatedValues.avgGridProfitWeek = "0.00";
@@ -858,18 +859,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               calculatedValues.overallGridProfitPercent_investitionsmenge,
               parsedPrevious.overallGridProfitPercent_investitionsmenge
             );
-            calculatedValues.highestGridProfit = calcDelta(
-              calculatedValues.highestGridProfit,
-              parsedPrevious.highestGridProfit
-            );
-            calculatedValues.highestGridProfitPercent_gesamtinvestment = calcDelta(
-              calculatedValues.highestGridProfitPercent_gesamtinvestment,
-              parsedPrevious.highestGridProfitPercent_gesamtinvestment
-            );
-            calculatedValues.highestGridProfitPercent_investitionsmenge = calcDelta(
-              calculatedValues.highestGridProfitPercent_investitionsmenge,
-              parsedPrevious.highestGridProfitPercent_investitionsmenge
-            );
+            // WICHTIG: highestGridProfit wird NICHT als Differenz berechnet!
+            // Der höchste Grid Profit ist immer der absolute Wert vom aktuellen Upload
+            // (der höchste von allen Screenshots dieses Uploads)
+            // calculatedValues.highestGridProfit bleibt unverändert (absoluter Wert)
+            // calculatedValues.highestGridProfitPercent_* bleibt unverändert (absoluter Wert)
+            
             calculatedValues.avgGridProfitHour = calcDelta(
               calculatedValues.avgGridProfitHour,
               parsedPrevious.avgGridProfitHour
