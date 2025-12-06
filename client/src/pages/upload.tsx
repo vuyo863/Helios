@@ -1921,7 +1921,7 @@ export default function Upload() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
-                        <Label htmlFor="avgGridProfitUsdt">Durchschnittlicher Grid Profit (USDT)</Label>
+                        <Label htmlFor="avgGridProfitUsdt">Ø Grid Profit (USDT)</Label>
                         <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitDay)}</span>
                         <Input
                           id="avgGridProfitUsdt"
@@ -1936,7 +1936,7 @@ export default function Upload() {
                       </div>
 
                       <div>
-                        <Label htmlFor="avgGridProfitPercent">Durchschnittlicher Grid Profit (%)</Label>
+                        <Label htmlFor="avgGridProfitPercent">Ø Grid Profit (%)</Label>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
                             <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitPercent)}</span>
@@ -1967,7 +1967,7 @@ export default function Upload() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
-                        <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Durchschnittlicher Grid Profit)</Label>
+                        <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Ø Grid Profit)</Label>
                         <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
                         <Input
                           id="lastUploadAvgGridProfit"
