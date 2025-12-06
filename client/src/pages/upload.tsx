@@ -854,6 +854,7 @@ export default function Upload() {
       }
 
       let previousUploadData = null;
+      let lastUploadDate = '';
       
       if (!isStartMetric && selectedBotTypeId) {
         try {
@@ -862,6 +863,14 @@ export default function Upload() {
             const updates = await updatesResponse.json();
             if (updates && updates.length > 0) {
               const lastUpdate = updates[0];
+              // Speichere das Datum des letzten Uploads für das "Last Upload" Feld
+              if (lastUpdate.date) {
+                const d = new Date(lastUpdate.date);
+                lastUploadDate = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+              } else if (lastUpdate.createdAt) {
+                const d = new Date(lastUpdate.createdAt);
+                lastUploadDate = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+              }
               previousUploadData = JSON.stringify({
                 investment: lastUpdate.investment,
                 extraMargin: lastUpdate.extraMargin,
@@ -955,13 +964,27 @@ export default function Upload() {
         
         // Setze Formularwerte - OHNE "+" Vorzeichen (type="number" akzeptiert es nicht)
         // Das "+" Vorzeichen wird nur bei der Anzeige in Reports hinzugefügt
+        
+        // Datum-Logik:
+        // - Startmetrik: AI liefert das früheste Bot-Startdatum aus Screenshots
+        // - Normale Uploads: Aktuelles Echtzeit-Datum des Uploads
+        // - thisUpload: Immer aktuelles Echtzeit-Datum
+        const now = new Date();
+        const currentDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM für datetime-local
+        const currentDateTimeDisplay = now.toLocaleDateString('de-DE') + ' ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        
+        // Bei Startmetrik: AI-Datum verwenden, sonst aktuelles Datum
+        const dateValue = isStartMetric ? toStr(calculatedValues.date) : currentDateTime;
+        
         setFormData(prev => ({
           ...prev,
-          date: toStr(calculatedValues.date),
+          date: dateValue,
           botDirection: botDirection,
           leverage: toStr(calculatedValues.leverage),
           longestRuntime: toStr(calculatedValues.longestRuntime),
           avgRuntime: toStr(calculatedValues.avgRuntime),
+          thisUpload: currentDateTimeDisplay, // This Upload = immer aktuelles Datum
+          lastUpload: lastUploadDate, // Last Upload = Datum des letzten Uploads (leer bei Startmetrik)
           investment: toStr(calculatedValues.investment),
           extraMargin: toStr(calculatedValues.extraMargin),
           totalInvestment: toStr(calculatedValues.totalInvestment),

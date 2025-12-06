@@ -245,23 +245,30 @@ Du bist jetzt in Phase 4 - der finalen Berechnungsphase. Deine Aufgabe ist es, a
 **DEINE AUFGABE:**
 Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-logic.ts und field-logic.ts.
 
-**WICHTIG FÜR INFO-SECTION (botDirection, leverage, longestRuntime, avgRuntime):**
+**WICHTIG FÜR INFO-SECTION (botDirection, leverage, longestRuntime, avgRuntime, date):**
 Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert:
 
-1. **botDirection** - Sammle ALLE einzigartigen Richtungen aus ALLEN Screenshots:
+1. **date** - NUR BEI STARTMETRIK:
+   - Finde den Bot mit der LÄNGSTEN Laufzeit (= ältester Start)
+   - Berechne das Startdatum: Aktuelles Datum MINUS Laufzeit
+   - Format: "YYYY-MM-DDTHH:MM" (z.B. "2025-11-11T10:30")
+   - Beispiel: Heute ist 15.11.2025, Bot mit 4 Tagen Laufzeit → Startdatum = 11.11.2025
+   - Bei NICHT-Startmetrik: Leer lassen (Frontend setzt aktuelles Datum)
+
+2. **botDirection** - Sammle ALLE einzigartigen Richtungen aus ALLEN Screenshots:
    - Moegliche Werte pro Screenshot: "Long", "Short", "Neutral"
    - Bei MEHREREN Screenshots: Kombiniere alle einzigartigen Werte mit ", "
    - Beispiel: Screenshot1=Long, Screenshot2=Short → "Long, Short"
    - Beispiel: Screenshot1=Neutral, Screenshot2=Neutral → "Neutral" (Duplikat entfernt)
    - Beispiel: Screenshot1=Long, Screenshot2=Neutral, Screenshot3=Short → "Long, Neutral, Short"
 
-2. **leverage** - Sammle ALLE einzigartigen Hebel (NUR Multiplikator, OHNE Richtung!):
+3. **leverage** - Sammle ALLE einzigartigen Hebel (NUR Multiplikator, OHNE Richtung!):
    - Beispiel: Screenshot1=2x, Screenshot2=75x → "2x, 75x"
    - Beispiel: Screenshot1=5x, Screenshot2=5x → "5x" (Duplikat entfernt)
    - WICHTIG: KEINE Richtung beim Hebel! "75x" statt "75x Short"
 
-3. **longestRuntime** - Finde die LÄNGSTE Laufzeit aus ALLEN Screenshots
-4. **avgRuntime** - Berechne den DURCHSCHNITT aller Laufzeiten
+4. **longestRuntime** - Finde die LÄNGSTE Laufzeit aus ALLEN Screenshots
+5. **avgRuntime** - Berechne den DURCHSCHNITT aller Laufzeiten
 
 **JSON OUTPUT FORMAT:**
 \`\`\`json
