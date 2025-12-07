@@ -424,6 +424,7 @@ export default function Upload() {
         highestGridProfit: formData.highestGridProfit || null,
         highestGridProfitPercent_gesamtinvestment: highestPercent_gesamtinvestment,
         highestGridProfitPercent_investitionsmenge: highestPercent_investitionsmenge,
+        avgGridProfitUsdt: formData.avgGridProfitUsdt || null, // Durchschnitt = Gesamter Grid Profit / Anzahl Screenshots
         avgGridProfitHour: formData.avgGridProfitHour || null,
         avgGridProfitDay: formData.avgGridProfitDay || null,
         avgGridProfitWeek: formData.avgGridProfitWeek || null,
@@ -1047,8 +1048,8 @@ export default function Upload() {
               lastAvgGridProfitHourValue = lastUpdate.avgGridProfitHour?.toString() || '';
               lastAvgGridProfitDayValue = lastUpdate.avgGridProfitDay?.toString() || '';
               lastAvgGridProfitWeekValue = lastUpdate.avgGridProfitWeek?.toString() || '';
-              // Last Ø Grid Profit (vorheriger highestGridProfit Wert)
-              lastHighestGridProfitValue = lastUpdate.highestGridProfit?.toString() || '';
+              // Last Ø Grid Profit USDT (vorheriger avgGridProfitUsdt Wert)
+              lastHighestGridProfitValue = lastUpdate.avgGridProfitUsdt?.toString() || '';
               
               previousUploadData = JSON.stringify({
                 investment: lastUpdate.investment,
@@ -1261,17 +1262,19 @@ export default function Upload() {
         let changeWeekDollarCalc = '';
         let changeWeekPercentCalc = '';
         
-        // Change für Ø Grid Profit (highestGridProfit aktuell vs lastHighestGridProfit)
+        // Change für Ø Grid Profit (avgGridProfitUsdt aktuell vs lastHighestGridProfit)
+        // Formel: Change $ = aktueller Ø Grid Profit USDT - letzter Ø Grid Profit USDT
+        // Formel: Change % = ((Differenz) / |letzter Wert|) × 100
         let avgGridProfitChangeDollarCalc = '';
         let avgGridProfitChangePercentCalc = '';
         
-        const currentHighestGridProfit = parseFloat(toStr(calculatedValues.highestGridProfit)) || 0;
-        const lastHighestGridProfitNum = parseFloat(lastHighestGridProfitValue) || 0;
+        const currentAvgGridProfitUsdt = parseFloat(avgGridProfitUsdtCalc) || 0;
+        const lastAvgGridProfitUsdtNum = parseFloat(lastHighestGridProfitValue) || 0;
         
-        if (!isStartMetric && lastHighestGridProfitNum !== 0) {
-          const diffHighestGridProfit = currentHighestGridProfit - lastHighestGridProfitNum;
-          avgGridProfitChangeDollarCalc = diffHighestGridProfit.toFixed(2);
-          avgGridProfitChangePercentCalc = ((diffHighestGridProfit / Math.abs(lastHighestGridProfitNum)) * 100).toFixed(2);
+        if (!isStartMetric && lastAvgGridProfitUsdtNum !== 0) {
+          const diffAvgGridProfit = currentAvgGridProfitUsdt - lastAvgGridProfitUsdtNum;
+          avgGridProfitChangeDollarCalc = diffAvgGridProfit.toFixed(2);
+          avgGridProfitChangePercentCalc = ((diffAvgGridProfit / Math.abs(lastAvgGridProfitUsdtNum)) * 100).toFixed(2);
         }
         
         const currentHour = parseFloat(avgGridProfitHourCalc) || 0;

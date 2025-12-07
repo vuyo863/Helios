@@ -133,6 +133,7 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   highestGridProfit: text("highest_grid_profit"),
   highestGridProfitPercent_gesamtinvestment: text("highest_grid_profit_percent_gesamtinvestment"),
   highestGridProfitPercent_investitionsmenge: text("highest_grid_profit_percent_investitionsmenge"),
+  avgGridProfitUsdt: text("avg_grid_profit_usdt"), // Durchschnitt = Gesamter Grid Profit / Anzahl Screenshots
   avgGridProfitHour: text("avg_grid_profit_hour"),
   avgGridProfitDay: text("avg_grid_profit_day"),
   avgGridProfitWeek: text("avg_grid_profit_week"),
