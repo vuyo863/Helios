@@ -2151,6 +2151,58 @@ export default function Upload() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="relative">
+                        <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Ø Grid Profit)</Label>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
+                        <Input
+                          id="lastUploadAvgGridProfit"
+                          type="text"
+                          placeholder="-"
+                          className={`bg-muted/50 ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
+                          value={formData.lastAvgGridProfitDay || '-'}
+                          readOnly
+                          data-testid="input-last-upload-avg-grid-profit"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="avgGridProfitChange">Change</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitChange)}</span>
+                            <Input
+                              id="avgGridProfitChange"
+                              type="text"
+                              placeholder="0.00"
+                              className={`bg-muted/50 ${getSignPrefix(formData.avgGridProfitChange) ? "pl-6" : ""}`}
+                              value={formData.avgGridProfitChange || '-'}
+                              readOnly
+                              data-testid="input-avg-grid-profit-change"
+                            />
+                          </div>
+                          <div className="flex border rounded-md overflow-hidden">
+                            <button
+                              type="button"
+                              className={`px-3 py-2 text-sm font-medium transition-colors ${avgGridProfitChangeUnit === '%' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+                              onClick={() => setAvgGridProfitChangeUnit('%')}
+                              data-testid="button-change-unit-percent"
+                            >
+                              %
+                            </button>
+                            <button
+                              type="button"
+                              className={`px-3 py-2 text-sm font-medium transition-colors ${avgGridProfitChangeUnit === '$' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+                              onClick={() => setAvgGridProfitChangeUnit('$')}
+                              data-testid="button-change-unit-dollar"
+                            >
+                              $
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                   </>

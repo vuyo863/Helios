@@ -1,0 +1,91 @@
+. Spezialregel für Startmetrik – Upload-Laufzeit (Infosection)
+
+Nur bei Startmetrik gibt es eine Ausnahme für das Feld „Upload-Laufzeit“.
+
+Upload-Laufzeit = längste Laufzeit aller vorhandenen Bot-Cards/Screenshots.
+
+Hintergrund: Wenn ein Screenshot z.B. vor 2 Tagen gemacht und heute hochgeladen wird, werden diese Tage mitgerechnet – deswegen längste Laufzeit.
+
+Aktueller Fehler: Bei Startmetrik gibt es momentan gar keine Ausgabe im Feld „Upload-Laufzeit“ → muss gefüllt werden.
+
+Implementierung:
+
+Wenn metrictype == Startmetrik:
+
+Hole „längste Laufzeit“ aus allen Screenshots.
+
+Schreibe diesen Wert in das Feld „Upload-Laufzeit“ in der Infosection.
+
+Für alle anderen Metriken bleibt die bisherige Logik unverändert.
+
+2. Verhalten, wenn es kein „Last Upload“ gibt
+
+Aktueller Zustand: Du hast es so gebaut, dass ohne „Last Upload“ auch keine Upload-Laufzeit angezeigt wird.
+
+Der User sagt: Das ist okay, das können wir so lassen.
+
+Wichtig: Die einzige Sonderregel bleibt:
+
+Bei Startmetrik trotzdem „Upload-Laufzeit“ aus längste Laufzeit setzen, auch wenn es kein „Last Upload“ gibt.
+
+3. Fehler: Datum & Uhrzeit (Datum/OZ)
+
+Problem: Datum/Uhrzeit („Datum OZ“) wird immer noch falsch angezeigt.
+
+Der genaue Fehler ist nicht erklärt, aber:
+
+Aktuelle Anzeige ist sichtbar falsch.
+
+Dieser Fehler bestand schon vorher und ist noch nicht behoben.
+
+Aufgabe:
+
+Logik für Datum/Uhrzeit prüfen (Zeitzone, Format, Quelle der Daten, ggf. Umrechnungen).
+
+Dafür sorgen, dass Datum/OZ korrekt angezeigt wird.
+
+Nach Fix sicherstellen, dass Anzeige auch für Startmetrik korrekt ist.
+
+4. Fehlende Felder unten (Last Upload & Change)
+
+Problem: Im unteren Bereich (vermutlich Infosection/Details) fehlen jetzt Felder.
+
+Konkret fehlen:
+
+Feld „Last Upload“
+
+Feld „Change“
+
+Unklar, ob das absichtlich wegen Startmetrik entfernt wurde – der User sagt aber klar:
+
+Diese Felder müssen wieder zurück.
+
+Aufgaben:
+
+Prüfen, ob das Entfernen von „Last Upload“ und „Change“ Absicht oder Bug war.
+
+Egal was der Grund war:
+
+„Last Upload“ wieder anzeigen.
+
+„Change“ wieder anzeigen.
+
+Gilt auch für Startmetrik: Diese Felder sollen im unteren Bereich vorhanden sein.
+
+5. Verhalten Grid-Trading-Berechnungen
+
+Aktueller Stand:
+
+Die Berechnungen in der Grid-Trading-Section sind jetzt korrekt.
+
+Vermutlich wird dort mit Durchschnittslaufzeit oder längster Laufzeit gerechnet – das passt.
+
+Wichtige Vorgabe:
+
+Diese Berechnungen dürfen durch die neuen Änderungen nicht kaputt gehen.
+
+Bei Startmetrik:
+
+Die Berechnungen in der Grid-Trading-Section laufen weiter wie bisher.
+
+Nur die Anzeige von „Upload-Laufzeit“ wird speziell aus „längste Laufzeit“ genommen, die Berechnungen selbst bleiben unverändert.
