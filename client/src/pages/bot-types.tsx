@@ -59,22 +59,24 @@ function formatWithSign(value: string | number | null | undefined, suffix: strin
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(numValue)) return '-';
   
-  // Für USDT-Werte: Bis zu 4 Nachkommastellen, aber keine nachgestellten Nullen
-  let formatted: string;
-  if (decimals === 4) {
-    // Formatiere mit bis zu 4 Dezimalstellen, entferne nachgestellte Nullen
-    formatted = numValue.toFixed(4).replace(/\.?0+$/, '');
-    // Stelle sicher, dass mindestens 2 Dezimalstellen vorhanden sind
+  // Formatiere mit maximalen Nachkommastellen
+  let formatted = numValue.toFixed(decimals);
+  
+  // Entferne nachgestellte Nullen (aber behalte mindestens 2 Dezimalstellen)
+  if (decimals > 2) {
+    // Entferne alle nachgestellten Nullen nach dem Dezimalpunkt
+    formatted = formatted.replace(/\.?0+$/, '');
+    
+    // Wenn kein Dezimaltrennzeichen mehr vorhanden, füge .00 hinzu
     if (!formatted.includes('.')) {
       formatted += '.00';
     } else {
+      // Stelle sicher, dass mindestens 2 Dezimalstellen vorhanden sind
       const decimalPart = formatted.split('.')[1] || '';
-      if (decimalPart.length < 2) {
-        formatted += '0'.repeat(2 - decimalPart.length);
+      if (decimalPart.length === 1) {
+        formatted += '0';
       }
     }
-  } else {
-    formatted = numValue.toFixed(decimals);
   }
   
   if (numValue > 0) {
