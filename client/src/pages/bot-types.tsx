@@ -501,6 +501,36 @@ export default function BotTypesPage() {
                           {botType.wontLiqBudget || '0.00'} USDT
                         </span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Metrik Runtime:</span>
+                        <span className="font-medium" data-testid={`text-runtime-${botType.id}`}>
+                          {(() => {
+                            if (updatesForType.length === 0) return '-';
+                            const metricStarted = updatesForType[updatesForType.length - 1]?.date;
+                            const lastUpdated = updatesForType[0]?.createdAt;
+                            if (!metricStarted || !lastUpdated) return '-';
+                            
+                            const startDate = new Date(metricStarted);
+                            const endDate = new Date(lastUpdated);
+                            const diffMs = endDate.getTime() - startDate.getTime();
+                            
+                            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                            const diffHours = Math.floor(diffMinutes / 60);
+                            const diffDays = Math.floor(diffHours / 24);
+                            
+                            const days = diffDays;
+                            const hours = diffHours % 24;
+                            const minutes = diffMinutes % 60;
+                            
+                            const parts = [];
+                            if (days > 0) parts.push(`${days}d`);
+                            if (hours > 0) parts.push(`${hours}h`);
+                            if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+                            
+                            return parts.join(' ');
+                          })()}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-2 border-t">
                       <div className="flex items-center gap-2">
