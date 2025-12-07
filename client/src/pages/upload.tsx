@@ -1289,10 +1289,10 @@ export default function Upload() {
           const perDay = perHour * 24;
           const perWeek = perHour * 168; // 24 * 7
           
-          // Bis zu 4 Nachkommastellen erlaubt, unnötige Nullen werden entfernt
-          avgGridProfitHourCalc = parseFloat(perHour.toFixed(4)).toString();
-          avgGridProfitDayCalc = parseFloat(perDay.toFixed(4)).toString();
-          avgGridProfitWeekCalc = parseFloat(perWeek.toFixed(4)).toString();
+          // 2 Nachkommastellen für Grid Profit Durchschnitt
+          avgGridProfitHourCalc = perHour.toFixed(2);
+          avgGridProfitDayCalc = perDay.toFixed(2);
+          avgGridProfitWeekCalc = perWeek.toFixed(2);
         }
         
         // Change-Werte berechnen (alle 6 Kombinationen: 3 Zeiträume × 2 Einheiten)
@@ -2116,8 +2116,8 @@ export default function Upload() {
                           <Input
                             id="avgGridProfitHour"
                             type="number"
-                            step="0.0001"
-                            placeholder="0.0000"
+                            step="0.01"
+                            placeholder="0.00"
                             className={getSignPrefix(formData.avgGridProfitHour) ? "pl-6" : ""}
                             value={formData.avgGridProfitHour}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitHour: e.target.value })}
@@ -2130,8 +2130,8 @@ export default function Upload() {
                           <Input
                             id="avgGridProfitDay"
                             type="number"
-                            step="0.0001"
-                            placeholder="0.0000"
+                            step="0.01"
+                            placeholder="0.00"
                             className={getSignPrefix(formData.avgGridProfitDay) ? "pl-6" : ""}
                             value={formData.avgGridProfitDay}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
@@ -2144,8 +2144,8 @@ export default function Upload() {
                           <Input
                             id="avgGridProfitWeek"
                             type="number"
-                            step="0.0001"
-                            placeholder="0.0000"
+                            step="0.01"
+                            placeholder="0.00"
                             className={getSignPrefix(formData.avgGridProfitWeek) ? "pl-6" : ""}
                             value={formData.avgGridProfitWeek}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
@@ -2168,8 +2168,8 @@ export default function Upload() {
                             <Input
                               id="lastAvgGridProfitHour"
                               type="number"
-                              step="0.0001"
-                              placeholder="0.0000"
+                              step="0.01"
+                              placeholder="0.00"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
                               value={formData.lastAvgGridProfitHour}
                               readOnly
@@ -2187,8 +2187,8 @@ export default function Upload() {
                             <Input
                               id="lastAvgGridProfitDay"
                               type="number"
-                              step="0.0001"
-                              placeholder="0.0000"
+                              step="0.01"
+                              placeholder="0.00"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
                               value={formData.lastAvgGridProfitDay}
                               readOnly
@@ -2206,8 +2206,8 @@ export default function Upload() {
                             <Input
                               id="lastAvgGridProfitWeek"
                               type="number"
-                              step="0.0001"
-                              placeholder="0.0000"
+                              step="0.01"
+                              placeholder="0.00"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
                               value={formData.lastAvgGridProfitWeek}
                               readOnly
