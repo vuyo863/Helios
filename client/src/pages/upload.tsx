@@ -86,6 +86,8 @@ export default function Upload() {
   
   // State für updateHistory
   const [updateHistory, setUpdateHistory] = useState<Record<string, any[]>>({});
+  // Trigger to force refresh updates after save
+  const [updateHistoryTrigger, setUpdateHistoryTrigger] = useState(0);
   
   // Lade Updates für alle Bot Types wenn sie sich ändern
   useEffect(() => {
@@ -96,7 +98,13 @@ export default function Upload() {
       
       for (const bt of botTypes) {
         try {
-          const response = await fetch(`/api/bot-types/${bt.id}/updates`);
+          // Add cache-busting to prevent 304 responses
+          const response = await fetch(`/api/bot-types/${bt.id}/updates`, {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
           if (response.ok) {
             const updates: BotTypeUpdate[] = await response.json();
             history[bt.name] = updates.map(u => ({
@@ -117,7 +125,7 @@ export default function Upload() {
     };
     
     fetchAllUpdates();
-  }, [botTypes]);
+  }, [botTypes, updateHistoryTrigger]);
   
   const [formData, setFormData] = useState({
     date: '',
@@ -476,6 +484,9 @@ export default function Upload() {
       if (selectedBotTypeId) {
         queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotTypeId, 'updates'] });
       }
+      
+      // Force refresh of update history to get the latest data (for isStartMetric check)
+      setUpdateHistoryTrigger(prev => prev + 1);
       
       toast({
         title: "Erfolgreich gespeichert",
@@ -1043,7 +1054,13 @@ export default function Upload() {
       
       if (!isStartMetric && selectedBotTypeId) {
         try {
-          const updatesResponse = await fetch(`/api/bot-types/${selectedBotTypeId}/updates`);
+          // Add cache-busting to prevent 304 responses and get fresh data
+          const updatesResponse = await fetch(`/api/bot-types/${selectedBotTypeId}/updates`, {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
           if (updatesResponse.ok) {
             const updates = await updatesResponse.json();
             if (updates && updates.length > 0) {

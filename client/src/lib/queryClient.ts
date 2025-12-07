@@ -31,6 +31,10 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
