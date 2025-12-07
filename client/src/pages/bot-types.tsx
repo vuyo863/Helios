@@ -51,18 +51,41 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
 
 // Formatiert Werte mit "+" Präfix bei positiven Zahlen (für USDT und Prozent)
 // NICHT für Mengenangaben wie Investment/Gesamtinvestment verwenden!
-function formatWithSign(value: string | number | null | undefined, suffix: string = ''): string {
+// decimals: Anzahl der Nachkommastellen (Standard: 2 für Prozent, 4 für USDT)
+function formatWithSign(value: string | number | null | undefined, suffix: string = '', decimals: number = 2): string {
   if (value === null || value === undefined || value === '' || value === '-') {
     return '-';
   }
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(numValue)) return '-';
   
-  const formatted = numValue.toFixed(2);
+  // Für USDT-Werte: Bis zu 4 Nachkommastellen, aber keine nachgestellten Nullen
+  let formatted: string;
+  if (decimals === 4) {
+    // Formatiere mit bis zu 4 Dezimalstellen, entferne nachgestellte Nullen
+    formatted = numValue.toFixed(4).replace(/\.?0+$/, '');
+    // Stelle sicher, dass mindestens 2 Dezimalstellen vorhanden sind
+    if (!formatted.includes('.')) {
+      formatted += '.00';
+    } else {
+      const decimalPart = formatted.split('.')[1] || '';
+      if (decimalPart.length < 2) {
+        formatted += '0'.repeat(2 - decimalPart.length);
+      }
+    }
+  } else {
+    formatted = numValue.toFixed(decimals);
+  }
+  
   if (numValue > 0) {
     return `+${formatted}${suffix}`;
   }
   return `${formatted}${suffix}`;
+}
+
+// Spezielle Funktion für USDT-Werte mit bis zu 4 Nachkommastellen
+function formatUsdtWithSign(value: string | number | null | undefined): string {
+  return formatWithSign(value, '', 4);
 }
 
 export default function BotTypesPage() {
@@ -874,7 +897,7 @@ export default function BotTypesPage() {
                                     </span>
                                     <span className="flex items-center gap-1.5">
                                       <span className="text-muted-foreground">Grid Profit:</span>
-                                      <span className="font-medium text-primary">{formatWithSign(update.overallGridProfitUsdt)} USDT</span>
+                                      <span className="font-medium text-primary">{formatUsdtWithSign(update.overallGridProfitUsdt)} USDT</span>
                                     </span>
                                   </div>
                                   {/* Zeile 3: Gesamt-Investment */}
@@ -1041,7 +1064,7 @@ export default function BotTypesPage() {
                   <CardContent className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground mb-1">Gesamtprofit (USDT)</p>
-                      <p className="font-medium text-primary">{formatWithSign(selectedUpdate.profit)}</p>
+                      <p className="font-medium text-primary">{formatUsdtWithSign(selectedUpdate.profit)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Gesamtinvestment</p>
@@ -1061,7 +1084,7 @@ export default function BotTypesPage() {
                   <CardContent className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground mb-1">Trend P&L (USDT)</p>
-                      <p className="font-medium">{formatWithSign(selectedUpdate.overallTrendPnlUsdt)}</p>
+                      <p className="font-medium">{formatUsdtWithSign(selectedUpdate.overallTrendPnlUsdt)}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-1">Trend P&L (%) - Gesamtinvestment</p>
@@ -1082,7 +1105,7 @@ export default function BotTypesPage() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Gesamter Grid Profit (USDT)</p>
-                        <p className="font-medium">{formatWithSign(selectedUpdate.overallGridProfitUsdt)}</p>
+                        <p className="font-medium">{formatUsdtWithSign(selectedUpdate.overallGridProfitUsdt)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Gesamter Grid Profit (%) - Gesamtinvestment</p>
@@ -1097,7 +1120,7 @@ export default function BotTypesPage() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit (USDT)</p>
-                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfit)}</p>
+                        <p className="font-medium">{formatUsdtWithSign(selectedUpdate.highestGridProfit)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Gesamtinvestment</p>
