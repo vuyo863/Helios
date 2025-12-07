@@ -249,13 +249,12 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
 Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert:
 
 1. **date** - NUR BEI STARTMETRIK:
-   - Das aktuelle Datum/Uhrzeit wird dir im System-Prompt mitgeteilt (currentDateTime)
    - Finde den Bot mit der LÄNGSTEN Laufzeit aus den Screenshots
-   - Berechne das Startdatum: currentDateTime MINUS längste Laufzeit
-   - WICHTIG: Rechne präzise! Wenn Laufzeit = "4h 46m", ziehe genau 4 Stunden und 46 Minuten ab
-   - Format: "YYYY-MM-DDTHH:MM" (z.B. "2025-12-06T19:41")
-   - Beispiel: currentDateTime = 2025-12-07T00:27, längste Laufzeit = 4h 46m → 
-     Startdatum = 2025-12-06T19:41 (00:27 - 4h 46m = 19:41 am Vortag)
+   - LESE das Erstellungsdatum direkt aus dem Screenshot AUS (z.B. "12/06/2025 19:41:02 Created")
+   - NICHT berechnen! Das Datum steht direkt auf dem Screenshot!
+   - Konvertiere das ausgelesene Datum ins Format: "YYYY-MM-DDTHH:MM"
+   - Beispiel: Screenshot zeigt "12/06/2025 19:41:02 Created" → date = "2025-12-06T19:41"
+   - ACHTUNG: Amerikanisches Datumsformat auf Screenshot (MM/DD/YYYY) → konvertiere zu (YYYY-MM-DD)
    - Bei NICHT-Startmetrik: Leer lassen "" (Frontend setzt aktuelles Datum)
 
 2. **botDirection** - Sammle ALLE einzigartigen Richtungen aus ALLEN Screenshots:
@@ -714,8 +713,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isStartMetric) {
         contextualPrompt += `**DATUM-LOGIK (STARTMETRIK):**\n`;
         contextualPrompt += `- Dies ist der ERSTE Upload (Startmetrik)\n`;
-        contextualPrompt += `- Berechne das Datum: Aktuelles Datum MINUS längste Runtime\n`;
-        contextualPrompt += `- Format: "YYYY-MM-DDTHH:MM"\n\n`;
+        contextualPrompt += `- LESE das Erstellungsdatum vom Screenshot mit der LÄNGSTEN Laufzeit AUS\n`;
+        contextualPrompt += `- Das Datum steht direkt auf dem Screenshot (z.B. "12/06/2025 19:41:02 Created")\n`;
+        contextualPrompt += `- NICHT berechnen! Konvertiere das ausgelesene Datum ins Format: "YYYY-MM-DDTHH:MM"\n`;
+        contextualPrompt += `- ACHTUNG: Amerikanisches Format (MM/DD/YYYY) auf Screenshot → konvertiere zu (YYYY-MM-DD)\n\n`;
       } else {
         contextualPrompt += `**DATUM-LOGIK (NORMALER UPLOAD):**\n`;
         contextualPrompt += `- Dies ist ein UPDATE (nicht Startmetrik)\n`;
