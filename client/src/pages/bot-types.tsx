@@ -488,10 +488,10 @@ export default function BotTypesPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Investitionsmengen-Ø:</span>
+                        <span className="text-muted-foreground">Gesamtinvestment-Ø:</span>
                         <span className="font-medium" data-testid={`text-avg-investment-${botType.id}`}>
                           {updatesForType.length > 0 
-                            ? (updatesForType.reduce((sum, u) => sum + (parseFloat(u.investment || '0') || 0), 0) / updatesForType.length).toFixed(2)
+                            ? (updatesForType.reduce((sum, u) => sum + (parseFloat(u.totalInvestment || '0') || 0), 0) / updatesForType.length).toFixed(2)
                             : '0.00'} USDT
                         </span>
                       </div>
