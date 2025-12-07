@@ -1088,11 +1088,11 @@ export default function Upload() {
         };
         
         // Variable für Grid Profit Durchschnitt Berechnung (in Stunden)
-        // - Bei Startmetrik: Längste Laufzeit aus Screenshots verwenden
-        // - Bei normalem Upload: Upload Laufzeit (This Upload - Last Upload) verwenden
+        // WICHTIG: Grid Profit Durchschnitt basiert IMMER auf der längsten Laufzeit aus den Screenshots!
+        // Die Upload Laufzeit (Zeit zwischen Uploads) ist nur für die Anzeige, nicht für die Berechnung!
         let runtimeHoursForGridProfit = 0;
         
-        // Parse die längste Laufzeit aus dem AI-Ergebnis für Startmetrik
+        // Parse die längste Laufzeit aus dem AI-Ergebnis
         const parseLongestRuntime = (runtime: string): number => {
           if (!runtime) return 0;
           // Format: "4h 46m 6s" oder "1d 2h 30m" oder "16h 28m"
@@ -1110,21 +1110,21 @@ export default function Upload() {
           return totalHours;
         };
         
+        // Grid Profit Durchschnitt: IMMER die längste Laufzeit aus Screenshots verwenden
+        // Das ist die tatsächliche Bot-Laufzeit, die für die Durchschnittsberechnung relevant ist
+        const longestRuntimeStr = toStr(calculatedValues.longestRuntime);
+        runtimeHoursForGridProfit = parseLongestRuntime(longestRuntimeStr);
+        
         if (isStartMetric) {
-          // Bei Startmetrik: AUSNAHME - Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
-          // Das ist die einzige Ausnahme, weil es keinen vorherigen Upload gibt, 
-          // aber die Laufzeit für Grid Profit Durchschnitt Berechnungen benötigt wird
-          const longestRuntimeStr = toStr(calculatedValues.longestRuntime);
-          uploadRuntimeValue = longestRuntimeStr; // Längste Laufzeit als Upload Laufzeit anzeigen
-          runtimeHoursForGridProfit = parseLongestRuntime(longestRuntimeStr);
+          // Bei Startmetrik: Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
+          uploadRuntimeValue = longestRuntimeStr;
         } else if (lastUploadDateTime) {
-          // Bei normalem Upload: Upload Laufzeit = This Upload - Last Upload
+          // Bei normalem Upload: Upload Laufzeit = This Upload - Last Upload (nur für Anzeige)
           uploadRuntimeValue = calculateRuntimeDiff(lastUploadDateTime);
-          runtimeHoursForGridProfit = (now.getTime() - lastUploadDateTime.getTime()) / (1000 * 60 * 60);
         }
         
         // Grid Profit Durchschnitt berechnen (Frontend-Berechnung, NICHT von Modi beeinflusst)
-        // Formel: Gesamter Grid Profit (USDT) / Upload-Laufzeit (Stunden)
+        // Formel: Gesamter Grid Profit (USDT) / Längste Bot-Laufzeit (Stunden aus Screenshots)
         let avgGridProfitHourCalc = '';
         let avgGridProfitDayCalc = '';
         let avgGridProfitWeekCalc = '';
