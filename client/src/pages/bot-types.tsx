@@ -710,7 +710,7 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
                         <p className="font-semibold">
-                          {updates[updates.length - 1]?.createdAt ? format(new Date(updates[updates.length - 1].createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                          {updates[updates.length - 1]?.date || '-'}
                         </p>
                       </div>
                     </div>
