@@ -308,6 +308,24 @@ export default function Upload() {
     }
   }, [highestGridProfitPercentBase, calculatedPercents.highestGridProfitPercent_gesamtinvestment, calculatedPercents.highestGridProfitPercent_investitionsmenge]);
 
+  // Ø Grid Profit Prozent: Direkt aus avgGridProfitUsdt berechnen
+  // Formel: (avgGridProfitUsdt / Investment-Basis) × 100
+  useEffect(() => {
+    const avgGridProfitUsdtValue = parseFloat(formData.avgGridProfitUsdt || '0');
+    const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+    const investmentValue = parseFloat(formData.investment || '0');
+    
+    let newPercent = '';
+    if (avgGridProfitUsdtValue !== 0) {
+      if (highestGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        newPercent = ((avgGridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
+      } else if (highestGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        newPercent = ((avgGridProfitUsdtValue / investmentValue) * 100).toFixed(2);
+      }
+    }
+    setFormData(prev => ({ ...prev, avgGridProfitPercent: newPercent }));
+  }, [formData.avgGridProfitUsdt, formData.totalInvestment, formData.investment, highestGridProfitPercentBase]);
+
   const uploadMutation = useMutation({
     mutationFn: async () => {
       if (!selectedBotTypeId) {
@@ -2286,15 +2304,15 @@ export default function Upload() {
                         <Label htmlFor="avgGridProfitPercent">Ø Grid Profit (%)</Label>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
-                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfitPercent)}</span>
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitPercent)}</span>
                             <Input
                               id="avgGridProfitPercent"
                               type="number"
                               step="0.01"
                               placeholder="0.00"
-                              className={getSignPrefix(formData.highestGridProfitPercent) ? "pl-6" : ""}
-                              value={formData.highestGridProfitPercent || ''}
-                              onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
+                              className={`bg-muted/50 ${getSignPrefix(formData.avgGridProfitPercent) ? "pl-6" : ""}`}
+                              value={formData.avgGridProfitPercent || ''}
+                              readOnly
                               data-testid="input-avg-grid-profit-percent"
                             />
                           </div>
