@@ -832,39 +832,48 @@ export default function BotTypesPage() {
                                 <p className="font-semibold text-sm mb-2">
                                   {update.status} #{update.version}
                                 </p>
-                                <div className="flex items-center flex-wrap gap-x-6 gap-y-1 text-xs">
-                                  {update.lastUpload && update.thisUpload ? (
-                                    <>
+                                <div className="flex flex-col gap-y-1 text-xs">
+                                  {/* Zeile 1: Datum (From/Until oder einzelnes Datum) */}
+                                  <div className="flex items-center flex-wrap gap-x-6">
+                                    {update.lastUpload && update.thisUpload ? (
+                                      <>
+                                        <span className="flex items-center gap-1 text-muted-foreground">
+                                          <span className="font-medium">From:</span>
+                                          {update.lastUpload || '-'}
+                                        </span>
+                                        <span className="flex items-center gap-1 text-muted-foreground">
+                                          <span className="font-medium">Until:</span>
+                                          {update.thisUpload || '-'}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span className="flex items-center gap-1 text-muted-foreground">
-                                        <span className="font-medium">From:</span>
-                                        {update.lastUpload || '-'}
+                                        <Calendar className="w-3 h-3" />
+                                        {update.createdAt 
+                                          ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                                          : '-'
+                                        }
                                       </span>
-                                      <span className="flex items-center gap-1 text-muted-foreground">
-                                        <span className="font-medium">Until:</span>
-                                        {update.thisUpload || '-'}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span className="flex items-center gap-1 text-muted-foreground">
-                                      <Calendar className="w-3 h-3" />
-                                      {update.createdAt 
-                                        ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
-                                        : '-'
-                                      }
+                                    )}
+                                  </div>
+                                  {/* Zeile 2: Grid Profit 24H Ø + Grid Profit */}
+                                  <div className="flex items-center flex-wrap gap-x-6">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                      <span className="font-medium text-primary">{formatWithSign(gridProfit24h)} USDT</span>
                                     </span>
-                                  )}
-                                  <span className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground">Gesamt-Investment:</span>
-                                    <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground">Grid Profit:</span>
-                                    <span className="font-medium text-primary">{formatWithSign(update.overallGridProfitUsdt)} USDT</span>
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
-                                    <span className="font-medium text-primary">{formatWithSign(gridProfit24h)} USDT</span>
-                                  </span>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="text-muted-foreground">Grid Profit:</span>
+                                      <span className="font-medium text-primary">{formatWithSign(update.overallGridProfitUsdt)} USDT</span>
+                                    </span>
+                                  </div>
+                                  {/* Zeile 3: Gesamt-Investment */}
+                                  <div className="flex items-center flex-wrap gap-x-6">
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="text-muted-foreground">Gesamt-Investment:</span>
+                                      <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
