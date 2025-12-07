@@ -158,6 +158,8 @@ export default function Upload() {
     overallGridProfitPercent: '',
     avgGridProfitPercent: '',
     avgGridProfitChange: '',
+    avgGridProfitChangeDollar: '',
+    avgGridProfitChangePercent: '',
     leverage: '',
     notes: '', // Notizen (wird NICHT an AI gesendet)
   });
@@ -817,6 +819,8 @@ export default function Upload() {
       overallGridProfitPercent: '',
       avgGridProfitPercent: '',
       avgGridProfitChange: '',
+      avgGridProfitChangeDollar: '',
+      avgGridProfitChangePercent: '',
       leverage: '',
       notes: '',
     });
@@ -1147,6 +1151,19 @@ export default function Upload() {
         let changeWeekDollarCalc = '';
         let changeWeekPercentCalc = '';
         
+        // Change für Ø Grid Profit (highestGridProfit aktuell vs lastHighestGridProfit)
+        let avgGridProfitChangeDollarCalc = '';
+        let avgGridProfitChangePercentCalc = '';
+        
+        const currentHighestGridProfit = parseFloat(toStr(calculatedValues.highestGridProfit)) || 0;
+        const lastHighestGridProfitNum = parseFloat(lastHighestGridProfitValue) || 0;
+        
+        if (!isStartMetric && lastHighestGridProfitNum !== 0) {
+          const diffHighestGridProfit = currentHighestGridProfit - lastHighestGridProfitNum;
+          avgGridProfitChangeDollarCalc = diffHighestGridProfit.toFixed(2);
+          avgGridProfitChangePercentCalc = ((diffHighestGridProfit / Math.abs(lastHighestGridProfitNum)) * 100).toFixed(2);
+        }
+        
         const currentHour = parseFloat(avgGridProfitHourCalc) || 0;
         const currentDay = parseFloat(avgGridProfitDayCalc) || 0;
         const currentWeek = parseFloat(avgGridProfitWeekCalc) || 0;
@@ -1208,6 +1225,9 @@ export default function Upload() {
           lastAvgGridProfitWeek: lastAvgGridProfitWeekValue,
           // Last Ø Grid Profit (vorheriger highestGridProfit Wert)
           lastHighestGridProfit: lastHighestGridProfitValue,
+          // Change für Ø Grid Profit (aktueller highestGridProfit vs vorheriger)
+          avgGridProfitChangeDollar: avgGridProfitChangeDollarCalc,
+          avgGridProfitChangePercent: avgGridProfitChangePercentCalc,
           // Change-Werte (alle 6 Kombinationen)
           changeHourDollar: changeHourDollarCalc,
           changeHourPercent: changeHourPercentCalc,
@@ -2184,13 +2204,13 @@ export default function Upload() {
                         <Label htmlFor="avgGridProfitChange">Change</Label>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
-                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitChange)}</span>
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(avgGridProfitChangeUnit === '$' ? formData.avgGridProfitChangeDollar : formData.avgGridProfitChangePercent)}</span>
                             <Input
                               id="avgGridProfitChange"
                               type="text"
                               placeholder="0.00"
-                              className={`bg-muted/50 ${getSignPrefix(formData.avgGridProfitChange) ? "pl-6" : ""}`}
-                              value={formData.avgGridProfitChange || '-'}
+                              className={`bg-muted/50 ${getSignPrefix(avgGridProfitChangeUnit === '$' ? formData.avgGridProfitChangeDollar : formData.avgGridProfitChangePercent) ? "pl-6" : ""}`}
+                              value={(avgGridProfitChangeUnit === '$' ? formData.avgGridProfitChangeDollar : formData.avgGridProfitChangePercent) || '-'}
                               readOnly
                               data-testid="input-avg-grid-profit-change"
                             />
