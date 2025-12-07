@@ -202,8 +202,6 @@ export default function Upload() {
     overallGridProfitPercent_investitionsmenge: '',
     highestGridProfitPercent_gesamtinvestment: '',
     highestGridProfitPercent_investitionsmenge: '',
-    avgGridProfitPercent_gesamtinvestment: '',
-    avgGridProfitPercent_investitionsmenge: '',
   });
 
   // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
@@ -310,16 +308,23 @@ export default function Upload() {
     }
   }, [highestGridProfitPercentBase, calculatedPercents.highestGridProfitPercent_gesamtinvestment, calculatedPercents.highestGridProfitPercent_investitionsmenge]);
 
-  // Ø Grid Profit Prozent: Nutze gespeicherte Werte beim Umschalten der Basis
+  // Ø Grid Profit Prozent: Direkt aus avgGridProfitUsdt berechnen
+  // Formel: (avgGridProfitUsdt / Investment-Basis) × 100
   useEffect(() => {
-    if (highestGridProfitPercentBase === 'gesamtinvestment') {
-      const newValue = calculatedPercents.avgGridProfitPercent_gesamtinvestment || '';
-      setFormData(prev => ({ ...prev, avgGridProfitPercent: newValue }));
-    } else if (highestGridProfitPercentBase === 'investitionsmenge') {
-      const newValue = calculatedPercents.avgGridProfitPercent_investitionsmenge || '';
-      setFormData(prev => ({ ...prev, avgGridProfitPercent: newValue }));
+    const avgGridProfitUsdtValue = parseFloat(formData.avgGridProfitUsdt || '0');
+    const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+    const investmentValue = parseFloat(formData.investment || '0');
+    
+    let newPercent = '';
+    if (avgGridProfitUsdtValue !== 0) {
+      if (highestGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        newPercent = ((avgGridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
+      } else if (highestGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        newPercent = ((avgGridProfitUsdtValue / investmentValue) * 100).toFixed(2);
+      }
     }
-  }, [highestGridProfitPercentBase, calculatedPercents.avgGridProfitPercent_gesamtinvestment, calculatedPercents.avgGridProfitPercent_investitionsmenge]);
+    setFormData(prev => ({ ...prev, avgGridProfitPercent: newPercent }));
+  }, [formData.avgGridProfitUsdt, formData.totalInvestment, formData.investment, highestGridProfitPercentBase]);
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -399,19 +404,6 @@ export default function Upload() {
         highestPercent_investitionsmenge = calculatedPercents.highestGridProfitPercent_investitionsmenge || null;
       }
 
-      // Ø Grid Profit Prozent - beide Basen (direkt aus avgGridProfitUsdt berechnet)
-      const avgGridProfitUsdtValue = parseFloat(formData.avgGridProfitUsdt || '0');
-      let avgGridProfitPercent_gesamtinvestment: string | null = null;
-      let avgGridProfitPercent_investitionsmenge: string | null = null;
-      if (avgGridProfitUsdtValue !== 0) {
-        if (totalInvestmentValue > 0) {
-          avgGridProfitPercent_gesamtinvestment = ((avgGridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
-        }
-        if (investmentValue > 0) {
-          avgGridProfitPercent_investitionsmenge = ((avgGridProfitUsdtValue / investmentValue) * 100).toFixed(2);
-        }
-      }
-
       // Erstelle Update-Daten
       const updateData = {
         botTypeId: selectedBotTypeId,
@@ -451,8 +443,6 @@ export default function Upload() {
         highestGridProfitPercent_gesamtinvestment: highestPercent_gesamtinvestment,
         highestGridProfitPercent_investitionsmenge: highestPercent_investitionsmenge,
         avgGridProfitUsdt: formData.avgGridProfitUsdt || null, // Durchschnitt = Gesamter Grid Profit / Anzahl Screenshots
-        avgGridProfitPercent_gesamtinvestment,
-        avgGridProfitPercent_investitionsmenge,
         avgGridProfitHour: formData.avgGridProfitHour || null,
         avgGridProfitDay: formData.avgGridProfitDay || null,
         avgGridProfitWeek: formData.avgGridProfitWeek || null,
@@ -1152,23 +1142,6 @@ export default function Upload() {
         // SPEICHERE alle berechneten Prozentwerte für späteren Umschalt-Zugriff
         // WICHTIG: Formularfelder (type="number") akzeptieren kein "+" Zeichen!
         // Daher nur den numerischen Wert speichern, das "+" wird bei der Anzeige hinzugefügt
-        
-        // Berechne Ø Grid Profit (%) aus avgGridProfitUsdt für beide Basen
-        const avgGridProfitUsdtVal = parseFloat(toStr(calculatedValues.avgGridProfitUsdt)) || 0;
-        const totalInvestmentVal = parseFloat(toStr(calculatedValues.totalInvestment)) || 0;
-        const investmentVal = parseFloat(toStr(calculatedValues.investment)) || 0;
-        
-        let avgGridProfitPct_gesamt = '';
-        let avgGridProfitPct_invest = '';
-        if (avgGridProfitUsdtVal !== 0) {
-          if (totalInvestmentVal > 0) {
-            avgGridProfitPct_gesamt = ((avgGridProfitUsdtVal / totalInvestmentVal) * 100).toFixed(2);
-          }
-          if (investmentVal > 0) {
-            avgGridProfitPct_invest = ((avgGridProfitUsdtVal / investmentVal) * 100).toFixed(2);
-          }
-        }
-        
         setCalculatedPercents({
           profitPercent_gesamtinvestment: toStr(calculatedValues.profitPercent_gesamtinvestment),
           profitPercent_investitionsmenge: toStr(calculatedValues.profitPercent_investitionsmenge),
@@ -1178,8 +1151,6 @@ export default function Upload() {
           overallGridProfitPercent_investitionsmenge: toStr(calculatedValues.overallGridProfitPercent_investitionsmenge),
           highestGridProfitPercent_gesamtinvestment: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment),
           highestGridProfitPercent_investitionsmenge: toStr(calculatedValues.highestGridProfitPercent_investitionsmenge),
-          avgGridProfitPercent_gesamtinvestment: avgGridProfitPct_gesamt,
-          avgGridProfitPercent_investitionsmenge: avgGridProfitPct_invest,
         });
         
         // DEBUG: Log vor dem Setzen
@@ -2307,51 +2278,6 @@ export default function Upload() {
                             <SelectContent>
                               <SelectItem value="gesamtinvestment">Gesamtinvestment</SelectItem>
                               <SelectItem value="investitionsmenge">Investitionsmenge</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="relative">
-                        <Label htmlFor="highestGridProfit">Höchster Grid Profit (USDT)</Label>
-                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfit)}</span>
-                        <Input
-                          id="highestGridProfit"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          className={`bg-muted/50 ${getSignPrefix(formData.highestGridProfit) ? "pl-6" : ""}`}
-                          value={formData.highestGridProfit}
-                          onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
-                          data-testid="input-highest-grid-profit"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfitPercent)}</span>
-                            <Input
-                              id="highestGridProfitPercent"
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              className={`bg-muted/50 ${getSignPrefix(formData.highestGridProfitPercent) ? "pl-6" : ""}`}
-                              value={formData.highestGridProfitPercent}
-                              onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
-                              data-testid="input-highest-grid-profit-percent"
-                            />
-                          </div>
-                          <Select value={gridPercentDropdown} onValueChange={setGridPercentDropdown}>
-                            <SelectTrigger className="w-52" data-testid="select-highest-grid-profit-percent">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Gesamtinvestment">Gesamtinvestment</SelectItem>
-                              <SelectItem value="Investitionsmenge">Investitionsmenge</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
