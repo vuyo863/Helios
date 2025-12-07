@@ -200,9 +200,14 @@ Szenario D - MIT NEUTRAL:
 - Die Richtung gehört NUR ins botDirection-Feld
 
 **WICHTIG FÜR BOT-RICHTUNG (botDirection):**
-- Moegliche Werte: "Long", "Short", "Neutral"
+- Moegliche Werte PRO SCREENSHOT: "Long", "Short", "Neutral", "Long+Short"
+- **KRITISCH: "Long+Short" ist eine EIGENE Kategorie!**
+  - Wenn ein Screenshot BEIDE Labels "Long" UND "Short" gleichzeitig zeigt (z.B. Cross Margin Futures Grid)
+  - Dann ist das NICHT "Long" und "Short" separat, sondern "Long+Short" als EINE Kategorie
+  - Beispiel: Screenshot zeigt [Long] [Short] nebeneinander → botDirection = "Long+Short"
 - Bei mehreren verschiedenen Richtungen: alle mit Komma trennen
-- Beispiel: "Long, Neutral, Short"
+- Beispiel: Ein Long-Bot + ein Long+Short-Bot → "Long, Long+Short"
+- Beispiel: Zwei Long+Short-Bots → "Long+Short" (Duplikat entfernt)
 
 Bestätige, dass du diese Logik verstanden hast, indem du sie in eigenen Worten erklärst.`;
 
@@ -258,11 +263,16 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
    - Bei NICHT-Startmetrik: Leer lassen "" (Frontend setzt aktuelles Datum)
 
 2. **botDirection** - Sammle ALLE einzigartigen Richtungen aus ALLEN Screenshots:
-   - Moegliche Werte pro Screenshot: "Long", "Short", "Neutral"
+   - Moegliche Werte pro Screenshot: "Long", "Short", "Neutral", "Long+Short"
+   - **KRITISCH: "Long+Short" erkennen:**
+     * Wenn ein Screenshot BEIDE Labels [Long] UND [Short] gleichzeitig zeigt
+     * Dann ist das "Long+Short" als EINE Kategorie (z.B. Cross Margin Futures Grid)
+     * NICHT als zwei separate Richtungen "Long" und "Short" behandeln!
    - Bei MEHREREN Screenshots: Kombiniere alle einzigartigen Werte mit ", "
    - Beispiel: Screenshot1=Long, Screenshot2=Short → "Long, Short"
    - Beispiel: Screenshot1=Neutral, Screenshot2=Neutral → "Neutral" (Duplikat entfernt)
-   - Beispiel: Screenshot1=Long, Screenshot2=Neutral, Screenshot3=Short → "Long, Neutral, Short"
+   - Beispiel: Screenshot1=Long, Screenshot2=Long+Short → "Long, Long+Short"
+   - Beispiel: Screenshot1=Long+Short, Screenshot2=Long+Short → "Long+Short" (Duplikat entfernt)
 
 3. **leverage** - Sammle ALLE einzigartigen Hebel (NUR Multiplikator, OHNE Richtung!):
    - Beispiel: Screenshot1=2x, Screenshot2=75x → "2x, 75x"

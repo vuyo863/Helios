@@ -1872,7 +1872,7 @@ export default function Upload() {
                       <Input
                         id="botDirection"
                         type="text"
-                        placeholder="Long, Short, Neutral"
+                        placeholder="Long, Short, Neutral, Long+Short"
                         value={formData.botDirection}
                         readOnly
                         className="bg-muted"
