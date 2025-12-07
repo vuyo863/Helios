@@ -894,10 +894,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : previousUploadData;
 
           // Helper: Berechne Differenz (current - previous)
-          const calcDelta = (current: any, previous: any): string => {
+          // decimals: Anzahl der Nachkommastellen (2 für Prozent/Investment, 4 für USDT)
+          const calcDelta = (current: any, previous: any, decimals: number = 2): string => {
             const curr = parseFloat(current || 0);
             const prev = parseFloat(previous || 0);
-            return (curr - prev).toFixed(2);
+            return (curr - prev).toFixed(decimals);
+          };
+          
+          // Spezielle Funktion für USDT-Werte mit bis zu 4 Nachkommastellen
+          const calcDeltaUsdt = (current: any, previous: any): string => {
+            return calcDelta(current, previous, 4);
           };
 
           // Investment Section - Server berechnet Differenz
@@ -909,7 +915,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Profit Section - Server berechnet Differenz
           if (modes.profit === 'Vergleich') {
-            calculatedValues.profit = calcDelta(calculatedValues.profit, parsedPrevious.profit);
+            // USDT-Wert: 4 Nachkommastellen
+            calculatedValues.profit = calcDeltaUsdt(calculatedValues.profit, parsedPrevious.profit);
+            // Prozentwerte: 2 Nachkommastellen
             calculatedValues.profitPercent_gesamtinvestment = calcDelta(
               calculatedValues.profitPercent_gesamtinvestment, 
               parsedPrevious.profitPercent_gesamtinvestment
@@ -922,10 +930,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Trend P&L Section - Server berechnet Differenz
           if (modes.trend === 'Vergleich') {
-            calculatedValues.overallTrendPnlUsdt = calcDelta(
+            // USDT-Wert: 4 Nachkommastellen
+            calculatedValues.overallTrendPnlUsdt = calcDeltaUsdt(
               calculatedValues.overallTrendPnlUsdt, 
               parsedPrevious.overallTrendPnlUsdt
             );
+            // Prozentwerte: 2 Nachkommastellen
             calculatedValues.overallTrendPnlPercent_gesamtinvestment = calcDelta(
               calculatedValues.overallTrendPnlPercent_gesamtinvestment,
               parsedPrevious.overallTrendPnlPercent_gesamtinvestment
@@ -938,10 +948,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Grid Profit Section - Server berechnet Differenz
           if (modes.grid === 'Vergleich') {
-            calculatedValues.overallGridProfitUsdt = calcDelta(
+            // USDT-Wert: 4 Nachkommastellen
+            calculatedValues.overallGridProfitUsdt = calcDeltaUsdt(
               calculatedValues.overallGridProfitUsdt,
               parsedPrevious.overallGridProfitUsdt
             );
+            // Prozentwerte: 2 Nachkommastellen
             calculatedValues.overallGridProfitPercent_gesamtinvestment = calcDelta(
               calculatedValues.overallGridProfitPercent_gesamtinvestment,
               parsedPrevious.overallGridProfitPercent_gesamtinvestment
