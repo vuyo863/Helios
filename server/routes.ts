@@ -184,12 +184,12 @@ Szenario D - MIT NEUTRAL:
 **DEIN KONKRETER FALL:**
   Screenshot 1: direction=Long, leverage=100x
   Screenshot 2: direction=Short, leverage=3x
-  
+
   Schritt 1: Sammle [Long, Short] und [100x, 3x]
   Schritt 2: Keine Duplikate
   Schritt 3: Sortiere alphabetisch
   Schritt 4: Verbinde mit ", "
-  
+
   AUSGABE:
     - botDirection: "Long, Short"
     - leverage: "3x, 100x"
@@ -330,24 +330,24 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
 5. **GRID PROFIT DURCHSCHNITT - RUNTIME VALIDIERUNG (KRITISCH!):**
    - **ZUERST: Finde längste Runtime in allen Screenshots**
    - Dann prüfe GENAU:
-   
+
    **avgGridProfitHour:**
    - Kann IMMER berechnet werden (auch bei < 1h)
    - Berechnung: total / (runtime in Stunden)
    - Beispiel: Runtime 30min → total / 0.5
-   
+
    **avgGridProfitDay:**
    - NUR wenn längste Runtime >= 24 Stunden (1 Tag)!
    - Wenn längste Runtime < 24h → setze auf null
    - Beispiel: Runtime 6h → avgGridProfitDay = null ❌
    - Beispiel: Runtime 30h → avgGridProfitDay = total / (30/24) ✅
-   
+
    **avgGridProfitWeek:**
    - NUR wenn längste Runtime >= 168 Stunden (7 Tage)!
    - Wenn längste Runtime < 168h → setze auf null
    - Beispiel: Runtime 5d (120h) → avgGridProfitWeek = null ❌
    - Beispiel: Runtime 10d (240h) → avgGridProfitWeek = total / (240/168) ✅
-   
+
    **WICHTIG:** Diese Regel gilt für NEU und VERGLEICH Modi!
 
 6. **DATUM LOGIK:**
@@ -603,12 +603,12 @@ Die Anwendung hat einen 3-Phasen-Workflow. Aktuell befindest du dich in **Phase 
      * **ID (Farbe)**: Die ID ist eine Hex-Farbe wie "#3B82F6", "#10B981", "#8B5CF6" - NICHT eine UUID!
      * **Beschreibung**: Optionale Beschreibung des Bot-Typs
      * **Update-Verlauf**: Liste aller Updates mit Namen, Datum und Uhrzeit
-   
+
    - **Update-Verlauf Format**:
      * Jedes Update hat: updateName, updateDate (DD.MM.YYYY), updateTime (HH:MM)
      * Beispiel: "Q4 Performance Update" am "15.11.2025" um "14:30"
      * Wenn KEINE Updates vorhanden sind, wird "Start Metric" angezeigt
-   
+
    - **Wichtig für Kontext**:
      * Wenn du eine Bot Type ID (z.B. "#3B82F6") erwähnst, kannst du den Update-Verlauf referenzieren
      * Beziehe dich auf frühere Updates wenn du Konzepte erklärst
@@ -636,25 +636,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         previousUploadData,
         manualOverrides 
       } = req.body;
-      
+
       if (!screenshotData || !modes) {
         return res.status(400).json({ error: "Screenshot data and modes are required" });
       }
-      
+
       // Verarbeite manuelle Überschreibungen (nur bei 1 Screenshot)
       let processedScreenshotData = screenshotData;
       let overrideMessages: string[] = [];
-      
+
       if (manualOverrides && Object.keys(manualOverrides).length > 0) {
         try {
           const parsedData = typeof screenshotData === 'string' 
             ? JSON.parse(screenshotData) 
             : screenshotData;
-          
+
           // Prüfe ob nur 1 Screenshot vorhanden ist
           if (parsedData.screenshots && parsedData.screenshots.length === 1) {
             const screenshot = parsedData.screenshots[0];
-            
+
             // Wende manuelle Überschreibungen an
             if (manualOverrides.overallGridProfitUsdt !== undefined) {
               const oldValue = screenshot.gridProfitUsdt;
@@ -675,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (manualOverrides.lastUpload !== undefined) {
               overrideMessages.push(`Last Upload: ${manualOverrides.lastUpload}`);
             }
-            
+
             processedScreenshotData = JSON.stringify(parsedData);
             console.log('Manuelle Überschreibungen angewendet:', overrideMessages);
           }
@@ -693,14 +693,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (modes.profit === 'Vergleich') vergleichModes.push('Profit');
       if (modes.trend === 'Vergleich') vergleichModes.push('Trend P&L');
       if (modes.grid === 'Vergleich') vergleichModes.push('Grid Trading');
-      
+
       if (!isStartMetric && vergleichModes.length > 0 && !previousUploadData) {
         return res.status(400).json({ 
           error: `VERGLEICH-Modus aktiv für ${vergleichModes.join(', ')}, aber keine vorherigen Daten vorhanden`,
           details: "Bitte stellen Sie vorherige Upload-Daten bereit oder wechseln Sie zu 'Neu'-Modus"
         });
       }
-      
+
       // VALIDIERUNG: Prüfe ob previousUploadData die benötigten Felder enthält
       // Nur bei !isStartMetric (bei Startmetrik gibt es keine previous data)
       if (!isStartMetric && previousUploadData) {
@@ -714,27 +714,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             error: "Ungültige vorherige Upload-Daten (kein gültiges JSON)" 
           });
         }
-        
+
         const missingFields = [];
-        
+
         if (modes.investment === 'Vergleich') {
           if (!parsedPrevious.investment) missingFields.push('investment');
           if (!parsedPrevious.extraMargin) missingFields.push('extraMargin');
           if (!parsedPrevious.totalInvestment) missingFields.push('totalInvestment');
         }
-        
+
         if (modes.profit === 'Vergleich') {
           if (!parsedPrevious.profit) missingFields.push('profit');
         }
-        
+
         if (modes.trend === 'Vergleich') {
           if (!parsedPrevious.overallTrendPnlUsdt) missingFields.push('overallTrendPnlUsdt');
         }
-        
+
         if (modes.grid === 'Vergleich') {
           if (!parsedPrevious.overallGridProfitUsdt) missingFields.push('overallGridProfitUsdt');
         }
-        
+
         if (missingFields.length > 0) {
           return res.status(400).json({ 
             error: `Vorherige Upload-Daten unvollständig für VERGLEICH-Modus`,
@@ -747,9 +747,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NEUE STRATEGIE: AI berechnet IMMER im NEU Modus
       // Server berechnet Differenzen für VERGLEICH Modi nach AI-Antwort
       let contextualPrompt = PHASE_4_PROMPT;
-      
+
       contextualPrompt += `\n\n**SCREENSHOT-DATEN (aus Phase 2):**\n${processedScreenshotData}\n\n`;
-      
+
       // Füge Hinweis zu manuellen Überschreibungen hinzu
       if (overrideMessages.length > 0) {
         contextualPrompt += `**MANUELLE ÜBERSCHREIBUNGEN (vom Benutzer eingegeben):**\n`;
@@ -760,7 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       contextualPrompt += `**MODI-EINSTELLUNGEN:**\n`;
       contextualPrompt += `- Alle Sektionen: NEU Modus (berechne aktuelle Gesamtwerte)\n\n`;
-      
+
       // Datum-Logik: Nur bei Startmetrik berechnen, sonst null lassen
       contextualPrompt += `**STARTMETRIK-FLAG:** ${isStartMetric ? 'JA' : 'NEIN'}\n\n`;
       if (isStartMetric) {
@@ -775,7 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contextualPrompt += `- Dies ist ein UPDATE (nicht Startmetrik)\n`;
         contextualPrompt += `- Setze date auf null - das Frontend wird das aktuelle Datum verwenden\n\n`;
       }
-      
+
       contextualPrompt += `**AUFGABE:**\n`;
       contextualPrompt += `- Summiere ALLE Screenshots für jeden Wert\n`;
       contextualPrompt += `- Berechne Prozentsätze mit beiden Basen (Gesamtinvestment + Investitionsmenge)\n`;
@@ -793,14 +793,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const aiResponse = completion.choices[0]?.message?.content || "{}";
-      
+
       try {
         const calculatedValues = JSON.parse(aiResponse);
-        
+
         // VALIDIERUNG 1: Zod Schema-Validierung des AI-Outputs
         // Akzeptiere sowohl string als auch number (AI gibt manchmal numbers zurück)
         const stringOrNumber = z.union([z.string(), z.number()]).nullable();
-        
+
         const phase4Schema = z.object({
           date: z.string().nullable(),
           botDirection: z.string().nullable(),
@@ -826,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           avgGridProfitDay: stringOrNumber,
           avgGridProfitWeek: stringOrNumber,
         });
-        
+
         const validationResult = phase4Schema.safeParse(calculatedValues);
         if (!validationResult.success) {
           console.error("AI output schema validation failed:", validationResult.error);
@@ -835,17 +835,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             details: validationResult.error.errors
           });
         }
-        
+
         // DATUM-LOGIK (Server-seitig):
         // - Bei Startmetrik: KI berechnet das Datum (ältestes Startdatum basierend auf Runtime)
         // - Bei normalem Upload: Datum auf null setzen - Frontend verwendet aktuelles Echtzeit-Datum
         if (!isStartMetric) {
           calculatedValues.date = null;
         }
-        
+
         // STRATEGIE: Server berechnet VERGLEICH Differenzen
         // AI hat bereits die aktuellen Gesamtwerte berechnet (NEU Modus)
-        
+
         // STARTMETRIK GUARD: Wenn erster Upload mit VERGLEICH Modi → setze auf 0.00
         if (isStartMetric) {
           // Für Startmetrik: setze alle VERGLEICH Felder auf "0.00"
@@ -854,19 +854,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             calculatedValues.extraMargin = "0.00";
             calculatedValues.totalInvestment = "0.00";
           }
-          
+
           if (modes.profit === 'Vergleich') {
             calculatedValues.profit = "0.00";
             calculatedValues.profitPercent_gesamtinvestment = "0.00";
             calculatedValues.profitPercent_investitionsmenge = "0.00";
           }
-          
+
           if (modes.trend === 'Vergleich') {
             calculatedValues.overallTrendPnlUsdt = "0.00";
             calculatedValues.overallTrendPnlPercent_gesamtinvestment = "0.00";
             calculatedValues.overallTrendPnlPercent_investitionsmenge = "0.00";
           }
-          
+
           if (modes.grid === 'Vergleich') {
             calculatedValues.overallGridProfitUsdt = "0.00";
             calculatedValues.overallGridProfitPercent_gesamtinvestment = "0.00";
@@ -880,27 +880,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             calculatedValues.avgGridProfitWeek = "0.00";
           }
         }
-        
+
         // VERGLEICH DIFFERENZEN: Nur wenn NICHT Startmetrik UND previous data vorhanden
         if (!isStartMetric && previousUploadData) {
           const parsedPrevious = typeof previousUploadData === 'string' 
             ? JSON.parse(previousUploadData) 
             : previousUploadData;
-          
+
           // Helper: Berechne Differenz (current - previous)
           const calcDelta = (current: any, previous: any): string => {
             const curr = parseFloat(current || 0);
             const prev = parseFloat(previous || 0);
             return (curr - prev).toFixed(2);
           };
-          
+
           // Investment Section - Server berechnet Differenz
           if (modes.investment === 'Vergleich') {
             calculatedValues.investment = calcDelta(calculatedValues.investment, parsedPrevious.investment);
             calculatedValues.extraMargin = calcDelta(calculatedValues.extraMargin, parsedPrevious.extraMargin);
             calculatedValues.totalInvestment = calcDelta(calculatedValues.totalInvestment, parsedPrevious.totalInvestment);
           }
-          
+
           // Profit Section - Server berechnet Differenz
           if (modes.profit === 'Vergleich') {
             calculatedValues.profit = calcDelta(calculatedValues.profit, parsedPrevious.profit);
@@ -913,7 +913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               parsedPrevious.profitPercent_investitionsmenge
             );
           }
-          
+
           // Trend P&L Section - Server berechnet Differenz
           if (modes.trend === 'Vergleich') {
             calculatedValues.overallTrendPnlUsdt = calcDelta(
@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               parsedPrevious.overallTrendPnlPercent_investitionsmenge
             );
           }
-          
+
           // Grid Profit Section - Server berechnet Differenz
           if (modes.grid === 'Vergleich') {
             calculatedValues.overallGridProfitUsdt = calcDelta(
@@ -949,7 +949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // (der höchste von allen Screenshots dieses Uploads)
             // calculatedValues.highestGridProfit bleibt unverändert (absoluter Wert)
             // calculatedValues.highestGridProfitPercent_* bleibt unverändert (absoluter Wert)
-            
+
             calculatedValues.avgGridProfitHour = calcDelta(
               calculatedValues.avgGridProfitHour,
               parsedPrevious.avgGridProfitHour
@@ -964,11 +964,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
           }
         }
-        
+
         // HINWEIS: avgGridProfit* (Stunde/Tag/Woche) wird jetzt im Frontend berechnet
         // basierend auf: Gesamter Grid Profit / Upload-Laufzeit
         // Daher keine Server-Validierung mehr für diese Felder erforderlich
-        
+
         res.json({ 
           success: true,
           values: calculatedValues
@@ -992,7 +992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
       const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName, selectedBotTypeColor } = req.body;
-      
+
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages array is required" });
       }
@@ -1009,15 +1009,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contextualPrompt = SYSTEM_PROMPT + '\n\n' + PHASE_3_PROMPT;
       }
       let isStartMetric = false;
-      
+
       if (phase === 'phase2_step1' && selectedBotTypeName && updateHistory) {
         const updates = updateHistory[selectedBotTypeName];
-        
+
         contextualPrompt += `\n\n**AUSGEWÄHLTER BOT TYPE:**\nName: "${selectedBotTypeName}"\nID (Farbe): ${selectedBotTypeColor || 'keine Farbe'}\n\n`;
-        
+
         if (updates && updates.length > 0) {
           const latestUpdate = updates[0];
-          
+
           contextualPrompt += `**UPDATE-VERLAUF GEFUNDEN (${updates.length} Updates):**\n`;
           contextualPrompt += `Neuester Update:\n`;
           contextualPrompt += `- Update Name: "${latestUpdate.updateName}"\n`;
@@ -1038,7 +1038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contextualPrompt += `\n\n**VERFÜGBARE BOT TYPES:**\n`;
         botTypes.forEach((bt: any) => {
           contextualPrompt += `\n- Name: "${bt.name}"\n  ID: ${bt.color || 'keine Farbe'}\n  Beschreibung: ${bt.description || 'keine Beschreibung'}\n`;
-          
+
           if (updateHistory && updateHistory[bt.name]) {
             const updates = updateHistory[bt.name];
             if (updates.length > 0) {
@@ -1093,7 +1093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const completion = await openai.chat.completions.create(completionOptions);
 
       const aiResponse = completion.choices[0]?.message?.content || "Entschuldigung, ich konnte keine Antwort generieren.";
-      
+
       if (phase === 'phase2_step1') {
         res.json({ response: aiResponse, isStartMetric });
       } else {
@@ -1134,13 +1134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/bot-types/:id", async (req, res) => {
     try {
       const updateSchema = insertBotTypeSchema.partial().refine(
-        (data) => data.name !== undefined || data.description !== undefined || data.color !== undefined,
+        (data) => data.name !== undefined || data.description !== undefined || data.color !== undefined || data.wontLiqBudget !== undefined, // Added wontLiqBudget check
         { message: "At least one field must be provided for update" }
       ).refine(
         (data) => !data.name || data.name.trim().length > 0,
         { message: "Name cannot be empty", path: ["name"] }
       );
-      
+
       const validatedData = updateSchema.parse(req.body);
       const updated = await storage.updateBotType(req.params.id, validatedData);
       if (!updated) {
@@ -1184,7 +1184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bot Type Updates Routes
-  
+
   // Get all updates for all bot types (for calculating totals on cards)
   app.get("/api/bot-type-updates", async (req, res) => {
     try {
@@ -1194,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch all updates" });
     }
   });
-  
+
   app.get("/api/bot-types/:id/updates", async (req, res) => {
     try {
       const updates = await storage.getBotTypeUpdates(req.params.id);
@@ -1219,7 +1219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create update" });
     }
   });
-  
+
   // Update notes for a specific bot type update
   app.patch("/api/bot-type-updates/:updateId/notes", async (req, res) => {
     try {
@@ -1261,13 +1261,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/report", async (req, res) => {
     try {
       const { from, to } = req.query;
-      
+
       if (!from || !to) {
         return res.status(400).json({ error: "Start and end dates are required" });
       }
 
       const entries = await storage.getBotEntriesByDateRange(from as string, to as string);
-      
+
       const totalInvestment = entries.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
       const totalProfit = entries.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
       const totalProfitPercent = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
@@ -1317,9 +1317,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload", async (req, res) => {
     try {
       const validatedData = insertBotEntrySchema.parse(req.body);
-      
+
       const entry = await storage.createBotEntry(validatedData);
-      
+
       res.status(201).json(entry);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1333,7 +1333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updateSchema = insertBotEntrySchema.partial();
       const validatedData = updateSchema.parse(req.body);
-      
+
       const updated = await storage.updateBotEntry(req.params.id, validatedData);
       if (!updated) {
         return res.status(404).json({ error: "Entry not found" });

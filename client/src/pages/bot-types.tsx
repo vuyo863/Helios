@@ -79,9 +79,10 @@ export default function BotTypesPage() {
   });
 
   const [editingBotTypeId, setEditingBotTypeId] = useState<string | null>(null);
-  const [editedValues, setEditedValues] = useState<{ name: string; description: string }>({
+  const [editedValues, setEditedValues] = useState<{ name: string; description: string; wontLiqBudget: string }>({
     name: '',
-    description: ''
+    description: '',
+    wontLiqBudget: ''
   });
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedBotType, setSelectedBotType] = useState<BotType | null>(null);
@@ -155,10 +156,11 @@ export default function BotTypesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: string; name: string; description: string }) => {
+    mutationFn: async (data: { id: string; name: string; description: string; wontLiqBudget: string }) => {
       return await apiRequest('PUT', `/api/bot-types/${data.id}`, {
         name: data.name,
-        description: data.description
+        description: data.description,
+        wontLiqBudget: data.wontLiqBudget
       });
     },
     onSuccess: () => {
@@ -182,7 +184,8 @@ export default function BotTypesPage() {
     setEditingBotTypeId(botType.id);
     setEditedValues({
       name: botType.name,
-      description: botType.description || ''
+      description: botType.description || '',
+      wontLiqBudget: botType.wontLiqBudget || ''
     });
   };
 
@@ -190,13 +193,14 @@ export default function BotTypesPage() {
     updateMutation.mutate({
       id,
       name: editedValues.name,
-      description: editedValues.description
+      description: editedValues.description,
+      wontLiqBudget: editedValues.wontLiqBudget
     });
   };
 
   const handleCancel = () => {
     setEditingBotTypeId(null);
-    setEditedValues({ name: '', description: '' });
+    setEditedValues({ name: '', description: '', wontLiqBudget: '' });
   };
 
   const handleViewClick = (botType: BotType) => {
@@ -427,6 +431,18 @@ export default function BotTypesPage() {
                               placeholder="Beschreibung (optional)"
                               data-testid={`input-description-${botType.id}`}
                             />
+                            <div>
+                              <label className="text-xs text-muted-foreground">Wont Liq. Budget (USDT)</label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={editedValues.wontLiqBudget}
+                                onChange={(e) => setEditedValues(prev => ({ ...prev, wontLiqBudget: e.target.value }))}
+                                className="text-sm"
+                                placeholder="0.00"
+                                data-testid={`input-wont-liq-${botType.id}`}
+                              />
+                            </div>
                           </div>
                         ) : (
                           <>
@@ -469,6 +485,20 @@ export default function BotTypesPage() {
                         <span className="text-muted-foreground">24h Ø Profit:</span>
                         <span className="font-medium" data-testid={`text-avg-profit-${botType.id}`}>
                           {avg24hProfit > 0 ? '+' : ''}{avg24hProfit.toFixed(2)} USDT
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Investitionsmengen-Ø:</span>
+                        <span className="font-medium" data-testid={`text-avg-investment-${botType.id}`}>
+                          {updatesForType.length > 0 
+                            ? (updatesForType.reduce((sum, u) => sum + (parseFloat(u.investment || '0') || 0), 0) / updatesForType.length).toFixed(2)
+                            : '0.00'} USDT
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Wont Liq. Budget:</span>
+                        <span className="font-medium" data-testid={`text-wont-liq-${botType.id}`}>
+                          {botType.wontLiqBudget || '0.00'} USDT
                         </span>
                       </div>
                     </div>

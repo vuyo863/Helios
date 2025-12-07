@@ -24,6 +24,7 @@ export const botTypes = pgTable("bot_types", {
   color: text("color"),
   createdAt: text("created_at").notNull(),
   isArchived: boolean("is_archived").default(false),
+  wontLiqBudget: text("wont_liq_budget"),
 });
 
 export const insertBotTypeSchema = createInsertSchema(botTypes).omit({
