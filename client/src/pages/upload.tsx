@@ -479,6 +479,9 @@ export default function Upload() {
         changeWeekDollar: formData.changeWeekDollar || null,
         changeWeekPercent: formData.changeWeekPercent || null,
         
+        // Screenshot-Anzahl
+        screenshotCount: formData.botCount || null,
+        
         // Notizen Section (keine Modi, wird NICHT an AI gesendet)
         notes: formData.notes || null,
       };
