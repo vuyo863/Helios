@@ -739,7 +739,17 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Last Updated</p>
                         <p className="font-semibold">
-                          {updates[0]?.createdAt ? format(new Date(updates[0].createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                          {(() => {
+                            // Finde das neueste Update nach createdAt
+                            const latestUpdate = [...updates].sort((a, b) => {
+                              const dateA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+                              const dateB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+                              return dateB - dateA;
+                            })[0];
+                            return latestUpdate?.createdAt 
+                              ? format(new Date(latestUpdate.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) 
+                              : '-';
+                          })()}
                         </p>
                       </div>
                       <div>
