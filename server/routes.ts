@@ -249,11 +249,14 @@ Berechne ALLE Felder und gib sie als JSON zurück. Folge der Logik aus modes-log
 Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert:
 
 1. **date** - NUR BEI STARTMETRIK:
-   - Finde den Bot mit der LÄNGSTEN Laufzeit (= ältester Start)
-   - Berechne das Startdatum: Aktuelles Datum MINUS Laufzeit
-   - Format: "YYYY-MM-DDTHH:MM" (z.B. "2025-11-11T10:30")
-   - Beispiel: Heute ist 15.11.2025, Bot mit 4 Tagen Laufzeit → Startdatum = 11.11.2025
-   - Bei NICHT-Startmetrik: Leer lassen (Frontend setzt aktuelles Datum)
+   - Das aktuelle Datum/Uhrzeit wird dir im System-Prompt mitgeteilt (currentDateTime)
+   - Finde den Bot mit der LÄNGSTEN Laufzeit aus den Screenshots
+   - Berechne das Startdatum: currentDateTime MINUS längste Laufzeit
+   - WICHTIG: Rechne präzise! Wenn Laufzeit = "4h 46m", ziehe genau 4 Stunden und 46 Minuten ab
+   - Format: "YYYY-MM-DDTHH:MM" (z.B. "2025-12-06T19:41")
+   - Beispiel: currentDateTime = 2025-12-07T00:27, längste Laufzeit = 4h 46m → 
+     Startdatum = 2025-12-06T19:41 (00:27 - 4h 46m = 19:41 am Vortag)
+   - Bei NICHT-Startmetrik: Leer lassen "" (Frontend setzt aktuelles Datum)
 
 2. **botDirection** - Sammle ALLE einzigartigen Richtungen aus ALLEN Screenshots:
    - Moegliche Werte pro Screenshot: "Long", "Short", "Neutral"
