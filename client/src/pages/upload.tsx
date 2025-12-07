@@ -1450,7 +1450,7 @@ export default function Upload() {
           changeDayPercent: changeDayPercentCalc,
           changeWeekDollar: changeWeekDollarCalc,
           changeWeekPercent: changeWeekPercentCalc,
-          botCount: String(extractedScreenshotData?.screenshots?.length || selectedFiles.length || 0)
+          botCount: toStr(calculatedValues.screenshotCount) || String(extractedScreenshotData?.screenshots?.length || selectedFiles.length || 0)
         }));
         
         console.log('Form data UPDATED successfully');
