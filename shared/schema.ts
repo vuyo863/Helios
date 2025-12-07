@@ -160,6 +160,9 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   changeWeekDollar: text("change_week_dollar"),
   changeWeekPercent: text("change_week_percent"),
   
+  // Screenshot-Anzahl
+  screenshotCount: text("screenshot_count"),
+  
   // Notizen Section (wird NICHT an AI gesendet, keine Modi)
   notes: text("notes"),
 });
