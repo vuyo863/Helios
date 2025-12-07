@@ -281,6 +281,12 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
 
 4. **longestRuntime** - Finde die LÄNGSTE Laufzeit aus ALLEN Screenshots
 5. **avgRuntime** - Berechne den DURCHSCHNITT aller Laufzeiten
+6. **screenshotCount** - ZÄHLE die ANZAHL der analysierten Screenshots:
+   - EINFACH: Zähle wie viele Screenshots du analysiert hast
+   - Beispiel: 1 Screenshot → "1"
+   - Beispiel: 3 Screenshots → "3"
+   - Beispiel: 5 Screenshots → "5"
+   - IMMER als String ausgeben!
 
 **JSON OUTPUT FORMAT:**
 **WICHTIG - NACHKOMMASTELLEN:**
@@ -294,6 +300,7 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
   "date": "2025-11-18T22:42",
   "botDirection": "Long, Short",
   "leverage": "2x, 75x",
+  "screenshotCount": "2",
   "longestRuntime": "1d 6h 53m",
   "avgRuntime": "1d 6h 53m",
   "investment": "120.00",
@@ -821,6 +828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: z.string().nullable(),
           botDirection: z.string().nullable(),
           leverage: z.string().nullable(),
+          screenshotCount: z.string().nullable(),
           longestRuntime: z.string().nullable(),
           avgRuntime: z.string().nullable(),
           investment: stringOrNumber,
