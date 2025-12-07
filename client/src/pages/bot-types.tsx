@@ -18,7 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
-import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive, MessageCircle, RefreshCw } from "lucide-react";
+import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive, MessageCircle, RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState, useEffect } from "react";
@@ -99,6 +100,10 @@ export default function BotTypesPage() {
   // Update Notification State
   const [updateConfirmDialogOpen, setUpdateConfirmDialogOpen] = useState(false);
   const { pendingUpdate, clearPendingUpdate } = useUpdateNotification();
+  
+  // Sortierung State für Update Verlauf
+  const [sortBy, setSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
 
   const { toast } = useToast();
   
@@ -750,8 +755,68 @@ export default function BotTypesPage() {
                     <Separator />
 
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-sm text-muted-foreground mb-3">Update Verlauf</h4>
-                      {updates.map((update) => {
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Sortieren:</span>
+                          <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+                            <SelectTrigger className="h-7 w-[140px] text-xs" data-testid="select-sort-by">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="datum" data-testid="option-sort-datum">Datum</SelectItem>
+                              <SelectItem value="gridProfit" data-testid="option-sort-grid-profit">Grid Profit</SelectItem>
+                              <SelectItem value="gridProfit24h" data-testid="option-sort-grid-profit-24h">Grid Profit 24H Ø</SelectItem>
+                              <SelectItem value="gesInvest" data-testid="option-sort-ges-invest">GES.INVEST</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="icon"
+                            variant={sortDirection === 'desc' ? 'default' : 'outline'}
+                            className="h-7 w-7"
+                            onClick={() => setSortDirection('desc')}
+                            title="Absteigend (Höchste zuerst)"
+                            data-testid="button-sort-desc"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant={sortDirection === 'asc' ? 'default' : 'outline'}
+                            className="h-7 w-7"
+                            onClick={() => setSortDirection('asc')}
+                            title="Aufsteigend (Niedrigste zuerst)"
+                            data-testid="button-sort-asc"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {[...updates].sort((a, b) => {
+                        let valueA: number = 0;
+                        let valueB: number = 0;
+                        
+                        switch (sortBy) {
+                          case 'datum':
+                            valueA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+                            valueB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+                            break;
+                          case 'gridProfit':
+                            valueA = parseFloat(a.overallGridProfitUsdt || '0') || 0;
+                            valueB = parseFloat(b.overallGridProfitUsdt || '0') || 0;
+                            break;
+                          case 'gridProfit24h':
+                            valueA = parseFloat(a.avgGridProfitDay || '0') || 0;
+                            valueB = parseFloat(b.avgGridProfitDay || '0') || 0;
+                            break;
+                          case 'gesInvest':
+                            valueA = parseFloat(a.totalInvestment || '0') || 0;
+                            valueB = parseFloat(b.totalInvestment || '0') || 0;
+                            break;
+                        }
+                        
+                        return sortDirection === 'desc' ? valueB - valueA : valueA - valueB;
+                      }).map((update) => {
                         // Berechne Grid Profit 24H Ø
                         const gridProfit24h = update.avgGridProfitDay || '0.00';
                         
