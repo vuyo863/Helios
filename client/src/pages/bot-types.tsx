@@ -1013,15 +1013,15 @@ export default function BotTypesPage() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit (USDT)</p>
-                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfit)}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitUsdt)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Gesamtinvestment</p>
-                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfitPercent_gesamtinvestment, '%')}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitPercent_gesamtinvestment, '%')}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Investitionsmenge</p>
-                        <p className="font-medium">{formatWithSign(selectedUpdate.highestGridProfitPercent_investitionsmenge, '%')}</p>
+                        <p className="font-medium">{formatWithSign(selectedUpdate.avgGridProfitPercent_investitionsmenge, '%')}</p>
                       </div>
                     </div>
                     <Separator />
