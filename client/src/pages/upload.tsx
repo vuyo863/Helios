@@ -203,6 +203,58 @@ export default function Upload() {
     highestGridProfitPercent_investitionsmenge: '',
   });
 
+  // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
+  // Überschreibbare Felder: overallGridProfitUsdt, lastUpload, investment, extraMargin
+  // Werte werden direkt beim onChange gesetzt (nicht durch Vergleich)
+  const [manualOverrides, setManualOverrides] = useState<{
+    overallGridProfitUsdt?: string;
+    lastUpload?: string;
+    investment?: string;
+    extraMargin?: string;
+  }>({});
+  
+  // Flag um zu tracken ob Phase 2 schon Werte extrahiert hat
+  const [phase2Completed, setPhase2Completed] = useState(false);
+  // Referenz auf die letzte extractedScreenshotData ID um zu erkennen ob wirklich neue Daten kamen
+  const [lastExtractedDataId, setLastExtractedDataId] = useState<string | null>(null);
+  
+  // Reset manualOverrides NUR wenn wirklich neue Screenshot-Daten kommen (nicht bei Re-Render)
+  useEffect(() => {
+    if (extractedScreenshotData) {
+      // Erstelle eine eindeutige ID für die aktuellen Daten
+      const currentDataId = JSON.stringify(extractedScreenshotData.screenshots?.map((s: any) => s.screenshotNumber) || []);
+      
+      // Nur zurücksetzen wenn sich die Screenshot-Nummern geändert haben
+      if (lastExtractedDataId !== currentDataId) {
+        setManualOverrides({});
+        setLastExtractedDataId(currentDataId);
+      }
+      setPhase2Completed(true);
+    } else {
+      setPhase2Completed(false);
+      setLastExtractedDataId(null);
+      setManualOverrides({});
+    }
+  }, [extractedScreenshotData]);
+  
+  // Helper: Setze manuellen Override wenn Benutzer nach Phase 2 einen Wert ändert
+  const handleManualOverride = (field: 'overallGridProfitUsdt' | 'lastUpload' | 'investment' | 'extraMargin', value: string) => {
+    // Nur tracken wenn Phase 2 abgeschlossen ist UND nur 1 Screenshot
+    const screenshotCount = extractedScreenshotData?.screenshots?.length || 0;
+    if (phase2Completed && screenshotCount === 1) {
+      if (value.trim() !== '') {
+        setManualOverrides(prev => ({ ...prev, [field]: value }));
+      } else {
+        // Entferne das Override wenn der Wert leer ist
+        setManualOverrides(prev => {
+          const newOverrides = { ...prev };
+          delete newOverrides[field];
+          return newOverrides;
+        });
+      }
+    }
+  };
+
   // Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
     console.log('Profit useEffect triggered:', { 
@@ -840,6 +892,38 @@ export default function Upload() {
   };
 
   const handleSendFieldsToAI = async () => {
+    // Prüfe auf manuelle Überschreibungen (nur bei 1 Screenshot erlaubt)
+    // manualOverrides wird direkt beim onChange gesetzt
+    const hasOverrides = Object.keys(manualOverrides).length > 0;
+    const manualFields: { label: string; value: string }[] = [];
+    
+    // Baue Liste der überschriebenen Felder
+    if (manualOverrides.overallGridProfitUsdt) {
+      manualFields.push({ label: 'Gesamter Grid Profit', value: manualOverrides.overallGridProfitUsdt });
+    }
+    if (manualOverrides.lastUpload) {
+      manualFields.push({ label: 'Last Upload', value: manualOverrides.lastUpload });
+    }
+    if (manualOverrides.investment) {
+      manualFields.push({ label: 'Investitionsmenge', value: manualOverrides.investment });
+    }
+    if (manualOverrides.extraMargin) {
+      manualFields.push({ label: 'Extra Margin', value: manualOverrides.extraMargin });
+    }
+    
+    // Prüfe Anzahl der Screenshots
+    const screenshotCount = extractedScreenshotData?.screenshots?.length || 0;
+    
+    // Wenn manuelle Überschreibungen UND mehr als 1 Screenshot → Fehler
+    if (hasOverrides && screenshotCount > 1) {
+      toast({
+        title: "Manuelle Werte nicht erlaubt",
+        description: "Sie haben mehr als einen Screenshot hochgeladen. Manuelle Wertüberschreibungen sind nur bei einem einzelnen Screenshot möglich.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsAiLoading(true);
     
     setChatMessages(prev => [...prev, { 
@@ -848,9 +932,18 @@ export default function Upload() {
     }]);
     
     setTimeout(() => {
+      // Erstelle Nachricht mit Überschreibungshinweis wenn nötig
+      let aiMessage = 'Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar.';
+      
+      if (manualFields.length > 0) {
+        aiMessage = `Verstanden! Ich sehe, Sie möchten folgende Werte manuell überschreiben:\n\n${manualFields.map(f => `- ${f.label}: ${f.value}`).join('\n')}\n\nDiese Werte werden anstelle der Screenshot-Werte für die Berechnung verwendet. Die Modi (Neu/Vergleich) und alle anderen Felder sind klar.`;
+      }
+      
+      aiMessage += ' Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?';
+      
       setChatMessages(prev => [...prev, {
         role: 'ai',
-        content: 'Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar. Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?'
+        content: aiMessage
       }]);
       setPhaseThreeSettingsSent(true);
       setWaitingForPhaseThreeConfirmation(true);
@@ -859,7 +952,9 @@ export default function Upload() {
     
     toast({
       title: "Einstellungen gesendet",
-      description: "Die Feld-Einstellungen wurden erfolgreich an die AI übermittelt.",
+      description: manualFields.length > 0 
+        ? `${manualFields.length} manuelle Überschreibung(en) erkannt und an die AI übermittelt.`
+        : "Die Feld-Einstellungen wurden erfolgreich an die AI übermittelt.",
     });
   };
 
@@ -979,7 +1074,9 @@ export default function Upload() {
             grid: gridTimeRange
           },
           isStartMetric,
-          previousUploadData
+          previousUploadData,
+          // Manuelle Überschreibungen (nur bei 1 Screenshot)
+          manualOverrides: Object.keys(manualOverrides).length > 0 ? manualOverrides : undefined
         }),
       });
 
@@ -1725,7 +1822,10 @@ export default function Upload() {
                         type="text"
                         placeholder="TT.MM.JJJJ HH:MM"
                         value={formData.lastUpload}
-                        onChange={(e) => setFormData({ ...formData, lastUpload: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, lastUpload: e.target.value });
+                          handleManualOverride('lastUpload', e.target.value);
+                        }}
                         disabled={!phaseTwoVerified}
                         data-testid="input-last-upload"
                       />
@@ -1768,7 +1868,10 @@ export default function Upload() {
                         step="0.01"
                         placeholder="0.00"
                         value={formData.investment}
-                        onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, investment: e.target.value });
+                          handleManualOverride('investment', e.target.value);
+                        }}
                         required
                         data-testid="input-investment"
                       />
@@ -1782,7 +1885,10 @@ export default function Upload() {
                         step="0.01"
                         placeholder="0.00"
                         value={formData.extraMargin}
-                        onChange={(e) => setFormData({ ...formData, extraMargin: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, extraMargin: e.target.value });
+                          handleManualOverride('extraMargin', e.target.value);
+                        }}
                         data-testid="input-extra-margin"
                       />
                     </div>
@@ -2107,7 +2213,10 @@ export default function Upload() {
                           placeholder="0.00"
                           className={getSignPrefix(formData.overallGridProfitUsdt) ? "pl-6" : ""}
                           value={formData.overallGridProfitUsdt}
-                          onChange={(e) => setFormData({ ...formData, overallGridProfitUsdt: e.target.value })}
+                          onChange={(e) => {
+                            setFormData({ ...formData, overallGridProfitUsdt: e.target.value });
+                            handleManualOverride('overallGridProfitUsdt', e.target.value);
+                          }}
                           data-testid="input-overall-grid-profit-usdt"
                         />
                       </div>

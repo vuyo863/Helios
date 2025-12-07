@@ -633,11 +633,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         screenshotData, 
         modes, 
         isStartMetric,
-        previousUploadData 
+        previousUploadData,
+        manualOverrides 
       } = req.body;
       
       if (!screenshotData || !modes) {
         return res.status(400).json({ error: "Screenshot data and modes are required" });
+      }
+      
+      // Verarbeite manuelle Überschreibungen (nur bei 1 Screenshot)
+      let processedScreenshotData = screenshotData;
+      let overrideMessages: string[] = [];
+      
+      if (manualOverrides && Object.keys(manualOverrides).length > 0) {
+        try {
+          const parsedData = typeof screenshotData === 'string' 
+            ? JSON.parse(screenshotData) 
+            : screenshotData;
+          
+          // Prüfe ob nur 1 Screenshot vorhanden ist
+          if (parsedData.screenshots && parsedData.screenshots.length === 1) {
+            const screenshot = parsedData.screenshots[0];
+            
+            // Wende manuelle Überschreibungen an
+            if (manualOverrides.overallGridProfitUsdt !== undefined) {
+              const oldValue = screenshot.gridProfitUsdt;
+              screenshot.gridProfitUsdt = parseFloat(manualOverrides.overallGridProfitUsdt);
+              overrideMessages.push(`Gesamter Grid Profit: ${oldValue} → ${manualOverrides.overallGridProfitUsdt}`);
+            }
+            if (manualOverrides.investment !== undefined) {
+              const oldValue = screenshot.actualInvestment;
+              screenshot.actualInvestment = parseFloat(manualOverrides.investment);
+              overrideMessages.push(`Investitionsmenge: ${oldValue} → ${manualOverrides.investment}`);
+            }
+            if (manualOverrides.extraMargin !== undefined) {
+              const oldValue = screenshot.extraMargin;
+              screenshot.extraMargin = parseFloat(manualOverrides.extraMargin);
+              overrideMessages.push(`Extra Margin: ${oldValue} → ${manualOverrides.extraMargin}`);
+            }
+            // lastUpload wird nur im Frontend verwendet, nicht in den Screenshot-Daten
+            if (manualOverrides.lastUpload !== undefined) {
+              overrideMessages.push(`Last Upload: ${manualOverrides.lastUpload}`);
+            }
+            
+            processedScreenshotData = JSON.stringify(parsedData);
+            console.log('Manuelle Überschreibungen angewendet:', overrideMessages);
+          }
+        } catch (e) {
+          console.warn('Fehler beim Anwenden der manuellen Überschreibungen:', e);
+        }
       }
 
       // VALIDIERUNG: Wenn VERGLEICH-Modi aktiv sind UND es kein Start-Metric ist,
@@ -704,7 +748,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Server berechnet Differenzen für VERGLEICH Modi nach AI-Antwort
       let contextualPrompt = PHASE_4_PROMPT;
       
-      contextualPrompt += `\n\n**SCREENSHOT-DATEN (aus Phase 2):**\n${screenshotData}\n\n`;
+      contextualPrompt += `\n\n**SCREENSHOT-DATEN (aus Phase 2):**\n${processedScreenshotData}\n\n`;
+      
+      // Füge Hinweis zu manuellen Überschreibungen hinzu
+      if (overrideMessages.length > 0) {
+        contextualPrompt += `**MANUELLE ÜBERSCHREIBUNGEN (vom Benutzer eingegeben):**\n`;
+        overrideMessages.forEach(msg => {
+          contextualPrompt += `- ${msg}\n`;
+        });
+        contextualPrompt += `\nVerwende die überschriebenen Werte anstelle der ursprünglichen Screenshot-Werte!\n\n`;
+      }
       contextualPrompt += `**MODI-EINSTELLUNGEN:**\n`;
       contextualPrompt += `- Alle Sektionen: NEU Modus (berechne aktuelle Gesamtwerte)\n\n`;
       
