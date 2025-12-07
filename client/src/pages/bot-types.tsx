@@ -496,13 +496,7 @@ export default function BotTypesPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Wont Liq. Budget:</span>
-                        <span className="font-medium" data-testid={`text-wont-liq-${botType.id}`}>
-                          {botType.wontLiqBudget || '0.00'} USDT
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Metrik Runtime:</span>
+                        <span className="text-muted-foreground">Runtime:</span>
                         <span className="font-medium" data-testid={`text-runtime-${botType.id}`}>
                           {(() => {
                             if (updatesForType.length === 0) return '-';
@@ -529,6 +523,12 @@ export default function BotTypesPage() {
                             
                             return parts.join(' ');
                           })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Wont Liq. Budget:</span>
+                        <span className="font-medium" data-testid={`text-wont-liq-${botType.id}`}>
+                          {botType.wontLiqBudget || '0.00'} USDT
                         </span>
                       </div>
                     </div>
