@@ -1017,6 +1017,10 @@ export default function BotTypesPage() {
                       <p className="font-medium">{selectedUpdate.leverage || '-'}</p>
                     </div>
                     <div>
+                      <p className="text-muted-foreground mb-1">Anzahl</p>
+                      <p className="font-medium">{selectedUpdate.screenshotCount || '-'}</p>
+                    </div>
+                    <div>
                       <p className="text-muted-foreground mb-1">Längste Laufzeit</p>
                       <p className="font-medium">{selectedUpdate.longestRuntime || '-'}</p>
                     </div>
