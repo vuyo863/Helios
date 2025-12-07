@@ -767,7 +767,7 @@ export default function BotTypesPage() {
                               <SelectItem value="datum" data-testid="option-sort-datum">Datum</SelectItem>
                               <SelectItem value="gridProfit" data-testid="option-sort-grid-profit">Grid Profit</SelectItem>
                               <SelectItem value="gridProfit24h" data-testid="option-sort-grid-profit-24h">Grid Profit 24H Ø</SelectItem>
-                              <SelectItem value="gesInvest" data-testid="option-sort-ges-invest">GES.INVEST</SelectItem>
+                              <SelectItem value="gesInvest" data-testid="option-sort-ges-invest">Ges. Invest</SelectItem>
                             </SelectContent>
                           </Select>
                           <Button
