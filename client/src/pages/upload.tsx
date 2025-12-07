@@ -170,6 +170,7 @@ export default function Upload() {
     avgGridProfitChangeDollar: '',
     avgGridProfitChangePercent: '',
     leverage: '',
+    botCount: '', // Anzahl der Bots/Screenshots
     notes: '', // Notizen (wird NICHT an AI gesendet)
   });
   
@@ -542,6 +543,7 @@ export default function Upload() {
         avgGridProfitChangeDollar: '',
         avgGridProfitChangePercent: '',
         leverage: '',
+        botCount: '',
         notes: '',
       }));
       // Reset Notizen-State
@@ -921,6 +923,7 @@ export default function Upload() {
       avgGridProfitChangeDollar: '',
       avgGridProfitChangePercent: '',
       leverage: '',
+      botCount: '',
       notes: '',
     });
     toast({
@@ -1443,7 +1446,8 @@ export default function Upload() {
           changeDayDollar: changeDayDollarCalc,
           changeDayPercent: changeDayPercentCalc,
           changeWeekDollar: changeWeekDollarCalc,
-          changeWeekPercent: changeWeekPercentCalc
+          changeWeekPercent: changeWeekPercentCalc,
+          botCount: String(extractedScreenshotData?.screenshots?.length || selectedFiles.length || 0)
         }));
         
         console.log('Form data UPDATED successfully');
@@ -1880,6 +1884,8 @@ export default function Upload() {
                       />
                     </div>
 
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="leverage" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Hebel</Label>
                       <Input
@@ -1894,7 +1900,20 @@ export default function Upload() {
                     </div>
 
                     <div>
-                      <Label htmlFor="longestRuntime" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Längste Laufzeit (Tage, Stunden, Sekunden)</Label>
+                      <Label htmlFor="botCount" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Anzahl</Label>
+                      <Input
+                        id="botCount"
+                        type="text"
+                        placeholder="z.B. 1, 2, 3"
+                        value={formData.botCount}
+                        readOnly
+                        className="bg-muted"
+                        data-testid="input-bot-count"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="longestRuntime" className={!phaseTwoVerified ? 'text-muted-foreground' : ''}>Längste Laufzeit</Label>
                       <Input
                         id="longestRuntime"
                         type="text"
@@ -1905,7 +1924,6 @@ export default function Upload() {
                         data-testid="input-longest-runtime"
                       />
                     </div>
-
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
