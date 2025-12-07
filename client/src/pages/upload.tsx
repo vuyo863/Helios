@@ -185,6 +185,12 @@ export default function Upload() {
     return num > 0 ? '+' : '';  // "-" ist bereits im Wert enthalten
   };
 
+  // Hilfsfunktion: Deutsches Dezimalformat (Komma statt Punkt)
+  const formatGermanDecimal = (value: string): string => {
+    if (!value || value === '') return '';
+    return value.replace('.', ',');
+  };
+
   const [investmentTimeRange, setInvestmentTimeRange] = useState("Neu");
   const [profitTimeRange, setProfitTimeRange] = useState("Neu");
   const [trendTimeRange, setTrendTimeRange] = useState("Neu");
@@ -2213,11 +2219,10 @@ export default function Upload() {
                             <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitHour)}</span>
                             <Input
                               id="lastAvgGridProfitHour"
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
+                              type="text"
+                              placeholder="0,00"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
-                              value={formData.lastAvgGridProfitHour}
+                              value={formatGermanDecimal(formData.lastAvgGridProfitHour)}
                               readOnly
                               data-testid="input-last-avg-grid-profit-hour"
                             />
@@ -2232,11 +2237,10 @@ export default function Upload() {
                             <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
                             <Input
                               id="lastAvgGridProfitDay"
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
+                              type="text"
+                              placeholder="0,00"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
-                              value={formData.lastAvgGridProfitDay}
+                              value={formatGermanDecimal(formData.lastAvgGridProfitDay)}
                               readOnly
                               data-testid="input-last-avg-grid-profit-day"
                             />
@@ -2251,11 +2255,10 @@ export default function Upload() {
                             <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitWeek)}</span>
                             <Input
                               id="lastAvgGridProfitWeek"
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
+                              type="text"
+                              placeholder="0,00"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
-                              value={formData.lastAvgGridProfitWeek}
+                              value={formatGermanDecimal(formData.lastAvgGridProfitWeek)}
                               readOnly
                               data-testid="input-last-avg-grid-profit-week"
                             />
@@ -2275,7 +2278,7 @@ export default function Upload() {
                               <Input
                                 id="changeDisplay"
                                 type="text"
-                                placeholder="0.00"
+                                placeholder="0,00"
                                 className={`bg-muted/50 ring-2 ring-primary ${
                                   getSignPrefix(
                                     chainedUnit === '$' 
@@ -2285,7 +2288,7 @@ export default function Upload() {
                                 }`}
                                 value={
                                   chainedUnit === '$' 
-                                    ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
+                                    ? formatGermanDecimal(selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
                                     : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)
                                 }
                                 readOnly
