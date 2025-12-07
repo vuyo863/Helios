@@ -1096,9 +1096,11 @@ export default function Upload() {
         };
         
         if (isStartMetric) {
-          // Bei Startmetrik: Upload Laufzeit bleibt LEER (kein Last Upload)
-          // Für Grid Profit Durchschnitt: Längste Laufzeit aus Screenshots verwenden
+          // Bei Startmetrik: AUSNAHME - Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
+          // Das ist die einzige Ausnahme, weil es keinen vorherigen Upload gibt, 
+          // aber die Laufzeit für Grid Profit Durchschnitt Berechnungen benötigt wird
           const longestRuntimeStr = toStr(calculatedValues.longestRuntime);
+          uploadRuntimeValue = longestRuntimeStr; // Längste Laufzeit als Upload Laufzeit anzeigen
           runtimeHoursForGridProfit = parseLongestRuntime(longestRuntimeStr);
         } else if (lastUploadDateTime) {
           // Bei normalem Upload: Upload Laufzeit = This Upload - Last Upload
