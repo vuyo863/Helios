@@ -142,6 +142,7 @@ export default function Upload() {
     lastAvgGridProfitHour: '',
     lastAvgGridProfitDay: '',
     lastAvgGridProfitWeek: '',
+    lastHighestGridProfit: '',
     // Change-Werte für alle 6 Kombinationen (3 Zeiträume × 2 Einheiten)
     changeHourDollar: '',
     changeHourPercent: '',
@@ -801,6 +802,7 @@ export default function Upload() {
       lastAvgGridProfitHour: '',
       lastAvgGridProfitDay: '',
       lastAvgGridProfitWeek: '',
+      lastHighestGridProfit: '',
       changeHourDollar: '',
       changeHourPercent: '',
       changeDayDollar: '',
@@ -910,6 +912,7 @@ export default function Upload() {
       let lastAvgGridProfitHourValue = '';
       let lastAvgGridProfitDayValue = '';
       let lastAvgGridProfitWeekValue = '';
+      let lastHighestGridProfitValue = '';
       
       if (!isStartMetric && selectedBotTypeId) {
         try {
@@ -938,6 +941,8 @@ export default function Upload() {
               lastAvgGridProfitHourValue = lastUpdate.avgGridProfitHour?.toString() || '';
               lastAvgGridProfitDayValue = lastUpdate.avgGridProfitDay?.toString() || '';
               lastAvgGridProfitWeekValue = lastUpdate.avgGridProfitWeek?.toString() || '';
+              // Last Ø Grid Profit (vorheriger highestGridProfit Wert)
+              lastHighestGridProfitValue = lastUpdate.highestGridProfit?.toString() || '';
               
               previousUploadData = JSON.stringify({
                 investment: lastUpdate.investment,
@@ -1039,7 +1044,13 @@ export default function Upload() {
         // - thisUpload: Immer aktuelles Echtzeit-Datum
         // - uploadRuntime: Zeitdifferenz zwischen Last Upload und This Upload
         const now = new Date();
-        const currentDateTime = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM für datetime-local
+        // Lokale Zeit statt UTC verwenden (toISOString gibt UTC zurück)
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`; // Format: YYYY-MM-DDTHH:MM für datetime-local
         const currentDateTimeDisplay = now.toLocaleDateString('de-DE') + ' ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         
         // Bei Startmetrik: AI-Datum verwenden, sonst aktuelles Datum
@@ -1195,6 +1206,8 @@ export default function Upload() {
           lastAvgGridProfitHour: lastAvgGridProfitHourValue,
           lastAvgGridProfitDay: lastAvgGridProfitDayValue,
           lastAvgGridProfitWeek: lastAvgGridProfitWeekValue,
+          // Last Ø Grid Profit (vorheriger highestGridProfit Wert)
+          lastHighestGridProfit: lastHighestGridProfitValue,
           // Change-Werte (alle 6 Kombinationen)
           changeHourDollar: changeHourDollarCalc,
           changeHourPercent: changeHourPercentCalc,
@@ -1950,7 +1963,7 @@ export default function Upload() {
                     </div>
 
                     <div>
-                      <Label>Last Grid Profit Durchschnitt</Label>
+                      <Label>Last Grid Profit Durchschnitt (Zeit)</Label>
                       <div className="grid grid-cols-4 gap-2 mt-2">
                         <div 
                           className="relative cursor-pointer"
@@ -2155,13 +2168,13 @@ export default function Upload() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Ø Grid Profit)</Label>
-                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastAvgGridProfitDay)}</span>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastHighestGridProfit)}</span>
                         <Input
                           id="lastUploadAvgGridProfit"
                           type="text"
                           placeholder="-"
-                          className={`bg-muted/50 ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
-                          value={formData.lastAvgGridProfitDay || '-'}
+                          className={`bg-muted/50 ${getSignPrefix(formData.lastHighestGridProfit) ? "pl-6" : ""}`}
+                          value={formData.lastHighestGridProfit || '-'}
                           readOnly
                           data-testid="input-last-upload-avg-grid-profit"
                         />
