@@ -719,7 +719,11 @@ export default function BotTypesPage() {
 
                     <div className="space-y-2">
                       <h4 className="font-semibold text-sm text-muted-foreground mb-3">Update Verlauf</h4>
-                      {updates.map((update) => (
+                      {updates.map((update) => {
+                        // Berechne Grid Profit 24H Ø
+                        const gridProfit24h = update.avgGridProfitDay || '0.00';
+                        
+                        return (
                         <Card 
                           key={update.id} 
                           className="hover-elevate active-elevate-2 transition-all"
@@ -734,15 +738,24 @@ export default function BotTypesPage() {
                                 <div className="flex items-center flex-wrap gap-x-6 gap-y-1 text-xs">
                                   <span className="flex items-center gap-1 text-muted-foreground">
                                     <Calendar className="w-3 h-3" />
-                                    {update.createdAt ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de }) : '-'}
+                                    {update.lastUpload && update.thisUpload 
+                                      ? `${update.lastUpload} - ${update.thisUpload}`
+                                      : update.createdAt 
+                                        ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                                        : '-'
+                                    }
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="text-muted-foreground">Gesamt-Investment:</span>
+                                    <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
                                   </span>
                                   <span className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground">Grid Profit:</span>
                                     <span className="font-medium text-primary">{formatWithSign(update.overallGridProfitUsdt)} USDT</span>
                                   </span>
                                   <span className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground">Ø Laufzeit:</span>
-                                    <span className="font-medium">{update.avgRuntime || '-'}</span>
+                                    <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                    <span className="font-medium text-primary">{formatWithSign(gridProfit24h)} USDT</span>
                                   </span>
                                 </div>
                               </div>
@@ -783,7 +796,8 @@ export default function BotTypesPage() {
                             </div>
                           </CardContent>
                         </Card>
-                      ))}
+                      );
+                      })}
                     </div>
                   </>
                 )}
