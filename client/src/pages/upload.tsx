@@ -156,6 +156,7 @@ export default function Upload() {
     highestGridProfitPercent: '',
     overallGridProfitUsdt: '',
     overallGridProfitPercent: '',
+    avgGridProfitUsdt: '',  // Durchschnitt = Gesamter Grid Profit / Anzahl Screenshots
     avgGridProfitPercent: '',
     avgGridProfitChange: '',
     avgGridProfitChangeDollar: '',
@@ -495,6 +496,11 @@ export default function Upload() {
         highestGridProfitPercent: '',
         overallGridProfitUsdt: '',
         overallGridProfitPercent: '',
+        avgGridProfitUsdt: '',
+        avgGridProfitPercent: '',
+        avgGridProfitChange: '',
+        avgGridProfitChangeDollar: '',
+        avgGridProfitChangePercent: '',
         leverage: '',
         notes: '',
       }));
@@ -869,6 +875,7 @@ export default function Upload() {
       highestGridProfitPercent: '',
       overallGridProfitUsdt: '',
       overallGridProfitPercent: '',
+      avgGridProfitUsdt: '',
       avgGridProfitPercent: '',
       avgGridProfitChange: '',
       avgGridProfitChangeDollar: '',
@@ -1228,6 +1235,12 @@ export default function Upload() {
         
         const overallGridProfitValue = parseFloat(toStr(calculatedValues.overallGridProfitUsdt)) || 0;
         
+        // Durchschnitt Grid Profit USDT berechnen: Gesamter Grid Profit / Anzahl Screenshots
+        const screenshotCount = extractedScreenshotData?.screenshots?.length || 1;
+        const avgGridProfitUsdtCalc = screenshotCount > 0 
+          ? (overallGridProfitValue / screenshotCount).toFixed(2) 
+          : '0.00';
+        
         if (runtimeHoursForGridProfit > 0 && overallGridProfitValue !== 0) {
           const perHour = overallGridProfitValue / runtimeHoursForGridProfit;
           const perDay = perHour * 24;
@@ -1313,6 +1326,7 @@ export default function Upload() {
           overallGridProfitPercent: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent),
           highestGridProfit: toStr(calculatedValues.highestGridProfit),
           highestGridProfitPercent: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
+          avgGridProfitUsdt: avgGridProfitUsdtCalc, // Frontend-berechnet: Gesamter Grid Profit / Anzahl Screenshots
           avgGridProfitHour: avgGridProfitHourCalc, // Frontend-berechnet: Gesamter Grid Profit / Upload-Laufzeit
           avgGridProfitDay: avgGridProfitDayCalc,   // = Stunde × 24
           avgGridProfitWeek: avgGridProfitWeekCalc, // = Stunde × 168
@@ -2252,15 +2266,15 @@ export default function Upload() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <Label htmlFor="avgGridProfitUsdt">Ø Grid Profit (USDT)</Label>
-                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfit)}</span>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitUsdt)}</span>
                         <Input
                           id="avgGridProfitUsdt"
                           type="number"
                           step="0.01"
                           placeholder="0.00"
-                          className={getSignPrefix(formData.highestGridProfit) ? "pl-6" : ""}
-                          value={formData.highestGridProfit}
-                          onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
+                          className={`bg-muted/50 ${getSignPrefix(formData.avgGridProfitUsdt) ? "pl-6" : ""}`}
+                          value={formData.avgGridProfitUsdt}
+                          readOnly
                           data-testid="input-avg-grid-profit-usdt"
                         />
                       </div>
