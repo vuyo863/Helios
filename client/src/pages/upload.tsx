@@ -1158,6 +1158,33 @@ export default function Upload() {
           return String(val);
         };
         
+        // Formatierung für USDT-Werte: bis zu 4 Nachkommastellen, keine nachgestellten Nullen, min 2
+        const formatUsdt = (val: any): string => {
+          if (val === null || val === undefined || val === '') return '';
+          const num = typeof val === 'string' ? parseFloat(val) : val;
+          if (isNaN(num)) return '';
+          // Formatiere mit 4 Dezimalstellen
+          let formatted = num.toFixed(4);
+          // Entferne nachgestellte Nullen
+          formatted = formatted.replace(/\.?0+$/, '');
+          // Stelle sicher, dass mindestens 2 Dezimalstellen vorhanden
+          if (!formatted.includes('.')) {
+            formatted += '.00';
+          } else {
+            const decPart = formatted.split('.')[1] || '';
+            if (decPart.length === 1) formatted += '0';
+          }
+          return formatted;
+        };
+        
+        // Formatierung für Werte mit genau 2 Nachkommastellen (z.B. Gesamtprofit)
+        const formatDecimal2 = (val: any): string => {
+          if (val === null || val === undefined || val === '') return '';
+          const num = typeof val === 'string' ? parseFloat(val) : val;
+          if (isNaN(num)) return '';
+          return num.toFixed(2);
+        };
+        
         // SPEICHERE alle berechneten Prozentwerte für späteren Umschalt-Zugriff
         // WICHTIG: Formularfelder (type="number") akzeptieren kein "+" Zeichen!
         // Daher nur den numerischen Wert speichern, das "+" wird bei der Anzeige hinzugefügt
@@ -1381,13 +1408,13 @@ export default function Upload() {
           investment: toStr(calculatedValues.investment),
           extraMargin: toStr(calculatedValues.extraMargin),
           totalInvestment: toStr(calculatedValues.totalInvestment),
-          profit: toStr(calculatedValues.profit),
+          profit: formatDecimal2(calculatedValues.profit), // Gesamtprofit: immer 2 Nachkommastellen
           profitPercent: toStr(calculatedValues.profitPercent_gesamtinvestment || calculatedValues.profitPercent),
-          overallTrendPnlUsdt: toStr(calculatedValues.overallTrendPnlUsdt),
+          overallTrendPnlUsdt: formatUsdt(calculatedValues.overallTrendPnlUsdt), // USDT: bis zu 4 Dezimalstellen
           overallTrendPnlPercent: toStr(calculatedValues.overallTrendPnlPercent_gesamtinvestment || calculatedValues.overallTrendPnlPercent),
-          overallGridProfitUsdt: toStr(calculatedValues.overallGridProfitUsdt),
+          overallGridProfitUsdt: formatUsdt(calculatedValues.overallGridProfitUsdt), // USDT: bis zu 4 Dezimalstellen
           overallGridProfitPercent: toStr(calculatedValues.overallGridProfitPercent_gesamtinvestment || calculatedValues.overallGridProfitPercent),
-          highestGridProfit: toStr(calculatedValues.highestGridProfit),
+          highestGridProfit: formatUsdt(calculatedValues.highestGridProfit), // USDT: bis zu 4 Dezimalstellen
           highestGridProfitPercent: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment || calculatedValues.highestGridProfitPercent),
           avgGridProfitUsdt: avgGridProfitUsdtCalc, // Frontend-berechnet: Gesamter Grid Profit / Anzahl Screenshots
           avgGridProfitHour: avgGridProfitHourCalc, // Frontend-berechnet: Gesamter Grid Profit / Upload-Laufzeit
