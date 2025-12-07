@@ -1090,6 +1090,24 @@ export default function BotTypesPage() {
                       </div>
                     </div>
                     
+                    {/* Last Upload (Ø Grid Profit) und Change */}
+                    <Separator />
+                    <p className="text-sm font-semibold text-muted-foreground">Last Upload (Ø Grid Profit) und Change</p>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Last Upload (Ø Grid Profit)</p>
+                        <p className="font-medium">{selectedUpdate.lastAvgGridProfitUsdt ? formatWithSign(selectedUpdate.lastAvgGridProfitUsdt) : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Change ($)</p>
+                        <p className="font-medium">{selectedUpdate.avgGridProfitChangeDollar ? formatWithSign(selectedUpdate.avgGridProfitChangeDollar) : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Change (%)</p>
+                        <p className="font-medium">{selectedUpdate.avgGridProfitChangePercent ? formatWithSign(selectedUpdate.avgGridProfitChangePercent, '%') : '-'}</p>
+                      </div>
+                    </div>
+                    
                     {/* Notizen Section */}
                     {selectedUpdate.notes && (
                       <>

@@ -202,6 +202,8 @@ export default function Upload() {
     overallGridProfitPercent_investitionsmenge: '',
     highestGridProfitPercent_gesamtinvestment: '',
     highestGridProfitPercent_investitionsmenge: '',
+    avgGridProfitPercent_gesamtinvestment: '',
+    avgGridProfitPercent_investitionsmenge: '',
   });
 
   // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
@@ -1142,6 +1144,22 @@ export default function Upload() {
         // SPEICHERE alle berechneten Prozentwerte für späteren Umschalt-Zugriff
         // WICHTIG: Formularfelder (type="number") akzeptieren kein "+" Zeichen!
         // Daher nur den numerischen Wert speichern, das "+" wird bei der Anzeige hinzugefügt
+        // Berechne Ø Grid Profit (%) aus avgGridProfitUsdt für beide Basen
+        const avgGridProfitUsdtVal = parseFloat(toStr(calculatedValues.avgGridProfitUsdt)) || 0;
+        const totalInvestmentVal = parseFloat(toStr(calculatedValues.totalInvestment)) || 0;
+        const investmentVal = parseFloat(toStr(calculatedValues.investment)) || 0;
+        
+        let avgGridProfitPct_gesamt = '';
+        let avgGridProfitPct_invest = '';
+        if (avgGridProfitUsdtVal !== 0) {
+          if (totalInvestmentVal > 0) {
+            avgGridProfitPct_gesamt = ((avgGridProfitUsdtVal / totalInvestmentVal) * 100).toFixed(2);
+          }
+          if (investmentVal > 0) {
+            avgGridProfitPct_invest = ((avgGridProfitUsdtVal / investmentVal) * 100).toFixed(2);
+          }
+        }
+        
         setCalculatedPercents({
           profitPercent_gesamtinvestment: toStr(calculatedValues.profitPercent_gesamtinvestment),
           profitPercent_investitionsmenge: toStr(calculatedValues.profitPercent_investitionsmenge),
@@ -1151,6 +1169,8 @@ export default function Upload() {
           overallGridProfitPercent_investitionsmenge: toStr(calculatedValues.overallGridProfitPercent_investitionsmenge),
           highestGridProfitPercent_gesamtinvestment: toStr(calculatedValues.highestGridProfitPercent_gesamtinvestment),
           highestGridProfitPercent_investitionsmenge: toStr(calculatedValues.highestGridProfitPercent_investitionsmenge),
+          avgGridProfitPercent_gesamtinvestment: avgGridProfitPct_gesamt,
+          avgGridProfitPercent_investitionsmenge: avgGridProfitPct_invest,
         });
         
         // DEBUG: Log vor dem Setzen
@@ -1431,6 +1451,13 @@ export default function Upload() {
       overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
       overallGridProfitPercent: formData.overallGridProfitPercent || null,
       leverage: formData.leverage || null,
+      // Last Ø Grid Profit und Change Felder
+      lastAvgGridProfitUsdt: formData.lastHighestGridProfit || null,
+      avgGridProfitChangeDollar: formData.avgGridProfitChangeDollar || null,
+      avgGridProfitChangePercent: formData.avgGridProfitChangePercent || null,
+      // Ø Grid Profit (%) - beide Basen
+      avgGridProfitPercent_gesamtinvestment: calculatedPercents.avgGridProfitPercent_gesamtinvestment || null,
+      avgGridProfitPercent_investitionsmenge: calculatedPercents.avgGridProfitPercent_investitionsmenge || null,
     } as any);
   };
 
