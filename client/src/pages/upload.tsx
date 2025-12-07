@@ -296,16 +296,23 @@ export default function Upload() {
     }
   }, [trendPercentBase, calculatedPercents.overallTrendPnlPercent_gesamtinvestment, calculatedPercents.overallTrendPnlPercent_investitionsmenge]);
 
-  // Grid Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
+  // Grid Profit Prozent: Direkt aus overallGridProfitUsdt berechnen (wie avgGridProfitPercent)
+  // Formel: (overallGridProfitUsdt / Investment-Basis) × 100
   useEffect(() => {
-    if (gridProfitPercentBase === 'gesamtinvestment') {
-      const newValue = calculatedPercents.overallGridProfitPercent_gesamtinvestment || '';
-      setFormData(prev => ({ ...prev, overallGridProfitPercent: newValue }));
-    } else if (gridProfitPercentBase === 'investitionsmenge') {
-      const newValue = calculatedPercents.overallGridProfitPercent_investitionsmenge || '';
-      setFormData(prev => ({ ...prev, overallGridProfitPercent: newValue }));
+    const gridProfitUsdtValue = parseFloat(formData.overallGridProfitUsdt || '0');
+    const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
+    const investmentValue = parseFloat(formData.investment || '0');
+    
+    let newPercent = '';
+    if (gridProfitUsdtValue !== 0) {
+      if (gridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        newPercent = ((gridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
+      } else if (gridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        newPercent = ((gridProfitUsdtValue / investmentValue) * 100).toFixed(2);
+      }
     }
-  }, [gridProfitPercentBase, calculatedPercents.overallGridProfitPercent_gesamtinvestment, calculatedPercents.overallGridProfitPercent_investitionsmenge]);
+    setFormData(prev => ({ ...prev, overallGridProfitPercent: newPercent }));
+  }, [formData.overallGridProfitUsdt, formData.totalInvestment, formData.investment, gridProfitPercentBase]);
 
   // Highest Grid Profit Prozent: Nutze gespeicherte AI-Werte beim Umschalten
   useEffect(() => {
@@ -383,19 +390,14 @@ export default function Upload() {
       }
 
       // Overall Grid Profit Prozent - beide Basen
+      // IMMER aus dem angezeigten USDT-Wert berechnen (egal ob Neu oder Vergleich)
       let gridPercent_gesamtinvestment: string | null = null;
       let gridPercent_investitionsmenge: string | null = null;
-      if (gridTimeRange === 'Neu') {
-        if (totalInvestmentValue > 0) {
-          gridPercent_gesamtinvestment = ((gridValue / totalInvestmentValue) * 100).toFixed(2);
-        }
-        if (investmentValue > 0) {
-          gridPercent_investitionsmenge = ((gridValue / investmentValue) * 100).toFixed(2);
-        }
-      } else if (gridTimeRange === 'Vergleich') {
-        // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
-        gridPercent_gesamtinvestment = calculatedPercents.overallGridProfitPercent_gesamtinvestment || null;
-        gridPercent_investitionsmenge = calculatedPercents.overallGridProfitPercent_investitionsmenge || null;
+      if (totalInvestmentValue > 0) {
+        gridPercent_gesamtinvestment = ((gridValue / totalInvestmentValue) * 100).toFixed(2);
+      }
+      if (investmentValue > 0) {
+        gridPercent_investitionsmenge = ((gridValue / investmentValue) * 100).toFixed(2);
       }
 
       // Highest Grid Profit Prozent - beide Basen
