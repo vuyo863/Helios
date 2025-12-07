@@ -736,15 +736,26 @@ export default function BotTypesPage() {
                                   {update.status} #{update.version}
                                 </p>
                                 <div className="flex items-center flex-wrap gap-x-6 gap-y-1 text-xs">
-                                  <span className="flex items-center gap-1 text-muted-foreground">
-                                    <Calendar className="w-3 h-3" />
-                                    {update.lastUpload && update.thisUpload 
-                                      ? `${update.lastUpload} - ${update.thisUpload}`
-                                      : update.createdAt 
+                                  {update.lastUpload && update.thisUpload ? (
+                                    <>
+                                      <span className="flex items-center gap-1 text-muted-foreground">
+                                        <span className="font-medium">From:</span>
+                                        {update.lastUpload || '-'}
+                                      </span>
+                                      <span className="flex items-center gap-1 text-muted-foreground">
+                                        <span className="font-medium">Until:</span>
+                                        {update.thisUpload || '-'}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="flex items-center gap-1 text-muted-foreground">
+                                      <Calendar className="w-3 h-3" />
+                                      {update.createdAt 
                                         ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
                                         : '-'
-                                    }
-                                  </span>
+                                      }
+                                    </span>
+                                  )}
                                   <span className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground">Gesamt-Investment:</span>
                                     <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
