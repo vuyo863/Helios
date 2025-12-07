@@ -273,6 +273,12 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
 5. **avgRuntime** - Berechne den DURCHSCHNITT aller Laufzeiten
 
 **JSON OUTPUT FORMAT:**
+**WICHTIG - NACHKOMMASTELLEN:**
+- USDT-Werte (overallGridProfitUsdt, overallTrendPnlUsdt, highestGridProfit, profit): EXAKT wie im Screenshot, bis zu 4 Nachkommastellen behalten! z.B. "0.422", "0.0512", "-7.035"
+- Investmentbeträge (investment, extraMargin, totalInvestment): 2 Nachkommastellen
+- Prozentwerte: 2 Nachkommastellen
+- Grid Profit Durchschnitt (avgGridProfitHour, avgGridProfitDay, avgGridProfitWeek): 2 Nachkommastellen
+
 \`\`\`json
 {
   "date": "2025-11-18T22:42",
@@ -283,16 +289,16 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
   "investment": "120.00",
   "extraMargin": "650.00",
   "totalInvestment": "770.00",
-  "profit": "71.03",
+  "profit": "71.035",
   "profitPercent_gesamtinvestment": "9.22",
   "profitPercent_investitionsmenge": "59.19",
-  "overallTrendPnlUsdt": "65.52",
+  "overallTrendPnlUsdt": "65.5234",
   "overallTrendPnlPercent_gesamtinvestment": "8.51",
   "overallTrendPnlPercent_investitionsmenge": "54.60",
-  "overallGridProfitUsdt": "5.51",
+  "overallGridProfitUsdt": "5.5127",
   "overallGridProfitPercent_gesamtinvestment": "0.72",
   "overallGridProfitPercent_investitionsmenge": "4.59",
-  "highestGridProfit": "5.51",
+  "highestGridProfit": "5.5127",
   "highestGridProfitPercent_gesamtinvestment": "0.72",
   "highestGridProfitPercent_investitionsmenge": "4.59",
   "avgGridProfitHour": "0.18",
