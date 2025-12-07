@@ -2315,6 +2315,51 @@ export default function Upload() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
+                        <Label htmlFor="highestGridProfit">Höchster Grid Profit (USDT)</Label>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfit)}</span>
+                        <Input
+                          id="highestGridProfit"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className={`bg-muted/50 ${getSignPrefix(formData.highestGridProfit) ? "pl-6" : ""}`}
+                          value={formData.highestGridProfit}
+                          onChange={(e) => setFormData({ ...formData, highestGridProfit: e.target.value })}
+                          data-testid="input-highest-grid-profit"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="highestGridProfitPercent">Höchster Grid Profit (%)</Label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.highestGridProfitPercent)}</span>
+                            <Input
+                              id="highestGridProfitPercent"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className={`bg-muted/50 ${getSignPrefix(formData.highestGridProfitPercent) ? "pl-6" : ""}`}
+                              value={formData.highestGridProfitPercent}
+                              onChange={(e) => setFormData({ ...formData, highestGridProfitPercent: e.target.value })}
+                              data-testid="input-highest-grid-profit-percent"
+                            />
+                          </div>
+                          <Select value={gridPercentDropdown} onValueChange={setGridPercentDropdown}>
+                            <SelectTrigger className="w-52" data-testid="select-highest-grid-profit-percent">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Gesamtinvestment">Gesamtinvestment</SelectItem>
+                              <SelectItem value="Investitionsmenge">Investitionsmenge</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="relative">
                         <Label htmlFor="avgGridProfitUsdt">Ø Grid Profit (USDT)</Label>
                         <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.avgGridProfitUsdt)}</span>
                         <Input
