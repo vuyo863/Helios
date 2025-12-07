@@ -2406,65 +2406,31 @@ export default function Upload() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
+                      <div className="relative">
                         <Label htmlFor="lastUploadAvgGridProfit">Last Upload (Ø Grid Profit)</Label>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(
-                              selectedChangeTimeframe === 'hour' ? formData.lastAvgGridProfitHour :
-                              selectedChangeTimeframe === 'day' ? formData.lastAvgGridProfitDay :
-                              formData.lastAvgGridProfitWeek
-                            )}</span>
-                            <Input
-                              id="lastUploadAvgGridProfit"
-                              type="text"
-                              placeholder="-"
-                              className={`bg-muted/50 ${getSignPrefix(
-                                selectedChangeTimeframe === 'hour' ? formData.lastAvgGridProfitHour :
-                                selectedChangeTimeframe === 'day' ? formData.lastAvgGridProfitDay :
-                                formData.lastAvgGridProfitWeek
-                              ) ? "pl-6" : ""}`}
-                              value={(selectedChangeTimeframe === 'hour' ? formData.lastAvgGridProfitHour :
-                                selectedChangeTimeframe === 'day' ? formData.lastAvgGridProfitDay :
-                                formData.lastAvgGridProfitWeek) || '-'}
-                              readOnly
-                              data-testid="input-last-upload-avg-grid-profit"
-                            />
-                          </div>
-                          <Select value={selectedChangeTimeframe} onValueChange={(val) => setSelectedChangeTimeframe(val as 'hour' | 'day' | 'week')}>
-                            <SelectTrigger className="w-32 h-10 text-xs" data-testid="select-last-upload-timeframe">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hour">Stunde</SelectItem>
-                              <SelectItem value="day">Tag</SelectItem>
-                              <SelectItem value="week">Woche</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(formData.lastHighestGridProfit)}</span>
+                        <Input
+                          id="lastUploadAvgGridProfit"
+                          type="text"
+                          placeholder="-"
+                          className={`bg-muted/50 ${getSignPrefix(formData.lastHighestGridProfit) ? "pl-6" : ""}`}
+                          value={formData.lastHighestGridProfit || '-'}
+                          readOnly
+                          data-testid="input-last-upload-avg-grid-profit"
+                        />
                       </div>
                       
                       <div>
-                        <Label htmlFor="avgGridProfitChange">Change ({selectedChangeTimeframe === 'hour' ? 'Stunde' : selectedChangeTimeframe === 'day' ? 'Tag' : 'Woche'})</Label>
+                        <Label htmlFor="avgGridProfitChange">Change</Label>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
-                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(
-                              avgGridProfitChangeUnit === '$' 
-                                ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
-                                : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)
-                            )}</span>
+                            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(avgGridProfitChangeUnit === '$' ? formData.avgGridProfitChangeDollar : formData.avgGridProfitChangePercent)}</span>
                             <Input
                               id="avgGridProfitChange"
                               type="text"
                               placeholder="0.00"
-                              className={`bg-muted/50 ${getSignPrefix(
-                                avgGridProfitChangeUnit === '$' 
-                                  ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
-                                  : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)
-                              ) ? "pl-6" : ""}`}
-                              value={(avgGridProfitChangeUnit === '$' 
-                                ? (selectedChangeTimeframe === 'hour' ? formData.changeHourDollar : selectedChangeTimeframe === 'day' ? formData.changeDayDollar : formData.changeWeekDollar)
-                                : (selectedChangeTimeframe === 'hour' ? formData.changeHourPercent : selectedChangeTimeframe === 'day' ? formData.changeDayPercent : formData.changeWeekPercent)) || '-'}
+                              className={`bg-muted/50 ${getSignPrefix(avgGridProfitChangeUnit === '$' ? formData.avgGridProfitChangeDollar : formData.avgGridProfitChangePercent) ? "pl-6" : ""}`}
+                              value={(avgGridProfitChangeUnit === '$' ? formData.avgGridProfitChangeDollar : formData.avgGridProfitChangePercent) || '-'}
                               readOnly
                               data-testid="input-avg-grid-profit-change"
                             />
