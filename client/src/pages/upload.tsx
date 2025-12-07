@@ -1275,19 +1275,24 @@ export default function Upload() {
         const overallGridProfitValue = parseFloat(toStr(calculatedValues.overallGridProfitUsdt)) || 0;
         
         // Durchschnitt Grid Profit USDT berechnen: Gesamter Grid Profit / Anzahl Screenshots
+        // Bis zu 4 Nachkommastellen erlaubt, unnötige Nullen werden entfernt
         const screenshotCount = extractedScreenshotData?.screenshots?.length || 1;
-        const avgGridProfitUsdtCalc = screenshotCount > 0 
-          ? (overallGridProfitValue / screenshotCount).toFixed(2) 
-          : '0.00';
+        const avgGridProfitUsdtRaw = screenshotCount > 0 
+          ? (overallGridProfitValue / screenshotCount)
+          : 0;
+        const avgGridProfitUsdtCalc = avgGridProfitUsdtRaw !== 0
+          ? parseFloat(avgGridProfitUsdtRaw.toFixed(4)).toString()
+          : '0';
         
         if (runtimeHoursForGridProfit > 0 && overallGridProfitValue !== 0) {
           const perHour = overallGridProfitValue / runtimeHoursForGridProfit;
           const perDay = perHour * 24;
           const perWeek = perHour * 168; // 24 * 7
           
-          avgGridProfitHourCalc = perHour.toFixed(2);
-          avgGridProfitDayCalc = perDay.toFixed(2);
-          avgGridProfitWeekCalc = perWeek.toFixed(2);
+          // Bis zu 4 Nachkommastellen erlaubt, unnötige Nullen werden entfernt
+          avgGridProfitHourCalc = parseFloat(perHour.toFixed(4)).toString();
+          avgGridProfitDayCalc = parseFloat(perDay.toFixed(4)).toString();
+          avgGridProfitWeekCalc = parseFloat(perWeek.toFixed(4)).toString();
         }
         
         // Change-Werte berechnen (alle 6 Kombinationen: 3 Zeiträume × 2 Einheiten)
@@ -2050,8 +2055,8 @@ export default function Upload() {
                       <Input
                         id="overallTrendPnlUsdt"
                         type="number"
-                        step="0.01"
-                        placeholder="0.00"
+                        step="0.0001"
+                        placeholder="0.0000"
                         className={getSignPrefix(formData.overallTrendPnlUsdt) ? "pl-6" : ""}
                         value={formData.overallTrendPnlUsdt}
                         onChange={(e) => setFormData({ ...formData, overallTrendPnlUsdt: e.target.value })}
@@ -2111,8 +2116,8 @@ export default function Upload() {
                           <Input
                             id="avgGridProfitHour"
                             type="number"
-                            step="0.01"
-                            placeholder="0.00"
+                            step="0.0001"
+                            placeholder="0.0000"
                             className={getSignPrefix(formData.avgGridProfitHour) ? "pl-6" : ""}
                             value={formData.avgGridProfitHour}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitHour: e.target.value })}
@@ -2125,8 +2130,8 @@ export default function Upload() {
                           <Input
                             id="avgGridProfitDay"
                             type="number"
-                            step="0.01"
-                            placeholder="0.00"
+                            step="0.0001"
+                            placeholder="0.0000"
                             className={getSignPrefix(formData.avgGridProfitDay) ? "pl-6" : ""}
                             value={formData.avgGridProfitDay}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitDay: e.target.value })}
@@ -2139,8 +2144,8 @@ export default function Upload() {
                           <Input
                             id="avgGridProfitWeek"
                             type="number"
-                            step="0.01"
-                            placeholder="0.00"
+                            step="0.0001"
+                            placeholder="0.0000"
                             className={getSignPrefix(formData.avgGridProfitWeek) ? "pl-6" : ""}
                             value={formData.avgGridProfitWeek}
                             onChange={(e) => setFormData({ ...formData, avgGridProfitWeek: e.target.value })}
@@ -2163,8 +2168,8 @@ export default function Upload() {
                             <Input
                               id="lastAvgGridProfitHour"
                               type="number"
-                              step="0.01"
-                              placeholder="0.00"
+                              step="0.0001"
+                              placeholder="0.0000"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
                               value={formData.lastAvgGridProfitHour}
                               readOnly
@@ -2182,8 +2187,8 @@ export default function Upload() {
                             <Input
                               id="lastAvgGridProfitDay"
                               type="number"
-                              step="0.01"
-                              placeholder="0.00"
+                              step="0.0001"
+                              placeholder="0.0000"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
                               value={formData.lastAvgGridProfitDay}
                               readOnly
@@ -2201,8 +2206,8 @@ export default function Upload() {
                             <Input
                               id="lastAvgGridProfitWeek"
                               type="number"
-                              step="0.01"
-                              placeholder="0.00"
+                              step="0.0001"
+                              placeholder="0.0000"
                               className={`bg-muted/50 cursor-pointer ${selectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(formData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
                               value={formData.lastAvgGridProfitWeek}
                               readOnly
@@ -2271,8 +2276,8 @@ export default function Upload() {
                         <Input
                           id="overallGridProfitUsdt"
                           type="number"
-                          step="0.01"
-                          placeholder="0.00"
+                          step="0.0001"
+                          placeholder="0.0000"
                           className={getSignPrefix(formData.overallGridProfitUsdt) ? "pl-6" : ""}
                           value={formData.overallGridProfitUsdt}
                           onChange={(e) => {
@@ -2318,8 +2323,8 @@ export default function Upload() {
                         <Input
                           id="avgGridProfitUsdt"
                           type="number"
-                          step="0.01"
-                          placeholder="0.00"
+                          step="0.0001"
+                          placeholder="0.0000"
                           className={`bg-muted/50 ${getSignPrefix(formData.avgGridProfitUsdt) ? "pl-6" : ""}`}
                           value={formData.avgGridProfitUsdt}
                           readOnly
