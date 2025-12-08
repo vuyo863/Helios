@@ -25,7 +25,7 @@ Sections MIT Modi (Dropdown vorhanden):
 - Grid Trading Section
 
 Sections OHNE Modi (kein Dropdown):
-- Info Section (feste Logik, keine Vergleiche)
+- Info Section (feste Logik, keine Berechnungen)
 - Bot Type Section (nur Auswahl, keine Berechnungen)
 
 **DIE 2 MODI IM DETAIL:**
@@ -173,7 +173,7 @@ Szenario C - GEMISCHTE DUPLIKATE:
   Screenshots: [Long mit 10x] + [Short mit 3x] + [Long mit 75x]
   Ergebnis:
     - botDirection: "Long, Short" (Long kommt zweimal vor, aber nur einmal ausgeben!)
-    - leverage: "10x, 3x, 75x" (alphabetisch sortiert, nur Multiplikatoren)
+    - leverage: "3x, 10x, 75x" (alphabetisch sortiert, nur Multiplikatoren)
 
 Szenario D - MIT NEUTRAL:
   Screenshots: [Long mit 2x] + [Neutral mit 2x] + [Short mit 5x]
@@ -677,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         manualOverrides,
         manualStartmetrikMode 
       } = req.body;
-      
+
       // effectiveStartMetrik: true wenn entweder echter Startmetrik ODER manueller Startmetrik-Modus
       // Diese Variable steuert die Berechnungslogik (Datum aus Screenshot, Grid-Durchschnitte von Laufzeit)
       const effectiveStartMetrik = isStartMetric || manualStartmetrikMode;
@@ -941,7 +941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const prev = parseFloat(previous || 0);
             return (curr - prev).toFixed(decimals);
           };
-          
+
           // Spezielle Funktion für USDT-Werte mit bis zu 4 Nachkommastellen
           const calcDeltaUsdt = (current: any, previous: any): string => {
             return calcDelta(current, previous, 4);
@@ -1228,19 +1228,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/bot-types/:id/archive", async (req, res) => {
+  // Archive/unarchive bot type
+  app.patch('/api/bot-types/:id/archive', async (req, res) => {
     try {
+      const { id } = req.params;
       const { isArchived } = req.body;
-      if (typeof isArchived !== 'boolean') {
-        return res.status(400).json({ error: "isArchived must be a boolean" });
-      }
-      const updated = await storage.archiveBotType(req.params.id, isArchived);
+
+      const [updated] = await db
+        .update(botTypes)
+        .set({ isArchived })
+        .where(eq(botTypes.id, id))
+        .returning();
+
       if (!updated) {
-        return res.status(404).json({ error: "Bot type not found" });
+        return res.status(404).json({ error: 'Bot-Typ nicht gefunden' });
       }
+
       res.json(updated);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to archive bot type" });
+    } catch (error: any) {
+      console.error('Error archiving bot type:', error);
+      res.status(500).json({ error: 'Fehler beim Archivieren' });
+    }
+  });
+
+  // Toggle active status
+  app.patch('/api/bot-types/:id/active', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+
+      const [updated] = await db
+        .update(botTypes)
+        .set({ isActive })
+        .where(eq(botTypes.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: 'Bot-Typ nicht gefunden' });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error updating active status:', error);
+      res.status(500).json({ error: 'Fehler beim Aktualisieren des Status' });
     }
   });
 

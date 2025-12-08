@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -303,19 +304,31 @@ export default function BotTypesPage() {
   });
 
   const archiveBotTypeMutation = useMutation({
-    mutationFn: async ({ id, isArchived }: { id: string; isArchived: boolean }) => {
+    mutationFn: async ({ id, isArchived, isActive }: { id: string; isArchived?: boolean; isActive?: boolean }) => {
+      if (isActive !== undefined) {
+        return await apiRequest('PATCH', `/api/bot-types/${id}/active`, { isActive });
+      }
       return await apiRequest('PATCH', `/api/bot-types/${id}/archive`, { isArchived });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
-      toast({
-        title: variables.isArchived ? "Bot-Typ archiviert" : "Bot-Typ wiederhergestellt",
-        description: variables.isArchived 
-          ? "Der Bot-Typ wurde erfolgreich archiviert." 
-          : "Der Bot-Typ wurde erfolgreich wiederhergestellt.",
-      });
-      setDeleteDialogOpen(false);
-      setBotTypeToDelete(null);
+      if (variables.isActive !== undefined) {
+        toast({
+          title: variables.isActive ? "Bot-Typ aktiviert" : "Bot-Typ deaktiviert",
+          description: variables.isActive 
+            ? "Der Bot-Typ wurde erfolgreich aktiviert." 
+            : "Der Bot-Typ wurde erfolgreich deaktiviert.",
+        });
+      } else {
+        toast({
+          title: variables.isArchived ? "Bot-Typ archiviert" : "Bot-Typ wiederhergestellt",
+          description: variables.isArchived 
+            ? "Der Bot-Typ wurde erfolgreich archiviert." 
+            : "Der Bot-Typ wurde erfolgreich wiederhergestellt.",
+        });
+        setDeleteDialogOpen(false);
+        setBotTypeToDelete(null);
+      }
     },
     onError: () => {
       toast({
@@ -479,6 +492,12 @@ export default function BotTypesPage() {
                             <CardTitle className="text-xl mb-1 flex items-center gap-2">
                               <Layers className="w-5 h-5 text-primary" />
                               {botType.name}
+                              {botType.isActive && (
+                                <Badge variant="secondary" className="gap-1 bg-green-100 text-green-700 border-green-200">
+                                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                                  Aktiv
+                                </Badge>
+                              )}
                             </CardTitle>
                             {botType.description && (
                               <CardDescription className="text-sm mt-2">
@@ -562,6 +581,23 @@ export default function BotTypesPage() {
                         </span>
                       </div>
                     </div>
+                    {!isEditing && (
+                      <div className="flex items-center gap-2 pt-2 border-t">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Status:</span>
+                          <Switch
+                            checked={botType.isActive || false}
+                            onCheckedChange={(checked) => {
+                              archiveBotTypeMutation.mutate({ 
+                                id: botType.id, 
+                                isActive: checked 
+                              });
+                            }}
+                            data-testid={`switch-active-${botType.id}`}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-2 pt-2 border-t">
                       <div className="flex items-center gap-2">
                         {botType.color && (
