@@ -224,13 +224,15 @@ export default function Upload() {
   });
 
   // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
-  // Überschreibbare Felder: overallGridProfitUsdt, lastUpload, investment, extraMargin
+  // Überschreibbare Felder: overallGridProfitUsdt, lastUpload, investment, extraMargin, avgRuntime, uploadRuntime
   // Werte werden direkt beim onChange gesetzt (nicht durch Vergleich)
   const [manualOverrides, setManualOverrides] = useState<{
     overallGridProfitUsdt?: string;
     lastUpload?: string;
     investment?: string;
     extraMargin?: string;
+    avgRuntime?: string;
+    uploadRuntime?: string;
   }>({});
   
   // Flag um zu tracken ob Phase 2 schon Werte extrahiert hat
@@ -258,7 +260,7 @@ export default function Upload() {
   }, [extractedScreenshotData]);
   
   // Helper: Setze manuellen Override wenn Benutzer nach Phase 2 einen Wert ändert
-  const handleManualOverride = (field: 'overallGridProfitUsdt' | 'lastUpload' | 'investment' | 'extraMargin', value: string) => {
+  const handleManualOverride = (field: 'overallGridProfitUsdt' | 'lastUpload' | 'investment' | 'extraMargin' | 'avgRuntime' | 'uploadRuntime', value: string) => {
     // Nur tracken wenn Phase 2 abgeschlossen ist UND nur 1 Screenshot
     const screenshotCount = extractedScreenshotData?.screenshots?.length || 0;
     if (phase2Completed && screenshotCount === 1) {
@@ -969,6 +971,12 @@ export default function Upload() {
     }
     if (manualOverrides.extraMargin) {
       manualFields.push({ label: 'Extra Margin', value: manualOverrides.extraMargin });
+    }
+    if (manualOverrides.avgRuntime) {
+      manualFields.push({ label: 'Durchschn. Laufzeit', value: manualOverrides.avgRuntime });
+    }
+    if (manualOverrides.uploadRuntime) {
+      manualFields.push({ label: 'Upload Laufzeit', value: manualOverrides.uploadRuntime });
     }
     
     // Prüfe Anzahl der Screenshots
@@ -1964,7 +1972,10 @@ export default function Upload() {
                         type="text"
                         placeholder="z.B. 1d 3h 15s"
                         value={formData.avgRuntime}
-                        onChange={(e) => setFormData({ ...formData, avgRuntime: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, avgRuntime: e.target.value });
+                          handleManualOverride('avgRuntime', e.target.value);
+                        }}
                         disabled={!phaseTwoVerified}
                         data-testid="input-avg-runtime"
                       />
@@ -1977,7 +1988,10 @@ export default function Upload() {
                         type="text"
                         placeholder="z.B. 1d 3h 15s"
                         value={formData.uploadRuntime}
-                        onChange={(e) => setFormData({ ...formData, uploadRuntime: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, uploadRuntime: e.target.value });
+                          handleManualOverride('uploadRuntime', e.target.value);
+                        }}
                         disabled={!phaseTwoVerified}
                         data-testid="input-upload-runtime"
                       />
