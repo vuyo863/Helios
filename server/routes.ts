@@ -496,19 +496,33 @@ const PHASE_2_DATA_EXTRACTION_PROMPT = `**PHASE 2: VOLLSTÄNDIGE SCREENSHOT-DATE
 Du erhältst einen oder mehrere Screenshots von Pionex Trading Bot Dashboards. Deine Aufgabe ist es, ALLE relevanten Daten aus JEDEM Screenshot zu extrahieren und als strukturiertes JSON zurückzugeben.
 
 **FÜR JEDEN SCREENSHOT EXTRAHIERE:**
-1. **date** - Datum im Format "YYYY-MM-DD" (konvertiere von amerikanischem Format)
-2. **time** - Uhrzeit im Format "HH:MM:SS"
-3. **actualInvestment** - Actual Investment in USDT (nur Zahl)
-4. **extraMargin** - Extra Margin in USDT (nur Zahl, oder null)
-5. **totalProfitUsdt** - Total Profit in USDT (Zahl mit +/-)
-6. **totalProfitPercent** - Total Profit in % (nur Zahl)
-7. **gridProfitUsdt** - Grid Profit in USDT (Zahl mit +/-, oder null)
-8. **gridProfitPercent** - Grid Profit in % (nur Zahl, oder null)
-9. **trendPnlUsdt** - Trend P&L in USDT (Zahl mit +/-, oder null)
-10. **trendPnlPercent** - Trend P&L in % (nur Zahl, oder null)
-11. **leverage** - Hebel NUR als Multiplikator z.B. "75x", "50x", "2x" (OHNE Richtung!)
-12. **runtime** - Laufzeit z.B. "1d 6h 53m"
-13. **direction** - "Long", "Short" oder "Neutral"
+1. **date** - Das AKTUELLE Datum (NICHT das Erstellungsdatum!) im Format "YYYY-MM-DD"
+   - ACHTUNG: Pionex zeigt oft "Laufzeit X(YYYY/MM/DD HH:MM:SS Erstellt)" - das Datum in Klammern ist das ERSTELLUNGSDATUM
+   - Du musst das AKTUELLE Datum berechnen: Erstellungsdatum + Laufzeit = aktuelles Datum
+   - Beispiel: "Laufzeit 19h 50m(2025/12/07 12:05:06 Erstellt)" bedeutet:
+     * Erstellt: 07.12.2025 um 12:05:06
+     * Laufzeit: 19h 50m
+     * AKTUELLES Datum/Zeit: 08.12.2025 um ~07:55 (12:05 + 19:50 = nächster Tag)
+2. **time** - Die AKTUELLE Uhrzeit im Format "HH:MM:SS" (berechnet aus Erstellungszeit + Laufzeit)
+3. **createdAt** - Das ERSTELLUNGSDATUM im Format "YYYY-MM-DD HH:MM:SS" (direkt aus dem Screenshot)
+4. **actualInvestment** - Actual Investment in USDT (nur Zahl)
+5. **extraMargin** - Extra Margin in USDT (nur Zahl, oder null)
+6. **totalProfitUsdt** - Total Profit in USDT (Zahl mit +/-)
+7. **totalProfitPercent** - Total Profit in % (nur Zahl)
+8. **gridProfitUsdt** - Grid Profit in USDT (Zahl mit +/-, oder null)
+9. **gridProfitPercent** - Grid Profit in % (nur Zahl, oder null)
+10. **trendPnlUsdt** - Trend P&L in USDT (Zahl mit +/-, oder null)
+11. **trendPnlPercent** - Trend P&L in % (nur Zahl, oder null)
+12. **leverage** - Hebel NUR als Multiplikator z.B. "75x", "50x", "2x" (OHNE Richtung!)
+13. **runtime** - Laufzeit z.B. "1d 6h 53m", "19h 50m"
+14. **direction** - Bot-Richtung mit 4 moeglichen Werten:
+    - "Long" - Wenn NUR das gruene "Long" Label sichtbar ist
+    - "Short" - Wenn NUR das gruene "Short" Label sichtbar ist
+    - "Neutral" - Wenn KEIN Richtungs-Label sichtbar ist
+    - "Long+Short" - **KRITISCH**: Wenn BEIDE Labels "Long" UND "Short" gleichzeitig sichtbar sind!
+      * Dies kommt bei "Cross Margin Futures Grid" Bots vor
+      * Beispiel: Oben rechts steht "[Long] [Short] 24x" - dann ist direction = "Long+Short"
+      * NICHT als zwei separate Werte, sondern als EINE Kategorie "Long+Short"!
 
 **JSON-AUSGABE-FORMAT:**
 \`\`\`json
@@ -516,33 +530,36 @@ Du erhältst einen oder mehrere Screenshots von Pionex Trading Bot Dashboards. D
   "screenshots": [
     {
       "screenshotNumber": 1,
-      "date": "2025-11-18",
-      "time": "22:42:13",
-      "actualInvestment": 120.00,
-      "extraMargin": 650.00,
-      "totalProfitUsdt": 71.03,
-      "totalProfitPercent": 59.19,
-      "gridProfitUsdt": 5.51,
-      "gridProfitPercent": 4.59,
-      "trendPnlUsdt": 65.52,
-      "trendPnlPercent": 54.60,
-      "leverage": "75x",
-      "runtime": "1d 6h 53m",
-      "direction": "Short"
+      "date": "2025-12-08",
+      "time": "07:55:06",
+      "createdAt": "2025-12-07 12:05:06",
+      "actualInvestment": 2000.00,
+      "extraMargin": null,
+      "totalProfitUsdt": 312.54,
+      "totalProfitPercent": 15.62,
+      "gridProfitUsdt": 238.31,
+      "gridProfitPercent": 11.91,
+      "trendPnlUsdt": 74.22,
+      "trendPnlPercent": 3.71,
+      "leverage": "24x",
+      "runtime": "19h 50m",
+      "direction": "Long+Short"
     }
   ]
 }
 \`\`\`
 
 **WICHTIGE HINWEISE:**
-- Extrahiere NUR Daten die tatsächlich im Screenshot sichtbar sind
+- **DATUM-BERECHNUNG**: Das aktuelle Datum/Zeit = Erstellungsdatum + Laufzeit (NICHT das Erstellungsdatum direkt verwenden!)
+- **DIRECTION "Long+Short"**: Wenn beide Labels [Long] [Short] auf EINEM Screenshot sichtbar sind → "Long+Short"
+- Extrahiere NUR Daten die tatsaechlich im Screenshot sichtbar sind
 - Wenn ein Wert nicht vorhanden ist, nutze null
-- Achte genau auf Prozentsätze und USDT-Werte (nur Zahlen ohne %, ohne "USDT")
-- Konvertiere amerikanisches Datum (MM/DD/YYYY) zu ISO-Format (YYYY-MM-DD)
+- Achte genau auf Prozentsaetze und USDT-Werte (nur Zahlen ohne %, ohne "USDT")
+- Konvertiere alle Datumsformate zu ISO-Format (YYYY-MM-DD)
 - Profit/PnL-Werte: Positive Zahlen ohne +, negative mit -
-- Sei präzise bei allen Zahlen
+- Sei praezise bei allen Zahlen
 
-**ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**`;
+**ANTWORTE NUR MIT DEM JSON - KEINE ZUSAETZLICHEN ERKLAERUNGEN!**`;
 
 const PHASE_2_STEP_2_PROMPT = `**PHASE 2, SCHRITT 2: Screenshot-Analyse Test**
 
