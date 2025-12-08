@@ -1365,7 +1365,13 @@ export default function Upload() {
           return totalHours;
         };
         
-        if (isStartMetric) {
+        // PRIORITÄT: Manuelle Overrides für uploadRuntime haben Vorrang!
+        if (manualOverridesRef.current.uploadRuntime) {
+          // Benutzer hat manuell einen Wert für Upload Laufzeit eingegeben
+          uploadRuntimeValue = manualOverridesRef.current.uploadRuntime;
+          runtimeHoursForGridProfit = parseLongestRuntime(uploadRuntimeValue);
+          console.log('Upload Laufzeit: Manueller Override verwendet:', uploadRuntimeValue);
+        } else if (isStartMetric) {
           // Bei Startmetrik: AUSNAHME - Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
           // Das ist die einzige Ausnahme, weil es keinen vorherigen Upload gibt, 
           // aber die Laufzeit für Grid Profit Durchschnitt Berechnungen benötigt wird
