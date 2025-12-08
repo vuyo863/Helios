@@ -987,56 +987,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Profit Section - Server berechnet Differenz
           if (modes.profit === 'Vergleich') {
-            // USDT-Wert: 4 Nachkommastellen
-            calculatedValues.profit = calcDeltaUsdt(calculatedValues.profit, parsedPrevious.profit);
-            // Prozentwerte: 2 Nachkommastellen
-            calculatedValues.profitPercent_gesamtinvestment = calcDelta(
-              calculatedValues.profitPercent_gesamtinvestment, 
-              parsedPrevious.profitPercent_gesamtinvestment
-            );
-            calculatedValues.profitPercent_investitionsmenge = calcDelta(
-              calculatedValues.profitPercent_investitionsmenge, 
-              parsedPrevious.profitPercent_investitionsmenge
-            );
+            // Speichere aktuelle absolute Werte für Prozentberechnung
+            const currentAbsoluteProfit = parseFloat(calculatedValues.profit || 0);
+            const currentAbsoluteTotalInvestment = parseFloat(calculatedValues.totalInvestment || 0);
+            const currentAbsoluteInvestment = parseFloat(calculatedValues.investment || 0);
+            
+            // USDT-Wert: 4 Nachkommastellen - Differenz
+            const profitDelta = currentAbsoluteProfit - parseFloat(parsedPrevious.profit || 0);
+            calculatedValues.profit = profitDelta.toFixed(4);
+            
+            // WICHTIG: Prozentwerte basierend auf USDT-Differenz berechnen, nicht Prozent-Differenz!
+            // Dies stellt sicher, dass das Vorzeichen konsistent mit dem USDT-Wert ist.
+            // Formel: profitPercent_change = (profitDelta / aktuelles_Investment) × 100
+            calculatedValues.profitPercent_gesamtinvestment = currentAbsoluteTotalInvestment > 0 
+              ? (profitDelta / currentAbsoluteTotalInvestment * 100).toFixed(2) 
+              : "0.00";
+            calculatedValues.profitPercent_investitionsmenge = currentAbsoluteInvestment > 0 
+              ? (profitDelta / currentAbsoluteInvestment * 100).toFixed(2) 
+              : "0.00";
           }
 
           // Trend P&L Section - Server berechnet Differenz
           if (modes.trend === 'Vergleich') {
-            // USDT-Wert: 4 Nachkommastellen
-            calculatedValues.overallTrendPnlUsdt = calcDeltaUsdt(
-              calculatedValues.overallTrendPnlUsdt, 
-              parsedPrevious.overallTrendPnlUsdt
-            );
-            // Prozentwerte: 2 Nachkommastellen
-            calculatedValues.overallTrendPnlPercent_gesamtinvestment = calcDelta(
-              calculatedValues.overallTrendPnlPercent_gesamtinvestment,
-              parsedPrevious.overallTrendPnlPercent_gesamtinvestment
-            );
-            calculatedValues.overallTrendPnlPercent_investitionsmenge = calcDelta(
-              calculatedValues.overallTrendPnlPercent_investitionsmenge,
-              parsedPrevious.overallTrendPnlPercent_investitionsmenge
-            );
+            // Speichere aktuelle absolute Werte für Prozentberechnung
+            const currentAbsoluteTrendUsdt = parseFloat(calculatedValues.overallTrendPnlUsdt || 0);
+            const currentAbsoluteTotalInv = parseFloat(calculatedValues.totalInvestment || 0);
+            const currentAbsoluteInv = parseFloat(calculatedValues.investment || 0);
+            
+            // USDT-Wert: 4 Nachkommastellen - Differenz
+            const trendDelta = currentAbsoluteTrendUsdt - parseFloat(parsedPrevious.overallTrendPnlUsdt || 0);
+            calculatedValues.overallTrendPnlUsdt = trendDelta.toFixed(4);
+            
+            // Prozentwerte basierend auf USDT-Differenz berechnen
+            calculatedValues.overallTrendPnlPercent_gesamtinvestment = currentAbsoluteTotalInv > 0 
+              ? (trendDelta / currentAbsoluteTotalInv * 100).toFixed(2) 
+              : "0.00";
+            calculatedValues.overallTrendPnlPercent_investitionsmenge = currentAbsoluteInv > 0 
+              ? (trendDelta / currentAbsoluteInv * 100).toFixed(2) 
+              : "0.00";
           }
 
           // Grid Profit Section - Server berechnet Differenz
           if (modes.grid === 'Vergleich') {
-            // USDT-Wert: 4 Nachkommastellen
-            calculatedValues.overallGridProfitUsdt = calcDeltaUsdt(
-              calculatedValues.overallGridProfitUsdt,
-              parsedPrevious.overallGridProfitUsdt
-            );
-            // Prozentwerte: 2 Nachkommastellen
-            calculatedValues.overallGridProfitPercent_gesamtinvestment = calcDelta(
-              calculatedValues.overallGridProfitPercent_gesamtinvestment,
-              parsedPrevious.overallGridProfitPercent_gesamtinvestment
-            );
-            calculatedValues.overallGridProfitPercent_investitionsmenge = calcDelta(
-              calculatedValues.overallGridProfitPercent_investitionsmenge,
-              parsedPrevious.overallGridProfitPercent_investitionsmenge
-            );
+            // Speichere aktuelle absolute Werte für Prozentberechnung
+            const currentAbsoluteGridUsdt = parseFloat(calculatedValues.overallGridProfitUsdt || 0);
+            const currentAbsoluteTotalInvG = parseFloat(calculatedValues.totalInvestment || 0);
+            const currentAbsoluteInvG = parseFloat(calculatedValues.investment || 0);
+            
+            // USDT-Wert: 4 Nachkommastellen - Differenz
+            const gridDelta = currentAbsoluteGridUsdt - parseFloat(parsedPrevious.overallGridProfitUsdt || 0);
+            calculatedValues.overallGridProfitUsdt = gridDelta.toFixed(4);
+            
+            // Prozentwerte basierend auf USDT-Differenz berechnen
+            calculatedValues.overallGridProfitPercent_gesamtinvestment = currentAbsoluteTotalInvG > 0 
+              ? (gridDelta / currentAbsoluteTotalInvG * 100).toFixed(2) 
+              : "0.00";
+            calculatedValues.overallGridProfitPercent_investitionsmenge = currentAbsoluteInvG > 0 
+              ? (gridDelta / currentAbsoluteInvG * 100).toFixed(2) 
+              : "0.00";
+            
             // WICHTIG: highestGridProfit wird NICHT als Differenz berechnet!
             // Der höchste Grid Profit ist immer der absolute Wert vom aktuellen Upload
-            // (der höchste von allen Screenshots dieses Uploads)
             // calculatedValues.highestGridProfit bleibt unverändert (absoluter Wert)
             // calculatedValues.highestGridProfitPercent_* bleibt unverändert (absoluter Wert)
 
