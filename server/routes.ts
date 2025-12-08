@@ -729,9 +729,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // VALIDIERUNG: Wenn VERGLEICH-Modi aktiv sind UND es kein Start-Metric ist,
+      // VALIDIERUNG: Wenn VERGLEICH-Modi aktiv sind UND es kein Start-Metric ist (echt oder manuell),
       // müssen vorherige Daten vorhanden sein
-      // HINWEIS: Bei isStartMetric=true erlauben wir VERGLEICH ohne previousUploadData
+      // HINWEIS: Bei effectiveStartMetrik=true (echt ODER manuell) erlauben wir VERGLEICH ohne previousUploadData
       // (der Startmetrik Guard setzt dann alle Werte auf 0.00)
       const vergleichModes = [];
       if (modes.investment === 'Vergleich') vergleichModes.push('Investment');
@@ -739,7 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (modes.trend === 'Vergleich') vergleichModes.push('Trend P&L');
       if (modes.grid === 'Vergleich') vergleichModes.push('Grid Trading');
 
-      if (!isStartMetric && vergleichModes.length > 0 && !previousUploadData) {
+      if (!effectiveStartMetrik && vergleichModes.length > 0 && !previousUploadData) {
         return res.status(400).json({ 
           error: `VERGLEICH-Modus aktiv für ${vergleichModes.join(', ')}, aber keine vorherigen Daten vorhanden`,
           details: "Bitte stellen Sie vorherige Upload-Daten bereit oder wechseln Sie zu 'Neu'-Modus"
