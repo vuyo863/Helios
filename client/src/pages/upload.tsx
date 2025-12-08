@@ -1136,6 +1136,17 @@ export default function Upload() {
         }
       }
 
+      // DEBUG: Log manualOverrides vor dem Senden
+      console.log('=== Phase 4 Request Debug ===');
+      console.log('manualOverrides object:', manualOverrides);
+      console.log('manualOverrides keys:', Object.keys(manualOverrides));
+      console.log('manualOverrides.avgRuntime:', manualOverrides.avgRuntime);
+      console.log('manualOverrides.uploadRuntime:', manualOverrides.uploadRuntime);
+      console.log('manualOverrides.lastUpload:', manualOverrides.lastUpload);
+      console.log('phase2Completed:', phase2Completed);
+      console.log('screenshotCount:', extractedScreenshotData?.screenshots?.length);
+      console.log('=== End Debug ===');
+      
       const response = await fetch('/api/phase4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
