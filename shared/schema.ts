@@ -163,6 +163,9 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   // Screenshot-Anzahl
   screenshotCount: text("screenshot_count"),
   
+  // Berechnungsmodus (Normal oder Startmetrik - für manuell ausgewählten Startmetrik-Modus)
+  calculationMode: text("calculation_mode"),
+  
   // Notizen Section (wird NICHT an AI gesendet, keine Modi)
   notes: text("notes"),
 });
