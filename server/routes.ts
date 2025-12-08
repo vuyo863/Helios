@@ -357,25 +357,39 @@ Diese Felder haben KEINE Modi. Sie werden IMMER aus ALLEN Screenshots aggregiert
    - NICHT die Summe aller Investments!
 
 5. **GRID PROFIT DURCHSCHNITT - RUNTIME VALIDIERUNG (KRITISCH!):**
-   - **ZUERST: Finde längste Runtime in allen Screenshots**
+   - **ZUERST: Prüfe ob manuelle Laufzeit-Werte vorhanden sind:**
+     * Wenn ein Screenshot "manualAvgRuntime" enthält (z.B. "1d 3h 15m"), NUTZE DIESEN WERT!
+     * Wenn ein Screenshot "manualUploadRuntime" enthält (z.B. "2d 5h"), NUTZE DIESEN für Upload Laufzeit Berechnungen!
+     * Format: "1d 3h 15m" oder "2d 5h" - konvertiere zu Stunden (1d = 24h)
+   - **Falls keine manuellen Werte: Finde längste Runtime in allen Screenshots**
    - Dann prüfe GENAU:
 
    **avgGridProfitHour:**
    - Kann IMMER berechnet werden (auch bei < 1h)
    - Berechnung: total / (runtime in Stunden)
    - Beispiel: Runtime 30min → total / 0.5
+   - Bei manualAvgRuntime: Nutze diesen Wert statt Screenshot-Runtime!
 
    **avgGridProfitDay:**
    - NUR wenn längste Runtime >= 24 Stunden (1 Tag)!
    - Wenn längste Runtime < 24h → setze auf null
    - Beispiel: Runtime 6h → avgGridProfitDay = null ❌
    - Beispiel: Runtime 30h → avgGridProfitDay = total / (30/24) ✅
+   - Bei manualAvgRuntime: Nutze diesen Wert für die Runtime-Prüfung!
 
    **avgGridProfitWeek:**
    - NUR wenn längste Runtime >= 168 Stunden (7 Tage)!
    - Wenn längste Runtime < 168h → setze auf null
    - Beispiel: Runtime 5d (120h) → avgGridProfitWeek = null ❌
    - Beispiel: Runtime 10d (240h) → avgGridProfitWeek = total / (240/168) ✅
+   - Bei manualAvgRuntime: Nutze diesen Wert für die Runtime-Prüfung!
+
+   **MANUELLE LAUFZEIT-WERTE (PRIORITÄT!):**
+   - Wenn "manualAvgRuntime" vorhanden: Nutze für avgGridProfitHour/Day/Week Berechnungen
+   - Wenn "manualUploadRuntime" vorhanden: Nutze für Upload Laufzeit Berechnung
+   - Wenn "lastUpload" als manuelle Überschreibung: Nutze für Upload Laufzeit Berechnung
+     * Format kann sein: "2d 5h" (Zeitdifferenz) ODER "07.12.2025 14:30" (Datum+Uhrzeit)
+     * Bei Datum+Uhrzeit: Berechne Differenz zu "thisUpload" für Upload Laufzeit
 
    **WICHTIG:** Diese Regel gilt für NEU und VERGLEICH Modi!
 
@@ -725,6 +739,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // lastUpload wird nur im Frontend verwendet, nicht in den Screenshot-Daten
             if (manualOverrides.lastUpload !== undefined) {
               overrideMessages.push(`Last Upload: ${manualOverrides.lastUpload}`);
+            }
+            // avgRuntime: Durchschnittliche Laufzeit aller Screenshots (für Grid Profit Durchschnitte)
+            if (manualOverrides.avgRuntime !== undefined) {
+              // Speichere als String im ersten Screenshot (wird von KI für Berechnungen genutzt)
+              screenshot.manualAvgRuntime = manualOverrides.avgRuntime;
+              overrideMessages.push(`Durchschn. Laufzeit: ${manualOverrides.avgRuntime}`);
+            }
+            // uploadRuntime: Upload Laufzeit (Zeit seit letztem Upload)
+            if (manualOverrides.uploadRuntime !== undefined) {
+              screenshot.manualUploadRuntime = manualOverrides.uploadRuntime;
+              overrideMessages.push(`Upload Laufzeit: ${manualOverrides.uploadRuntime}`);
             }
 
             processedScreenshotData = JSON.stringify(parsedData);
