@@ -67,9 +67,10 @@ export default function Dashboard() {
   }, [activeBotTypes]);
 
   const uniqueBotNamesOnly = useMemo(() => {
-    const names = Array.from(new Set(allEntries.map(entry => entry.botName)));
-    return names.sort();
-  }, [allEntries]);
+    // Nur aktive Bot-Types anzeigen
+    const activeNames = activeBotTypes.map(bt => bt.name);
+    return activeNames.sort();
+  }, [activeBotTypes]);
 
   const filteredEntriesForTable = useMemo(() => {
     let filtered = [...allEntries];
