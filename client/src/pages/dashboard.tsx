@@ -4,7 +4,7 @@ import StatCard from "@/components/StatCard";
 import BotEntryTable from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
-import { BotEntry } from "@shared/schema";
+import { BotEntry, BotType } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
 import {
@@ -51,10 +51,20 @@ export default function Dashboard() {
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
+  // Hole aktive Bot-Types
+  const { data: botTypes = [] } = useQuery<BotType[]>({
+    queryKey: ['/api/bot-types'],
+  });
+
+  const activeBotTypes = useMemo(() => {
+    return botTypes.filter(bt => bt.isActive && !bt.isArchived);
+  }, [botTypes]);
+
   const uniqueBotNames = useMemo(() => {
-    const names = Array.from(new Set(allEntries.map(entry => entry.botName)));
-    return ["Gesamt", ...names.sort()];
-  }, [allEntries]);
+    // Nur aktive Bot-Types anzeigen
+    const activeNames = activeBotTypes.map(bt => bt.name);
+    return ["Gesamt", ...activeNames.sort()];
+  }, [activeBotTypes]);
 
   const uniqueBotNamesOnly = useMemo(() => {
     const names = Array.from(new Set(allEntries.map(entry => entry.botName)));
