@@ -36,6 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const { data: entries = [], isLoading } = useQuery<BotEntry[]>({
@@ -377,7 +378,37 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <ProfitLineChart data={lineChartData} title="Profit-Verlauf" />
+            <Card className="p-6">
+              <h3 className="text-lg font-bold mb-6">Update Verlauf</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={[]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    label={{ value: 'Time', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: 'hsl(var(--muted-foreground))' } }}
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <YAxis 
+                    label={{ value: 'Wert', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: 'hsl(var(--muted-foreground))' } }}
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="hsl(var(--chart-2))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--chart-2))', r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
           </div>
           <Card className="p-4">
             <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
@@ -480,13 +511,15 @@ export default function Dashboard() {
                 <Button variant="outline" size="sm">Linie</Button>
               </div>
               <Separator />
-              <Button 
-                className="w-full mt-2" 
-                onClick={handleApplySettings}
-                data-testid="button-apply-settings"
-              >
-                Apply
-              </Button>
+              <div className="mt-2 flex justify-end">
+                <Button 
+                  size="sm"
+                  onClick={handleApplySettings}
+                  data-testid="button-apply-settings"
+                >
+                  Apply
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
