@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -276,8 +277,29 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <ProfitLineChart data={lineChartData} title="Profit-Verlauf" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <ProfitLineChart data={lineChartData} title="Profit-Verlauf" />
+          </div>
+          <Card className="p-4">
+            <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Zeitraum</span>
+                <Button variant="outline" size="sm">7 Tage</Button>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Datenansicht</span>
+                <Button variant="outline" size="sm">Profit</Button>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Charttyp</span>
+                <Button variant="outline" size="sm">Linie</Button>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <div className="mb-8">
