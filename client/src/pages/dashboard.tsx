@@ -63,6 +63,7 @@ export default function Dashboard() {
     from: undefined,
     to: undefined,
   });
+  const [activeMetricCard, setActiveMetricCard] = useState<string | null>(null);
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -197,6 +198,22 @@ export default function Dashboard() {
     }
   };
 
+  const handleApplySettings = () => {
+    // Hier kann die Logik für die Anwendung der Einstellungen implementiert werden
+    console.log('Settings applied:', { 
+      selectedTimeRange, 
+      customDays, 
+      customHours, 
+      customMinutes, 
+      dateRange,
+      activeMetricCard 
+    });
+  };
+
+  const toggleMetricCard = (cardName: string) => {
+    setActiveMetricCard(prev => prev === cardName ? null : cardName);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -292,30 +309,66 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            label="Gesamtkapital"
-            value={`${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
-            icon={Wallet}
-            iconColor="bg-blue-100 text-blue-600"
-          />
-          <StatCard
-            label="Gesamtprofit"
-            value={`${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
-            icon={TrendingUp}
-            iconColor="bg-green-100 text-green-600"
-          />
-          <StatCard
-            label="Gesamtprofit %"
-            value={`${totalProfitPercent.toFixed(2)}%`}
-            icon={Percent}
-            iconColor="bg-purple-100 text-purple-600"
-          />
-          <StatCard
-            label="Ø Profit/Tag"
-            value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
-            icon={CalendarIcon}
-            iconColor="bg-orange-100 text-orange-600"
-          />
+          <div 
+            onClick={() => toggleMetricCard('Gesamtkapital')}
+            className={`cursor-pointer transition-all ${
+              activeMetricCard === 'Gesamtkapital' 
+                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+                : ''
+            }`}
+          >
+            <StatCard
+              label="Gesamtkapital"
+              value={`${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              icon={Wallet}
+              iconColor="bg-blue-100 text-blue-600"
+            />
+          </div>
+          <div 
+            onClick={() => toggleMetricCard('Gesamtprofit')}
+            className={`cursor-pointer transition-all ${
+              activeMetricCard === 'Gesamtprofit' 
+                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+                : ''
+            }`}
+          >
+            <StatCard
+              label="Gesamtprofit"
+              value={`${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              icon={TrendingUp}
+              iconColor="bg-green-100 text-green-600"
+            />
+          </div>
+          <div 
+            onClick={() => toggleMetricCard('Gesamtprofit %')}
+            className={`cursor-pointer transition-all ${
+              activeMetricCard === 'Gesamtprofit %' 
+                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+                : ''
+            }`}
+          >
+            <StatCard
+              label="Gesamtprofit %"
+              value={`${totalProfitPercent.toFixed(2)}%`}
+              icon={Percent}
+              iconColor="bg-purple-100 text-purple-600"
+            />
+          </div>
+          <div 
+            onClick={() => toggleMetricCard('Ø Profit/Tag')}
+            className={`cursor-pointer transition-all ${
+              activeMetricCard === 'Ø Profit/Tag' 
+                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+                : ''
+            }`}
+          >
+            <StatCard
+              label="Ø Profit/Tag"
+              value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              icon={CalendarIcon}
+              iconColor="bg-orange-100 text-orange-600"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -422,6 +475,14 @@ export default function Dashboard() {
                 <span className="text-sm">Charttyp</span>
                 <Button variant="outline" size="sm">Linie</Button>
               </div>
+              <Separator />
+              <Button 
+                className="w-full mt-2" 
+                onClick={handleApplySettings}
+                data-testid="button-apply-settings"
+              >
+                Apply
+              </Button>
             </div>
           </Card>
         </div>
