@@ -250,34 +250,31 @@ export default function Upload() {
   
   // Flag um zu tracken ob Phase 2 schon Werte extrahiert hat
   const [phase2Completed, setPhase2Completed] = useState(false);
-  // Referenz auf die letzte extractedScreenshotData ID um zu erkennen ob wirklich NEUE Screenshots kamen
-  const lastExtractedDataIdRef = useRef<string | null>(null);
+  // Referenz auf die Anzahl der ausgewählten Dateien um NEUE Uploads zu erkennen
+  const lastSelectedFilesCountRef = useRef<number>(0);
+  // Flag ob manuelle Overrides erlaubt sind (wird nur bei neuem Datei-Upload zurückgesetzt)
+  const overridesLockedRef = useRef<boolean>(false);
   
-  // Reset manualOverrides NUR wenn wirklich NEUE Screenshots hochgeladen werden
-  // (nicht bei Re-Render oder Phase 3 Bestätigung)
+  // Reset manualOverrides NUR wenn NEUE Dateien ausgewählt werden (nicht bei Daten-Updates)
+  useEffect(() => {
+    const currentFileCount = selectedFiles.length;
+    
+    // Nur zurücksetzen wenn sich die Anzahl der ausgewählten Dateien GEÄNDERT hat (neuer Upload)
+    if (currentFileCount !== lastSelectedFilesCountRef.current) {
+      console.log('Neue Dateien ausgewählt, reset manualOverrides:', currentFileCount, 'Dateien');
+      manualOverridesRef.current = {};
+      lastSelectedFilesCountRef.current = currentFileCount;
+      overridesLockedRef.current = false;
+      setManualOverridesVersion(v => v + 1);
+    }
+  }, [selectedFiles.length]);
+  
+  // Phase2Completed setzen wenn Daten vorhanden sind
   useEffect(() => {
     if (extractedScreenshotData) {
-      // Erstelle eine eindeutige ID basierend auf Screenshot-Inhalten (nicht nur Nummern)
-      const screenshots = extractedScreenshotData.screenshots || [];
-      const currentDataId = JSON.stringify(screenshots.map((s: any) => ({
-        num: s.screenshotNumber,
-        runtime: s.runtime,
-        profit: s.profit
-      })));
-      
-      // Nur zurücksetzen wenn sich die Screenshot-INHALTE geändert haben (neuer Upload)
-      if (lastExtractedDataIdRef.current !== currentDataId) {
-        console.log('Neue Screenshots erkannt, reset manualOverrides');
-        manualOverridesRef.current = {};
-        lastExtractedDataIdRef.current = currentDataId;
-        setManualOverridesVersion(v => v + 1);
-      }
       setPhase2Completed(true);
     } else {
       setPhase2Completed(false);
-      lastExtractedDataIdRef.current = null;
-      manualOverridesRef.current = {};
-      setManualOverridesVersion(v => v + 1);
     }
   }, [extractedScreenshotData]);
   
