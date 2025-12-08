@@ -51,26 +51,26 @@ export default function Dashboard() {
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
-  // Hole aktive Bot-Types
+  // Hole alle Bot-Types (aktiv + inaktiv, aber nicht archiviert)
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
   });
 
-  const activeBotTypes = useMemo(() => {
-    return botTypes.filter(bt => bt.isActive && !bt.isArchived);
+  const availableBotTypes = useMemo(() => {
+    return botTypes.filter(bt => !bt.isArchived);
   }, [botTypes]);
 
   const uniqueBotNames = useMemo(() => {
-    // Nur aktive Bot-Types anzeigen
-    const activeNames = activeBotTypes.map(bt => bt.name);
-    return ["Gesamt", ...activeNames.sort()];
-  }, [activeBotTypes]);
+    // Alle nicht-archivierten Bot-Types anzeigen
+    const allNames = availableBotTypes.map(bt => bt.name);
+    return ["Gesamt", ...allNames.sort()];
+  }, [availableBotTypes]);
 
   const uniqueBotNamesOnly = useMemo(() => {
-    // Nur aktive Bot-Types anzeigen
-    const activeNames = activeBotTypes.map(bt => bt.name);
-    return activeNames.sort();
-  }, [activeBotTypes]);
+    // Alle nicht-archivierten Bot-Types anzeigen
+    const allNames = availableBotTypes.map(bt => bt.name);
+    return allNames.sort();
+  }, [availableBotTypes]);
 
   const filteredEntriesForTable = useMemo(() => {
     let filtered = [...allEntries];
