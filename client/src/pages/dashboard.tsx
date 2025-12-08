@@ -33,6 +33,8 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -49,6 +51,18 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  const [timeRangeOpen, setTimeRangeOpen] = useState(false);
+  const [selectedTimeRange, setSelectedTimeRange] = useState('7 Days');
+  const [customTimeOpen, setCustomTimeOpen] = useState(false);
+  const [customDays, setCustomDays] = useState('');
+  const [customHours, setCustomHours] = useState('');
+  const [customMinutes, setCustomMinutes] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  });
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -153,6 +167,33 @@ export default function Dashboard() {
     } else {
       setSortColumn(column);
       setSortDirection('asc');
+    }
+  };
+
+  const handleTimeRangeSelect = (value: string) => {
+    setSelectedTimeRange(value);
+    setCustomTimeOpen(value === 'Custom');
+    setTimeRangeOpen(false);
+  };
+
+  const handleApplyCustomTime = () => {
+    // Hier kann die Logik für die Anwendung des Custom-Zeitraums implementiert werden
+    console.log('Custom time applied:', { customDays, customHours, customMinutes, dateRange });
+    setCustomTimeOpen(false);
+  };
+
+  const handleDateSelect = (range: { from: Date | undefined; to: Date | undefined }) => {
+    setDateRange(range);
+    if (range.from && range.to) {
+      const diffMs = range.to.getTime() - range.from.getTime();
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      setCustomDays(days.toString());
+      setCustomHours(hours.toString());
+      setCustomMinutes(minutes.toString());
+      setCalendarOpen(false);
     }
   };
 
@@ -285,9 +326,92 @@ export default function Dashboard() {
             <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm">Zeitraum</span>
-                <Button variant="outline" size="sm">7 Tage</Button>
+                <span className="text-sm">Letzten</span>
+                <Popover open={timeRangeOpen} onOpenChange={setTimeRangeOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      {selectedTimeRange}
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-40 p-2" align="end">
+                    <div className="space-y-1">
+                      {['Custom', '1 h', '24 h', '1 Day', '7 Days', '30 Days'].map((option) => (
+                        <Button
+                          key={option}
+                          variant={selectedTimeRange === option ? "default" : "ghost"}
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => handleTimeRangeSelect(option)}
+                        >
+                          {option}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
+              
+              {customTimeOpen && (
+                <>
+                  <Separator />
+                  <div className="space-y-2 p-2 bg-muted/50 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={customDays}
+                        onChange={(e) => setCustomDays(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <span className="text-xs text-muted-foreground">D</span>
+                      
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={customHours}
+                        onChange={(e) => setCustomHours(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <span className="text-xs text-muted-foreground">H</span>
+                      
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={customMinutes}
+                        onChange={(e) => setCustomMinutes(e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <span className="text-xs text-muted-foreground">M</span>
+                      
+                      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                          <Calendar
+                            mode="range"
+                            selected={dateRange as any}
+                            onSelect={handleDateSelect as any}
+                            numberOfMonths={2}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <Button
+                      size="sm"
+                      className="w-full h-7 text-xs"
+                      onClick={handleApplyCustomTime}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </>
+              )}
+              
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-sm">Datenansicht</span>
