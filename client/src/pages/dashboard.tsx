@@ -63,7 +63,7 @@ export default function Dashboard() {
     from: undefined,
     to: undefined,
   });
-  const [activeMetricCard, setActiveMetricCard] = useState<string | null>(null);
+  const [activeMetricCards, setActiveMetricCards] = useState<string[]>([]);
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -206,12 +206,16 @@ export default function Dashboard() {
       customHours, 
       customMinutes, 
       dateRange,
-      activeMetricCard 
+      activeMetricCards 
     });
   };
 
   const toggleMetricCard = (cardName: string) => {
-    setActiveMetricCard(prev => prev === cardName ? null : cardName);
+    setActiveMetricCards(prev => 
+      prev.includes(cardName) 
+        ? prev.filter(name => name !== cardName)
+        : [...prev, cardName]
+    );
   };
 
   if (isLoading) {
@@ -312,8 +316,8 @@ export default function Dashboard() {
           <div 
             onClick={() => toggleMetricCard('Gesamtkapital')}
             className={`cursor-pointer transition-all ${
-              activeMetricCard === 'Gesamtkapital' 
-                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+              activeMetricCards.includes('Gesamtkapital') 
+                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
                 : ''
             }`}
           >
@@ -327,8 +331,8 @@ export default function Dashboard() {
           <div 
             onClick={() => toggleMetricCard('Gesamtprofit')}
             className={`cursor-pointer transition-all ${
-              activeMetricCard === 'Gesamtprofit' 
-                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+              activeMetricCards.includes('Gesamtprofit') 
+                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
                 : ''
             }`}
           >
@@ -342,8 +346,8 @@ export default function Dashboard() {
           <div 
             onClick={() => toggleMetricCard('Gesamtprofit %')}
             className={`cursor-pointer transition-all ${
-              activeMetricCard === 'Gesamtprofit %' 
-                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+              activeMetricCards.includes('Gesamtprofit %') 
+                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
                 : ''
             }`}
           >
@@ -357,8 +361,8 @@ export default function Dashboard() {
           <div 
             onClick={() => toggleMetricCard('Ø Profit/Tag')}
             className={`cursor-pointer transition-all ${
-              activeMetricCard === 'Ø Profit/Tag' 
-                ? 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-lg' 
+              activeMetricCards.includes('Ø Profit/Tag') 
+                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
                 : ''
             }`}
           >
