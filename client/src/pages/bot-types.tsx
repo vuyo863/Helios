@@ -580,21 +580,6 @@ export default function BotTypesPage() {
                         </span>
                       </div>
                     </div>
-                    {!isEditing && (
-                      <div className="flex items-center justify-center pt-2 border-t">
-                        <Switch
-                          checked={botType.isActive || false}
-                          onCheckedChange={(checked) => {
-                            archiveBotTypeMutation.mutate({ 
-                              id: botType.id, 
-                              isActive: checked 
-                            });
-                          }}
-                          data-testid={`switch-active-${botType.id}`}
-                          className="scale-75"
-                        />
-                      </div>
-                    )}
                     <div className="flex items-center justify-between gap-2 pt-2 border-t">
                       <div className="flex items-center gap-2">
                         {botType.color && (
@@ -634,6 +619,17 @@ export default function BotTypesPage() {
                       </div>
                       {!isEditing && (
                         <div className="flex items-center gap-2">
+                          <Switch
+                            checked={botType.isActive || false}
+                            onCheckedChange={(checked) => {
+                              archiveBotTypeMutation.mutate({ 
+                                id: botType.id, 
+                                isActive: checked 
+                              });
+                            }}
+                            data-testid={`switch-active-${botType.id}`}
+                            className="scale-75"
+                          />
                           <Button 
                             size="icon" 
                             variant="ghost"
