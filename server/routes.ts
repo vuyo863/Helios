@@ -1,9 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema } from "@shared/schema";
+import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, botTypes } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import { eq } from "drizzle-orm";
+
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,

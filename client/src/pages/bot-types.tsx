@@ -493,8 +493,7 @@ export default function BotTypesPage() {
                               <Layers className="w-5 h-5 text-primary" />
                               {botType.name}
                               {botType.isActive && (
-                                <Badge variant="secondary" className="gap-1 bg-green-100 text-green-700 border-green-200">
-                                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
                                   Aktiv
                                 </Badge>
                               )}
@@ -582,20 +581,18 @@ export default function BotTypesPage() {
                       </div>
                     </div>
                     {!isEditing && (
-                      <div className="flex items-center gap-2 pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Status:</span>
-                          <Switch
-                            checked={botType.isActive || false}
-                            onCheckedChange={(checked) => {
-                              archiveBotTypeMutation.mutate({ 
-                                id: botType.id, 
-                                isActive: checked 
-                              });
-                            }}
-                            data-testid={`switch-active-${botType.id}`}
-                          />
-                        </div>
+                      <div className="flex items-center justify-center pt-2 border-t">
+                        <Switch
+                          checked={botType.isActive || false}
+                          onCheckedChange={(checked) => {
+                            archiveBotTypeMutation.mutate({ 
+                              id: botType.id, 
+                              isActive: checked 
+                            });
+                          }}
+                          data-testid={`switch-active-${botType.id}`}
+                          className="scale-75"
+                        />
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2 pt-2 border-t">
