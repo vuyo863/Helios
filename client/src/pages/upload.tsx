@@ -284,17 +284,30 @@ export default function Upload() {
   // Helper: Setze manuellen Override wenn Benutzer nach Phase 2 einen Wert ändert
   const handleManualOverride = (field: 'overallGridProfitUsdt' | 'lastUpload' | 'investment' | 'extraMargin' | 'avgRuntime' | 'uploadRuntime', value: string) => {
     // Nur tracken wenn Phase 2 abgeschlossen ist UND nur 1 Screenshot
+    // WICHTIG: Verwende phaseTwoVerified (steuert UI-Aktivierung) UND phase2Completed (Screenshot-Daten vorhanden)
     const screenshotCount = extractedScreenshotData?.screenshots?.length || 0;
-    if (phase2Completed && screenshotCount === 1) {
+    const canOverride = (phaseTwoVerified || phase2Completed) && screenshotCount === 1;
+    
+    console.log('handleManualOverride called:', { 
+      field, 
+      value, 
+      phaseTwoVerified, 
+      phase2Completed, 
+      screenshotCount, 
+      canOverride 
+    });
+    
+    if (canOverride) {
       if (value.trim() !== '') {
-        setManualOverrides(prev => ({ ...prev, [field]: value }));
+        console.log('Setting manual override:', field, '=', value);
+        manualOverridesRef.current = { ...manualOverridesRef.current, [field]: value };
+        setManualOverridesVersion(v => v + 1);
       } else {
         // Entferne das Override wenn der Wert leer ist
-        setManualOverrides(prev => {
-          const newOverrides = { ...prev };
-          delete newOverrides[field];
-          return newOverrides;
-        });
+        const newOverrides = { ...manualOverridesRef.current };
+        delete newOverrides[field];
+        manualOverridesRef.current = newOverrides;
+        setManualOverridesVersion(v => v + 1);
       }
     }
   };
