@@ -674,8 +674,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         modes, 
         isStartMetric,
         previousUploadData,
-        manualOverrides 
+        manualOverrides,
+        manualStartmetrikMode 
       } = req.body;
+      
+      // effectiveStartMetrik: true wenn entweder echter Startmetrik ODER manueller Startmetrik-Modus
+      // Diese Variable steuert die Berechnungslogik (Datum aus Screenshot, Grid-Durchschnitte von Laufzeit)
+      const effectiveStartMetrik = isStartMetric || manualStartmetrikMode;
 
       if (!screenshotData || !modes) {
         return res.status(400).json({ error: "Screenshot data and modes are required" });
@@ -802,8 +807,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       contextualPrompt += `- Alle Sektionen: NEU Modus (berechne aktuelle Gesamtwerte)\n\n`;
 
       // Datum-Logik: Nur bei Startmetrik berechnen, sonst null lassen
-      contextualPrompt += `**STARTMETRIK-FLAG:** ${isStartMetric ? 'JA' : 'NEIN'}\n\n`;
-      if (isStartMetric) {
+      // Für die KI-Anweisung: effectiveStartMetrik (echter oder manueller Modus)
+      contextualPrompt += `**STARTMETRIK-FLAG:** ${effectiveStartMetrik ? 'JA' : 'NEIN'}\n\n`;
+      if (effectiveStartMetrik) {
         contextualPrompt += `**DATUM-LOGIK (STARTMETRIK):**\n`;
         contextualPrompt += `- Dies ist der ERSTE Upload (Startmetrik)\n`;
         contextualPrompt += `- LESE das Erstellungsdatum vom Screenshot mit der LÄNGSTEN Laufzeit AUS\n`;
@@ -878,17 +884,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // DATUM-LOGIK (Server-seitig):
-        // - Bei Startmetrik: KI berechnet das Datum (ältestes Startdatum basierend auf Runtime)
+        // - Bei Startmetrik (echt oder manuell): KI berechnet das Datum (ältestes Startdatum basierend auf Runtime)
         // - Bei normalem Upload: Datum auf null setzen - Frontend verwendet aktuelles Echtzeit-Datum
-        if (!isStartMetric) {
+        if (!effectiveStartMetrik) {
           calculatedValues.date = null;
         }
 
         // STRATEGIE: Server berechnet VERGLEICH Differenzen
         // AI hat bereits die aktuellen Gesamtwerte berechnet (NEU Modus)
 
-        // STARTMETRIK GUARD: Wenn erster Upload mit VERGLEICH Modi → setze auf 0.00
-        if (isStartMetric) {
+        // STARTMETRIK GUARD: Wenn Startmetrik-Modus (echt oder manuell) mit VERGLEICH Modi → setze auf 0.00
+        if (effectiveStartMetrik) {
           // Für Startmetrik: setze alle VERGLEICH Felder auf "0.00"
           if (modes.investment === 'Vergleich') {
             calculatedValues.investment = "0.00";
@@ -922,8 +928,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // VERGLEICH DIFFERENZEN: Nur wenn NICHT Startmetrik UND previous data vorhanden
-        if (!isStartMetric && previousUploadData) {
+        // VERGLEICH DIFFERENZEN: Nur wenn NICHT Startmetrik-Modus (echt oder manuell) UND previous data vorhanden
+        if (!effectiveStartMetrik && previousUploadData) {
           const parsedPrevious = typeof previousUploadData === 'string' 
             ? JSON.parse(previousUploadData) 
             : previousUploadData;
@@ -1024,7 +1030,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({ 
           success: true,
-          values: calculatedValues
+          values: calculatedValues,
+          // Berechnungsmodus: "Startmetrik" wenn manuell ausgewählt, sonst "Normal"
+          calculationMode: manualStartmetrikMode ? 'Startmetrik' : 'Normal'
         });
       } catch (parseError) {
         console.error("Failed to parse AI JSON response:", aiResponse);

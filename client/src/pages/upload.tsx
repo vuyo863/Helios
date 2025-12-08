@@ -42,6 +42,7 @@ export default function Upload() {
   const [phaseTwoStep2Complete, setPhaseTwoStep2Complete] = useState(false);
   const [isStartMetric, setIsStartMetric] = useState(false);
   const [infoSectionMode, setInfoSectionMode] = useState<'Normal' | 'Startmetrik'>('Normal');
+  const [calculationMode, setCalculationMode] = useState<'Normal' | 'Startmetrik'>('Normal');
   const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
   const [phaseThreeSettingsSent, setPhaseThreeSettingsSent] = useState(false);
   const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
@@ -483,6 +484,9 @@ export default function Upload() {
         // Screenshot-Anzahl
         screenshotCount: formData.botCount || null,
         
+        // Berechnungsmodus (Normal oder Startmetrik)
+        calculationMode: calculationMode,
+        
         // Notizen Section (keine Modi, wird NICHT an AI gesendet)
         notes: formData.notes || null,
       };
@@ -575,6 +579,8 @@ export default function Upload() {
       setWaitingForPhaseThreeConfirmation(false);
       setIsStartMetric(false);
       setExtractedScreenshotData(null);
+      setInfoSectionMode('Normal');
+      setCalculationMode('Normal');
     },
     onError: (error: any) => {
       toast({
@@ -1135,6 +1141,8 @@ export default function Upload() {
           },
           isStartMetric,
           previousUploadData,
+          // Manueller Startmetrik-Modus (auch bei normalen Uploads wie Startmetrik berechnen)
+          manualStartmetrikMode: infoSectionMode === 'Startmetrik',
           // Manuelle Überschreibungen (nur bei 1 Screenshot)
           manualOverrides: Object.keys(manualOverrides).length > 0 ? manualOverrides : undefined
         }),
@@ -1147,11 +1155,15 @@ export default function Upload() {
       const data = await response.json();
       const calculatedValues = data.values;
       
+      // Speichere den Berechnungsmodus aus der API-Response
+      setCalculationMode(data.calculationMode || 'Normal');
+      
       // DEBUG: Log die empfangenen Werte
       console.log('Phase 4 API Response:', data);
       console.log('Calculated Values:', calculatedValues);
       console.log('Investment value:', calculatedValues?.investment);
       console.log('Profit value:', calculatedValues?.profit);
+      console.log('Calculation Mode:', data.calculationMode);
       
       const jsonOutput = JSON.stringify(calculatedValues, null, 2);
       
