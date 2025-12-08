@@ -225,8 +225,8 @@ export default function Upload() {
 
   // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
   // Überschreibbare Felder: overallGridProfitUsdt, lastUpload, investment, extraMargin, avgRuntime, uploadRuntime
-  // Werte werden direkt beim onChange gesetzt (nicht durch Vergleich)
-  const [manualOverrides, setManualOverrides] = useState<{
+  // WICHTIG: Verwende useRef statt useState um zu verhindern, dass Re-Renders die Werte löschen
+  const manualOverridesRef = useRef<{
     overallGridProfitUsdt?: string;
     lastUpload?: string;
     investment?: string;
@@ -234,28 +234,50 @@ export default function Upload() {
     avgRuntime?: string;
     uploadRuntime?: string;
   }>({});
+  // State nur für UI-Updates (Re-Render bei Änderungen)
+  const [manualOverridesVersion, setManualOverridesVersion] = useState(0);
+  // Getter für aktuelle Werte
+  const manualOverrides = manualOverridesRef.current;
+  // Setter der auch Re-Render triggert
+  const setManualOverrides = (newValue: typeof manualOverrides | ((prev: typeof manualOverrides) => typeof manualOverrides)) => {
+    if (typeof newValue === 'function') {
+      manualOverridesRef.current = newValue(manualOverridesRef.current);
+    } else {
+      manualOverridesRef.current = newValue;
+    }
+    setManualOverridesVersion(v => v + 1);
+  };
   
   // Flag um zu tracken ob Phase 2 schon Werte extrahiert hat
   const [phase2Completed, setPhase2Completed] = useState(false);
-  // Referenz auf die letzte extractedScreenshotData ID um zu erkennen ob wirklich neue Daten kamen
-  const [lastExtractedDataId, setLastExtractedDataId] = useState<string | null>(null);
+  // Referenz auf die letzte extractedScreenshotData ID um zu erkennen ob wirklich NEUE Screenshots kamen
+  const lastExtractedDataIdRef = useRef<string | null>(null);
   
-  // Reset manualOverrides NUR wenn wirklich neue Screenshot-Daten kommen (nicht bei Re-Render)
+  // Reset manualOverrides NUR wenn wirklich NEUE Screenshots hochgeladen werden
+  // (nicht bei Re-Render oder Phase 3 Bestätigung)
   useEffect(() => {
     if (extractedScreenshotData) {
-      // Erstelle eine eindeutige ID für die aktuellen Daten
-      const currentDataId = JSON.stringify(extractedScreenshotData.screenshots?.map((s: any) => s.screenshotNumber) || []);
+      // Erstelle eine eindeutige ID basierend auf Screenshot-Inhalten (nicht nur Nummern)
+      const screenshots = extractedScreenshotData.screenshots || [];
+      const currentDataId = JSON.stringify(screenshots.map((s: any) => ({
+        num: s.screenshotNumber,
+        runtime: s.runtime,
+        profit: s.profit
+      })));
       
-      // Nur zurücksetzen wenn sich die Screenshot-Nummern geändert haben
-      if (lastExtractedDataId !== currentDataId) {
-        setManualOverrides({});
-        setLastExtractedDataId(currentDataId);
+      // Nur zurücksetzen wenn sich die Screenshot-INHALTE geändert haben (neuer Upload)
+      if (lastExtractedDataIdRef.current !== currentDataId) {
+        console.log('Neue Screenshots erkannt, reset manualOverrides');
+        manualOverridesRef.current = {};
+        lastExtractedDataIdRef.current = currentDataId;
+        setManualOverridesVersion(v => v + 1);
       }
       setPhase2Completed(true);
     } else {
       setPhase2Completed(false);
-      setLastExtractedDataId(null);
-      setManualOverrides({});
+      lastExtractedDataIdRef.current = null;
+      manualOverridesRef.current = {};
+      setManualOverridesVersion(v => v + 1);
     }
   }, [extractedScreenshotData]);
   
