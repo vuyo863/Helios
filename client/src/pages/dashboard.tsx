@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Calendar, Search, Check, Plus } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Search, Check, Plus } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -313,7 +313,7 @@ export default function Dashboard() {
           <StatCard
             label="Ø Profit/Tag"
             value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
-            icon={Calendar}
+            icon={CalendarIcon}
             iconColor="bg-orange-100 text-orange-600"
           />
         </div>

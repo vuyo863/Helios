@@ -987,28 +987,31 @@ export default function Upload() {
 
   const handleSendFieldsToAI = async () => {
     // Prüfe auf manuelle Überschreibungen (nur bei 1 Screenshot erlaubt)
-    // manualOverrides wird direkt beim onChange gesetzt
-    const hasOverrides = Object.keys(manualOverrides).length > 0;
+    // WICHTIG: Verwende manualOverridesRef.current direkt für aktuellen Wert!
+    const currentOverrides = manualOverridesRef.current;
+    const hasOverrides = Object.keys(currentOverrides).length > 0;
     const manualFields: { label: string; value: string }[] = [];
     
+    console.log('handleSendFieldsToAI - currentOverrides:', currentOverrides);
+    
     // Baue Liste der überschriebenen Felder
-    if (manualOverrides.overallGridProfitUsdt) {
-      manualFields.push({ label: 'Gesamter Grid Profit', value: manualOverrides.overallGridProfitUsdt });
+    if (currentOverrides.overallGridProfitUsdt) {
+      manualFields.push({ label: 'Gesamter Grid Profit', value: currentOverrides.overallGridProfitUsdt });
     }
-    if (manualOverrides.lastUpload) {
-      manualFields.push({ label: 'Last Upload', value: manualOverrides.lastUpload });
+    if (currentOverrides.lastUpload) {
+      manualFields.push({ label: 'Last Upload', value: currentOverrides.lastUpload });
     }
-    if (manualOverrides.investment) {
-      manualFields.push({ label: 'Investitionsmenge', value: manualOverrides.investment });
+    if (currentOverrides.investment) {
+      manualFields.push({ label: 'Investitionsmenge', value: currentOverrides.investment });
     }
-    if (manualOverrides.extraMargin) {
-      manualFields.push({ label: 'Extra Margin', value: manualOverrides.extraMargin });
+    if (currentOverrides.extraMargin) {
+      manualFields.push({ label: 'Extra Margin', value: currentOverrides.extraMargin });
     }
-    if (manualOverrides.avgRuntime) {
-      manualFields.push({ label: 'Durchschn. Laufzeit', value: manualOverrides.avgRuntime });
+    if (currentOverrides.avgRuntime) {
+      manualFields.push({ label: 'Durchschn. Laufzeit', value: currentOverrides.avgRuntime });
     }
-    if (manualOverrides.uploadRuntime) {
-      manualFields.push({ label: 'Upload Laufzeit', value: manualOverrides.uploadRuntime });
+    if (currentOverrides.uploadRuntime) {
+      manualFields.push({ label: 'Upload Laufzeit', value: currentOverrides.uploadRuntime });
     }
     
     // Prüfe Anzahl der Screenshots
@@ -1169,12 +1172,14 @@ export default function Upload() {
       }
 
       // DEBUG: Log manualOverrides vor dem Senden
+      // WICHTIG: Verwende manualOverridesRef.current direkt, nicht die Variable die beim Render erstellt wurde!
+      const currentOverrides = manualOverridesRef.current;
       console.log('=== Phase 4 Request Debug ===');
-      console.log('manualOverrides object:', manualOverrides);
-      console.log('manualOverrides keys:', Object.keys(manualOverrides));
-      console.log('manualOverrides.avgRuntime:', manualOverrides.avgRuntime);
-      console.log('manualOverrides.uploadRuntime:', manualOverrides.uploadRuntime);
-      console.log('manualOverrides.lastUpload:', manualOverrides.lastUpload);
+      console.log('manualOverridesRef.current:', currentOverrides);
+      console.log('manualOverrides keys:', Object.keys(currentOverrides));
+      console.log('manualOverrides.avgRuntime:', currentOverrides.avgRuntime);
+      console.log('manualOverrides.uploadRuntime:', currentOverrides.uploadRuntime);
+      console.log('manualOverrides.lastUpload:', currentOverrides.lastUpload);
       console.log('phase2Completed:', phase2Completed);
       console.log('screenshotCount:', extractedScreenshotData?.screenshots?.length);
       console.log('=== End Debug ===');
@@ -1194,8 +1199,8 @@ export default function Upload() {
           previousUploadData,
           // Manueller Startmetrik-Modus (auch bei normalen Uploads wie Startmetrik berechnen)
           manualStartmetrikMode: infoSectionMode === 'Startmetrik',
-          // Manuelle Überschreibungen (nur bei 1 Screenshot)
-          manualOverrides: Object.keys(manualOverrides).length > 0 ? manualOverrides : undefined
+          // Manuelle Überschreibungen (nur bei 1 Screenshot) - VERWENDE REF.CURRENT DIREKT!
+          manualOverrides: Object.keys(currentOverrides).length > 0 ? currentOverrides : undefined
         }),
       });
 
