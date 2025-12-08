@@ -2583,6 +2583,220 @@ export default function Upload() {
                   </>
                 )}
 
+                {/* CLOSED BOTS MODUS - Gleiche Ausgabefelder wie Update Metrics, aber ohne Funktion */}
+                {outputMode === 'closed-bots' && (
+                  <>
+                    {/* Info Section - Closed Bots */}
+                    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-sm">Info</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Modus:</span>
+                          <Select defaultValue="Normal" disabled>
+                            <SelectTrigger className="w-[120px] h-8" data-testid="closed-select-info-mode">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Normal">Normal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Datum und Uhrzeit</Label>
+                          <Input placeholder="TT.mm.jjjj --:--" readOnly className="bg-muted/50" data-testid="closed-input-date" />
+                        </div>
+                        <div>
+                          <Label>Bot-Richtung</Label>
+                          <Input placeholder="Long, Short, Neutral, Long+Short" readOnly className="bg-muted/50" data-testid="closed-input-direction" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label>Hebel</Label>
+                          <Input placeholder="z.B. 1x, 5x, 10x" readOnly className="bg-muted/50" data-testid="closed-input-leverage" />
+                        </div>
+                        <div>
+                          <Label>Anzahl</Label>
+                          <Input placeholder="z.B. 1, 2, 3" readOnly className="bg-muted/50" data-testid="closed-input-count" />
+                        </div>
+                        <div>
+                          <Label>Laufzeit</Label>
+                          <Input placeholder="z.B. 2d 5h 30s" readOnly className="bg-muted/50" data-testid="closed-input-runtime" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Investment Section - Closed Bots */}
+                    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-sm">Investment</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Modus:</span>
+                          <Select defaultValue="Neu" disabled>
+                            <SelectTrigger className="w-[120px] h-8" data-testid="closed-select-investment-mode">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Neu">Neu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label>Investitionsmenge (USDT)</Label>
+                          <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-investment" />
+                        </div>
+                        <div>
+                          <Label>Extra Margin (USDT)</Label>
+                          <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-extra-margin" />
+                        </div>
+                        <div>
+                          <Label>Gesamtinvestment (USDT)</Label>
+                          <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-total-investment" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gesamter Profit / P&L Section - Closed Bots */}
+                    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-sm">Gesamter Profit / P&L</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Modus:</span>
+                          <Select defaultValue="Neu" disabled>
+                            <SelectTrigger className="w-[120px] h-8" data-testid="closed-select-profit-mode">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Neu">Neu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Gesamtprofit (USDT)</Label>
+                          <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-profit-usdt" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Label>Gesamtprofit (%)</Label>
+                            <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-profit-percent" />
+                          </div>
+                          <Select defaultValue="Gesamtinvestment" disabled>
+                            <SelectTrigger className="w-[150px] h-8 mt-5" data-testid="closed-select-profit-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Gesamtinvestment">Gesamtinvestment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Trend P&L Section - Closed Bots */}
+                    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-sm">Trend P&L</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Modus:</span>
+                          <Select defaultValue="Neu" disabled>
+                            <SelectTrigger className="w-[120px] h-8" data-testid="closed-select-trend-mode">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Neu">Neu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Trend P&L (USDT)</Label>
+                          <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-trend-usdt" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Label>Trend P&L (%)</Label>
+                            <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-trend-percent" />
+                          </div>
+                          <Select defaultValue="Gesamtinvestment" disabled>
+                            <SelectTrigger className="w-[150px] h-8 mt-5" data-testid="closed-select-trend-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Gesamtinvestment">Gesamtinvestment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Grid Profit Section - Closed Bots */}
+                    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-sm">Grid Profit</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Modus:</span>
+                          <Select defaultValue="Neu" disabled>
+                            <SelectTrigger className="w-[120px] h-8" data-testid="closed-select-grid-mode">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Neu">Neu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      {/* Gesamter Grid Profit */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Gesamter Grid Profit (USDT)</Label>
+                          <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-grid-usdt" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Label>Gesamter Grid Profit (%)</Label>
+                            <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-grid-percent" />
+                          </div>
+                          <Select defaultValue="Gesamtinvestment" disabled>
+                            <SelectTrigger className="w-[150px] h-8 mt-5" data-testid="closed-select-grid-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Gesamtinvestment">Gesamtinvestment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      {/* Grid Profit Durchschnitt */}
+                      <div className="border-t pt-4">
+                        <Label className="text-sm font-medium mb-3 block">Grid Profit Durchschnitt</Label>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <Label className="text-xs">Stunde</Label>
+                            <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-avg-hour" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Tag</Label>
+                            <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-avg-day" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Woche</Label>
+                            <Input placeholder="0.00" readOnly className="bg-muted/50" data-testid="closed-input-avg-week" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* Notizen Section - keine Modi, wird NICHT an AI gesendet */}
                 <div className="border rounded-lg p-4 bg-muted/30">
                   <div className="flex items-center justify-between mb-3">
