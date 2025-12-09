@@ -116,6 +116,7 @@ export default function Upload() {
               updateName: `${u.status} #${u.version}`,
               updateDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('de-DE') : '',
               updateTime: u.createdAt ? new Date(u.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
+              status: u.status, // WICHTIG: Status speichern für Filterung nach Modus
             }));
           } else {
             history[bt.name] = [];
