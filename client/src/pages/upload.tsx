@@ -2856,11 +2856,11 @@ export default function Upload() {
                       </div>
                     </div>
 
-                    {/* Investment Section - Closed Bots */}
+                    {/* Investment Section - Closed Bots (funktional) */}
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Investment</h3>
-                        <Select defaultValue="Neu" disabled>
+                        <Select value={closedInvestmentTimeRange} onValueChange={setClosedInvestmentTimeRange} disabled>
                           <SelectTrigger className="w-40 h-8 text-xs" data-testid="closed-select-investment-timerange">
                             <SelectValue />
                           </SelectTrigger>
@@ -2878,8 +2878,8 @@ export default function Upload() {
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.investment}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, investment: e.target.value })}
                             data-testid="closed-input-investment"
                           />
                         </div>
@@ -2890,8 +2890,8 @@ export default function Upload() {
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.extraMargin}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, extraMargin: e.target.value })}
                             data-testid="closed-input-extra-margin"
                           />
                         </div>
@@ -2902,19 +2902,19 @@ export default function Upload() {
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.totalInvestment}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, totalInvestment: e.target.value })}
                             data-testid="closed-input-total-investment"
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Gesamter Profit / P&L Section - Closed Bots */}
+                    {/* Gesamter Profit / P&L Section - Closed Bots (funktional) */}
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Gesamter Profit / P&L</h3>
-                        <Select defaultValue="Neu" disabled>
+                        <Select value={closedProfitTimeRange} onValueChange={setClosedProfitTimeRange}>
                           <SelectTrigger className="w-40 h-8 text-xs" data-testid="closed-select-profit-timerange">
                             <SelectValue />
                           </SelectTrigger>
@@ -2927,13 +2927,15 @@ export default function Upload() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="relative">
                           <Label htmlFor="closed-profit">Gesamtprofit (USDT)</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.profit)}</span>
                           <Input
                             id="closed-profit"
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            readOnly
-                            className="bg-muted/50"
+                            className={getSignPrefix(closedFormData.profit) ? "pl-6" : ""}
+                            value={closedFormData.profit}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, profit: e.target.value })}
                             data-testid="closed-input-profit"
                           />
                         </div>
@@ -2941,17 +2943,19 @@ export default function Upload() {
                           <Label htmlFor="closed-profitPercent">Gesamtprofit (%)</Label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
+                              <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.profitPercent)}</span>
                               <Input
                                 id="closed-profitPercent"
                                 type="number"
                                 step="0.01"
                                 placeholder="0.00"
-                                readOnly
-                                className="bg-muted/50"
+                                className={getSignPrefix(closedFormData.profitPercent) ? "pl-6" : ""}
+                                value={closedFormData.profitPercent}
+                                onChange={(e) => setClosedFormData({ ...closedFormData, profitPercent: e.target.value })}
                                 data-testid="closed-input-profit-percent"
                               />
                             </div>
-                            <Select defaultValue="gesamtinvestment" disabled>
+                            <Select value={closedProfitPercentBase} onValueChange={(val) => setClosedProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                               <SelectTrigger className="w-44 h-10 text-xs" data-testid="closed-select-profit-percent-base">
                                 <SelectValue />
                               </SelectTrigger>
@@ -2965,11 +2969,11 @@ export default function Upload() {
                       </div>
                     </div>
 
-                    {/* Trend P&L Section - Closed Bots */}
+                    {/* Trend P&L Section - Closed Bots (funktional) */}
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Trend P&L</h3>
-                        <Select defaultValue="Neu" disabled>
+                        <Select value={closedTrendTimeRange} onValueChange={setClosedTrendTimeRange}>
                           <SelectTrigger className="w-40 h-8 text-xs" data-testid="closed-select-trend-timerange">
                             <SelectValue />
                           </SelectTrigger>
@@ -2982,13 +2986,15 @@ export default function Upload() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="relative">
                           <Label htmlFor="closed-overallTrendPnlUsdt">Trend P&L (USDT)</Label>
+                          <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.overallTrendPnlUsdt)}</span>
                           <Input
                             id="closed-overallTrendPnlUsdt"
                             type="number"
                             step="0.0001"
                             placeholder="0.0000"
-                            readOnly
-                            className="bg-muted/50"
+                            className={getSignPrefix(closedFormData.overallTrendPnlUsdt) ? "pl-6" : ""}
+                            value={closedFormData.overallTrendPnlUsdt}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, overallTrendPnlUsdt: e.target.value })}
                             data-testid="closed-input-overall-trend-pnl-usdt"
                           />
                         </div>
@@ -2996,17 +3002,19 @@ export default function Upload() {
                           <Label htmlFor="closed-overallTrendPnlPercent">Trend P&L (%)</Label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
+                              <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.overallTrendPnlPercent)}</span>
                               <Input
                                 id="closed-overallTrendPnlPercent"
                                 type="number"
                                 step="0.01"
                                 placeholder="0.00"
-                                readOnly
-                                className="bg-muted/50"
+                                className={getSignPrefix(closedFormData.overallTrendPnlPercent) ? "pl-6" : ""}
+                                value={closedFormData.overallTrendPnlPercent}
+                                onChange={(e) => setClosedFormData({ ...closedFormData, overallTrendPnlPercent: e.target.value })}
                                 data-testid="closed-input-overall-trend-pnl-percent"
                               />
                             </div>
-                            <Select defaultValue="gesamtinvestment" disabled>
+                            <Select value={closedTrendPercentBase} onValueChange={(val) => setClosedTrendPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                               <SelectTrigger className="w-44 h-10 text-xs" data-testid="closed-select-trend-percent-base">
                                 <SelectValue />
                               </SelectTrigger>
@@ -3020,11 +3028,11 @@ export default function Upload() {
                       </div>
                     </div>
 
-                    {/* Grid Trading Section - Closed Bots */}
+                    {/* Grid Trading Section - Closed Bots (funktional) */}
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Grid Trading</h3>
-                        <Select defaultValue="Neu" disabled>
+                        <Select value={closedGridTimeRange} onValueChange={setClosedGridTimeRange}>
                           <SelectTrigger className="w-40 h-8 text-xs" data-testid="closed-select-grid-timerange">
                             <SelectValue />
                           </SelectTrigger>
@@ -3041,37 +3049,43 @@ export default function Upload() {
                           <div className="grid grid-cols-3 gap-3 mt-2">
                             <div className="relative">
                               <Label htmlFor="closed-avgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
+                              <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.avgGridProfitHour)}</span>
                               <Input
                                 id="closed-avgGridProfitHour"
                                 type="number"
                                 step="0.01"
                                 placeholder="0.00"
-                                readOnly
-                                className="bg-muted/50"
+                                className={getSignPrefix(closedFormData.avgGridProfitHour) ? "pl-6" : ""}
+                                value={closedFormData.avgGridProfitHour}
+                                onChange={(e) => setClosedFormData({ ...closedFormData, avgGridProfitHour: e.target.value })}
                                 data-testid="closed-input-avg-grid-profit-hour"
                               />
                             </div>
                             <div className="relative">
                               <Label htmlFor="closed-avgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
+                              <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.avgGridProfitDay)}</span>
                               <Input
                                 id="closed-avgGridProfitDay"
                                 type="number"
                                 step="0.01"
                                 placeholder="0.00"
-                                readOnly
-                                className="bg-muted/50"
+                                className={getSignPrefix(closedFormData.avgGridProfitDay) ? "pl-6" : ""}
+                                value={closedFormData.avgGridProfitDay}
+                                onChange={(e) => setClosedFormData({ ...closedFormData, avgGridProfitDay: e.target.value })}
                                 data-testid="closed-input-avg-grid-profit-day"
                               />
                             </div>
                             <div className="relative">
                               <Label htmlFor="closed-avgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
+                              <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.avgGridProfitWeek)}</span>
                               <Input
                                 id="closed-avgGridProfitWeek"
                                 type="number"
                                 step="0.01"
                                 placeholder="0.00"
-                                readOnly
-                                className="bg-muted/50"
+                                className={getSignPrefix(closedFormData.avgGridProfitWeek) ? "pl-6" : ""}
+                                value={closedFormData.avgGridProfitWeek}
+                                onChange={(e) => setClosedFormData({ ...closedFormData, avgGridProfitWeek: e.target.value })}
                                 data-testid="closed-input-avg-grid-profit-week"
                               />
                             </div>
@@ -3082,63 +3096,104 @@ export default function Upload() {
                         <div>
                           <Label>Last Grid Profit Durchschnitt (Zeit)</Label>
                           <div className="grid grid-cols-4 gap-2 mt-2">
-                            <div className="relative">
+                            <div 
+                              className="relative cursor-pointer"
+                              onClick={() => setClosedSelectedChangeTimeframe('hour')}
+                            >
                               <Label htmlFor="closed-lastAvgGridProfitHour" className="text-xs text-muted-foreground">Stunde</Label>
-                              <Input
-                                id="closed-lastAvgGridProfitHour"
-                                type="text"
-                                placeholder="0,00"
-                                readOnly
-                                className="bg-muted/50"
-                                data-testid="closed-input-last-avg-grid-profit-hour"
-                              />
+                              <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.lastAvgGridProfitHour)}</span>
+                                <Input
+                                  id="closed-lastAvgGridProfitHour"
+                                  type="text"
+                                  placeholder="0,00"
+                                  className={`bg-muted/50 cursor-pointer ${closedSelectedChangeTimeframe === 'hour' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(closedFormData.lastAvgGridProfitHour) ? "pl-6" : ""}`}
+                                  value={formatGermanDecimal(closedFormData.lastAvgGridProfitHour)}
+                                  readOnly
+                                  data-testid="closed-input-last-avg-grid-profit-hour"
+                                />
+                              </div>
                             </div>
-                            <div className="relative">
+                            <div 
+                              className="relative cursor-pointer"
+                              onClick={() => setClosedSelectedChangeTimeframe('day')}
+                            >
                               <Label htmlFor="closed-lastAvgGridProfitDay" className="text-xs text-muted-foreground">Tag</Label>
-                              <Input
-                                id="closed-lastAvgGridProfitDay"
-                                type="text"
-                                placeholder="0,00"
-                                readOnly
-                                className="bg-muted/50"
-                                data-testid="closed-input-last-avg-grid-profit-day"
-                              />
+                              <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.lastAvgGridProfitDay)}</span>
+                                <Input
+                                  id="closed-lastAvgGridProfitDay"
+                                  type="text"
+                                  placeholder="0,00"
+                                  className={`bg-muted/50 cursor-pointer ${closedSelectedChangeTimeframe === 'day' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(closedFormData.lastAvgGridProfitDay) ? "pl-6" : ""}`}
+                                  value={formatGermanDecimal(closedFormData.lastAvgGridProfitDay)}
+                                  readOnly
+                                  data-testid="closed-input-last-avg-grid-profit-day"
+                                />
+                              </div>
                             </div>
-                            <div className="relative">
+                            <div 
+                              className="relative cursor-pointer"
+                              onClick={() => setClosedSelectedChangeTimeframe('week')}
+                            >
                               <Label htmlFor="closed-lastAvgGridProfitWeek" className="text-xs text-muted-foreground">Woche</Label>
-                              <Input
-                                id="closed-lastAvgGridProfitWeek"
-                                type="text"
-                                placeholder="0,00"
-                                readOnly
-                                className="bg-muted/50"
-                                data-testid="closed-input-last-avg-grid-profit-week"
-                              />
+                              <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.lastAvgGridProfitWeek)}</span>
+                                <Input
+                                  id="closed-lastAvgGridProfitWeek"
+                                  type="text"
+                                  placeholder="0,00"
+                                  className={`bg-muted/50 cursor-pointer ${closedSelectedChangeTimeframe === 'week' ? 'ring-2 ring-primary' : ''} ${getSignPrefix(closedFormData.lastAvgGridProfitWeek) ? "pl-6" : ""}`}
+                                  value={formatGermanDecimal(closedFormData.lastAvgGridProfitWeek)}
+                                  readOnly
+                                  data-testid="closed-input-last-avg-grid-profit-week"
+                                />
+                              </div>
                             </div>
                             <div className="relative">
                               <Label htmlFor="closed-changeDisplay" className="text-xs text-muted-foreground">Change</Label>
                               <div className="flex gap-1">
-                                <Input
-                                  id="closed-changeDisplay"
-                                  type="text"
-                                  placeholder="0,00"
-                                  readOnly
-                                  className="bg-muted/50 flex-1"
-                                  data-testid="closed-input-change-display"
-                                />
+                                <div className="relative flex-1">
+                                  <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">
+                                    {getSignPrefix(
+                                      closedChainedUnit === '$' 
+                                        ? (closedSelectedChangeTimeframe === 'hour' ? closedFormData.changeHourDollar : closedSelectedChangeTimeframe === 'day' ? closedFormData.changeDayDollar : closedFormData.changeWeekDollar)
+                                        : (closedSelectedChangeTimeframe === 'hour' ? closedFormData.changeHourPercent : closedSelectedChangeTimeframe === 'day' ? closedFormData.changeDayPercent : closedFormData.changeWeekPercent)
+                                    )}
+                                  </span>
+                                  <Input
+                                    id="closed-changeDisplay"
+                                    type="text"
+                                    placeholder="0,00"
+                                    className={`bg-muted/50 ring-2 ring-primary ${
+                                      getSignPrefix(
+                                        closedChainedUnit === '$' 
+                                          ? (closedSelectedChangeTimeframe === 'hour' ? closedFormData.changeHourDollar : closedSelectedChangeTimeframe === 'day' ? closedFormData.changeDayDollar : closedFormData.changeWeekDollar)
+                                          : (closedSelectedChangeTimeframe === 'hour' ? closedFormData.changeHourPercent : closedSelectedChangeTimeframe === 'day' ? closedFormData.changeDayPercent : closedFormData.changeWeekPercent)
+                                      ) ? "pl-6" : ""
+                                    }`}
+                                    value={
+                                      closedChainedUnit === '$' 
+                                        ? formatGermanDecimal(closedSelectedChangeTimeframe === 'hour' ? closedFormData.changeHourDollar : closedSelectedChangeTimeframe === 'day' ? closedFormData.changeDayDollar : closedFormData.changeWeekDollar)
+                                        : (closedSelectedChangeTimeframe === 'hour' ? closedFormData.changeHourPercent : closedSelectedChangeTimeframe === 'day' ? closedFormData.changeDayPercent : closedFormData.changeWeekPercent)
+                                    }
+                                    readOnly
+                                    data-testid="closed-input-change-display"
+                                  />
+                                </div>
                                 <div className="flex border rounded-md overflow-hidden">
                                   <button
                                     type="button"
-                                    className="px-2 py-1 text-xs font-medium bg-primary text-primary-foreground"
-                                    disabled
+                                    onClick={() => setClosedChainedUnit('%')}
+                                    className={`px-2 py-1 text-xs font-medium transition-colors ${closedChainedUnit === '%' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                                     data-testid="closed-toggle-chained-percent"
                                   >
                                     %
                                   </button>
                                   <button
                                     type="button"
-                                    className="px-2 py-1 text-xs font-medium bg-muted text-muted-foreground"
-                                    disabled
+                                    onClick={() => setClosedChainedUnit('$')}
+                                    className={`px-2 py-1 text-xs font-medium transition-colors ${closedChainedUnit === '$' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                                     data-testid="closed-toggle-chained-dollar"
                                   >
                                     $
@@ -3153,13 +3208,15 @@ export default function Upload() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="relative">
                             <Label htmlFor="closed-overallGridProfitUsdt">Gesamter Grid Profit (USDT)</Label>
+                            <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.overallGridProfitUsdt)}</span>
                             <Input
                               id="closed-overallGridProfitUsdt"
                               type="number"
                               step="0.0001"
                               placeholder="0.0000"
-                              readOnly
-                              className="bg-muted/50"
+                              className={getSignPrefix(closedFormData.overallGridProfitUsdt) ? "pl-6" : ""}
+                              value={closedFormData.overallGridProfitUsdt}
+                              onChange={(e) => setClosedFormData({ ...closedFormData, overallGridProfitUsdt: e.target.value })}
                               data-testid="closed-input-overall-grid-profit-usdt"
                             />
                           </div>
@@ -3167,17 +3224,19 @@ export default function Upload() {
                             <Label htmlFor="closed-overallGridProfitPercent">Gesamter Grid Profit (%)</Label>
                             <div className="flex items-center gap-2">
                               <div className="relative flex-1">
+                                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.overallGridProfitPercent)}</span>
                                 <Input
                                   id="closed-overallGridProfitPercent"
                                   type="number"
                                   step="0.01"
                                   placeholder="0.00"
-                                  readOnly
-                                  className="bg-muted/50"
+                                  className={getSignPrefix(closedFormData.overallGridProfitPercent) ? "pl-6" : ""}
+                                  value={closedFormData.overallGridProfitPercent}
+                                  onChange={(e) => setClosedFormData({ ...closedFormData, overallGridProfitPercent: e.target.value })}
                                   data-testid="closed-input-overall-grid-profit-percent"
                                 />
                               </div>
-                              <Select defaultValue="gesamtinvestment" disabled>
+                              <Select value={closedGridProfitPercentBase} onValueChange={(val) => setClosedGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                                 <SelectTrigger className="w-44 h-10 text-xs" data-testid="closed-select-grid-profit-percent-base">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -3194,13 +3253,15 @@ export default function Upload() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="relative">
                             <Label htmlFor="closed-avgGridProfitUsdt">Ø Grid Profit (USDT)</Label>
+                            <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.avgGridProfitUsdt)}</span>
                             <Input
                               id="closed-avgGridProfitUsdt"
                               type="number"
                               step="0.0001"
                               placeholder="0.0000"
+                              className={`bg-muted/50 ${getSignPrefix(closedFormData.avgGridProfitUsdt) ? "pl-6" : ""}`}
+                              value={closedFormData.avgGridProfitUsdt}
                               readOnly
-                              className="bg-muted/50"
                               data-testid="closed-input-avg-grid-profit-usdt"
                             />
                           </div>
@@ -3208,17 +3269,19 @@ export default function Upload() {
                             <Label htmlFor="closed-avgGridProfitPercent">Ø Grid Profit (%)</Label>
                             <div className="flex items-center gap-2">
                               <div className="relative flex-1">
+                                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.avgGridProfitPercent)}</span>
                                 <Input
                                   id="closed-avgGridProfitPercent"
                                   type="number"
                                   step="0.01"
                                   placeholder="0.00"
+                                  className={`bg-muted/50 ${getSignPrefix(closedFormData.avgGridProfitPercent) ? "pl-6" : ""}`}
+                                  value={closedFormData.avgGridProfitPercent || ''}
                                   readOnly
-                                  className="bg-muted/50"
                                   data-testid="closed-input-avg-grid-profit-percent"
                                 />
                               </div>
-                              <Select defaultValue="gesamtinvestment" disabled>
+                              <Select value={closedHighestGridProfitPercentBase} onValueChange={(val) => setClosedHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                                 <SelectTrigger className="w-44 h-10 text-xs" data-testid="closed-select-avg-grid-profit-percent-base">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -3235,12 +3298,14 @@ export default function Upload() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="relative">
                             <Label htmlFor="closed-lastUploadAvgGridProfit">Last Upload (Ø Grid Profit)</Label>
+                            <span className="absolute left-3 bottom-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedFormData.lastHighestGridProfit)}</span>
                             <Input
                               id="closed-lastUploadAvgGridProfit"
                               type="text"
                               placeholder="-"
+                              className={`bg-muted/50 ${getSignPrefix(closedFormData.lastHighestGridProfit) ? "pl-6" : ""}`}
+                              value={closedFormData.lastHighestGridProfit || '-'}
                               readOnly
-                              className="bg-muted/50"
                               data-testid="closed-input-last-upload-avg-grid-profit"
                             />
                           </div>
@@ -3248,28 +3313,30 @@ export default function Upload() {
                             <Label htmlFor="closed-avgGridProfitChange">Change</Label>
                             <div className="flex items-center gap-2">
                               <div className="relative flex-1">
+                                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">{getSignPrefix(closedAvgGridProfitChangeUnit === '$' ? closedFormData.avgGridProfitChangeDollar : closedFormData.avgGridProfitChangePercent)}</span>
                                 <Input
                                   id="closed-avgGridProfitChange"
                                   type="text"
                                   placeholder="0.00"
+                                  className={`bg-muted/50 ${getSignPrefix(closedAvgGridProfitChangeUnit === '$' ? closedFormData.avgGridProfitChangeDollar : closedFormData.avgGridProfitChangePercent) ? "pl-6" : ""}`}
+                                  value={(closedAvgGridProfitChangeUnit === '$' ? closedFormData.avgGridProfitChangeDollar : closedFormData.avgGridProfitChangePercent) || '-'}
                                   readOnly
-                                  className="bg-muted/50"
                                   data-testid="closed-input-avg-grid-profit-change"
                                 />
                               </div>
                               <div className="flex border rounded-md overflow-hidden">
                                 <button
                                   type="button"
-                                  className="px-3 py-2 text-sm font-medium bg-primary text-primary-foreground"
-                                  disabled
+                                  className={`px-3 py-2 text-sm font-medium transition-colors ${closedAvgGridProfitChangeUnit === '%' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+                                  onClick={() => setClosedAvgGridProfitChangeUnit('%')}
                                   data-testid="closed-button-change-unit-percent"
                                 >
                                   %
                                 </button>
                                 <button
                                   type="button"
-                                  className="px-3 py-2 text-sm font-medium bg-muted"
-                                  disabled
+                                  className={`px-3 py-2 text-sm font-medium transition-colors ${closedAvgGridProfitChangeUnit === '$' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+                                  onClick={() => setClosedAvgGridProfitChangeUnit('$')}
                                   data-testid="closed-button-change-unit-dollar"
                                 >
                                   $
