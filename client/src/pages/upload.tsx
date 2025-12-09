@@ -223,6 +223,126 @@ export default function Upload() {
     avgGridProfitPercent_investitionsmenge: '',
   });
 
+  // ========== CLOSED BOTS - PARALLELE STATE-CONTAINER ==========
+  // Separate States für Closed Bots Modus (identisch zu Update Metrics, aber unabhängig)
+  
+  const [closedScreenshotsSent, setClosedScreenshotsSent] = useState(false);
+  const [closedBotTypeSent, setClosedBotTypeSent] = useState(false);
+  const closedPhaseOneComplete = closedScreenshotsSent && closedBotTypeSent;
+  const [closedPhaseTwoVerified, setClosedPhaseTwoVerified] = useState(false);
+  const [closedPhaseTwoStep2Complete, setClosedPhaseTwoStep2Complete] = useState(false);
+  const [closedInfoSectionMode, setClosedInfoSectionMode] = useState<'Normal' | 'Startmetrik'>('Normal');
+  const [closedPhaseThreeSettingsSent, setClosedPhaseThreeSettingsSent] = useState(false);
+  const [closedWaitingForPhaseThreeConfirmation, setClosedWaitingForPhaseThreeConfirmation] = useState(false);
+  const [closedExtractedScreenshotData, setClosedExtractedScreenshotData] = useState<any>(null);
+  
+  const [closedFormData, setClosedFormData] = useState({
+    date: '',
+    botName: '',
+    botType: '',
+    version: '',
+    botDirection: '',
+    investment: '',
+    extraMargin: '',
+    totalInvestment: '',
+    profit: '',
+    profitPercent: '',
+    periodType: 'Tag',
+    longestRuntime: '',
+    avgRuntime: '',
+    uploadRuntime: '',
+    lastUpload: '',
+    thisUpload: '',
+    avgGridProfitHour: '',
+    avgGridProfitDay: '',
+    avgGridProfitWeek: '',
+    lastAvgGridProfitHour: '',
+    lastAvgGridProfitDay: '',
+    lastAvgGridProfitWeek: '',
+    lastHighestGridProfit: '',
+    changeHourDollar: '',
+    changeHourPercent: '',
+    changeDayDollar: '',
+    changeDayPercent: '',
+    changeWeekDollar: '',
+    changeWeekPercent: '',
+    overallTrendPnlUsdt: '',
+    overallTrendPnlPercent: '',
+    highestGridProfit: '',
+    highestGridProfitPercent: '',
+    overallGridProfitUsdt: '',
+    overallGridProfitPercent: '',
+    avgGridProfitUsdt: '',
+    avgGridProfitPercent: '',
+    avgGridProfitChange: '',
+    avgGridProfitChangeDollar: '',
+    avgGridProfitChangePercent: '',
+    leverage: '',
+    botCount: '',
+    notes: '',
+  });
+  
+  const [closedInvestmentTimeRange, setClosedInvestmentTimeRange] = useState("Neu");
+  const [closedProfitTimeRange, setClosedProfitTimeRange] = useState("Neu");
+  const [closedTrendTimeRange, setClosedTrendTimeRange] = useState("Neu");
+  const [closedGridTimeRange, setClosedGridTimeRange] = useState("Neu");
+  
+  const [closedProfitPercentBase, setClosedProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [closedTrendPercentBase, setClosedTrendPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [closedGridProfitPercentBase, setClosedGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [closedHighestGridProfitPercentBase, setClosedHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [closedChainedUnit, setClosedChainedUnit] = useState<'%' | '$'>('%');
+  const [closedSelectedChangeTimeframe, setClosedSelectedChangeTimeframe] = useState<'hour' | 'day' | 'week'>('hour');
+  const [closedAvgGridProfitChangeUnit, setClosedAvgGridProfitChangeUnit] = useState<'%' | '$'>('%');
+  
+  const [closedCalculatedPercents, setClosedCalculatedPercents] = useState({
+    profitPercent_gesamtinvestment: '',
+    profitPercent_investitionsmenge: '',
+    overallTrendPnlPercent_gesamtinvestment: '',
+    overallTrendPnlPercent_investitionsmenge: '',
+    overallGridProfitPercent_gesamtinvestment: '',
+    overallGridProfitPercent_investitionsmenge: '',
+    highestGridProfitPercent_gesamtinvestment: '',
+    highestGridProfitPercent_investitionsmenge: '',
+    avgGridProfitPercent_gesamtinvestment: '',
+    avgGridProfitPercent_investitionsmenge: '',
+  });
+  
+  // Manuelle Überschreibungen für Closed Bots
+  const closedManualOverridesRef = useRef<{
+    overallGridProfitUsdt?: string;
+    lastUpload?: string;
+    investment?: string;
+    extraMargin?: string;
+    avgRuntime?: string;
+    uploadRuntime?: string;
+  }>({});
+  const [closedManualOverridesVersion, setClosedManualOverridesVersion] = useState(0);
+  const closedManualOverrides = closedManualOverridesRef.current;
+  const setClosedManualOverrides = (newValue: typeof closedManualOverrides | ((prev: typeof closedManualOverrides) => typeof closedManualOverrides)) => {
+    if (typeof newValue === 'function') {
+      closedManualOverridesRef.current = newValue(closedManualOverridesRef.current);
+    } else {
+      closedManualOverridesRef.current = newValue;
+    }
+    setClosedManualOverridesVersion(v => v + 1);
+  };
+  
+  const [closedPhase2Completed, setClosedPhase2Completed] = useState(false);
+  
+  // ========== HELPER: Aktive States basierend auf outputMode ==========
+  // Diese Getter geben die richtigen States für den aktuellen Modus zurück
+  const getActiveFormData = () => outputMode === 'update-metrics' ? formData : closedFormData;
+  const getActiveSetFormData = () => outputMode === 'update-metrics' ? setFormData : setClosedFormData;
+  const getActiveScreenshotsSent = () => outputMode === 'update-metrics' ? screenshotsSent : closedScreenshotsSent;
+  const getActiveBotTypeSent = () => outputMode === 'update-metrics' ? botTypeSent : closedBotTypeSent;
+  const getActivePhaseOneComplete = () => outputMode === 'update-metrics' ? phaseOneComplete : closedPhaseOneComplete;
+  const getActivePhaseTwoVerified = () => outputMode === 'update-metrics' ? phaseTwoVerified : closedPhaseTwoVerified;
+  const getActiveExtractedData = () => outputMode === 'update-metrics' ? extractedScreenshotData : closedExtractedScreenshotData;
+  const getActiveInfoSectionMode = () => outputMode === 'update-metrics' ? infoSectionMode : closedInfoSectionMode;
+  
+  // ========== END CLOSED BOTS STATES ==========
+
   // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
   // Überschreibbare Felder: overallGridProfitUsdt, lastUpload, investment, extraMargin, avgRuntime, uploadRuntime
   // WICHTIG: Verwende useRef statt useState um zu verhindern, dass Re-Renders die Werte löschen
