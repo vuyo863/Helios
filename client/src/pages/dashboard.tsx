@@ -118,6 +118,7 @@ export default function Dashboard() {
     return allNames.sort();
   }, [availableBotTypes]);
 
+  // Separate filtering for table - independent from chart
   const filteredEntriesForTable = useMemo(() => {
     let filtered = [...allEntries];
     
@@ -159,7 +160,8 @@ export default function Dashboard() {
     return filtered;
   }, [allEntries, selectedBotsForTable, selectedPeriod, sortColumn, sortDirection]);
 
-  const filteredEntries = useMemo(() => {
+  // Separate filtering for stats cards - based on selectedBotName only
+  const filteredEntriesForStats = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       return [...allEntries];
     }
@@ -317,16 +319,16 @@ export default function Dashboard() {
     );
   }
 
-  const totalInvestment = filteredEntries.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
-  const totalProfit = filteredEntries.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
+  const totalInvestment = filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+  const totalProfit = filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
   const totalProfitPercent = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
   
-  const dayCount = filteredEntries.length > 0 
-    ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntries[filteredEntries.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
+  const dayCount = filteredEntriesForStats.length > 0 
+    ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntriesForStats[filteredEntriesForStats.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
     : 1;
   const avgDailyProfit = totalProfit / dayCount;
 
-  const lineChartData = filteredEntries
+  const lineChartData = filteredEntriesForStats
     .slice(0, 10)
     .reverse()
     .reduce((acc, entry) => {
@@ -687,7 +689,7 @@ export default function Dashboard() {
 
         <div className="mb-8">
           <h2 className="text-xl font-bold mb-4">
-            {selectedBotName === "Gesamt" ? "Alle Einträge" : `Einträge: ${selectedBotName}`}
+            Alle Einträge
           </h2>
           <BotEntryTable 
             entries={filteredEntriesForTable} 
