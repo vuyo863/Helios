@@ -695,7 +695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isStartMetric,
         previousUploadData,
         manualOverrides,
-        manualStartmetrikMode 
+        manualStartmetrikMode,
+        outputMode // 'update-metrics' oder 'closed-bots'
       } = req.body;
 
       // effectiveStartMetrik: true wenn entweder echter Startmetrik ODER manueller Startmetrik-Modus
@@ -840,6 +841,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Datum-Logik: Nur bei Startmetrik berechnen, sonst null lassen
       // Für die KI-Anweisung: effectiveStartMetrik (echter oder manueller Modus)
       contextualPrompt += `**STARTMETRIK-FLAG:** ${effectiveStartMetrik ? 'JA' : 'NEIN'}\n\n`;
+      
+      // Output-Modus: Unterscheidung zwischen aktiven und geschlossenen Bots
+      const outputModeLabel = outputMode === 'closed-bots' ? 'CLOSED BOTS (geschlossene Positionen)' : 'UPDATE METRICS (aktive Bots)';
+      contextualPrompt += `**OUTPUT-MODUS:** ${outputModeLabel}\n`;
+      contextualPrompt += `- Dieser Upload ist für ${outputMode === 'closed-bots' ? 'GESCHLOSSENE Bot-Positionen (die nicht mehr aktiv sind)' : 'AKTIVE Bot-Updates (laufende Bots)'}\n\n`;
+      
       if (effectiveStartMetrik) {
         contextualPrompt += `**DATUM-LOGIK (STARTMETRIK):**\n`;
         contextualPrompt += `- Dies ist der ERSTE Upload (Startmetrik)\n`;

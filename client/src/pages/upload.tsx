@@ -1320,7 +1320,9 @@ export default function Upload() {
           // Manueller Startmetrik-Modus (auch bei normalen Uploads wie Startmetrik berechnen)
           manualStartmetrikMode: infoSectionMode === 'Startmetrik',
           // Manuelle Überschreibungen (nur bei 1 Screenshot) - VERWENDE REF.CURRENT DIREKT!
-          manualOverrides: Object.keys(currentOverrides).length > 0 ? currentOverrides : undefined
+          manualOverrides: Object.keys(currentOverrides).length > 0 ? currentOverrides : undefined,
+          // Output Modus: update-metrics (aktive Bots) oder closed-bots (geschlossene Bots)
+          outputMode: outputMode
         }),
       });
 
