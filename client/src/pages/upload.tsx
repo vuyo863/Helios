@@ -976,8 +976,14 @@ export default function Upload() {
       const data = await response.json();
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
       
-      setIsStartMetric(data.isStartMetric || false);
-      setPhaseTwoVerified(true);
+      // Je nach Modus die richtige State-Variable setzen
+      if (outputMode === 'closed-bots') {
+        setClosedIsStartMetric(data.isStartMetric || false);
+        setClosedPhaseTwoVerified(true);
+      } else {
+        setIsStartMetric(data.isStartMetric || false);
+        setPhaseTwoVerified(true);
+      }
     } catch (error) {
       console.error('Phase 2 Step 1 error:', error);
       toast({
