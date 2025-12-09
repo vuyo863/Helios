@@ -160,6 +160,11 @@ export default function Dashboard() {
     return filtered;
   }, [allEntries, selectedBotsForTable, selectedPeriod, sortColumn, sortDirection]);
 
+  // Hole Updates für alle Bot-Types für Gesamtkapital-Berechnung
+  const { data: allBotTypeUpdates = [] } = useQuery<any[]>({
+    queryKey: ['/api/bot-type-updates'],
+  });
+
   // Separate filtering for stats cards - based on selectedBotName only
   const filteredEntriesForStats = useMemo(() => {
     if (selectedBotName === "Gesamt") {
@@ -319,7 +324,30 @@ export default function Dashboard() {
     );
   }
 
-  const totalInvestment = filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+  // Berechne totalInvestment basierend auf Bot Type Status
+  const totalInvestment = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      // Summiere Gesamtinvestment-Ø von allen aktiven Bot Types
+      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+      let sum = 0;
+      
+      activeBotTypes.forEach(botType => {
+        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+        if (updatesForType.length > 0) {
+          // Nimm den neuesten Update (erster in der Liste)
+          const latestUpdate = updatesForType[0];
+          const gesamtInvestment = parseFloat(latestUpdate.totalInvestment || '0') || 0;
+          sum += gesamtInvestment;
+        }
+      });
+      
+      return sum;
+    } else {
+      // Für spezifischen Bot: Summiere aus Entries
+      return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+    }
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
+  
   const totalProfit = filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
   const totalProfitPercent = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
   
