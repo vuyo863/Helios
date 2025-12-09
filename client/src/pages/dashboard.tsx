@@ -381,14 +381,27 @@ export default function Dashboard() {
             <Card className="p-6">
               <h3 className="text-lg font-bold mb-6">Update Verlauf</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={[]}>
+                <LineChart 
+                  data={[
+                    { time: '00:00', wert: 0 },
+                    { time: '04:00', wert: 0 },
+                    { time: '08:00', wert: 0 },
+                    { time: '12:00', wert: 0 },
+                    { time: '16:00', wert: 0 },
+                    { time: '20:00', wert: 0 },
+                    { time: '24:00', wert: 0 },
+                  ]}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
-                    label={{ value: 'Time', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: 'hsl(var(--muted-foreground))' } }}
+                    dataKey="time"
+                    label={{ value: 'Time', position: 'insideBottom', offset: -10, style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' } }}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <YAxis 
-                    label={{ value: 'Wert', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: 'hsl(var(--muted-foreground))' } }}
+                    dataKey="wert"
+                    label={{ value: 'Wert', angle: -90, position: 'insideLeft', style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' } }}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <Tooltip 
@@ -401,7 +414,7 @@ export default function Dashboard() {
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="value" 
+                    dataKey="wert" 
                     stroke="hsl(var(--chart-2))" 
                     strokeWidth={2}
                     dot={{ fill: 'hsl(var(--chart-2))', r: 4 }}
@@ -410,9 +423,9 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </Card>
           </div>
-          <Card className="p-4">
+          <Card className="p-4 relative flex flex-col">
             <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Letzten</span>
                 <Popover open={timeRangeOpen} onOpenChange={setTimeRangeOpen}>
@@ -510,16 +523,15 @@ export default function Dashboard() {
                 <span className="text-sm">Charttyp</span>
                 <Button variant="outline" size="sm">Linie</Button>
               </div>
-              <Separator />
-              <div className="mt-2 flex justify-end">
-                <Button 
-                  size="sm"
-                  onClick={handleApplySettings}
-                  data-testid="button-apply-settings"
-                >
-                  Apply
-                </Button>
-              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button 
+                size="sm"
+                onClick={handleApplySettings}
+                data-testid="button-apply-settings"
+              >
+                Apply
+              </Button>
             </div>
           </Card>
         </div>
