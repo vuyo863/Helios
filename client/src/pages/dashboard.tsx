@@ -835,35 +835,35 @@ export default function Dashboard() {
                     )}
                     onClick={() => handleFromUpdateSelect(update)}
                   >
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
+                    <CardContent className="p-3">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-base">
+                          <p className="font-semibold text-sm">
                             {update.status} #{update.version}
                           </p>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CalendarIcon className="w-3.5 h-3.5" />
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarIcon className="w-3 h-3" />
                             {update.createdAt 
                               ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
                               : '-'
                             }
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div className="space-y-1">
-                            <span className="text-muted-foreground text-xs">Grid Profit 24H Ø</span>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Grid Profit 24H Ø</span>
                             <p className="font-medium text-primary">
                               {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
                             </p>
                           </div>
-                          <div className="space-y-1">
-                            <span className="text-muted-foreground text-xs">Grid Profit</span>
+                          <div>
+                            <span className="text-muted-foreground">Grid Profit</span>
                             <p className="font-medium text-primary">
                               {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
                             </p>
                           </div>
-                          <div className="space-y-1 col-span-2">
-                            <span className="text-muted-foreground text-xs">Gesamt-Investment</span>
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Gesamt-Investment</span>
                             <p className="font-medium">{update.totalInvestment || '0.00'} USDT</p>
                           </div>
                         </div>
@@ -940,35 +940,35 @@ export default function Dashboard() {
                     )}
                     onClick={() => handleUntilUpdateSelect(update)}
                   >
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
+                    <CardContent className="p-3">
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-base">
+                          <p className="font-semibold text-sm">
                             {update.status} #{update.version}
                           </p>
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CalendarIcon className="w-3.5 h-3.5" />
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarIcon className="w-3 h-3" />
                             {update.createdAt 
                               ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
                               : '-'
                             }
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div className="space-y-1">
-                            <span className="text-muted-foreground text-xs">Grid Profit 24H Ø</span>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Grid Profit 24H Ø</span>
                             <p className="font-medium text-primary">
                               {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
                             </p>
                           </div>
-                          <div className="space-y-1">
-                            <span className="text-muted-foreground text-xs">Grid Profit</span>
+                          <div>
+                            <span className="text-muted-foreground">Grid Profit</span>
                             <p className="font-medium text-primary">
                               {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
                             </p>
                           </div>
-                          <div className="space-y-1 col-span-2">
-                            <span className="text-muted-foreground text-xs">Gesamt-Investment</span>
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Gesamt-Investment</span>
                             <p className="font-medium">{update.totalInvestment || '0.00'} USDT</p>
                           </div>
                         </div>
