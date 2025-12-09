@@ -29,13 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from "date-fns";
@@ -81,6 +82,7 @@ export default function Dashboard() {
   const [tempSelectedUpdate, setTempSelectedUpdate] = useState<any | null>(null);
   const [updateSortBy, setUpdateSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
   const [updateSortDirection, setUpdateSortDirection] = useState<'desc' | 'asc'>('desc');
+  const [settingsCollapsed, setSettingsCollapsed] = useState(false);
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -88,6 +90,10 @@ export default function Dashboard() {
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
   });
+
+  const availableBotTypes = useMemo(() => {
+    return botTypes.filter(bt => !bt.isArchived);
+  }, [botTypes]);
 
   // Hole Updates für den ausgewählten Bot Type
   const selectedBotTypeData = useMemo(() => {
@@ -99,10 +105,6 @@ export default function Dashboard() {
     queryKey: ['/api/bot-types', selectedBotTypeData?.id, 'updates'],
     enabled: !!selectedBotTypeData?.id,
   });
-
-  const availableBotTypes = useMemo(() => {
-    return botTypes.filter(bt => !bt.isArchived);
-  }, [botTypes]);
 
   const uniqueBotNames = useMemo(() => {
     // Alle nicht-archivierten Bot-Types anzeigen
@@ -457,8 +459,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
+        <div className={`grid grid-cols-1 gap-6 mb-8 ${settingsCollapsed ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
+          <div className={settingsCollapsed ? '' : 'lg:col-span-2'}>
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold">Update Verlauf</h3>
@@ -489,6 +491,14 @@ export default function Dashboard() {
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setSettingsCollapsed(!settingsCollapsed)}
+                  >
+                    {settingsCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={300}>
@@ -534,6 +544,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </Card>
           </div>
+          {!settingsCollapsed && (
           <Card className="p-4 relative flex flex-col">
             <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
             <div className="space-y-3 flex-1">
@@ -671,6 +682,7 @@ export default function Dashboard() {
               </Button>
             </div>
           </Card>
+          )}
         </div>
 
         <div className="mb-8">
