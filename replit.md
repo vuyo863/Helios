@@ -217,3 +217,23 @@ Preferred communication style: Simple, everyday language.
 - `outputMode` field sent to backend with Phase 4 API calls
 - AI prompts include context about which mode is active
 - Backend Phase 4 response handling respects the active mode
+
+**Closed Bots Percent Switching (Complete Parallel Implementation):**
+- 5 separate percent base state variables for Closed Bots:
+  - `closedProfitPercentBase`: Profit % switching
+  - `closedTrendPercentBase`: Trend P&L % switching
+  - `closedGridProfitPercentBase`: Grid Profit % switching
+  - `closedHighestGridProfitPercentBase`: Highest Grid Profit % switching
+  - `closedAvgGridProfitPercentBase`: Ø Grid Profit % switching
+- Each has dedicated useEffect hook that reacts to dropdown changes
+- All hooks use correct base variables (fixed avgGridProfitPercentBase bug)
+
+**Closed Bots Date Calculation (FIXED):**
+- Screenshot timestamp is correctly treated as END DATE (closure time)
+- Start Date = End Date - Runtime (subtraction, not addition)
+- Variables renamed for clarity: closedDateTime, endDateFormatted, startDateFormatted
+
+**Automated Backend Tests:**
+- `test-closed-bots-calculations.js`: 10 passing tests
+- 5 date calculation tests (End Date - Runtime = Start Date)
+- 5 percent switching tests (Gesamtinvestment vs Investitionsmenge)
