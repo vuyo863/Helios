@@ -348,6 +348,8 @@ export default function Upload() {
   const getActiveIsStartMetric = () => outputMode === 'update-metrics' ? isStartMetric : closedIsStartMetric;
   const getActiveSelectedBotTypeId = () => outputMode === 'update-metrics' ? selectedBotTypeId : closedSelectedBotTypeId;
   const getActiveManualOverridesRef = () => outputMode === 'update-metrics' ? manualOverridesRef : closedManualOverridesRef;
+  const getActivePhaseTwoStep2Complete = () => outputMode === 'update-metrics' ? phaseTwoStep2Complete : closedPhaseTwoStep2Complete;
+  const getActiveWaitingForPhaseThreeConfirmation = () => outputMode === 'update-metrics' ? waitingForPhaseThreeConfirmation : closedWaitingForPhaseThreeConfirmation;
   
   // ========== END CLOSED BOTS STATES ==========
 
@@ -1028,7 +1030,13 @@ export default function Upload() {
 
       const data = await response.json();
       setChatMessages(prev => [...prev, { role: 'ai', content: data.response }]);
-      setPhaseTwoStep2Complete(true);
+      
+      // Je nach Modus die richtige State-Variable setzen
+      if (outputMode === 'closed-bots') {
+        setClosedPhaseTwoStep2Complete(true);
+      } else {
+        setPhaseTwoStep2Complete(true);
+      }
       
       setTimeout(async () => {
         const testSuccessMessage = { 
@@ -1210,12 +1218,14 @@ export default function Upload() {
 
   const handleSendFieldsToAI = async () => {
     // Prüfe auf manuelle Überschreibungen (nur bei 1 Screenshot erlaubt)
-    // WICHTIG: Verwende manualOverridesRef.current direkt für aktuellen Wert!
-    const currentOverrides = manualOverridesRef.current;
+    // WICHTIG: Verwende die korrekte Overrides-Referenz basierend auf outputMode
+    const currentOverrides = outputMode === 'closed-bots' 
+      ? closedManualOverridesRef.current 
+      : manualOverridesRef.current;
     const hasOverrides = Object.keys(currentOverrides).length > 0;
     const manualFields: { label: string; value: string }[] = [];
     
-    console.log('handleSendFieldsToAI - currentOverrides:', currentOverrides);
+    console.log('handleSendFieldsToAI - currentOverrides:', currentOverrides, 'outputMode:', outputMode);
     
     // Baue Liste der überschriebenen Felder
     if (currentOverrides.overallGridProfitUsdt) {
@@ -1237,8 +1247,9 @@ export default function Upload() {
       manualFields.push({ label: 'Upload Laufzeit', value: currentOverrides.uploadRuntime });
     }
     
-    // Prüfe Anzahl der Screenshots
-    const screenshotCount = extractedScreenshotData?.screenshots?.length || 0;
+    // Prüfe Anzahl der Screenshots (aus dem korrekten State-Container)
+    const activeExtractedData = outputMode === 'closed-bots' ? closedExtractedScreenshotData : extractedScreenshotData;
+    const screenshotCount = activeExtractedData?.screenshots?.length || 0;
     
     // Wenn manuelle Überschreibungen UND mehr als 1 Screenshot → Fehler
     if (hasOverrides && screenshotCount > 1) {
@@ -1275,7 +1286,13 @@ export default function Upload() {
         content: aiMessage
       }]);
       setPhaseThreeSettingsSent(true);
-      setWaitingForPhaseThreeConfirmation(true);
+      
+      // Je nach Modus die richtige State-Variable setzen
+      if (outputMode === 'closed-bots') {
+        setClosedWaitingForPhaseThreeConfirmation(true);
+      } else {
+        setWaitingForPhaseThreeConfirmation(true);
+      }
       setIsAiLoading(false);
     }, 800);
     
@@ -1294,7 +1311,13 @@ export default function Upload() {
     }]);
     
     setIsAiLoading(true);
-    setWaitingForPhaseThreeConfirmation(false);
+    
+    // Je nach Modus die richtige State-Variable zurücksetzen
+    if (outputMode === 'closed-bots') {
+      setClosedWaitingForPhaseThreeConfirmation(false);
+    } else {
+      setWaitingForPhaseThreeConfirmation(false);
+    }
     
     // Bedingte Setter und Getter basierend auf outputMode (Update Metrics vs Closed Bots)
     // Dies ermöglicht, dass beide Modi ihre eigenen unabhängigen Daten haben
@@ -2105,7 +2128,7 @@ export default function Upload() {
                   </>
                 )}
                 
-                {phaseTwoVerified && !phaseTwoStep2Complete && (
+                {getActivePhaseTwoVerified() && !getActivePhaseTwoStep2Complete() && (
                   <Button 
                     size="icon"
                     onClick={handleStep2Click}
@@ -2117,7 +2140,7 @@ export default function Upload() {
                   </Button>
                 )}
                 
-                {waitingForPhaseThreeConfirmation && (
+                {getActiveWaitingForPhaseThreeConfirmation() && (
                   <Button 
                     size="icon"
                     onClick={handleConfirmPhaseThree}
@@ -2129,7 +2152,7 @@ export default function Upload() {
                   </Button>
                 )}
                 
-                {!waitingForConfirmation && !phaseTwoVerified && !waitingForPhaseThreeConfirmation && (
+                {!waitingForConfirmation && !getActivePhaseTwoVerified() && !getActiveWaitingForPhaseThreeConfirmation() && (
                   <Button 
                     onClick={handleChatSend}
                     size="icon"
