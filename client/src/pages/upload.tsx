@@ -969,7 +969,12 @@ export default function Upload() {
           try {
             const parsedData = JSON.parse(extractionData.response);
             
-            setExtractedScreenshotData(parsedData);
+            // WICHTIG: Speichere in den korrekten State-Container basierend auf outputMode
+            if (outputMode === 'closed-bots') {
+              setClosedExtractedScreenshotData(parsedData);
+            } else {
+              setExtractedScreenshotData(parsedData);
+            }
             
             const formattedData = parsedData.screenshots.map((s: any, idx: number) => 
               `Screenshot ${idx + 1}:\n• Datum: ${s.date}\n• Uhrzeit: ${s.time}\n• Actual Investment: ${s.actualInvestment} USDT\n• Extra Margin: ${s.extraMargin || 'Nicht verfügbar'}\n• Total Profit: ${s.totalProfitUsdt >= 0 ? '+' : ''}${s.totalProfitUsdt} USDT (${s.totalProfitPercent >= 0 ? '+' : ''}${s.totalProfitPercent}%)\n• Grid Profit: ${s.gridProfitUsdt !== null ? (s.gridProfitUsdt >= 0 ? '+' : '') + s.gridProfitUsdt + ' USDT (' + (s.gridProfitPercent >= 0 ? '+' : '') + s.gridProfitPercent + '%)' : 'Nicht verfügbar'}\n• Trend P&L: ${s.trendPnlUsdt !== null ? (s.trendPnlUsdt >= 0 ? '+' : '') + s.trendPnlUsdt + ' USDT (' + (s.trendPnlPercent >= 0 ? '+' : '') + s.trendPnlPercent + '%)' : 'Nicht verfügbar'}\n• Hebel: ${s.leverage}\n• Laufzeit: ${s.runtime}\n• Richtung: ${s.direction}`
@@ -1161,11 +1166,14 @@ export default function Upload() {
     }]);
     
     setTimeout(() => {
+      // WICHTIG: Zeige den Output-Modus in der Nachricht an (Closed Bots vs Update Metrics)
+      const modeLabel = outputMode === 'closed-bots' ? 'Closed Bots (geschlossene Positionen)' : 'Update Metrics (aktive Bots)';
+      
       // Erstelle Nachricht mit Überschreibungshinweis wenn nötig
-      let aiMessage = 'Perfekt! Ich habe Ihre Einstellungen verstanden. Die Modi (Neu/Vergleich) und alle Felder sind klar.';
+      let aiMessage = `Perfekt! Ich habe Ihre Einstellungen verstanden.\n\nModus: ${modeLabel}\nDie Modi (Neu/Vergleich) und alle Felder sind klar.`;
       
       if (manualFields.length > 0) {
-        aiMessage = `Verstanden! Ich sehe, Sie möchten folgende Werte manuell überschreiben:\n\n${manualFields.map(f => `- ${f.label}: ${f.value}`).join('\n')}\n\nDiese Werte werden anstelle der Screenshot-Werte für die Berechnung verwendet. Die Modi (Neu/Vergleich) und alle anderen Felder sind klar.`;
+        aiMessage = `Verstanden! Ich sehe, Sie möchten folgende Werte manuell überschreiben:\n\n${manualFields.map(f => `- ${f.label}: ${f.value}`).join('\n')}\n\nModus: ${modeLabel}\nDiese Werte werden anstelle der Screenshot-Werte für die Berechnung verwendet. Die Modi (Neu/Vergleich) und alle anderen Felder sind klar.`;
       }
       
       aiMessage += ' Sollen wir mit Phase 4 - der vollständigen Auswertung - fortfahren?';
@@ -1220,7 +1228,11 @@ export default function Upload() {
     const metricsCount = sectionsWithModes.length;
     const hasLastUpload = !activeIsStartMetric;
     
+    // WICHTIG: Zeige den Output-Modus in der Phase 4 Nachricht an
+    const modeLabel = outputMode === 'closed-bots' ? 'Closed Bots (geschlossene Positionen)' : 'Update Metrics (aktive Bots)';
+    
     let message = `Phase 4 - Analyse und Berechnung\n\n`;
+    message += `Output-Modus: ${modeLabel}\n\n`;
     message += `Für den aktuellen Upload wurden ${metricsCount} Sektionen mit Modi konfiguriert:\n`;
     message += sectionsWithModes.map(s => `• ${s.name} (Modus: ${s.mode})`).join('\n');
     
