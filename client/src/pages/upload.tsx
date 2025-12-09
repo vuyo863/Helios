@@ -28,6 +28,7 @@ export default function Upload() {
   const { notifyUpdate } = useUpdateNotification();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedBotTypeId, setSelectedBotTypeId] = useState<string | null>(null);
+  const [closedSelectedBotTypeId, setClosedSelectedBotTypeId] = useState<string | null>(null);
   const [selectedBotTypeColor, setSelectedBotTypeColor] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'ai', content: string }>>([]);
   const [chatInput, setChatInput] = useState("");
@@ -41,8 +42,10 @@ export default function Upload() {
   const [phaseTwoVerified, setPhaseTwoVerified] = useState(false);
   const [phaseTwoStep2Complete, setPhaseTwoStep2Complete] = useState(false);
   const [isStartMetric, setIsStartMetric] = useState(false);
+  const [closedIsStartMetric, setClosedIsStartMetric] = useState(false);
   const [infoSectionMode, setInfoSectionMode] = useState<'Normal' | 'Startmetrik'>('Normal');
   const [calculationMode, setCalculationMode] = useState<'Normal' | 'Startmetrik'>('Normal');
+  const [closedCalculationMode, setClosedCalculationMode] = useState<'Normal' | 'Startmetrik'>('Normal');
   const [screenshotsBeforeEdit, setScreenshotsBeforeEdit] = useState(false);
   const [phaseThreeSettingsSent, setPhaseThreeSettingsSent] = useState(false);
   const [waitingForPhaseThreeConfirmation, setWaitingForPhaseThreeConfirmation] = useState(false);
@@ -340,6 +343,9 @@ export default function Upload() {
   const getActivePhaseTwoVerified = () => outputMode === 'update-metrics' ? phaseTwoVerified : closedPhaseTwoVerified;
   const getActiveExtractedData = () => outputMode === 'update-metrics' ? extractedScreenshotData : closedExtractedScreenshotData;
   const getActiveInfoSectionMode = () => outputMode === 'update-metrics' ? infoSectionMode : closedInfoSectionMode;
+  const getActiveIsStartMetric = () => outputMode === 'update-metrics' ? isStartMetric : closedIsStartMetric;
+  const getActiveSelectedBotTypeId = () => outputMode === 'update-metrics' ? selectedBotTypeId : closedSelectedBotTypeId;
+  const getActiveManualOverridesRef = () => outputMode === 'update-metrics' ? manualOverridesRef : closedManualOverridesRef;
   
   // ========== END CLOSED BOTS STATES ==========
 
@@ -1190,6 +1196,20 @@ export default function Upload() {
     setIsAiLoading(true);
     setWaitingForPhaseThreeConfirmation(false);
     
+    // Bedingte Setter und Getter basierend auf outputMode (Update Metrics vs Closed Bots)
+    // Dies ermöglicht, dass beide Modi ihre eigenen unabhängigen Daten haben
+    const isClosedBots = outputMode === 'closed-bots';
+    const useSetFormData = isClosedBots ? setClosedFormData : setFormData;
+    const useSetCalculationMode = isClosedBots ? setClosedCalculationMode : setCalculationMode;
+    const useSetCalculatedPercents = isClosedBots ? setClosedCalculatedPercents : setCalculatedPercents;
+    
+    // Bedingte Container für Daten (liest aus dem korrekten State-Container)
+    const activeExtractedData = isClosedBots ? closedExtractedScreenshotData : extractedScreenshotData;
+    const activeIsStartMetric = isClosedBots ? closedIsStartMetric : isStartMetric;
+    const activeSelectedBotTypeId = isClosedBots ? closedSelectedBotTypeId : selectedBotTypeId;
+    const activeManualOverridesRef = isClosedBots ? closedManualOverridesRef : manualOverridesRef;
+    const activeInfoSectionMode = isClosedBots ? closedInfoSectionMode : infoSectionMode;
+    
     const sectionsWithModes = [
       { name: 'Investment', mode: investmentTimeRange },
       { name: 'Gesamter Profit / P&L', mode: profitTimeRange },
@@ -1198,7 +1218,7 @@ export default function Upload() {
     ];
 
     const metricsCount = sectionsWithModes.length;
-    const hasLastUpload = !isStartMetric;
+    const hasLastUpload = !activeIsStartMetric;
     
     let message = `Phase 4 - Analyse und Berechnung\n\n`;
     message += `Für den aktuellen Upload wurden ${metricsCount} Sektionen mit Modi konfiguriert:\n`;
@@ -1223,7 +1243,7 @@ export default function Upload() {
     });
 
     try {
-      if (!extractedScreenshotData) {
+      if (!activeExtractedData) {
         throw new Error('Keine Screenshot-Daten verfügbar. Bitte führen Sie zuerst Phase 2 durch.');
       }
 
@@ -1236,10 +1256,10 @@ export default function Upload() {
       let lastAvgGridProfitWeekValue = '';
       let lastHighestGridProfitValue = '';
       
-      if (!isStartMetric && selectedBotTypeId) {
+      if (!activeIsStartMetric && activeSelectedBotTypeId) {
         try {
           // Add cache-busting to prevent 304 responses and get fresh data
-          const updatesResponse = await fetch(`/api/bot-types/${selectedBotTypeId}/updates`, {
+          const updatesResponse = await fetch(`/api/bot-types/${activeSelectedBotTypeId}/updates`, {
             headers: {
               'Cache-Control': 'no-cache',
               'Pragma': 'no-cache'
@@ -1292,33 +1312,34 @@ export default function Upload() {
       }
 
       // DEBUG: Log manualOverrides vor dem Senden
-      // WICHTIG: Verwende manualOverridesRef.current direkt, nicht die Variable die beim Render erstellt wurde!
-      const currentOverrides = manualOverridesRef.current;
+      // WICHTIG: Verwende activeManualOverridesRef.current direkt (bedingt basierend auf outputMode)!
+      const currentOverrides = activeManualOverridesRef.current;
       console.log('=== Phase 4 Request Debug ===');
-      console.log('manualOverridesRef.current:', currentOverrides);
+      console.log('activeManualOverridesRef.current:', currentOverrides);
       console.log('manualOverrides keys:', Object.keys(currentOverrides));
       console.log('manualOverrides.avgRuntime:', currentOverrides.avgRuntime);
       console.log('manualOverrides.uploadRuntime:', currentOverrides.uploadRuntime);
       console.log('manualOverrides.lastUpload:', currentOverrides.lastUpload);
       console.log('phase2Completed:', phase2Completed);
-      console.log('screenshotCount:', extractedScreenshotData?.screenshots?.length);
+      console.log('screenshotCount:', activeExtractedData?.screenshots?.length);
+      console.log('outputMode:', outputMode);
       console.log('=== End Debug ===');
       
       const response = await fetch('/api/phase4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          screenshotData: JSON.stringify(extractedScreenshotData),
+          screenshotData: JSON.stringify(activeExtractedData),
           modes: {
             investment: investmentTimeRange,
             profit: profitTimeRange,
             trend: trendTimeRange,
             grid: gridTimeRange
           },
-          isStartMetric,
+          isStartMetric: activeIsStartMetric,
           previousUploadData,
           // Manueller Startmetrik-Modus (auch bei normalen Uploads wie Startmetrik berechnen)
-          manualStartmetrikMode: infoSectionMode === 'Startmetrik',
+          manualStartmetrikMode: activeInfoSectionMode === 'Startmetrik',
           // Manuelle Überschreibungen (nur bei 1 Screenshot) - VERWENDE REF.CURRENT DIREKT!
           manualOverrides: Object.keys(currentOverrides).length > 0 ? currentOverrides : undefined,
           // Output Modus: update-metrics (aktive Bots) oder closed-bots (geschlossene Bots)
@@ -1333,8 +1354,8 @@ export default function Upload() {
       const data = await response.json();
       const calculatedValues = data.values;
       
-      // Speichere den Berechnungsmodus aus der API-Response
-      setCalculationMode(data.calculationMode || 'Normal');
+      // Speichere den Berechnungsmodus aus der API-Response (verwendet bedingten Setter)
+      useSetCalculationMode(data.calculationMode || 'Normal');
       
       // DEBUG: Log die empfangenen Werte
       console.log('Phase 4 API Response:', data);
@@ -1409,7 +1430,7 @@ export default function Upload() {
           }
         }
         
-        setCalculatedPercents({
+        useSetCalculatedPercents({
           profitPercent_gesamtinvestment: toStr(calculatedValues.profitPercent_gesamtinvestment),
           profitPercent_investitionsmenge: toStr(calculatedValues.profitPercent_investitionsmenge),
           overallTrendPnlPercent_gesamtinvestment: toStr(calculatedValues.overallTrendPnlPercent_gesamtinvestment),
@@ -1450,7 +1471,7 @@ export default function Upload() {
         const currentDateTimeDisplay = now.toLocaleDateString('de-DE') + ' ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         
         // Bei Startmetrik: AI-Datum verwenden, sonst aktuelles Datum
-        const dateValue = isStartMetric ? toStr(calculatedValues.date) : currentDateTime;
+        const dateValue = activeIsStartMetric ? toStr(calculatedValues.date) : currentDateTime;
         
         // Upload Laufzeit berechnen:
         // - Bei Startmetrik: LEER (kein vorheriger Upload zum Vergleichen)
@@ -1503,12 +1524,12 @@ export default function Upload() {
         };
         
         // PRIORITÄT: Manuelle Overrides für uploadRuntime haben Vorrang!
-        if (manualOverridesRef.current.uploadRuntime) {
+        if (activeManualOverridesRef.current.uploadRuntime) {
           // Benutzer hat manuell einen Wert für Upload Laufzeit eingegeben
-          uploadRuntimeValue = manualOverridesRef.current.uploadRuntime;
+          uploadRuntimeValue = activeManualOverridesRef.current.uploadRuntime;
           runtimeHoursForGridProfit = parseLongestRuntime(uploadRuntimeValue);
           console.log('Upload Laufzeit: Manueller Override verwendet:', uploadRuntimeValue);
-        } else if (isStartMetric) {
+        } else if (activeIsStartMetric) {
           // Bei Startmetrik: AUSNAHME - Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
           // Das ist die einzige Ausnahme, weil es keinen vorherigen Upload gibt, 
           // aber die Laufzeit für Grid Profit Durchschnitt Berechnungen benötigt wird
@@ -1531,7 +1552,7 @@ export default function Upload() {
         
         // Durchschnitt Grid Profit USDT berechnen: Gesamter Grid Profit / Anzahl Screenshots
         // Bis zu 4 Nachkommastellen erlaubt, unnötige Nullen werden entfernt
-        const screenshotCount = extractedScreenshotData?.screenshots?.length || 1;
+        const screenshotCount = activeExtractedData?.screenshots?.length || 1;
         const avgGridProfitUsdtRaw = screenshotCount > 0 
           ? (overallGridProfitValue / screenshotCount)
           : 0;
@@ -1569,7 +1590,7 @@ export default function Upload() {
         const currentAvgGridProfitUsdt = parseFloat(avgGridProfitUsdtCalc) || 0;
         const lastAvgGridProfitUsdtNum = parseFloat(lastHighestGridProfitValue) || 0;
         
-        if (!isStartMetric && lastAvgGridProfitUsdtNum !== 0) {
+        if (!activeIsStartMetric && lastAvgGridProfitUsdtNum !== 0) {
           const diffAvgGridProfit = currentAvgGridProfitUsdt - lastAvgGridProfitUsdtNum;
           avgGridProfitChangeDollarCalc = diffAvgGridProfit.toFixed(2);
           avgGridProfitChangePercentCalc = ((diffAvgGridProfit / Math.abs(lastAvgGridProfitUsdtNum)) * 100).toFixed(2);
@@ -1583,7 +1604,7 @@ export default function Upload() {
         const lastWeek = parseFloat(lastAvgGridProfitWeekValue) || 0;
         
         // Nur berechnen wenn es vorherige Werte gibt (nicht bei Startmetrik)
-        if (!isStartMetric && (lastHour !== 0 || lastDay !== 0 || lastWeek !== 0)) {
+        if (!activeIsStartMetric && (lastHour !== 0 || lastDay !== 0 || lastWeek !== 0)) {
           // Stunde
           const diffHour = currentHour - lastHour;
           changeHourDollarCalc = diffHour.toFixed(2);
@@ -1606,7 +1627,7 @@ export default function Upload() {
           }
         }
         
-        setFormData(prev => ({
+        useSetFormData(prev => ({
           ...prev,
           date: dateValue,
           botDirection: botDirection,
@@ -1647,7 +1668,7 @@ export default function Upload() {
           changeDayPercent: changeDayPercentCalc,
           changeWeekDollar: changeWeekDollarCalc,
           changeWeekPercent: changeWeekPercentCalc,
-          botCount: toStr(calculatedValues.screenshotCount) || String(extractedScreenshotData?.screenshots?.length || selectedFiles.length || 0)
+          botCount: toStr(calculatedValues.screenshotCount) || String(activeExtractedData?.screenshots?.length || selectedFiles.length || 0)
         }));
         
         console.log('Form data UPDATED successfully');
