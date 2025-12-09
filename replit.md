@@ -180,3 +180,40 @@ Preferred communication style: Simple, everyday language.
 - Last Grid Profit Durchschnitt section (shows previous upload values)
 - Change section with all 6 values (3 Dollar, 3 Prozent)
 - Conditional display: sections only shown if values exist
+
+## Recent Updates (December 9, 2025)
+
+**Closed Bots Mode - Parallel State Infrastructure:**
+
+**Architecture: Complete State Isolation:**
+- Two independent modes on Upload page: "Update Metrics" (golden state) and "Closed Bots"
+- Each mode has completely separate state containers to prevent data contamination
+- Update Metrics is protected and must NEVER be affected by Closed Bots operations
+
+**Parallel State Containers (Closed Bots):**
+- `closedFormData` / `setClosedFormData`: Separate form data for Closed Bots
+- `closedPhase2Complete` / `closedPhase3Complete`: Independent phase tracking
+- `closedSelectedBotTypeId`: Separate bot type selection
+- `closedIsStartMetric`: Separate Startmetrik flag
+- `closedCalculationMode`: Separate calculation mode (Neu/Vergleich)
+- `closedCalculatedPercents`: Separate calculated percentages
+- `closedExtractedScreenshotData`: Separate AI-extracted screenshot data
+- `closedManualOverridesRef`: Separate manual override tracking
+- `closedInfoSectionMode`: Separate Info Section mode
+
+**Helper Functions (Mode-Aware Accessors):**
+- `getActiveIsStartMetric()`: Returns isStartMetric or closedIsStartMetric based on outputMode
+- `getActiveSelectedBotTypeId()`: Returns correct bot type ID for active mode
+- `getActiveManualOverridesRef()`: Returns correct manual overrides ref for active mode
+- `getActiveExtractedData()`: Returns correct extracted data for active mode
+- `getActiveInfoSectionMode()`: Returns correct Info Section mode for active mode
+
+**handleConfirmPhaseThree Refactoring:**
+- All data reads/writes use conditional variables (activeExtractedData, activeIsStartMetric, etc.)
+- Conditional setters (useSetFormData, useSetCalculationMode, useSetCalculatedPercents)
+- outputMode propagates through entire workflow: Frontend -> API -> AI Prompt -> Response handling
+
+**API Integration:**
+- `outputMode` field sent to backend with Phase 4 API calls
+- AI prompts include context about which mode is active
+- Backend Phase 4 response handling respects the active mode
