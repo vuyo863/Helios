@@ -295,6 +295,7 @@ export default function Upload() {
   const [closedTrendPercentBase, setClosedTrendPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [closedGridProfitPercentBase, setClosedGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [closedHighestGridProfitPercentBase, setClosedHighestGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [closedAvgGridProfitPercentBase, setClosedAvgGridProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
   const [closedChainedUnit, setClosedChainedUnit] = useState<'%' | '$'>('%');
   const [closedSelectedChangeTimeframe, setClosedSelectedChangeTimeframe] = useState<'hour' | 'day' | 'week'>('hour');
   const [closedAvgGridProfitChangeUnit, setClosedAvgGridProfitChangeUnit] = useState<'%' | '$'>('%');
@@ -504,14 +505,84 @@ export default function Upload() {
     
     let newPercent = '';
     if (avgGridProfitUsdtValue !== 0) {
-      if (highestGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+      if (avgGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
         newPercent = ((avgGridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
-      } else if (highestGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+      } else if (avgGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
         newPercent = ((avgGridProfitUsdtValue / investmentValue) * 100).toFixed(2);
       }
     }
     setFormData(prev => ({ ...prev, avgGridProfitPercent: newPercent }));
-  }, [formData.avgGridProfitUsdt, formData.totalInvestment, formData.investment, highestGridProfitPercentBase]);
+  }, [formData.avgGridProfitUsdt, formData.totalInvestment, formData.investment, avgGridProfitPercentBase]);
+
+  // ========== CLOSED BOTS: Parallele Prozent-Umschaltung ==========
+  // Diese useEffects reagieren auf die Closed Bots Dropdown-Änderungen
+  
+  // Closed Bots: Profit Prozent Umschaltung
+  useEffect(() => {
+    if (closedProfitPercentBase === 'gesamtinvestment') {
+      const newValue = closedCalculatedPercents.profitPercent_gesamtinvestment || '';
+      setClosedFormData(prev => ({ ...prev, profitPercent: newValue }));
+    } else if (closedProfitPercentBase === 'investitionsmenge') {
+      const newValue = closedCalculatedPercents.profitPercent_investitionsmenge || '';
+      setClosedFormData(prev => ({ ...prev, profitPercent: newValue }));
+    }
+  }, [closedProfitPercentBase, closedCalculatedPercents.profitPercent_gesamtinvestment, closedCalculatedPercents.profitPercent_investitionsmenge]);
+
+  // Closed Bots: Trend P&L Prozent Umschaltung
+  useEffect(() => {
+    if (closedTrendPercentBase === 'gesamtinvestment') {
+      const newValue = closedCalculatedPercents.overallTrendPnlPercent_gesamtinvestment || '';
+      setClosedFormData(prev => ({ ...prev, overallTrendPnlPercent: newValue }));
+    } else if (closedTrendPercentBase === 'investitionsmenge') {
+      const newValue = closedCalculatedPercents.overallTrendPnlPercent_investitionsmenge || '';
+      setClosedFormData(prev => ({ ...prev, overallTrendPnlPercent: newValue }));
+    }
+  }, [closedTrendPercentBase, closedCalculatedPercents.overallTrendPnlPercent_gesamtinvestment, closedCalculatedPercents.overallTrendPnlPercent_investitionsmenge]);
+
+  // Closed Bots: Grid Profit Prozent (direkte Berechnung aus USDT-Werten)
+  useEffect(() => {
+    const gridProfitUsdtValue = parseFloat(closedFormData.overallGridProfitUsdt || '0');
+    const totalInvestmentValue = parseFloat(closedFormData.totalInvestment || '0');
+    const investmentValue = parseFloat(closedFormData.investment || '0');
+    
+    let newPercent = '';
+    if (gridProfitUsdtValue !== 0) {
+      if (closedGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        newPercent = ((gridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
+      } else if (closedGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        newPercent = ((gridProfitUsdtValue / investmentValue) * 100).toFixed(2);
+      }
+    }
+    setClosedFormData(prev => ({ ...prev, overallGridProfitPercent: newPercent }));
+  }, [closedFormData.overallGridProfitUsdt, closedFormData.totalInvestment, closedFormData.investment, closedGridProfitPercentBase]);
+
+  // Closed Bots: Highest Grid Profit Prozent Umschaltung
+  useEffect(() => {
+    if (closedHighestGridProfitPercentBase === 'gesamtinvestment') {
+      const newValue = closedCalculatedPercents.highestGridProfitPercent_gesamtinvestment || '';
+      setClosedFormData(prev => ({ ...prev, highestGridProfitPercent: newValue }));
+    } else if (closedHighestGridProfitPercentBase === 'investitionsmenge') {
+      const newValue = closedCalculatedPercents.highestGridProfitPercent_investitionsmenge || '';
+      setClosedFormData(prev => ({ ...prev, highestGridProfitPercent: newValue }));
+    }
+  }, [closedHighestGridProfitPercentBase, closedCalculatedPercents.highestGridProfitPercent_gesamtinvestment, closedCalculatedPercents.highestGridProfitPercent_investitionsmenge]);
+
+  // Closed Bots: Ø Grid Profit Prozent (direkte Berechnung)
+  useEffect(() => {
+    const avgGridProfitUsdtValue = parseFloat(closedFormData.avgGridProfitUsdt || '0');
+    const totalInvestmentValue = parseFloat(closedFormData.totalInvestment || '0');
+    const investmentValue = parseFloat(closedFormData.investment || '0');
+    
+    let newPercent = '';
+    if (avgGridProfitUsdtValue !== 0) {
+      if (closedAvgGridProfitPercentBase === 'gesamtinvestment' && totalInvestmentValue > 0) {
+        newPercent = ((avgGridProfitUsdtValue / totalInvestmentValue) * 100).toFixed(2);
+      } else if (closedAvgGridProfitPercentBase === 'investitionsmenge' && investmentValue > 0) {
+        newPercent = ((avgGridProfitUsdtValue / investmentValue) * 100).toFixed(2);
+      }
+    }
+    setClosedFormData(prev => ({ ...prev, avgGridProfitPercent: newPercent }));
+  }, [closedFormData.avgGridProfitUsdt, closedFormData.totalInvestment, closedFormData.investment, closedAvgGridProfitPercentBase]);
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
