@@ -2703,16 +2703,34 @@ export default function Upload() {
                   </>
                 )}
 
-                {/* CLOSED BOTS MODUS - 1:1 Kopie des Update Metrics Layouts, aber ohne Funktion */}
+                {/* CLOSED BOTS MODUS - Funktional mit eigenen States */}
                 {outputMode === 'closed-bots' && (
                   <>
-                    {/* Info Section - Closed Bots (identisch zu Update Metrics) */}
+                    {/* Phase-Hinweis für Closed Bots */}
+                    {!closedPhaseTwoVerified && (
+                      <div className="border border-yellow-500 bg-yellow-50 rounded-lg p-4">
+                        <p className="text-sm text-yellow-800 font-medium">
+                          {!closedPhaseOneComplete ? (
+                            <>Phase 1: Bitte zuerst {!closedScreenshotsSent && 'Screenshots hochladen & an AI senden'}{!closedScreenshotsSent && !closedBotTypeSent && ' + '}{!closedBotTypeSent && 'Bot Type speichern'}</>
+                          ) : (
+                            <>Phase 2: Bitte bestätigen Sie die Bot Type Informationen mit dem Haken-Icon im AI Chat</>
+                          )}
+                        </p>
+                        <p className="text-xs text-yellow-700 mt-1">
+                          Die Analyse-Einstellungen können erst ausgefüllt werden, wenn Phase 1 und Phase 2 abgeschlossen sind.
+                        </p>
+                      </div>
+                    )}
+                    {/* Info Section - Closed Bots (funktional) */}
                     <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
                       <div className="flex items-center justify-between gap-4">
                         <h3 className="text-base font-semibold text-foreground">Info</h3>
                         <div className="flex items-center gap-2">
                           <Label className="text-sm text-muted-foreground whitespace-nowrap">Modus:</Label>
-                          <Select defaultValue="Normal" disabled>
+                          <Select
+                            value={closedInfoSectionMode}
+                            onValueChange={(value: 'Normal' | 'Startmetrik') => setClosedInfoSectionMode(value)}
+                          >
                             <SelectTrigger className="w-32 h-8" data-testid="closed-select-info-mode">
                               <SelectValue />
                             </SelectTrigger>
@@ -2725,22 +2743,23 @@ export default function Upload() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="closed-date">Datum und Uhrzeit</Label>
+                          <Label htmlFor="closed-date" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Datum und Uhrzeit</Label>
                           <Input
                             id="closed-date"
                             type="datetime-local"
-                            placeholder="TT.mm.jjjj --:--"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.date}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, date: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-date"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-botDirection">Bot-Richtung</Label>
+                          <Label htmlFor="closed-botDirection" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Bot-Richtung</Label>
                           <Input
                             id="closed-botDirection"
                             type="text"
                             placeholder="Long, Short, Neutral, Long+Short"
+                            value={closedFormData.botDirection}
                             readOnly
                             className="bg-muted"
                             data-testid="closed-input-bot-direction"
@@ -2749,81 +2768,88 @@ export default function Upload() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <Label htmlFor="closed-leverage">Hebel</Label>
+                          <Label htmlFor="closed-leverage" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Hebel</Label>
                           <Input
                             id="closed-leverage"
                             type="text"
                             placeholder="z.B. 1x, 5x, 10x"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.leverage}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, leverage: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-leverage"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-botCount">Anzahl</Label>
+                          <Label htmlFor="closed-botCount" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Anzahl</Label>
                           <Input
                             id="closed-botCount"
                             type="text"
                             placeholder="z.B. 1, 2, 3"
+                            value={closedFormData.botCount}
                             readOnly
                             className="bg-muted"
                             data-testid="closed-input-bot-count"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-longestRuntime">Längste Laufzeit</Label>
+                          <Label htmlFor="closed-longestRuntime" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Längste Laufzeit</Label>
                           <Input
                             id="closed-longestRuntime"
                             type="text"
                             placeholder="z.B. 2d 5h 30s"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.longestRuntime}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, longestRuntime: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-longest-runtime"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <Label htmlFor="closed-avgRuntime">Durchschn. Laufzeit</Label>
+                          <Label htmlFor="closed-avgRuntime" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Durchschn. Laufzeit</Label>
                           <Input
                             id="closed-avgRuntime"
                             type="text"
                             placeholder="z.B. 1d 3h 15s"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.avgRuntime}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, avgRuntime: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-avg-runtime"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-uploadRuntime">Upload Laufzeit</Label>
+                          <Label htmlFor="closed-uploadRuntime" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Upload Laufzeit</Label>
                           <Input
                             id="closed-uploadRuntime"
                             type="text"
                             placeholder="z.B. 1d 3h 15s"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.uploadRuntime}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, uploadRuntime: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-upload-runtime"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-lastUpload">Last Upload</Label>
+                          <Label htmlFor="closed-lastUpload" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Last Upload</Label>
                           <Input
                             id="closed-lastUpload"
                             type="text"
                             placeholder="TT.MM.JJJJ HH:MM"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.lastUpload}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, lastUpload: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-last-upload"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-thisUpload">This Upload</Label>
+                          <Label htmlFor="closed-thisUpload" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>This Upload</Label>
                           <Input
                             id="closed-thisUpload"
                             type="text"
                             placeholder="TT.MM.JJJJ HH:MM"
-                            readOnly
-                            className="bg-muted/50"
+                            value={closedFormData.thisUpload}
+                            onChange={(e) => setClosedFormData({ ...closedFormData, thisUpload: e.target.value })}
+                            disabled={!closedPhaseTwoVerified}
                             data-testid="closed-input-this-upload"
                           />
                         </div>
