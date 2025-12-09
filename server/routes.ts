@@ -1344,6 +1344,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get the latest update for a specific bot type, optionally filtered by status
+  // Query params: ?status=Closed%20Bots or ?status=Update%20Metrics
+  app.get("/api/bot-types/:id/updates/latest", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.query;
+      
+      // Fetch all updates for this bot type
+      const allUpdates = await storage.getBotTypeUpdates(id);
+      
+      // Filter by status if provided
+      let filteredUpdates = allUpdates;
+      if (status && typeof status === 'string') {
+        filteredUpdates = allUpdates.filter(u => u.status === status);
+      }
+      
+      // Sort by version (descending) to get the latest
+      filteredUpdates.sort((a, b) => (b.version || 0) - (a.version || 0));
+      
+      // Return the latest one, or null if none found
+      const latest = filteredUpdates[0] || null;
+      res.json(latest);
+    } catch (error) {
+      console.error('Error fetching latest update:', error);
+      res.status(500).json({ error: "Failed to fetch latest update" });
+    }
+  });
+
   app.post("/api/bot-types/:id/updates", async (req, res) => {
     try {
       const validatedData = insertBotTypeUpdateSchema.parse({

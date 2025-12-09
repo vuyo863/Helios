@@ -1270,17 +1270,29 @@ export default function Upload() {
       
       if (!activeIsStartMetric && activeSelectedBotTypeId) {
         try {
-          // Add cache-busting to prevent 304 responses and get fresh data
-          const updatesResponse = await fetch(`/api/bot-types/${activeSelectedBotTypeId}/updates`, {
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
+          // WICHTIG: Closed Bots und Update Metrics vergleichen nur mit ihrem EIGENEN Modus!
+          // Closed Bots -> nur mit vorherigen Closed Bots Uploads vergleichen
+          // Update Metrics -> nur mit vorherigen Update Metrics Uploads vergleichen
+          const isClosedBotsMode = outputMode === 'closed-bots';
+          const statusFilter = isClosedBotsMode ? 'Closed Bots' : 'Update Metrics';
+          
+          // Hole den letzten Upload mit dem passenden Status
+          const latestResponse = await fetch(
+            `/api/bot-types/${activeSelectedBotTypeId}/updates/latest?status=${encodeURIComponent(statusFilter)}`,
+            {
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
             }
-          });
-          if (updatesResponse.ok) {
-            const updates = await updatesResponse.json();
-            if (updates && updates.length > 0) {
-              const lastUpdate = updates[0];
+          );
+          
+          if (latestResponse.ok) {
+            const lastUpdate = await latestResponse.json();
+            
+            if (lastUpdate) {
+              console.log(`Vorheriger ${statusFilter} Upload gefunden:`, lastUpdate);
+              
               // Speichere das Datum des letzten Uploads für das "Last Upload" Feld
               // Priorität: thisUpload > createdAt (thisUpload enthält den tatsächlichen Upload-Zeitpunkt)
               if (lastUpdate.thisUpload) {
@@ -1316,6 +1328,8 @@ export default function Upload() {
                 avgGridProfitDay: lastUpdate.avgGridProfitDay,
                 avgGridProfitWeek: lastUpdate.avgGridProfitWeek
               });
+            } else {
+              console.log(`Kein vorheriger ${statusFilter} Upload gefunden - behandle als Startmetrik`);
             }
           }
         } catch (e) {
