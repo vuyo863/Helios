@@ -1535,6 +1535,135 @@ export default function Upload() {
           return totalHours;
         };
         
+        // === SPEZIELLE CLOSED BOTS DATUMSLOGIK ===
+        // Für Closed Bots:
+        // - thisUpload = Schließdatum aus Screenshot (End Date)
+        // - lastUpload = Startdatum (End Date - Laufzeit) -> wird als "Start Date" gespeichert
+        // - uploadRuntime = Laufzeit aus Screenshot (Bot-Laufzeit)
+        // - date = aktuelles Speicherdatum (wann der User es hochgeladen hat)
+        let closedBotsThisUpload = '';
+        let closedBotsLastUpload = ''; // Eigentlich das berechnete Startdatum
+        let closedBotsUploadRuntime = '';
+        
+        // Helper-Funktion zum Parsen eines Datums aus verschiedenen Formaten
+        const parseDateFromScreenshot = (dateStr: string | null | undefined, timeStr: string | null | undefined): Date | null => {
+          if (!dateStr || !timeStr) return null;
+          
+          // Versuche verschiedene Datumsformate zu parsen
+          // Format 1: "MM/DD/YYYY" (US-Format wie im Screenshot)
+          const usDateMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          // Format 2: "TT.MM.JJJJ" (deutsches Format)
+          const deDateMatch = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+          // Format 3: "YYYY-MM-DD" (ISO Format)
+          const isoDateMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+          
+          const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+          if (!timeMatch) return null;
+          
+          let result: Date | null = null;
+          
+          if (usDateMatch) {
+            const [, usMonth, usDay, usYear] = usDateMatch;
+            const [, hr, min, sec] = timeMatch;
+            result = new Date(
+              parseInt(usYear),
+              parseInt(usMonth) - 1,
+              parseInt(usDay),
+              parseInt(hr),
+              parseInt(min),
+              sec ? parseInt(sec) : 0
+            );
+          } else if (deDateMatch) {
+            const [, deDay, deMonth, deYear] = deDateMatch;
+            const [, hr, min, sec] = timeMatch;
+            result = new Date(
+              parseInt(deYear),
+              parseInt(deMonth) - 1,
+              parseInt(deDay),
+              parseInt(hr),
+              parseInt(min),
+              sec ? parseInt(sec) : 0
+            );
+          } else if (isoDateMatch) {
+            const [, isoYear, isoMonth, isoDay] = isoDateMatch;
+            const [, hr, min, sec] = timeMatch;
+            result = new Date(
+              parseInt(isoYear),
+              parseInt(isoMonth) - 1,
+              parseInt(isoDay),
+              parseInt(hr),
+              parseInt(min),
+              sec ? parseInt(sec) : 0
+            );
+          }
+          
+          return result && !isNaN(result.getTime()) ? result : null;
+        };
+        
+        if (isClosedBots && activeExtractedData?.screenshots?.length > 0) {
+          // KRITISCHE REGEL: Runtime und Datum MÜSSEN vom selben Screenshot kommen!
+          // Dies stellt sicher, dass Start Date = End Date - Runtime für denselben Bot gilt.
+          
+          // Finde den besten Screenshot: Muss SOWOHL gültiges Datum ALS AUCH gültige Runtime haben
+          let bestScreenshot: any = null;
+          let bestRuntimeHours = 0;
+          
+          for (const screenshot of activeExtractedData.screenshots) {
+            const screenshotRuntimeHours = parseLongestRuntime(screenshot.runtime || '');
+            const parsedDate = parseDateFromScreenshot(screenshot.date, screenshot.time);
+            
+            // Screenshot ist nur gültig wenn BEIDE vorhanden sind: Datum UND Runtime
+            if (parsedDate && screenshotRuntimeHours > 0) {
+              if (screenshotRuntimeHours > bestRuntimeHours) {
+                bestRuntimeHours = screenshotRuntimeHours;
+                bestScreenshot = screenshot;
+              }
+            }
+          }
+          
+          // Nur fortfahren wenn wir einen Screenshot mit BEIDEN gültigen Werten haben
+          if (bestScreenshot && bestRuntimeHours > 0) {
+            // Verwende Runtime und Datum vom SELBEN Screenshot
+            closedBotsUploadRuntime = bestScreenshot.runtime;
+            
+            const endDateTime = parseDateFromScreenshot(bestScreenshot.date, bestScreenshot.time)!;
+            
+            // End Date (Schließdatum) im deutschen Format anzeigen
+            closedBotsThisUpload = endDateTime.toLocaleDateString('de-DE') + ' ' + endDateTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            
+            // Startdatum berechnen: End Date - Laufzeit (vom SELBEN Screenshot)
+            const runtimeMs = bestRuntimeHours * 60 * 60 * 1000;
+            const startDateTime = new Date(endDateTime.getTime() - runtimeMs);
+            closedBotsLastUpload = startDateTime.toLocaleDateString('de-DE') + ' ' + startDateTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            
+            console.log('Closed Bots Datumslogik erfolgreich:', {
+              screenshotCount: activeExtractedData.screenshots.length,
+              bestScreenshotDate: bestScreenshot.date,
+              bestScreenshotTime: bestScreenshot.time,
+              bestScreenshotRuntime: bestScreenshot.runtime,
+              bestRuntimeHours,
+              endDateTime: closedBotsThisUpload,
+              startDateTime: closedBotsLastUpload
+            });
+          } else {
+            // KEIN Screenshot hat sowohl gültiges Datum als auch gültige Runtime
+            // In diesem Fall: KEINE Closed Bots Datumslogik anwenden
+            // Die normalen Update Metrics Werte werden verwendet (currentDateTimeDisplay für thisUpload)
+            console.warn('Closed Bots: Kein Screenshot mit gültigem Datum UND Runtime gefunden. Verwende Standard-Datumswerte.', {
+              screenshotsChecked: activeExtractedData.screenshots.length,
+              screenshots: activeExtractedData.screenshots.map((s: any) => ({
+                date: s.date,
+                time: s.time,
+                runtime: s.runtime,
+                dateValid: parseDateFromScreenshot(s.date, s.time) !== null,
+                runtimeHours: parseLongestRuntime(s.runtime || '')
+              }))
+            });
+            // closedBotsThisUpload, closedBotsLastUpload, closedBotsUploadRuntime bleiben leer
+            // -> Die finalen Werte verwenden die Standard-Logik (currentDateTimeDisplay, etc.)
+          }
+        }
+        
         // PRIORITÄT: Manuelle Overrides für uploadRuntime haben Vorrang!
         if (activeManualOverridesRef.current.uploadRuntime) {
           // Benutzer hat manuell einen Wert für Upload Laufzeit eingegeben
@@ -1639,16 +1768,27 @@ export default function Upload() {
           }
         }
         
+        // === FINALE WERTE FÜR UPLOAD-ZEITFELDER ===
+        // Für Closed Bots: Spezielle Datumslogik (thisUpload=EndDate, lastUpload=StartDate, uploadRuntime=Laufzeit)
+        // Für Update Metrics: Standard-Logik (thisUpload=jetzt, lastUpload=letzter Upload, uploadRuntime=Differenz)
+        const finalThisUpload = isClosedBots && closedBotsThisUpload ? closedBotsThisUpload : currentDateTimeDisplay;
+        const finalLastUpload = isClosedBots && closedBotsLastUpload ? closedBotsLastUpload : lastUploadDate;
+        const finalUploadRuntime = isClosedBots && closedBotsUploadRuntime ? closedBotsUploadRuntime : uploadRuntimeValue;
+        
+        // Für Closed Bots: date = aktuelles Speicherdatum (wann der User es hochgeladen hat)
+        // Für Update Metrics: date bleibt wie gehabt (AI-Datum bei Startmetrik, sonst aktuelles Datum)
+        const finalDateValue = isClosedBots ? currentDateTime : dateValue;
+        
         useSetFormData(prev => ({
           ...prev,
-          date: dateValue,
+          date: finalDateValue,
           botDirection: botDirection,
           leverage: toStr(calculatedValues.leverage),
           longestRuntime: toStr(calculatedValues.longestRuntime),
           avgRuntime: toStr(calculatedValues.avgRuntime),
-          uploadRuntime: uploadRuntimeValue, // Upload Laufzeit = Differenz zwischen Last Upload und This Upload
-          thisUpload: currentDateTimeDisplay, // This Upload = immer aktuelles Datum
-          lastUpload: lastUploadDate, // Last Upload = Datum des letzten Uploads (leer bei Startmetrik)
+          uploadRuntime: finalUploadRuntime, // Closed Bots: Bot-Laufzeit, Update Metrics: This-Last Differenz
+          thisUpload: finalThisUpload, // Closed Bots: End Date, Update Metrics: aktuelles Datum
+          lastUpload: finalLastUpload, // Closed Bots: Start Date (berechnet), Update Metrics: letzter Upload
           investment: toStr(calculatedValues.investment),
           extraMargin: toStr(calculatedValues.extraMargin),
           totalInvestment: toStr(calculatedValues.totalInvestment),
@@ -2853,11 +2993,11 @@ export default function Upload() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-uploadRuntime" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Upload Laufzeit</Label>
+                          <Label htmlFor="closed-uploadRuntime" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Laufzeit</Label>
                           <Input
                             id="closed-uploadRuntime"
                             type="text"
-                            placeholder="z.B. 1d 3h 15s"
+                            placeholder="z.B. 12h 31m 22s"
                             value={closedFormData.uploadRuntime}
                             onChange={(e) => setClosedFormData({ ...closedFormData, uploadRuntime: e.target.value })}
                             disabled={!closedPhaseTwoVerified}
@@ -2865,7 +3005,7 @@ export default function Upload() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-lastUpload" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Last Upload</Label>
+                          <Label htmlFor="closed-lastUpload" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>Start Date</Label>
                           <Input
                             id="closed-lastUpload"
                             type="text"
@@ -2877,7 +3017,7 @@ export default function Upload() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="closed-thisUpload" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>This Upload</Label>
+                          <Label htmlFor="closed-thisUpload" className={!closedPhaseTwoVerified ? 'text-muted-foreground' : ''}>End Date</Label>
                           <Input
                             id="closed-thisUpload"
                             type="text"

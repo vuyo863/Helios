@@ -897,16 +897,16 @@ export default function BotTypesPage() {
                                   {update.status} #{update.version}
                                 </p>
                                 <div className="flex flex-col gap-y-1 text-xs">
-                                  {/* Zeile 1: Datum (From/Until oder einzelnes Datum) */}
+                                  {/* Zeile 1: Datum (From/Until oder Start/End Date für Closed Bots) */}
                                   <div className="flex items-center flex-wrap gap-x-6">
                                     {update.lastUpload && update.thisUpload ? (
                                       <>
                                         <span className="flex items-center gap-1 text-muted-foreground">
-                                          <span className="font-medium">From:</span>
+                                          <span className="font-medium">{update.status === 'Closed Bots' ? 'Start Date:' : 'From:'}</span>
                                           {update.lastUpload || '-'}
                                         </span>
                                         <span className="flex items-center gap-1 text-muted-foreground">
-                                          <span className="font-medium">Until:</span>
+                                          <span className="font-medium">{update.status === 'Closed Bots' ? 'End Date:' : 'Until:'}</span>
                                           {update.thisUpload || '-'}
                                         </span>
                                       </>
@@ -1062,15 +1062,21 @@ export default function BotTypesPage() {
                       <p className="font-medium">{selectedUpdate.avgRuntime || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground mb-1">Upload Laufzeit</p>
+                      <p className="text-muted-foreground mb-1">
+                        {selectedUpdate.status === 'Closed Bots' ? 'Laufzeit' : 'Upload Laufzeit'}
+                      </p>
                       <p className="font-medium">{selectedUpdate.uploadRuntime || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground mb-1">From</p>
+                      <p className="text-muted-foreground mb-1">
+                        {selectedUpdate.status === 'Closed Bots' ? 'Start Date' : 'From'}
+                      </p>
                       <p className="font-medium">{selectedUpdate.lastUpload || '-'}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground mb-1">Until</p>
+                      <p className="text-muted-foreground mb-1">
+                        {selectedUpdate.status === 'Closed Bots' ? 'End Date' : 'Until'}
+                      </p>
                       <p className="font-medium">{selectedUpdate.thisUpload || '-'}</p>
                     </div>
                   </CardContent>
