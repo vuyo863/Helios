@@ -4,7 +4,7 @@ import StatCard from "@/components/StatCard";
 import BotEntryTable from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
-import { BotEntry, BotType } from "@shared/schema";
+import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
 import {
@@ -35,9 +35,11 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, ChevronDown } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
 
 export default function Dashboard() {
   const { data: entries = [], isLoading } = useQuery<BotEntry[]>({
@@ -70,12 +72,32 @@ export default function Dashboard() {
   const [showTrendPnl, setShowTrendPnl] = useState(false);
   const [showHighestValue, setShowHighestValue] = useState(false);
   const [showLowestValue, setShowLowestValue] = useState(false);
+  
+  // From/Until update selection
+  const [fromUpdateDialogOpen, setFromUpdateDialogOpen] = useState(false);
+  const [untilUpdateDialogOpen, setUntilUpdateDialogOpen] = useState(false);
+  const [selectedFromUpdate, setSelectedFromUpdate] = useState<any | null>(null);
+  const [selectedUntilUpdate, setSelectedUntilUpdate] = useState<any | null>(null);
+  const [tempSelectedUpdate, setTempSelectedUpdate] = useState<any | null>(null);
+  const [updateSortBy, setUpdateSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
+  const [updateSortDirection, setUpdateSortDirection] = useState<'desc' | 'asc'>('desc');
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
   // Hole alle Bot-Types (aktiv + inaktiv, aber nicht archiviert)
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
+  });
+
+  // Hole Updates für den ausgewählten Bot Type
+  const selectedBotTypeData = useMemo(() => {
+    if (selectedBotName === "Gesamt") return null;
+    return availableBotTypes.find(bt => bt.name === selectedBotName);
+  }, [selectedBotName, availableBotTypes]);
+
+  const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
+    queryKey: ['/api/bot-types', selectedBotTypeData?.id, 'updates'],
+    enabled: !!selectedBotTypeData?.id,
   });
 
   const availableBotTypes = useMemo(() => {
@@ -227,6 +249,56 @@ export default function Dashboard() {
         : [...prev, cardName]
     );
   };
+
+  const handleFromUpdateSelect = (update: any) => {
+    setTempSelectedUpdate(update);
+  };
+
+  const handleUntilUpdateSelect = (update: any) => {
+    setTempSelectedUpdate(update);
+  };
+
+  const handleApplyFromUpdate = () => {
+    setSelectedFromUpdate(tempSelectedUpdate);
+    setFromUpdateDialogOpen(false);
+    setTempSelectedUpdate(null);
+  };
+
+  const handleApplyUntilUpdate = () => {
+    setSelectedUntilUpdate(tempSelectedUpdate);
+    setUntilUpdateDialogOpen(false);
+    setTempSelectedUpdate(null);
+  };
+
+  const sortedUpdates = useMemo(() => {
+    if (!selectedBotTypeUpdates.length) return [];
+    
+    return [...selectedBotTypeUpdates].sort((a, b) => {
+      let valueA: number = 0;
+      let valueB: number = 0;
+      
+      switch (updateSortBy) {
+        case 'datum':
+          valueA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+          valueB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+          break;
+        case 'gridProfit':
+          valueA = parseFloat(a.overallGridProfitUsdt || '0') || 0;
+          valueB = parseFloat(b.overallGridProfitUsdt || '0') || 0;
+          break;
+        case 'gridProfit24h':
+          valueA = parseFloat(a.avgGridProfitDay || '0') || 0;
+          valueB = parseFloat(b.avgGridProfitDay || '0') || 0;
+          break;
+        case 'gesInvest':
+          valueA = parseFloat(a.totalInvestment || '0') || 0;
+          valueB = parseFloat(b.totalInvestment || '0') || 0;
+          break;
+      }
+      
+      return updateSortDirection === 'desc' ? valueB - valueA : valueA - valueB;
+    });
+  }, [selectedBotTypeUpdates, updateSortBy, updateSortDirection]);
 
   if (isLoading) {
     return (
@@ -393,57 +465,29 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">From:</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                          Select
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-40 p-2" align="end">
-                        <div className="space-y-1">
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Today
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Yesterday
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Last 7 days
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Last 30 days
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 min-w-[120px]"
+                      onClick={() => selectedBotName !== "Gesamt" && setFromUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt"}
+                    >
+                      {selectedFromUpdate ? `#${selectedFromUpdate.version}` : 'Select'}
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Until:</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                          Select
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-40 p-2" align="end">
-                        <div className="space-y-1">
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Today
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Yesterday
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Last 7 days
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            Last 30 days
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 min-w-[120px]"
+                      onClick={() => selectedBotName !== "Gesamt" && setUntilUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt"}
+                    >
+                      {selectedUntilUpdate ? `#${selectedUntilUpdate.version}` : 'Select'}
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -719,6 +763,220 @@ export default function Dashboard() {
                 data-testid="button-save-selection"
               >
                 Speichern
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={fromUpdateDialogOpen} onOpenChange={setFromUpdateDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>From Update auswählen - {selectedBotName}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Sortieren:</span>
+                  <Select value={updateSortBy} onValueChange={(value) => setUpdateSortBy(value as typeof updateSortBy)}>
+                    <SelectTrigger className="h-7 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="datum">Datum</SelectItem>
+                      <SelectItem value="gridProfit">Grid Profit</SelectItem>
+                      <SelectItem value="gridProfit24h">Grid Profit 24H Ø</SelectItem>
+                      <SelectItem value="gesInvest">Ges. Invest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="icon"
+                    variant={updateSortDirection === 'desc' ? 'default' : 'outline'}
+                    className="h-7 w-7"
+                    onClick={() => setUpdateSortDirection('desc')}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant={updateSortDirection === 'asc' ? 'default' : 'outline'}
+                    className="h-7 w-7"
+                    onClick={() => setUpdateSortDirection('asc')}
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {sortedUpdates.map((update) => (
+                  <Card 
+                    key={update.id}
+                    className={cn(
+                      "cursor-pointer transition-all",
+                      tempSelectedUpdate?.id === update.id && "ring-2 ring-primary"
+                    )}
+                    onClick={() => handleFromUpdateSelect(update)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm mb-2">
+                            {update.status} #{update.version}
+                          </p>
+                          <div className="flex flex-col gap-y-1 text-xs">
+                            <div className="flex items-center flex-wrap gap-x-6">
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="w-3 h-3" />
+                                {update.createdAt 
+                                  ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                                  : '-'
+                                }
+                              </span>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-x-6">
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                <span className="font-medium text-primary">
+                                  {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Grid Profit:</span>
+                                <span className="font-medium text-primary">
+                                  {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
+                                </span>
+                              </span>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-x-6">
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Gesamt-Investment:</span>
+                                <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFromUpdateDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button onClick={handleApplyFromUpdate} disabled={!tempSelectedUpdate}>
+                Apply
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={untilUpdateDialogOpen} onOpenChange={setUntilUpdateDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Until Update auswählen - {selectedBotName}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Sortieren:</span>
+                  <Select value={updateSortBy} onValueChange={(value) => setUpdateSortBy(value as typeof updateSortBy)}>
+                    <SelectTrigger className="h-7 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="datum">Datum</SelectItem>
+                      <SelectItem value="gridProfit">Grid Profit</SelectItem>
+                      <SelectItem value="gridProfit24h">Grid Profit 24H Ø</SelectItem>
+                      <SelectItem value="gesInvest">Ges. Invest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="icon"
+                    variant={updateSortDirection === 'desc' ? 'default' : 'outline'}
+                    className="h-7 w-7"
+                    onClick={() => setUpdateSortDirection('desc')}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant={updateSortDirection === 'asc' ? 'default' : 'outline'}
+                    className="h-7 w-7"
+                    onClick={() => setUpdateSortDirection('asc')}
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {sortedUpdates.map((update) => (
+                  <Card 
+                    key={update.id}
+                    className={cn(
+                      "cursor-pointer transition-all",
+                      tempSelectedUpdate?.id === update.id && "ring-2 ring-primary"
+                    )}
+                    onClick={() => handleUntilUpdateSelect(update)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm mb-2">
+                            {update.status} #{update.version}
+                          </p>
+                          <div className="flex flex-col gap-y-1 text-xs">
+                            <div className="flex items-center flex-wrap gap-x-6">
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="w-3 h-3" />
+                                {update.createdAt 
+                                  ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                                  : '-'
+                                }
+                              </span>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-x-6">
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                <span className="font-medium text-primary">
+                                  {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Grid Profit:</span>
+                                <span className="font-medium text-primary">
+                                  {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
+                                </span>
+                              </span>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-x-6">
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Gesamt-Investment:</span>
+                                <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setUntilUpdateDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button onClick={handleApplyUntilUpdate} disabled={!tempSelectedUpdate}>
+                Apply
               </Button>
             </DialogFooter>
           </DialogContent>
