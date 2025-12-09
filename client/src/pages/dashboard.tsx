@@ -781,102 +781,100 @@ export default function Dashboard() {
         </Dialog>
 
         <Dialog open={fromUpdateDialogOpen} onOpenChange={setFromUpdateDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>From Update auswählen - {selectedBotName}</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Sortieren:</span>
-                  <Select value={updateSortBy} onValueChange={(value) => setUpdateSortBy(value as typeof updateSortBy)}>
-                    <SelectTrigger className="h-7 w-[140px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="datum">Datum</SelectItem>
-                      <SelectItem value="gridProfit">Grid Profit</SelectItem>
-                      <SelectItem value="gridProfit24h">Grid Profit 24H Ø</SelectItem>
-                      <SelectItem value="gesInvest">Ges. Invest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    size="icon"
-                    variant={updateSortDirection === 'desc' ? 'default' : 'outline'}
-                    className="h-7 w-7"
-                    onClick={() => setUpdateSortDirection('desc')}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant={updateSortDirection === 'asc' ? 'default' : 'outline'}
-                    className="h-7 w-7"
-                    onClick={() => setUpdateSortDirection('asc')}
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Sortieren:</span>
+                <Select value={updateSortBy} onValueChange={(value) => setUpdateSortBy(value as typeof updateSortBy)}>
+                  <SelectTrigger className="h-8 w-[150px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="datum">Datum</SelectItem>
+                    <SelectItem value="gridProfit">Grid Profit</SelectItem>
+                    <SelectItem value="gridProfit24h">Grid Profit 24H Ø</SelectItem>
+                    <SelectItem value="gesInvest">Ges. Invest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant={updateSortDirection === 'desc' ? 'default' : 'outline'}
+                  className="h-8 w-8"
+                  onClick={() => setUpdateSortDirection('desc')}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant={updateSortDirection === 'asc' ? 'default' : 'outline'}
+                  className="h-8 w-8"
+                  onClick={() => setUpdateSortDirection('asc')}
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </Button>
               </div>
-              
-              <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {sortedUpdates.map((update) => (
+            </div>
+            
+            <div className="flex-1 overflow-y-auto py-4 space-y-3">
+              {sortedUpdates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Keine Updates vorhanden
+                </div>
+              ) : (
+                sortedUpdates.map((update) => (
                   <Card 
                     key={update.id}
                     className={cn(
-                      "cursor-pointer transition-all",
-                      tempSelectedUpdate?.id === update.id && "ring-2 ring-primary"
+                      "cursor-pointer transition-all hover-elevate",
+                      tempSelectedUpdate?.id === update.id && "ring-2 ring-primary shadow-md"
                     )}
                     onClick={() => handleFromUpdateSelect(update)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm mb-2">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-base">
                             {update.status} #{update.version}
                           </p>
-                          <div className="flex flex-col gap-y-1 text-xs">
-                            <div className="flex items-center flex-wrap gap-x-6">
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <Calendar className="w-3 h-3" />
-                                {update.createdAt 
-                                  ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
-                                  : '-'
-                                }
-                              </span>
-                            </div>
-                            <div className="flex items-center flex-wrap gap-x-6">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
-                                <span className="font-medium text-primary">
-                                  {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
-                                </span>
-                              </span>
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">Grid Profit:</span>
-                                <span className="font-medium text-primary">
-                                  {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
-                                </span>
-                              </span>
-                            </div>
-                            <div className="flex items-center flex-wrap gap-x-6">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">Gesamt-Investment:</span>
-                                <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
-                              </span>
-                            </div>
+                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <CalendarIcon className="w-3.5 h-3.5" />
+                            {update.createdAt 
+                              ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                              : '-'
+                            }
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs">Grid Profit 24H Ø</span>
+                            <p className="font-medium text-primary">
+                              {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs">Grid Profit</span>
+                            <p className="font-medium text-primary">
+                              {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
+                            </p>
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <span className="text-muted-foreground text-xs">Gesamt-Investment</span>
+                            <p className="font-medium">{update.totalInvestment || '0.00'} USDT</p>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                ))
+              )}
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="border-t pt-4">
               <Button variant="outline" onClick={() => setFromUpdateDialogOpen(false)}>
                 Abbrechen
               </Button>
@@ -888,102 +886,100 @@ export default function Dashboard() {
         </Dialog>
 
         <Dialog open={untilUpdateDialogOpen} onOpenChange={setUntilUpdateDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Until Update auswählen - {selectedBotName}</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Sortieren:</span>
-                  <Select value={updateSortBy} onValueChange={(value) => setUpdateSortBy(value as typeof updateSortBy)}>
-                    <SelectTrigger className="h-7 w-[140px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="datum">Datum</SelectItem>
-                      <SelectItem value="gridProfit">Grid Profit</SelectItem>
-                      <SelectItem value="gridProfit24h">Grid Profit 24H Ø</SelectItem>
-                      <SelectItem value="gesInvest">Ges. Invest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    size="icon"
-                    variant={updateSortDirection === 'desc' ? 'default' : 'outline'}
-                    className="h-7 w-7"
-                    onClick={() => setUpdateSortDirection('desc')}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant={updateSortDirection === 'asc' ? 'default' : 'outline'}
-                    className="h-7 w-7"
-                    onClick={() => setUpdateSortDirection('asc')}
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <h4 className="font-semibold text-sm text-muted-foreground">Update Verlauf</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Sortieren:</span>
+                <Select value={updateSortBy} onValueChange={(value) => setUpdateSortBy(value as typeof updateSortBy)}>
+                  <SelectTrigger className="h-8 w-[150px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="datum">Datum</SelectItem>
+                    <SelectItem value="gridProfit">Grid Profit</SelectItem>
+                    <SelectItem value="gridProfit24h">Grid Profit 24H Ø</SelectItem>
+                    <SelectItem value="gesInvest">Ges. Invest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant={updateSortDirection === 'desc' ? 'default' : 'outline'}
+                  className="h-8 w-8"
+                  onClick={() => setUpdateSortDirection('desc')}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant={updateSortDirection === 'asc' ? 'default' : 'outline'}
+                  className="h-8 w-8"
+                  onClick={() => setUpdateSortDirection('asc')}
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </Button>
               </div>
-              
-              <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {sortedUpdates.map((update) => (
+            </div>
+            
+            <div className="flex-1 overflow-y-auto py-4 space-y-3">
+              {sortedUpdates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Keine Updates vorhanden
+                </div>
+              ) : (
+                sortedUpdates.map((update) => (
                   <Card 
                     key={update.id}
                     className={cn(
-                      "cursor-pointer transition-all",
-                      tempSelectedUpdate?.id === update.id && "ring-2 ring-primary"
+                      "cursor-pointer transition-all hover-elevate",
+                      tempSelectedUpdate?.id === update.id && "ring-2 ring-primary shadow-md"
                     )}
                     onClick={() => handleUntilUpdateSelect(update)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm mb-2">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-base">
                             {update.status} #{update.version}
                           </p>
-                          <div className="flex flex-col gap-y-1 text-xs">
-                            <div className="flex items-center flex-wrap gap-x-6">
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <Calendar className="w-3 h-3" />
-                                {update.createdAt 
-                                  ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
-                                  : '-'
-                                }
-                              </span>
-                            </div>
-                            <div className="flex items-center flex-wrap gap-x-6">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
-                                <span className="font-medium text-primary">
-                                  {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
-                                </span>
-                              </span>
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">Grid Profit:</span>
-                                <span className="font-medium text-primary">
-                                  {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
-                                </span>
-                              </span>
-                            </div>
-                            <div className="flex items-center flex-wrap gap-x-6">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">Gesamt-Investment:</span>
-                                <span className="font-medium">{update.totalInvestment || '0.00'} USDT</span>
-                              </span>
-                            </div>
+                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <CalendarIcon className="w-3.5 h-3.5" />
+                            {update.createdAt 
+                              ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                              : '-'
+                            }
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs">Grid Profit 24H Ø</span>
+                            <p className="font-medium text-primary">
+                              {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs">Grid Profit</span>
+                            <p className="font-medium text-primary">
+                              {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
+                            </p>
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <span className="text-muted-foreground text-xs">Gesamt-Investment</span>
+                            <p className="font-medium">{update.totalInvestment || '0.00'} USDT</p>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                ))
+              )}
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="border-t pt-4">
               <Button variant="outline" onClick={() => setUntilUpdateDialogOpen(false)}>
                 Abbrechen
               </Button>
