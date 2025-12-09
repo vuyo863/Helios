@@ -1918,6 +1918,33 @@ export default function Upload() {
         </p>
 
         <div className="space-y-6">
+          {/* MODUS TOGGLE - Muss ZUERST gewählt werden bevor Phase 1 beginnt */}
+          <Card className="p-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Modus:</span>
+              <div className="flex items-center gap-2 flex-1">
+                <Button
+                  type="button"
+                  variant={outputMode === 'update-metrics' ? 'default' : 'outline'}
+                  onClick={() => setOutputMode('update-metrics')}
+                  data-testid="button-mode-update-metrics"
+                  className="flex-1"
+                >
+                  Update Metrics
+                </Button>
+                <Button
+                  type="button"
+                  variant={outputMode === 'closed-bots' ? 'default' : 'outline'}
+                  onClick={() => setOutputMode('closed-bots')}
+                  data-testid="button-mode-closed-bots"
+                  className="flex-1"
+                >
+                  Closed Bots
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           <BotTypeManager
             selectedBotTypeId={selectedBotTypeId}
             onSelectBotType={setSelectedBotTypeId}
@@ -2110,26 +2137,6 @@ export default function Upload() {
           </div>
 
           <Card className="p-8">
-            <div className="flex items-center gap-2 mb-6">
-              <Button
-                type="button"
-                variant={outputMode === 'update-metrics' ? 'default' : 'outline'}
-                onClick={() => setOutputMode('update-metrics')}
-                data-testid="button-update-metrics"
-                className="flex-1"
-              >
-                Update Metrics
-              </Button>
-              <Button
-                type="button"
-                variant={outputMode === 'closed-bots' ? 'default' : 'outline'}
-                onClick={() => setOutputMode('closed-bots')}
-                data-testid="button-closed-bots"
-                className="flex-1"
-              >
-                Closed Bots
-              </Button>
-            </div>
             <form onSubmit={handleSubmit}>
               <div className="space-y-8">
                 <div className="border border-cyan-500 rounded-lg p-4 bg-white space-y-4">
