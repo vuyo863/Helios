@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
+import { Switch } from "@/components/ui/switch";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -65,6 +66,10 @@ export default function Dashboard() {
     to: undefined,
   });
   const [activeMetricCards, setActiveMetricCards] = useState<string[]>([]);
+  const [showGridProfit, setShowGridProfit] = useState(false);
+  const [showTrendPnl, setShowTrendPnl] = useState(false);
+  const [showHighestValue, setShowHighestValue] = useState(false);
+  const [showLowestValue, setShowLowestValue] = useState(false);
 
   const allEntries = useMemo(() => [...entries], [entries]);
 
@@ -207,7 +212,11 @@ export default function Dashboard() {
       customHours, 
       customMinutes, 
       dateRange,
-      activeMetricCards 
+      activeMetricCards,
+      showGridProfit,
+      showTrendPnl,
+      showHighestValue,
+      showLowestValue
     });
   };
 
@@ -514,9 +523,35 @@ export default function Dashboard() {
               )}
               
               <Separator />
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Datenansicht</span>
-                <Button variant="outline" size="sm">Profit</Button>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Grid Profit</span>
+                  <Switch
+                    checked={showGridProfit}
+                    onCheckedChange={setShowGridProfit}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Trend P&L</span>
+                  <Switch
+                    checked={showTrendPnl}
+                    onCheckedChange={setShowTrendPnl}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Highest Value</span>
+                  <Switch
+                    checked={showHighestValue}
+                    onCheckedChange={setShowHighestValue}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Lowest Value</span>
+                  <Switch
+                    checked={showLowestValue}
+                    onCheckedChange={setShowLowestValue}
+                  />
+                </div>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
