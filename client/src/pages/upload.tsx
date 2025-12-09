@@ -869,17 +869,31 @@ export default function Upload() {
     try {
       const userMessage = `Ich möchte mit Phase 2, Schritt 1 beginnen. Bitte überprüfe die bestehenden Metriken für Bot Type "${botTypeName}" (ID: ${botTypeColor}).`;
       
+      // Filter updateHistory nach dem aktuellen Modus (Update Metrics oder Closed Bots)
+      const statusFilter = outputMode === 'closed-bots' ? 'Closed Bots' : 'Update Metrics';
+      const filteredUpdateHistory: Record<string, any[]> = {};
+      
+      if (updateHistory) {
+        Object.keys(updateHistory).forEach((botName) => {
+          const allUpdates = updateHistory[botName] || [];
+          // Nur Updates mit dem passenden Status behalten
+          const filteredUpdates = allUpdates.filter((update: any) => update.status === statusFilter);
+          filteredUpdateHistory[botName] = filteredUpdates;
+        });
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...chatMessages, { role: 'user', content: userMessage }],
           botTypes: botTypes,
-          updateHistory: updateHistory,
+          updateHistory: filteredUpdateHistory,
           phase: 'phase2_step1',
           selectedBotTypeId: selectedBotType.id,
           selectedBotTypeName: botTypeName,
           selectedBotTypeColor: botTypeColor,
+          outputMode: outputMode,
         }),
       });
 
