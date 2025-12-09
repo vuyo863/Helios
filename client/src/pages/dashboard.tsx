@@ -89,6 +89,7 @@ export default function Dashboard() {
   // Hole alle Bot-Types (aktiv + inaktiv, aber nicht archiviert)
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
+    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
 
   const availableBotTypes = useMemo(() => {
@@ -104,6 +105,7 @@ export default function Dashboard() {
   const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
     queryKey: ['/api/bot-types', selectedBotTypeData?.id, 'updates'],
     enabled: !!selectedBotTypeData?.id,
+    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
 
   const uniqueBotNames = useMemo(() => {
@@ -163,6 +165,7 @@ export default function Dashboard() {
   // Hole Updates für alle Bot-Types für Gesamtkapital-Berechnung
   const { data: allBotTypeUpdates = [] } = useQuery<any[]>({
     queryKey: ['/api/bot-type-updates'],
+    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
 
   // Separate filtering for stats cards - based on selectedBotName only
@@ -325,7 +328,11 @@ export default function Dashboard() {
   }
 
   // Berechne totalInvestment basierend auf Bot Type Status
+  // WICHTIG: Immer alle Abhängigkeiten nutzen, um Hook-Reihenfolge konsistent zu halten
   const totalInvestment = useMemo(() => {
+    // Prüfe zuerst ob alle Daten verfügbar sind
+    if (!availableBotTypes || !allBotTypeUpdates) return 0;
+    
     if (selectedBotName === "Gesamt") {
       // Summiere Gesamtinvestment-Ø von allen aktiven Bot Types
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
