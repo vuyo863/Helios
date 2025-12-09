@@ -388,7 +388,65 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
             <Card className="p-6">
-              <h3 className="text-lg font-bold mb-6">Update Verlauf</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold">Update Verlauf</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">From:</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
+                          Select
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-40 p-2" align="end">
+                        <div className="space-y-1">
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Today
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Yesterday
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Last 7 days
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Last 30 days
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Until:</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
+                          Select
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-40 p-2" align="end">
+                        <div className="space-y-1">
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Today
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Yesterday
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Last 7 days
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            Last 30 days
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart 
                   data={[
