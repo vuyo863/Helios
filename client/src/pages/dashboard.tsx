@@ -175,7 +175,7 @@ export default function Dashboard() {
 
   // Hole Updates für den ausgewählten Bot Type
   const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
-    queryKey: ['/api/bot-types', selectedBotTypeData?.id, 'updates'],
+    queryKey: ['/api/bot-types', selectedBotTypeData?.id || 'none', 'updates'],
     enabled: !!selectedBotTypeData?.id,
     refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
@@ -309,22 +309,7 @@ export default function Dashboard() {
     });
   }, [selectedBotTypeUpdates, updateSortBy, updateSortDirection]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h1 className="text-2xl font-bold mb-8">Übersicht</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Berechne totalInvestment basierend auf Bot Type Status
+  // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   const totalInvestment = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       // Prüfe ob alle benötigten Daten vorhanden sind
@@ -354,27 +339,59 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
   
-  const totalProfit = filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
-  const totalProfitPercent = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+  const totalProfit = useMemo(() => 
+    filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0),
+    [filteredEntriesForStats]
+  );
   
-  const dayCount = filteredEntriesForStats.length > 0 
-    ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntriesForStats[filteredEntriesForStats.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
-    : 1;
-  const avgDailyProfit = totalProfit / dayCount;
+  const totalProfitPercent = useMemo(() => 
+    totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0,
+    [totalInvestment, totalProfit]
+  );
 
-  const lineChartData = filteredEntriesForStats
-    .slice(0, 10)
-    .reverse()
-    .reduce((acc, entry) => {
-      const dateStr = new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-      const existing = acc.find(item => item.date === dateStr);
-      if (existing) {
-        existing.profit += parseFloat(entry.profit);
-      } else {
-        acc.push({ date: dateStr, profit: parseFloat(entry.profit) });
-      }
-      return acc;
-    }, [] as { date: string; profit: number }[]);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-bold mb-8">Übersicht</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  const dayCount = useMemo(() => 
+    filteredEntriesForStats.length > 0 
+      ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntriesForStats[filteredEntriesForStats.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
+      : 1,
+    [filteredEntriesForStats]
+  );
+  
+  const avgDailyProfit = useMemo(() => 
+    totalProfit / dayCount,
+    [totalProfit, dayCount]
+  );
+
+  const lineChartData = useMemo(() => 
+    filteredEntriesForStats
+      .slice(0, 10)
+      .reverse()
+      .reduce((acc, entry) => {
+        const dateStr = new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        const existing = acc.find(item => item.date === dateStr);
+        if (existing) {
+          existing.profit += parseFloat(entry.profit);
+        } else {
+          acc.push({ date: dateStr, profit: parseFloat(entry.profit) });
+        }
+        return acc;
+      }, [] as { date: string; profit: number }[]),
+    [filteredEntriesForStats]
+  );
 
   return (
     <div className="min-h-screen bg-background">
