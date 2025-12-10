@@ -329,11 +329,6 @@ export default function Dashboard() {
 
   // Berechne totalInvestment basierend auf Bot Type Status
   const totalInvestment = useMemo(() => {
-    // Prüfe ob alle benötigten Daten vorhanden sind
-    if (!availableBotTypes || !allBotTypeUpdates) {
-      return 0;
-    }
-    
     if (selectedBotName === "Gesamt") {
       // Summiere Gesamtinvestment-Ø von allen aktiven Bot Types
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
