@@ -180,105 +180,6 @@ export default function Dashboard() {
     refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
 
-  const handleOpenDialog = () => {
-    setTempSelectedBots([...selectedBotsForTable]);
-    setSearchQuery("");
-    setDialogOpen(true);
-  };
-
-  const handleToggleBot = (botName: string) => {
-    setTempSelectedBots(prev => 
-      prev.includes(botName) 
-        ? prev.filter(b => b !== botName)
-        : [...prev, botName]
-    );
-  };
-
-  const handleSaveSelection = () => {
-    setSelectedBotsForTable([...tempSelectedBots]);
-    setDialogOpen(false);
-  };
-
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
-
-  const handleTimeRangeSelect = (value: string) => {
-    setSelectedTimeRange(value);
-    setCustomTimeOpen(value === 'Custom');
-    setTimeRangeOpen(false);
-  };
-
-  const handleApplyCustomTime = () => {
-    // Hier kann die Logik für die Anwendung des Custom-Zeitraums implementiert werden
-    console.log('Custom time applied:', { customDays, customHours, customMinutes, dateRange });
-    setCustomTimeOpen(false);
-  };
-
-  const handleDateSelect = (range: { from: Date | undefined; to: Date | undefined }) => {
-    setDateRange(range);
-    if (range.from && range.to) {
-      const diffMs = range.to.getTime() - range.from.getTime();
-      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      
-      setCustomDays(days.toString());
-      setCustomHours(hours.toString());
-      setCustomMinutes(minutes.toString());
-      setCalendarOpen(false);
-    }
-  };
-
-  const handleApplySettings = () => {
-    // Hier kann die Logik für die Anwendung der Einstellungen implementiert werden
-    console.log('Settings applied:', { 
-      selectedTimeRange, 
-      customDays, 
-      customHours, 
-      customMinutes, 
-      dateRange,
-      activeMetricCards,
-      showGridProfit,
-      showTrendPnl,
-      showHighestValue,
-      showLowestValue
-    });
-  };
-
-  const toggleMetricCard = (cardName: string) => {
-    setActiveMetricCards(prev => 
-      prev.includes(cardName) 
-        ? prev.filter(name => name !== cardName)
-        : [...prev, cardName]
-    );
-  };
-
-  const handleFromUpdateSelect = (update: any) => {
-    setTempSelectedUpdate(update);
-  };
-
-  const handleUntilUpdateSelect = (update: any) => {
-    setTempSelectedUpdate(update);
-  };
-
-  const handleApplyFromUpdate = () => {
-    setSelectedFromUpdate(tempSelectedUpdate);
-    setFromUpdateDialogOpen(false);
-    setTempSelectedUpdate(null);
-  };
-
-  const handleApplyUntilUpdate = () => {
-    setSelectedUntilUpdate(tempSelectedUpdate);
-    setUntilUpdateDialogOpen(false);
-    setTempSelectedUpdate(null);
-  };
-
   const sortedUpdates = useMemo(() => {
     if (!selectedBotTypeUpdates.length) return [];
     
@@ -349,21 +250,6 @@ export default function Dashboard() {
     [totalInvestment, totalProfit]
   );
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h1 className="text-2xl font-bold mb-8">Übersicht</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
   const dayCount = useMemo(() => 
     filteredEntriesForStats.length > 0 
       ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntriesForStats[filteredEntriesForStats.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
@@ -392,6 +278,119 @@ export default function Dashboard() {
       }, [] as { date: string; profit: number }[]),
     [filteredEntriesForStats]
   );
+
+  // Handler functions
+  const handleOpenDialog = () => {
+    setTempSelectedBots([...selectedBotsForTable]);
+    setSearchQuery("");
+    setDialogOpen(true);
+  };
+
+  const handleToggleBot = (botName: string) => {
+    setTempSelectedBots(prev => 
+      prev.includes(botName) 
+        ? prev.filter(b => b !== botName)
+        : [...prev, botName]
+    );
+  };
+
+  const handleSaveSelection = () => {
+    setSelectedBotsForTable([...tempSelectedBots]);
+    setDialogOpen(false);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleTimeRangeSelect = (value: string) => {
+    setSelectedTimeRange(value);
+    setCustomTimeOpen(value === 'Custom');
+    setTimeRangeOpen(false);
+  };
+
+  const handleApplyCustomTime = () => {
+    console.log('Custom time applied:', { customDays, customHours, customMinutes, dateRange });
+    setCustomTimeOpen(false);
+  };
+
+  const handleDateSelect = (range: { from: Date | undefined; to: Date | undefined }) => {
+    setDateRange(range);
+    if (range.from && range.to) {
+      const diffMs = range.to.getTime() - range.from.getTime();
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      setCustomDays(days.toString());
+      setCustomHours(hours.toString());
+      setCustomMinutes(minutes.toString());
+      setCalendarOpen(false);
+    }
+  };
+
+  const handleApplySettings = () => {
+    console.log('Settings applied:', { 
+      selectedTimeRange, 
+      customDays, 
+      customHours, 
+      customMinutes, 
+      dateRange,
+      activeMetricCards,
+      showGridProfit,
+      showTrendPnl,
+      showHighestValue,
+      showLowestValue
+    });
+  };
+
+  const toggleMetricCard = (cardName: string) => {
+    setActiveMetricCards(prev => 
+      prev.includes(cardName) 
+        ? prev.filter(name => name !== cardName)
+        : [...prev, cardName]
+    );
+  };
+
+  const handleFromUpdateSelect = (update: any) => {
+    setTempSelectedUpdate(update);
+  };
+
+  const handleUntilUpdateSelect = (update: any) => {
+    setTempSelectedUpdate(update);
+  };
+
+  const handleApplyFromUpdate = () => {
+    setSelectedFromUpdate(tempSelectedUpdate);
+    setFromUpdateDialogOpen(false);
+    setTempSelectedUpdate(null);
+  };
+
+  const handleApplyUntilUpdate = () => {
+    setSelectedUntilUpdate(tempSelectedUpdate);
+    setUntilUpdateDialogOpen(false);
+    setTempSelectedUpdate(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-bold mb-8">Übersicht</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
