@@ -84,43 +84,40 @@ export default function Dashboard() {
   const [updateSortDirection, setUpdateSortDirection] = useState<'desc' | 'asc'>('desc');
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
 
-  const allEntries = useMemo(() => [...entries], [entries]);
-
   // Hole alle Bot-Types (aktiv + inaktiv, aber nicht archiviert)
   const { data: botTypes = [] } = useQuery<BotType[]>({
     queryKey: ['/api/bot-types'],
     refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
 
+  // Hole Updates für alle Bot-Types für Gesamtkapital-Berechnung
+  const { data: allBotTypeUpdates = [] } = useQuery<any[]>({
+    queryKey: ['/api/bot-type-updates'],
+    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
+  });
+
+  // ALLE useMemo Hooks MÜSSEN hier stehen, BEVOR irgendwelche Bedingungen geprüft werden
+  const allEntries = useMemo(() => [...entries], [entries]);
+
   const availableBotTypes = useMemo(() => {
     return botTypes.filter(bt => !bt.isArchived);
   }, [botTypes]);
 
-  // Hole Updates für den ausgewählten Bot Type
   const selectedBotTypeData = useMemo(() => {
     if (selectedBotName === "Gesamt") return null;
     return availableBotTypes.find(bt => bt.name === selectedBotName);
   }, [selectedBotName, availableBotTypes]);
 
-  const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
-    queryKey: ['/api/bot-types', selectedBotTypeData?.id, 'updates'],
-    enabled: !!selectedBotTypeData?.id,
-    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
-  });
-
   const uniqueBotNames = useMemo(() => {
-    // Alle nicht-archivierten Bot-Types anzeigen
     const allNames = availableBotTypes.map(bt => bt.name);
     return ["Gesamt", ...allNames.sort()];
   }, [availableBotTypes]);
 
   const uniqueBotNamesOnly = useMemo(() => {
-    // Alle nicht-archivierten Bot-Types anzeigen
     const allNames = availableBotTypes.map(bt => bt.name);
     return allNames.sort();
   }, [availableBotTypes]);
 
-  // Separate filtering for table - independent from chart
   const filteredEntriesForTable = useMemo(() => {
     let filtered = [...allEntries];
     
@@ -162,13 +159,6 @@ export default function Dashboard() {
     return filtered;
   }, [allEntries, selectedBotsForTable, selectedPeriod, sortColumn, sortDirection]);
 
-  // Hole Updates für alle Bot-Types für Gesamtkapital-Berechnung
-  const { data: allBotTypeUpdates = [] } = useQuery<any[]>({
-    queryKey: ['/api/bot-type-updates'],
-    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
-  });
-
-  // Separate filtering for stats cards - based on selectedBotName only
   const filteredEntriesForStats = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       return [...allEntries];
@@ -182,6 +172,13 @@ export default function Dashboard() {
       name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [uniqueBotNamesOnly, searchQuery]);
+
+  // Hole Updates für den ausgewählten Bot Type
+  const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
+    queryKey: ['/api/bot-types', selectedBotTypeData?.id, 'updates'],
+    enabled: !!selectedBotTypeData?.id,
+    refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
+  });
 
   const handleOpenDialog = () => {
     setTempSelectedBots([...selectedBotsForTable]);
