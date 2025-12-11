@@ -588,17 +588,24 @@ export default function Upload() {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedBotTypeId) {
+      // MODUSABHÄNGIG: Verwende den korrekten State-Container basierend auf outputMode
+      const isClosedBotsMode = outputMode === 'closed-bots';
+      const activeFormData = isClosedBotsMode ? closedFormData : formData;
+      const activeCalculatedPercents = isClosedBotsMode ? closedCalculatedPercents : calculatedPercents;
+      const activeBotTypeId = isClosedBotsMode ? closedSelectedBotTypeId : selectedBotTypeId;
+      const activeCalculationMode = isClosedBotsMode ? closedCalculationMode : calculationMode;
+      
+      if (!activeBotTypeId) {
         throw new Error('Kein Bot-Typ ausgewählt');
       }
 
       // Berechne beide Prozentbasen für alle Felder
-      const investmentValue = parseFloat(formData.investment || '0');
-      const totalInvestmentValue = parseFloat(formData.totalInvestment || '0');
-      const profitValue = parseFloat(formData.profit || '0');
-      const trendValue = parseFloat(formData.overallTrendPnlUsdt || '0');
-      const gridValue = parseFloat(formData.overallGridProfitUsdt || '0');
-      const highestValue = parseFloat(formData.highestGridProfit || '0');
+      const investmentValue = parseFloat(activeFormData.investment || '0');
+      const totalInvestmentValue = parseFloat(activeFormData.totalInvestment || '0');
+      const profitValue = parseFloat(activeFormData.profit || '0');
+      const trendValue = parseFloat(activeFormData.overallTrendPnlUsdt || '0');
+      const gridValue = parseFloat(activeFormData.overallGridProfitUsdt || '0');
+      const highestValue = parseFloat(activeFormData.highestGridProfit || '0');
 
       // Profit Prozent - beide Basen
       let profitPercent_gesamtinvestment: string | null = null;
@@ -612,8 +619,8 @@ export default function Upload() {
         }
       } else if (profitTimeRange === 'Vergleich') {
         // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
-        profitPercent_gesamtinvestment = calculatedPercents.profitPercent_gesamtinvestment || null;
-        profitPercent_investitionsmenge = calculatedPercents.profitPercent_investitionsmenge || null;
+        profitPercent_gesamtinvestment = activeCalculatedPercents.profitPercent_gesamtinvestment || null;
+        profitPercent_investitionsmenge = activeCalculatedPercents.profitPercent_investitionsmenge || null;
       }
 
       // Trend P&L Prozent - beide Basen
@@ -628,8 +635,8 @@ export default function Upload() {
         }
       } else if (trendTimeRange === 'Vergleich') {
         // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
-        trendPercent_gesamtinvestment = calculatedPercents.overallTrendPnlPercent_gesamtinvestment || null;
-        trendPercent_investitionsmenge = calculatedPercents.overallTrendPnlPercent_investitionsmenge || null;
+        trendPercent_gesamtinvestment = activeCalculatedPercents.overallTrendPnlPercent_gesamtinvestment || null;
+        trendPercent_investitionsmenge = activeCalculatedPercents.overallTrendPnlPercent_investitionsmenge || null;
       }
 
       // Overall Grid Profit Prozent - beide Basen
@@ -655,166 +662,238 @@ export default function Upload() {
         }
       } else if (gridTimeRange === 'Vergleich') {
         // Bei Vergleich: Nutze AI-berechnete Differenz-Werte
-        highestPercent_gesamtinvestment = calculatedPercents.highestGridProfitPercent_gesamtinvestment || null;
-        highestPercent_investitionsmenge = calculatedPercents.highestGridProfitPercent_investitionsmenge || null;
+        highestPercent_gesamtinvestment = activeCalculatedPercents.highestGridProfitPercent_gesamtinvestment || null;
+        highestPercent_investitionsmenge = activeCalculatedPercents.highestGridProfitPercent_investitionsmenge || null;
       }
 
-      // Erstelle Update-Daten
+      // Erstelle Update-Daten (MODUSABHÄNGIG)
       const updateData = {
-        botTypeId: selectedBotTypeId,
-        version: parseInt(formData.version) || 1,
+        botTypeId: activeBotTypeId,
+        version: parseInt(activeFormData.version) || 1,
         status: outputMode === 'update-metrics' ? 'Update Metrics' : 'Closed Bots',
         
         // Info Section (keine Modi)
-        date: formData.date || null,
-        botDirection: formData.botDirection || null,
-        leverage: formData.leverage || null,
-        longestRuntime: formData.longestRuntime || null,
-        avgRuntime: formData.avgRuntime || null,
-        uploadRuntime: formData.uploadRuntime || null,
-        lastUpload: formData.lastUpload || null,
-        thisUpload: formData.thisUpload || null,
+        date: activeFormData.date || null,
+        botDirection: activeFormData.botDirection || null,
+        leverage: activeFormData.leverage || null,
+        longestRuntime: activeFormData.longestRuntime || null,
+        avgRuntime: activeFormData.avgRuntime || null,
+        uploadRuntime: activeFormData.uploadRuntime || null,
+        lastUpload: activeFormData.lastUpload || null,
+        thisUpload: activeFormData.thisUpload || null,
         
         // Investment Section
-        investment: formData.investment || null,
-        extraMargin: formData.extraMargin || null,
-        totalInvestment: formData.totalInvestment || null,
+        investment: activeFormData.investment || null,
+        extraMargin: activeFormData.extraMargin || null,
+        totalInvestment: activeFormData.totalInvestment || null,
         
         // Profit Section
-        profit: formData.profit || null,
+        profit: activeFormData.profit || null,
         profitPercent_gesamtinvestment,
         profitPercent_investitionsmenge,
         
         // Trend P&L Section
-        overallTrendPnlUsdt: formData.overallTrendPnlUsdt || null,
+        overallTrendPnlUsdt: activeFormData.overallTrendPnlUsdt || null,
         overallTrendPnlPercent_gesamtinvestment: trendPercent_gesamtinvestment,
         overallTrendPnlPercent_investitionsmenge: trendPercent_investitionsmenge,
         
         // Grid Trading Section
-        overallGridProfitUsdt: formData.overallGridProfitUsdt || null,
+        overallGridProfitUsdt: activeFormData.overallGridProfitUsdt || null,
         overallGridProfitPercent_gesamtinvestment: gridPercent_gesamtinvestment,
         overallGridProfitPercent_investitionsmenge: gridPercent_investitionsmenge,
-        highestGridProfit: formData.highestGridProfit || null,
+        highestGridProfit: activeFormData.highestGridProfit || null,
         highestGridProfitPercent_gesamtinvestment: highestPercent_gesamtinvestment,
         highestGridProfitPercent_investitionsmenge: highestPercent_investitionsmenge,
-        avgGridProfitUsdt: formData.avgGridProfitUsdt || null, // Durchschnitt = Gesamter Grid Profit / Anzahl Screenshots
-        avgGridProfitHour: formData.avgGridProfitHour || null,
-        avgGridProfitDay: formData.avgGridProfitDay || null,
-        avgGridProfitWeek: formData.avgGridProfitWeek || null,
+        avgGridProfitUsdt: activeFormData.avgGridProfitUsdt || null,
+        avgGridProfitHour: activeFormData.avgGridProfitHour || null,
+        avgGridProfitDay: activeFormData.avgGridProfitDay || null,
+        avgGridProfitWeek: activeFormData.avgGridProfitWeek || null,
         
         // Last Grid Profit Durchschnitt (vom vorherigen Upload)
-        lastAvgGridProfitHour: formData.lastAvgGridProfitHour || null,
-        lastAvgGridProfitDay: formData.lastAvgGridProfitDay || null,
-        lastAvgGridProfitWeek: formData.lastAvgGridProfitWeek || null,
+        lastAvgGridProfitHour: activeFormData.lastAvgGridProfitHour || null,
+        lastAvgGridProfitDay: activeFormData.lastAvgGridProfitDay || null,
+        lastAvgGridProfitWeek: activeFormData.lastAvgGridProfitWeek || null,
         
-        // Change-Werte (6 Kombinationen: 3 Zeiträume × 2 Einheiten)
-        changeHourDollar: formData.changeHourDollar || null,
-        changeHourPercent: formData.changeHourPercent || null,
-        changeDayDollar: formData.changeDayDollar || null,
-        changeDayPercent: formData.changeDayPercent || null,
-        changeWeekDollar: formData.changeWeekDollar || null,
-        changeWeekPercent: formData.changeWeekPercent || null,
+        // Change-Werte (6 Kombinationen: 3 Zeiträume x 2 Einheiten)
+        changeHourDollar: activeFormData.changeHourDollar || null,
+        changeHourPercent: activeFormData.changeHourPercent || null,
+        changeDayDollar: activeFormData.changeDayDollar || null,
+        changeDayPercent: activeFormData.changeDayPercent || null,
+        changeWeekDollar: activeFormData.changeWeekDollar || null,
+        changeWeekPercent: activeFormData.changeWeekPercent || null,
         
         // Screenshot-Anzahl
-        screenshotCount: formData.botCount || null,
+        screenshotCount: activeFormData.botCount || null,
         
         // Berechnungsmodus (Normal oder Startmetrik)
-        calculationMode: calculationMode,
+        calculationMode: activeCalculationMode,
         
         // Notizen Section (keine Modi, wird NICHT an AI gesendet)
-        notes: formData.notes || null,
+        notes: activeFormData.notes || null,
       };
 
-      return await apiRequest('POST', `/api/bot-types/${selectedBotTypeId}/updates`, updateData);
+      return await apiRequest('POST', `/api/bot-types/${activeBotTypeId}/updates`, updateData);
     },
     onSuccess: () => {
+      // MODUSABHÄNGIG: Verwende den korrekten State-Container basierend auf outputMode
+      const isClosedBotsMode = outputMode === 'closed-bots';
+      const activeBotTypeIdForSuccess = isClosedBotsMode ? closedSelectedBotTypeId : selectedBotTypeId;
+      
       // Notify Bot Types page about the update (will show confirmation dialog if modal is open)
       notifyUpdate();
       
       // Also invalidate queries for this page's own data
-      if (selectedBotTypeId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotTypeId, 'updates'] });
+      if (activeBotTypeIdForSuccess) {
+        queryClient.invalidateQueries({ queryKey: ['/api/bot-types', activeBotTypeIdForSuccess, 'updates'] });
       }
+      // Invalidate all bot-type-updates query to refresh data on Bot Types page
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-type-updates'] });
       
       // Force refresh of update history to get the latest data (for isStartMetric check)
       setUpdateHistoryTrigger(prev => prev + 1);
       
+      const modeText = isClosedBotsMode ? 'Closed Bots' : 'Update Metrics';
       toast({
         title: "Erfolgreich gespeichert",
-        description: "Das Update wurde erfolgreich gespeichert.",
+        description: `Das ${modeText} Update wurde erfolgreich gespeichert.`,
       });
       
-      setSelectedFiles([]);
-      setFormData(prev => ({
-        ...prev,
-        version: '',
-        date: '',
-        botName: '',
-        investment: '',
-        extraMargin: '',
-        totalInvestment: '',
-        profit: '',
-        profitPercent: '',
-        periodType: 'Tag',
-        longestRuntime: '',
-        avgRuntime: '',
-        uploadRuntime: '',
-        lastUpload: '',
-        thisUpload: '',
-        avgGridProfitHour: '',
-        avgGridProfitDay: '',
-        avgGridProfitWeek: '',
-        lastAvgGridProfitHour: '',
-        lastAvgGridProfitDay: '',
-        lastAvgGridProfitWeek: '',
-        changeHourDollar: '',
-        changeHourPercent: '',
-        changeDayDollar: '',
-        changeDayPercent: '',
-        changeWeekDollar: '',
-        changeWeekPercent: '',
-        overallTrendPnlUsdt: '',
-        overallTrendPnlPercent: '',
-        highestGridProfit: '',
-        highestGridProfitPercent: '',
-        overallGridProfitUsdt: '',
-        overallGridProfitPercent: '',
-        avgGridProfitUsdt: '',
-        avgGridProfitPercent: '',
-        avgGridProfitChange: '',
-        avgGridProfitChangeDollar: '',
-        avgGridProfitChangePercent: '',
-        leverage: '',
-        botCount: '',
-        notes: '',
-      }));
-      // Reset Notizen-State
-      setNotesEditMode(true);
-      setSavedNotes('');
+      // Reset based on mode
+      if (isClosedBotsMode) {
+        // Reset Closed Bots state
+        setClosedFormData(prev => ({
+          ...prev,
+          version: '',
+          date: '',
+          botName: '',
+          investment: '',
+          extraMargin: '',
+          totalInvestment: '',
+          profit: '',
+          profitPercent: '',
+          periodType: 'Tag',
+          longestRuntime: '',
+          avgRuntime: '',
+          uploadRuntime: '',
+          lastUpload: '',
+          thisUpload: '',
+          avgGridProfitHour: '',
+          avgGridProfitDay: '',
+          avgGridProfitWeek: '',
+          lastAvgGridProfitHour: '',
+          lastAvgGridProfitDay: '',
+          lastAvgGridProfitWeek: '',
+          changeHourDollar: '',
+          changeHourPercent: '',
+          changeDayDollar: '',
+          changeDayPercent: '',
+          changeWeekDollar: '',
+          changeWeekPercent: '',
+          overallTrendPnlUsdt: '',
+          overallTrendPnlPercent: '',
+          highestGridProfit: '',
+          highestGridProfitPercent: '',
+          overallGridProfitUsdt: '',
+          overallGridProfitPercent: '',
+          avgGridProfitUsdt: '',
+          avgGridProfitPercent: '',
+          avgGridProfitChange: '',
+          avgGridProfitChangeDollar: '',
+          avgGridProfitChangePercent: '',
+          leverage: '',
+          botCount: '',
+          notes: '',
+        }));
+        // Reset Closed Bots AI state
+        setClosedPhase2Complete(false);
+        setClosedPhase3Complete(false);
+        setClosedIsStartMetric(false);
+        setClosedCalculationMode('Normal');
+        setClosedCalculatedPercents({});
+        setClosedExtractedScreenshotData(null);
+        setClosedInfoSectionMode('Normal');
+        // Reset Closed Bots percent bases
+        setClosedProfitPercentBase('gesamtinvestment');
+        setClosedTrendPercentBase('gesamtinvestment');
+        setClosedGridProfitPercentBase('gesamtinvestment');
+        setClosedHighestGridProfitPercentBase('gesamtinvestment');
+        setClosedAvgGridProfitPercentBase('gesamtinvestment');
+      } else {
+        // Reset Update Metrics state (original behavior)
+        setSelectedFiles([]);
+        setFormData(prev => ({
+          ...prev,
+          version: '',
+          date: '',
+          botName: '',
+          investment: '',
+          extraMargin: '',
+          totalInvestment: '',
+          profit: '',
+          profitPercent: '',
+          periodType: 'Tag',
+          longestRuntime: '',
+          avgRuntime: '',
+          uploadRuntime: '',
+          lastUpload: '',
+          thisUpload: '',
+          avgGridProfitHour: '',
+          avgGridProfitDay: '',
+          avgGridProfitWeek: '',
+          lastAvgGridProfitHour: '',
+          lastAvgGridProfitDay: '',
+          lastAvgGridProfitWeek: '',
+          changeHourDollar: '',
+          changeHourPercent: '',
+          changeDayDollar: '',
+          changeDayPercent: '',
+          changeWeekDollar: '',
+          changeWeekPercent: '',
+          overallTrendPnlUsdt: '',
+          overallTrendPnlPercent: '',
+          highestGridProfit: '',
+          highestGridProfitPercent: '',
+          overallGridProfitUsdt: '',
+          overallGridProfitPercent: '',
+          avgGridProfitUsdt: '',
+          avgGridProfitPercent: '',
+          avgGridProfitChange: '',
+          avgGridProfitChangeDollar: '',
+          avgGridProfitChangePercent: '',
+          leverage: '',
+          botCount: '',
+          notes: '',
+        }));
+        // Reset Notizen-State
+        setNotesEditMode(true);
+        setSavedNotes('');
+        
+        // Reset Modi und Prozentbasen
+        setInvestmentTimeRange("Neu");
+        setProfitTimeRange("Neu");
+        setTrendTimeRange("Neu");
+        setGridTimeRange("Neu");
+        setProfitPercentBase('gesamtinvestment');
+        setTrendPercentBase('gesamtinvestment');
+        setGridProfitPercentBase('gesamtinvestment');
+        setHighestGridProfitPercentBase('gesamtinvestment');
+        
+        // Reset AI Chat
+        setChatMessages([]);
+        setScreenshotsSent(false);
+        setBotTypeSent(false);
+        setPhaseTwoVerified(false);
+        setPhaseTwoStep2Complete(false);
+        setPhaseThreeSettingsSent(false);
+        setWaitingForPhaseThreeConfirmation(false);
+        setIsStartMetric(false);
+        setExtractedScreenshotData(null);
+        setInfoSectionMode('Normal');
+        setCalculationMode('Normal');
+      }
       
-      // Reset Modi und Prozentbasen
-      setInvestmentTimeRange("Neu");
-      setProfitTimeRange("Neu");
-      setTrendTimeRange("Neu");
-      setGridTimeRange("Neu");
+      // Reset mode to Update Metrics after save
       setOutputMode('update-metrics');
-      setProfitPercentBase('gesamtinvestment');
-      setTrendPercentBase('gesamtinvestment');
-      setGridProfitPercentBase('gesamtinvestment');
-      setHighestGridProfitPercentBase('gesamtinvestment');
-      
-      // Reset AI Chat
-      setChatMessages([]);
-      setScreenshotsSent(false);
-      setBotTypeSent(false);
-      setPhaseTwoVerified(false);
-      setPhaseTwoStep2Complete(false);
-      setPhaseThreeSettingsSent(false);
-      setWaitingForPhaseThreeConfirmation(false);
-      setIsStartMetric(false);
-      setExtractedScreenshotData(null);
-      setInfoSectionMode('Normal');
-      setCalculationMode('Normal');
     },
     onError: (error: any) => {
       toast({
