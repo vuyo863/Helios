@@ -1882,16 +1882,22 @@ export default function Upload() {
             const startDateFormatted = formatDateDE(startDateTime);
             const endDateFormatted = formatDateDE(endDateTime);
             
-            // KORREKTE ZUWEISUNG für UI (FIX: Variablen waren vertauscht!):
-            // - lastUpload → wird im "Start Date" Feld angezeigt = Schließdatum MINUS Laufzeit (wann gestartet)
-            // - thisUpload → wird im "End Date" Feld angezeigt = Schließdatum aus Screenshot (wann geschlossen)
+            // KORREKTE ZUWEISUNG nach UI-Binding-Analyse:
+            // UI-Bindings (JSX Zeilen 3270-3287):
+            // - "Start Date" Feld → value={closedFormData.lastUpload}
+            // - "End Date" Feld → value={closedFormData.thisUpload}
             // 
-            // BEISPIEL: Screenshot zeigt "11/24/2025 16:42" (Bot wurde am 24.11. um 16:42 geschlossen)
-            //           Laufzeit ist 12h 31m = 12,52 Stunden
-            //           End Date = 24.11.2025 16:42 (Schließungsdatum aus Screenshot) → thisUpload
-            //           Start Date = 24.11.2025 16:42 - 12h 31m = 24.11.2025 04:11 (wann der Bot gestartet wurde) → lastUpload
-            closedBotsLastUpload = startDateFormatted; // Start Date = End Date MINUS Runtime (Startzeitpunkt)
-            closedBotsThisUpload = endDateFormatted;   // End Date = Screenshot-Datum (Schließungszeitpunkt)
+            // Datenflusskette:
+            // closedBotsLastUpload → finalLastUpload → formData.lastUpload → closedFormData.lastUpload → "Start Date" Feld
+            // closedBotsThisUpload → finalThisUpload → formData.thisUpload → closedFormData.thisUpload → "End Date" Feld
+            // 
+            // BEISPIEL: Screenshot "11/24/2025 16:42:12 closed", Laufzeit: 12h 31m 22s
+            //           endDateFormatted = 24.11.2025 16:42:12 (Schließungszeitpunkt)
+            //           startDateFormatted = 24.11.2025 04:10:50 (berechneter Startzeitpunkt)
+            // 
+            // KORREKTE Zuweisung für KORREKTE UI-Anzeige:
+            closedBotsLastUpload = startDateFormatted; // → lastUpload → "Start Date" Feld zeigt Startzeitpunkt
+            closedBotsThisUpload = endDateFormatted;   // → thisUpload → "End Date" Feld zeigt Schließungszeitpunkt
             
             console.log('Closed Bots Datumslogik KORRIGIERT:', {
               screenshotDate: bestScreenshot.date,
