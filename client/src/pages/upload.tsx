@@ -2017,6 +2017,12 @@ export default function Upload() {
           uploadRuntimeValue = activeManualOverridesRef.current.uploadRuntime;
           runtimeHoursForGridProfit = parseLongestRuntime(uploadRuntimeValue);
           console.log('Upload Laufzeit: Manueller Override verwendet:', uploadRuntimeValue);
+        } else if (isClosedBots && closedBotsUploadRuntime) {
+          // CLOSED BOTS: Verwende die Bot-Laufzeit aus dem Screenshot (z.B. "12h 31m 22s")
+          // Dies ist die Gesamtlaufzeit des geschlossenen Bots
+          uploadRuntimeValue = closedBotsUploadRuntime;
+          runtimeHoursForGridProfit = parseLongestRuntime(closedBotsUploadRuntime);
+          console.log('Closed Bots Upload Laufzeit verwendet:', closedBotsUploadRuntime, '-> Stunden:', runtimeHoursForGridProfit);
         } else if (activeIsStartMetric) {
           // Bei Startmetrik: AUSNAHME - Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
           // Das ist die einzige Ausnahme, weil es keinen vorherigen Upload gibt, 
