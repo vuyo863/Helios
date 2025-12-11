@@ -1338,7 +1338,13 @@ export default function Upload() {
     }
     
     // Prüfe Anzahl der Screenshots (aus dem korrekten State-Container)
-    const activeExtractedData = outputMode === 'closed-bots' ? closedExtractedScreenshotData : extractedScreenshotData;
+    // FALLBACK-LOGIK: Wenn im Closed Bots Modus aber closedExtractedScreenshotData leer ist,
+    // verwende extractedScreenshotData (falls Screenshots im Update Metrics Modus hochgeladen wurden)
+    let activeExtractedData = outputMode === 'closed-bots' ? closedExtractedScreenshotData : extractedScreenshotData;
+    if (outputMode === 'closed-bots' && (!activeExtractedData?.screenshots?.length)) {
+      console.log('FALLBACK: closedExtractedScreenshotData leer, verwende extractedScreenshotData');
+      activeExtractedData = extractedScreenshotData;
+    }
     const screenshotCount = activeExtractedData?.screenshots?.length || 0;
     
     // Wenn manuelle Überschreibungen UND mehr als 1 Screenshot → Fehler
