@@ -1874,9 +1874,9 @@ export default function Upload() {
             const startTimeMs = endTimeMs - runtimeMs;
             const startDateTime = new Date(startTimeMs);
             
-            // Formatierung für deutsche Anzeige
+            // Formatierung für deutsche Anzeige (mit Sekunden für maximale Genauigkeit)
             const formatDateDE = (date: Date) => {
-              return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+              return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             };
             
             const startDateFormatted = formatDateDE(startDateTime);
