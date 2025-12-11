@@ -351,6 +351,15 @@ export default function Upload() {
   const getActivePhaseTwoStep2Complete = () => outputMode === 'update-metrics' ? phaseTwoStep2Complete : closedPhaseTwoStep2Complete;
   const getActiveWaitingForPhaseThreeConfirmation = () => outputMode === 'update-metrics' ? waitingForPhaseThreeConfirmation : closedWaitingForPhaseThreeConfirmation;
   
+  // Mode-aware Handler für Bot-Typ-Auswahl
+  const handleSelectBotType = (botTypeId: string | null) => {
+    if (outputMode === 'update-metrics') {
+      setSelectedBotTypeId(botTypeId);
+    } else {
+      setClosedSelectedBotTypeId(botTypeId);
+    }
+  };
+  
   // ========== END CLOSED BOTS STATES ==========
 
   // Manuelle Überschreibungswerte (nur bei 1 Screenshot)
@@ -2258,8 +2267,8 @@ export default function Upload() {
 
         <div className="space-y-6">
           <BotTypeManager
-            selectedBotTypeId={selectedBotTypeId}
-            onSelectBotType={setSelectedBotTypeId}
+            selectedBotTypeId={outputMode === 'update-metrics' ? selectedBotTypeId : closedSelectedBotTypeId}
+            onSelectBotType={handleSelectBotType}
             onEditBotType={handleEditBotType}
             onUpdateBotType={handleUpdateBotType}
           />
