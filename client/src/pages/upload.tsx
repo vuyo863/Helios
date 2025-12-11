@@ -1774,6 +1774,16 @@ export default function Upload() {
         const parseDateFromScreenshot = (dateStr: string | null | undefined, timeStr: string | null | undefined): Date | null => {
           if (!dateStr || !timeStr) return null;
           
+          // WICHTIG: Entferne trailing text wie "closed", "geschlossen", etc. aus der Zeit
+          // Die AI gibt manchmal "16:42:12 closed" zurück statt nur "16:42:12"
+          const cleanTimeStr = timeStr.replace(/\s*(closed|geschlossen|open|offen|running|laufend).*$/i, '').trim();
+          
+          console.log('parseDateFromScreenshot DEBUG:', { 
+            originalDate: dateStr, 
+            originalTime: timeStr, 
+            cleanedTime: cleanTimeStr 
+          });
+          
           // Versuche verschiedene Datumsformate zu parsen
           // Format 1: "MM/DD/YYYY" (US-Format wie im Screenshot)
           const usDateMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -1782,7 +1792,7 @@ export default function Upload() {
           // Format 3: "YYYY-MM-DD" (ISO Format)
           const isoDateMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
           
-          const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+          const timeMatch = cleanTimeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
           if (!timeMatch) return null;
           
           let result: Date | null = null;
