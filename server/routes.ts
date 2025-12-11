@@ -581,6 +581,80 @@ Du erhältst einen oder mehrere Screenshots von Pionex Trading Bot Dashboards. D
 
 **ANTWORTE NUR MIT DEM JSON - KEINE ZUSAETZLICHEN ERKLAERUNGEN!**`;
 
+// SEPARATER PROMPT FÜR CLOSED BOTS - KEINE BERECHNUNGEN, NUR DIREKTE EXTRAKTION!
+const PHASE_2_DATA_EXTRACTION_CLOSED_BOTS_PROMPT = `**PHASE 2: CLOSED BOTS - DIREKTE SCREENSHOT-DATEN-EXTRAKTION**
+
+Du erhältst einen oder mehrere Screenshots von GESCHLOSSENEN Pionex Trading Bots. 
+
+**KRITISCH - KEINE BERECHNUNGEN!**
+Diese Screenshots zeigen GESCHLOSSENE Bots. Das angezeigte Datum und die Uhrzeit auf dem Screenshot sind das SCHLIESSUNGSDATUM - wann der Bot geschlossen wurde. Du darfst KEINE Berechnungen durchführen! Kopiere die Werte EXAKT so wie sie auf dem Screenshot stehen.
+
+**FÜR JEDEN SCREENSHOT EXTRAHIERE:**
+1. **closedDate** - Das SCHLIESSUNGSDATUM EXAKT wie es auf dem Screenshot steht, konvertiert zu "YYYY-MM-DD"
+   - WICHTIG: Dies ist das Datum wann der Bot GESCHLOSSEN wurde
+   - Wenn du "11/24/2025" siehst → "2025-11-24" (KEINE Berechnung!)
+   - Wenn du "24.11.2025" siehst → "2025-11-24" (KEINE Berechnung!)
+   - KEINE ADDITION VON LAUFZEIT! Das Datum ist bereits das Schließungsdatum!
+2. **closedTime** - Die SCHLIESSUNGS-UHRZEIT EXAKT wie sie auf dem Screenshot steht, im Format "HH:MM:SS"
+   - WICHTIG: Dies ist die Uhrzeit wann der Bot GESCHLOSSEN wurde
+   - Wenn du "16:42:12" siehst → "16:42:12" (KEINE Berechnung!)
+   - KEINE ADDITION VON LAUFZEIT! Die Uhrzeit ist bereits die Schließungszeit!
+3. **date** - Gleich wie closedDate (für Kompatibilität)
+4. **time** - Gleich wie closedTime (für Kompatibilität)
+5. **createdAt** - null (bei geschlossenen Bots nicht relevant)
+6. **actualInvestment** - Actual Investment in USDT (nur Zahl)
+7. **extraMargin** - Extra Margin in USDT (nur Zahl, oder null)
+8. **totalProfitUsdt** - Total Profit in USDT (Zahl mit +/-)
+9. **totalProfitPercent** - Total Profit in % (nur Zahl)
+10. **gridProfitUsdt** - Grid Profit in USDT (Zahl mit +/-, oder null)
+11. **gridProfitPercent** - Grid Profit in % (nur Zahl, oder null)
+12. **trendPnlUsdt** - Trend P&L in USDT (Zahl mit +/-, oder null)
+13. **trendPnlPercent** - Trend P&L in % (nur Zahl, oder null)
+14. **leverage** - Hebel NUR als Multiplikator z.B. "75x", "50x", "2x" (OHNE Richtung!)
+15. **runtime** - Laufzeit z.B. "12h 31m 22s", "1d 6h 53m" - EXAKT vom Screenshot kopieren inkl. Sekunden!
+16. **direction** - Bot-Richtung: "Long", "Short", "Neutral", oder "Long+Short"
+
+**JSON-AUSGABE-FORMAT:**
+\`\`\`json
+{
+  "screenshots": [
+    {
+      "screenshotNumber": 1,
+      "closedDate": "2025-11-24",
+      "closedTime": "16:42:12",
+      "date": "2025-11-24",
+      "time": "16:42:12",
+      "createdAt": null,
+      "actualInvestment": 50.00,
+      "extraMargin": 350,
+      "totalProfitUsdt": 4.88,
+      "totalProfitPercent": 9.76,
+      "gridProfitUsdt": 5.72,
+      "gridProfitPercent": 11.44,
+      "trendPnlUsdt": -0.842,
+      "trendPnlPercent": -1.68,
+      "leverage": "75x",
+      "runtime": "12h 31m 22s",
+      "direction": "Long"
+    }
+  ]
+}
+\`\`\`
+
+**ABSOLUT VERBOTEN:**
+- KEINE Addition von Erstellungsdatum + Laufzeit!
+- KEINE Berechnung des "aktuellen" Datums!
+- Das Datum auf dem Screenshot IST das Schließungsdatum - kopiere es DIREKT!
+
+**WICHTIGE HINWEISE:**
+- **CLOSED BOTS = KEINE BERECHNUNG**: Das Datum/Zeit auf dem Screenshot ist das Schließungsdatum
+- Die Laufzeit zeigt wie lange der Bot lief BEVOR er geschlossen wurde
+- Extrahiere NUR Daten die tatsächlich im Screenshot sichtbar sind
+- Runtime IMMER mit Sekunden wenn sichtbar (z.B. "12h 31m 22s")
+- Sei präzise bei allen Zahlen
+
+**ANTWORTE NUR MIT DEM JSON - KEINE ZUSÄTZLICHEN ERKLÄRUNGEN!**`;
+
 const PHASE_2_STEP_2_PROMPT = `**PHASE 2, SCHRITT 2: Screenshot-Analyse Test**
 
 Du wurdest aufgefordert, einen Test durchzuführen um zu prüfen, ob du Screenshots analysieren kannst.
@@ -1101,7 +1175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/chat", async (req, res) => {
     try {
-      const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName, selectedBotTypeColor } = req.body;
+      const { messages, images, botTypes, updateHistory, phase, selectedBotType, selectedBotTypeId, selectedBotTypeName, selectedBotTypeColor, outputMode } = req.body;
 
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages array is required" });
@@ -1113,7 +1187,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (phase === 'phase2_step2') {
         contextualPrompt = PHASE_2_STEP_2_PROMPT;
       } else if (phase === 'phase2_data_extraction') {
-        contextualPrompt = PHASE_2_DATA_EXTRACTION_PROMPT;
+        // KRITISCH: Verwende separaten Prompt für Closed Bots (keine Berechnungen!)
+        if (outputMode === 'closed-bots') {
+          contextualPrompt = PHASE_2_DATA_EXTRACTION_CLOSED_BOTS_PROMPT;
+          console.log('Phase 2 Extraction: Using CLOSED BOTS prompt (no calculations)');
+        } else {
+          contextualPrompt = PHASE_2_DATA_EXTRACTION_PROMPT;
+          console.log('Phase 2 Extraction: Using standard prompt (with date calculations)');
+        }
       } else if (phase === 'phase3') {
         // Phase 3 ADDS to system prompt, does not replace it
         contextualPrompt = SYSTEM_PROMPT + '\n\n' + PHASE_3_PROMPT;

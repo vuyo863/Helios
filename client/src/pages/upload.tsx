@@ -1147,6 +1147,7 @@ export default function Upload() {
               messages: updatedMessages,
               images: base64Images,
               phase: 'phase2_data_extraction',
+              outputMode: outputMode, // KRITISCH: Sende outputMode für Closed Bots Prompt
             }),
           });
 
@@ -1166,9 +1167,17 @@ export default function Upload() {
               setExtractedScreenshotData(parsedData);
             }
             
-            const formattedData = parsedData.screenshots.map((s: any, idx: number) => 
-              `Screenshot ${idx + 1}:\n• Datum: ${s.date}\n• Uhrzeit: ${s.time}\n• Actual Investment: ${s.actualInvestment} USDT\n• Extra Margin: ${s.extraMargin || 'Nicht verfügbar'}\n• Total Profit: ${s.totalProfitUsdt >= 0 ? '+' : ''}${s.totalProfitUsdt} USDT (${s.totalProfitPercent >= 0 ? '+' : ''}${s.totalProfitPercent}%)\n• Grid Profit: ${s.gridProfitUsdt !== null ? (s.gridProfitUsdt >= 0 ? '+' : '') + s.gridProfitUsdt + ' USDT (' + (s.gridProfitPercent >= 0 ? '+' : '') + s.gridProfitPercent + '%)' : 'Nicht verfügbar'}\n• Trend P&L: ${s.trendPnlUsdt !== null ? (s.trendPnlUsdt >= 0 ? '+' : '') + s.trendPnlUsdt + ' USDT (' + (s.trendPnlPercent >= 0 ? '+' : '') + s.trendPnlPercent + '%)' : 'Nicht verfügbar'}\n• Hebel: ${s.leverage}\n• Laufzeit: ${s.runtime}\n• Richtung: ${s.direction}`
-            ).join('\n\n');
+            // Für Closed Bots: Zeige closedDate/closedTime separat an
+            const formattedData = parsedData.screenshots.map((s: any, idx: number) => {
+              let dateInfo = `• Datum: ${s.date}\n• Uhrzeit: ${s.time}`;
+              
+              // Bei Closed Bots: Zeige AUCH das Closed Date/Time explizit an
+              if (outputMode === 'closed-bots' && (s.closedDate || s.closedTime)) {
+                dateInfo = `• Closed Date: ${s.closedDate || s.date}\n• Closed Time: ${s.closedTime || s.time}`;
+              }
+              
+              return `Screenshot ${idx + 1}:\n${dateInfo}\n• Actual Investment: ${s.actualInvestment} USDT\n• Extra Margin: ${s.extraMargin || 'Nicht verfügbar'}\n• Total Profit: ${s.totalProfitUsdt >= 0 ? '+' : ''}${s.totalProfitUsdt} USDT (${s.totalProfitPercent >= 0 ? '+' : ''}${s.totalProfitPercent}%)\n• Grid Profit: ${s.gridProfitUsdt !== null ? (s.gridProfitUsdt >= 0 ? '+' : '') + s.gridProfitUsdt + ' USDT (' + (s.gridProfitPercent >= 0 ? '+' : '') + s.gridProfitPercent + '%)' : 'Nicht verfügbar'}\n• Trend P&L: ${s.trendPnlUsdt !== null ? (s.trendPnlUsdt >= 0 ? '+' : '') + s.trendPnlUsdt + ' USDT (' + (s.trendPnlPercent >= 0 ? '+' : '') + s.trendPnlPercent + '%)' : 'Nicht verfügbar'}\n• Hebel: ${s.leverage}\n• Laufzeit: ${s.runtime}\n• Richtung: ${s.direction}`;
+            }).join('\n\n');
             
             setChatMessages(prev => [...prev, { 
               role: 'ai', 
@@ -1884,6 +1893,8 @@ export default function Upload() {
           hasActiveExtractedData: !!activeExtractedData,
           screenshotCount: activeExtractedData?.screenshots?.length || 0,
           screenshots: activeExtractedData?.screenshots?.map((s: any) => ({
+            closedDate: s.closedDate,
+            closedTime: s.closedTime,
             date: s.date,
             time: s.time,
             runtime: s.runtime
@@ -1900,7 +1911,10 @@ export default function Upload() {
           
           for (const screenshot of activeExtractedData.screenshots) {
             const screenshotRuntimeHours = parseLongestRuntime(screenshot.runtime || '');
-            const parsedDate = parseDateFromScreenshot(screenshot.date, screenshot.time);
+            // PRIORITÄT: Verwende closedDate/closedTime wenn verfügbar, sonst date/time
+            const dateToUse = screenshot.closedDate || screenshot.date;
+            const timeToUse = screenshot.closedTime || screenshot.time;
+            const parsedDate = parseDateFromScreenshot(dateToUse, timeToUse);
             
             // Screenshot ist nur gültig wenn BEIDE vorhanden sind: Datum UND Runtime
             if (parsedDate && screenshotRuntimeHours > 0) {
@@ -1917,8 +1931,18 @@ export default function Upload() {
             closedBotsUploadRuntime = bestScreenshot.runtime;
             
             // WICHTIG: Das Datum aus dem Screenshot ist das SCHLIESSUNGS-Datum (END Date)!
-            // Der Screenshot zeigt z.B. "11/24/2025 16:42:12 closed" - das ist wann der Bot GESCHLOSSEN wurde
-            const endDateTime = parseDateFromScreenshot(bestScreenshot.date, bestScreenshot.time)!;
+            // PRIORITÄT: Verwende closedDate/closedTime wenn verfügbar (direkter AI-Output ohne Berechnung)
+            const dateToUse = bestScreenshot.closedDate || bestScreenshot.date;
+            const timeToUse = bestScreenshot.closedTime || bestScreenshot.time;
+            const endDateTime = parseDateFromScreenshot(dateToUse, timeToUse)!;
+            
+            console.log('Closed Bots: Verwende Datum/Zeit', { 
+              closedDate: bestScreenshot.closedDate, 
+              closedTime: bestScreenshot.closedTime,
+              date: bestScreenshot.date,
+              time: bestScreenshot.time,
+              using: { dateToUse, timeToUse }
+            });
             
             // Runtime in Millisekunden umrechnen
             const runtimeMs = bestRuntimeHours * 60 * 60 * 1000;
