@@ -3736,7 +3736,7 @@ export default function Upload() {
                     variant="outline"
                     className="flex-1"
                     onClick={handleSendFieldsToAI}
-                    disabled={!phaseTwoVerified || isAiLoading}
+                    disabled={!getActivePhaseTwoVerified() || isAiLoading}
                     data-testid="button-send-fields-to-ai"
                   >
                     <Send className="w-4 h-4 mr-2" />
