@@ -805,11 +805,22 @@ export default function Upload() {
           notes: '',
         }));
         // Reset Closed Bots AI state
-        setClosedPhase2Complete(false);
-        setClosedPhase3Complete(false);
+        setClosedPhase2Completed(false);
+        setClosedPhaseTwoStep2Complete(false);
         setClosedIsStartMetric(false);
         setClosedCalculationMode('Normal');
-        setClosedCalculatedPercents({});
+        setClosedCalculatedPercents({
+          profitPercent_gesamtinvestment: '',
+          profitPercent_investitionsmenge: '',
+          overallTrendPnlPercent_gesamtinvestment: '',
+          overallTrendPnlPercent_investitionsmenge: '',
+          overallGridProfitPercent_gesamtinvestment: '',
+          overallGridProfitPercent_investitionsmenge: '',
+          highestGridProfitPercent_gesamtinvestment: '',
+          highestGridProfitPercent_investitionsmenge: '',
+          avgGridProfitPercent_gesamtinvestment: '',
+          avgGridProfitPercent_investitionsmenge: '',
+        });
         setClosedExtractedScreenshotData(null);
         setClosedInfoSectionMode('Normal');
         // Reset Closed Bots percent bases
