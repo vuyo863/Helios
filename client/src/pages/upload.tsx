@@ -1395,6 +1395,18 @@ export default function Upload() {
   };
 
   const handleConfirmPhaseThree = async () => {
+    // DEBUG: Sofort am Anfang loggen, um zu sehen ob die Funktion aufgerufen wird
+    console.log('=== handleConfirmPhaseThree STARTED ===', {
+      outputMode,
+      isClosedBotsMode: outputMode === 'closed-bots',
+      closedExtractedScreenshotData: closedExtractedScreenshotData,
+      extractedScreenshotData: extractedScreenshotData,
+      closedIsStartMetric,
+      isStartMetric,
+      closedSelectedBotTypeId,
+      selectedBotTypeId
+    });
+    
     setChatMessages(prev => [...prev, { 
       role: 'user', 
       content: 'Ja, bitte mit Phase 4 fortfahren' 
@@ -1417,11 +1429,35 @@ export default function Upload() {
     const useSetCalculatedPercents = isClosedBots ? setClosedCalculatedPercents : setCalculatedPercents;
     
     // Bedingte Container für Daten (liest aus dem korrekten State-Container)
-    const activeExtractedData = isClosedBots ? closedExtractedScreenshotData : extractedScreenshotData;
+    // FALLBACK-LOGIK: Wenn Closed Bots Modus aktiv ist, aber closedExtractedScreenshotData leer ist,
+    // verwende extractedScreenshotData als Fallback (für den Fall, dass Phase 2 im falschen Modus lief)
+    let activeExtractedData = isClosedBots ? closedExtractedScreenshotData : extractedScreenshotData;
+    
+    // ROBUSTE FALLBACK-LOGIK für Closed Bots
+    if (isClosedBots && (!activeExtractedData || !activeExtractedData.screenshots || activeExtractedData.screenshots.length === 0)) {
+      // Closed Bots Modus ist aktiv, aber closedExtractedScreenshotData ist leer
+      // Verwende extractedScreenshotData als Fallback
+      if (extractedScreenshotData && extractedScreenshotData.screenshots && extractedScreenshotData.screenshots.length > 0) {
+        console.log('=== FALLBACK: Closed Bots verwendet extractedScreenshotData (Phase 2 lief im falschen Modus) ===');
+        activeExtractedData = extractedScreenshotData;
+        // Kopiere auch die Daten in den richtigen Container für zukünftige Verwendung
+        setClosedExtractedScreenshotData(extractedScreenshotData);
+      }
+    }
+    
     const activeIsStartMetric = isClosedBots ? closedIsStartMetric : isStartMetric;
     const activeSelectedBotTypeId = isClosedBots ? closedSelectedBotTypeId : selectedBotTypeId;
     const activeManualOverridesRef = isClosedBots ? closedManualOverridesRef : manualOverridesRef;
     const activeInfoSectionMode = isClosedBots ? closedInfoSectionMode : infoSectionMode;
+    
+    // DEBUG: Logge die ausgewählten Daten
+    console.log('=== handleConfirmPhaseThree ACTIVE DATA ===', {
+      isClosedBots,
+      activeExtractedData,
+      activeExtractedDataScreenshots: activeExtractedData?.screenshots,
+      activeIsStartMetric,
+      activeSelectedBotTypeId
+    });
     
     const sectionsWithModes = [
       { name: 'Investment', mode: investmentTimeRange },
@@ -1834,6 +1870,19 @@ export default function Upload() {
           
           return result && !isNaN(result.getTime()) ? result : null;
         };
+        
+        // DEBUG: Prüfe ob Closed Bots Datumslogik ausgeführt wird
+        console.log('=== CLOSED BOTS DATE LOGIC DEBUG ===', {
+          isClosedBots,
+          outputMode,
+          hasActiveExtractedData: !!activeExtractedData,
+          screenshotCount: activeExtractedData?.screenshots?.length || 0,
+          screenshots: activeExtractedData?.screenshots?.map((s: any) => ({
+            date: s.date,
+            time: s.time,
+            runtime: s.runtime
+          }))
+        });
         
         if (isClosedBots && activeExtractedData?.screenshots?.length > 0) {
           // KRITISCHE REGEL: Runtime und Datum MÜSSEN vom selben Screenshot kommen!
