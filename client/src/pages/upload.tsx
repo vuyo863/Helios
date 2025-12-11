@@ -1882,16 +1882,16 @@ export default function Upload() {
             const startDateFormatted = formatDateDE(startDateTime);
             const endDateFormatted = formatDateDE(endDateTime);
             
-            // KORREKTE ZUWEISUNG für UI:
-            // - thisUpload → wird im "End Date" Feld angezeigt = Schließdatum aus Screenshot (wann geschlossen)
+            // KORREKTE ZUWEISUNG für UI (FIX: Variablen waren vertauscht!):
             // - lastUpload → wird im "Start Date" Feld angezeigt = Schließdatum MINUS Laufzeit (wann gestartet)
+            // - thisUpload → wird im "End Date" Feld angezeigt = Schließdatum aus Screenshot (wann geschlossen)
             // 
             // BEISPIEL: Screenshot zeigt "11/24/2025 16:42" (Bot wurde am 24.11. um 16:42 geschlossen)
             //           Laufzeit ist 12h 31m = 12,52 Stunden
-            //           End Date = 24.11.2025 16:42 (Schließungsdatum aus Screenshot)
-            //           Start Date = 24.11.2025 16:42 - 12h 31m = 24.11.2025 04:11 (wann der Bot gestartet wurde)
-            closedBotsThisUpload = endDateFormatted;   // End Date = Screenshot-Datum (Schließungszeitpunkt)
+            //           End Date = 24.11.2025 16:42 (Schließungsdatum aus Screenshot) → thisUpload
+            //           Start Date = 24.11.2025 16:42 - 12h 31m = 24.11.2025 04:11 (wann der Bot gestartet wurde) → lastUpload
             closedBotsLastUpload = startDateFormatted; // Start Date = End Date MINUS Runtime (Startzeitpunkt)
+            closedBotsThisUpload = endDateFormatted;   // End Date = Screenshot-Datum (Schließungszeitpunkt)
             
             console.log('Closed Bots Datumslogik KORRIGIERT:', {
               screenshotDate: bestScreenshot.date,
