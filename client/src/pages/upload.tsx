@@ -2462,7 +2462,13 @@ export default function Upload() {
               <Button
                 type="button"
                 variant={outputMode === 'update-metrics' ? 'default' : 'outline'}
-                onClick={() => setOutputMode('update-metrics')}
+                onClick={() => {
+                  // Synchronisiere Bot-Typ-Auswahl beim Mode-Wechsel
+                  if (closedSelectedBotTypeId && !selectedBotTypeId) {
+                    setSelectedBotTypeId(closedSelectedBotTypeId);
+                  }
+                  setOutputMode('update-metrics');
+                }}
                 data-testid="button-update-metrics"
                 className="flex-1"
               >
@@ -2471,7 +2477,13 @@ export default function Upload() {
               <Button
                 type="button"
                 variant={outputMode === 'closed-bots' ? 'default' : 'outline'}
-                onClick={() => setOutputMode('closed-bots')}
+                onClick={() => {
+                  // Synchronisiere Bot-Typ-Auswahl beim Mode-Wechsel
+                  if (selectedBotTypeId && !closedSelectedBotTypeId) {
+                    setClosedSelectedBotTypeId(selectedBotTypeId);
+                  }
+                  setOutputMode('closed-bots');
+                }}
                 data-testid="button-closed-bots"
                 className="flex-1"
               >
