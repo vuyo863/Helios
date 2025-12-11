@@ -1739,17 +1739,23 @@ export default function Upload() {
         // Parse die längste Laufzeit aus dem AI-Ergebnis für Startmetrik
         const parseLongestRuntime = (runtime: string): number => {
           if (!runtime) return 0;
-          // Format: "4h 46m 6s" oder "1d 2h 30m" oder "16h 28m"
+          
+          // Normalisiere den String: Entferne alle Leerzeichen zwischen Zahlen und Einheiten
+          // Unterstützt: "12h 31m 22s", "12 h 31 m 22 s", "1d 2h 30m", "1 d 2 h 30 m"
+          const normalized = runtime.replace(/\s+/g, '').toLowerCase();
+          
           let totalHours = 0;
-          const dayMatch = runtime.match(/(\d+)d/);
-          const hourMatch = runtime.match(/(\d+)h/);
-          const minMatch = runtime.match(/(\d+)m/);
-          const secMatch = runtime.match(/(\d+)s/);
+          const dayMatch = normalized.match(/(\d+)d/);
+          const hourMatch = normalized.match(/(\d+)h/);
+          const minMatch = normalized.match(/(\d+)m/);
+          const secMatch = normalized.match(/(\d+)s/);
           
           if (dayMatch) totalHours += parseInt(dayMatch[1]) * 24;
           if (hourMatch) totalHours += parseInt(hourMatch[1]);
           if (minMatch) totalHours += parseInt(minMatch[1]) / 60;
           if (secMatch) totalHours += parseInt(secMatch[1]) / 3600;
+          
+          console.log('parseLongestRuntime:', { original: runtime, normalized, totalHours });
           
           return totalHours;
         };
@@ -1867,10 +1873,15 @@ export default function Upload() {
             const endDateFormatted = formatDateDE(endDateTime);
             
             // KORREKTE ZUWEISUNG für UI:
-            // - thisUpload → wird im "End Date" Feld angezeigt = Schließdatum aus Screenshot
-            // - lastUpload → wird im "Start Date" Feld angezeigt = Schließdatum - Laufzeit
-            closedBotsThisUpload = endDateFormatted;   // End Date = Screenshot-Datum
-            closedBotsLastUpload = startDateFormatted; // Start Date = End - Runtime
+            // - thisUpload → wird im "End Date" Feld angezeigt = Schließdatum aus Screenshot (wann geschlossen)
+            // - lastUpload → wird im "Start Date" Feld angezeigt = Schließdatum MINUS Laufzeit (wann gestartet)
+            // 
+            // BEISPIEL: Screenshot zeigt "11/24/2025 16:42" (Bot wurde am 24.11. um 16:42 geschlossen)
+            //           Laufzeit ist 12h 31m = 12,52 Stunden
+            //           End Date = 24.11.2025 16:42 (Schließungsdatum aus Screenshot)
+            //           Start Date = 24.11.2025 16:42 - 12h 31m = 24.11.2025 04:11 (wann der Bot gestartet wurde)
+            closedBotsThisUpload = endDateFormatted;   // End Date = Screenshot-Datum (Schließungszeitpunkt)
+            closedBotsLastUpload = startDateFormatted; // Start Date = End Date MINUS Runtime (Startzeitpunkt)
             
             console.log('Closed Bots Datumslogik KORRIGIERT:', {
               screenshotDate: bestScreenshot.date,
