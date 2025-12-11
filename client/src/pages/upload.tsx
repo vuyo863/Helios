@@ -1757,33 +1757,44 @@ export default function Upload() {
             
             // WICHTIG: Das Datum aus dem Screenshot ist das SCHLIESSUNGS-Datum (END Date)!
             // Der Screenshot zeigt z.B. "11/24/2025 16:42:12 closed" - das ist wann der Bot GESCHLOSSEN wurde
-            const closedDateTime = parseDateFromScreenshot(bestScreenshot.date, bestScreenshot.time)!;
+            const endDateTime = parseDateFromScreenshot(bestScreenshot.date, bestScreenshot.time)!;
             
-            // End Date (Schließdatum) = Datum aus Screenshot
-            const endDateFormatted = closedDateTime.toLocaleDateString('de-DE') + ' ' + closedDateTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            
-            // Start Date = End Date MINUS Laufzeit (der Bot lief X Stunden BEVOR er geschlossen wurde)
+            // Runtime in Millisekunden umrechnen
             const runtimeMs = bestRuntimeHours * 60 * 60 * 1000;
-            const startDateTime = new Date(closedDateTime.getTime() - runtimeMs);
-            const startDateFormatted = startDateTime.toLocaleDateString('de-DE') + ' ' + startDateTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             
-            // KORREKTE ZUWEISUNG:
-            // - thisUpload (UI Label "End Date") = Schließdatum aus Screenshot
-            // - lastUpload (UI Label "Start Date") = Schließdatum - Laufzeit
-            closedBotsThisUpload = endDateFormatted;
-            closedBotsLastUpload = startDateFormatted;
+            // Start Date = End Date MINUS Laufzeit (der Bot STARTETE vor der Schließung)
+            // Explizite Subtraktion: End - Runtime = Start
+            const endTimeMs = endDateTime.getTime();
+            const startTimeMs = endTimeMs - runtimeMs;
+            const startDateTime = new Date(startTimeMs);
             
-            console.log('Closed Bots Datumslogik erfolgreich:', {
-              screenshotCount: activeExtractedData.screenshots.length,
-              bestScreenshotDate: bestScreenshot.date,
-              bestScreenshotTime: bestScreenshot.time,
-              bestScreenshotRuntime: bestScreenshot.runtime,
-              bestRuntimeHours,
-              runtimeMs,
-              closedDateTime: closedDateTime.toISOString(),
+            // Formatierung für deutsche Anzeige
+            const formatDateDE = (date: Date) => {
+              return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            };
+            
+            const startDateFormatted = formatDateDE(startDateTime);
+            const endDateFormatted = formatDateDE(endDateTime);
+            
+            // KORREKTE ZUWEISUNG für UI:
+            // - thisUpload → wird im "End Date" Feld angezeigt = Schließdatum aus Screenshot
+            // - lastUpload → wird im "Start Date" Feld angezeigt = Schließdatum - Laufzeit
+            closedBotsThisUpload = endDateFormatted;   // End Date = Screenshot-Datum
+            closedBotsLastUpload = startDateFormatted; // Start Date = End - Runtime
+            
+            console.log('Closed Bots Datumslogik KORRIGIERT:', {
+              screenshotDate: bestScreenshot.date,
+              screenshotTime: bestScreenshot.time,
+              runtime: bestScreenshot.runtime,
+              runtimeHours: bestRuntimeHours,
+              runtimeMs: runtimeMs,
+              endTimeMs: endTimeMs,
+              startTimeMs: startTimeMs,
+              calculation: `${endTimeMs} - ${runtimeMs} = ${startTimeMs}`,
+              endDateTime: endDateTime.toISOString(),
               startDateTime: startDateTime.toISOString(),
-              endDateForUI: closedBotsThisUpload,
-              startDateForUI: closedBotsLastUpload
+              UI_EndDate: closedBotsThisUpload,
+              UI_StartDate: closedBotsLastUpload
             });
           } else {
             // KEIN Screenshot hat sowohl gültiges Datum als auch gültige Runtime
