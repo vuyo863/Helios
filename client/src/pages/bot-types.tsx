@@ -1129,14 +1129,14 @@ export default function BotTypesPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="absolute top-1 right-1 w-6 h-6 text-muted-foreground hover:text-destructive"
+                            className="absolute top-2 right-2 w-6 h-6 text-muted-foreground hover:text-destructive"
                             onClick={() => handleDeleteUpdateClick(update)}
                             data-testid={`button-delete-update-${update.id}`}
                             title="Delete entry"
                           >
                             <X className="w-3 h-3" />
                           </Button>
-                          <CardContent className="p-4 pr-8">
+                          <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
                                 <p className={`font-semibold text-sm mb-2 ${closedBotsTitleColor}`}>
