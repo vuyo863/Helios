@@ -1,0 +1,256 @@
+Ausführliche Dokumentation: Dashboard-Seite (Übersicht)
+Hier ist eine detaillierte Erklärung aller Funktionen und Implementierungen auf der Dashboard-Seite (client/src/pages/dashboard.tsx):
+
+1. METRIKKARTEN OBEN (Stat Cards)
+Was wurde implementiert:
+Vier Metrikkarten, die Kernstatistiken anzeigen:
+
+Gesamtkapital - Zeigt die Summe aller Investitionen
+Gesamtprofit - Zeigt den gesamten Profit in USDT
+Gesamtprofit % - Zeigt die Profitrate als Prozentsatz
+Ø Profit/Tag - Zeigt den durchschnittlichen täglichen Profit
+Besonderheiten:
+Klickbare Karten: Jede Karte kann angeklickt werden, um sie zu "highlighten" (cyan-Glow-Effekt)
+Dynamische Berechnung: Die Werte ändern sich je nach ausgewähltem Bot (siehe Bot-Filter)
+Wie es funktioniert:
+const totalInvestment = useMemo(() => {
+  if (selectedBotName === "Gesamt") {
+    // Bei "Gesamt": Summiert die neuesten totalInvestment-Werte 
+    // von ALLEN AKTIVEN Bot-Types aus deren Updates
+    const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+    let sum = 0;
+    activeBotTypes.forEach(botType => {
+      const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+      if (updatesForType.length > 0) {
+        const latestUpdate = updatesForType[0];
+        sum += parseFloat(latestUpdate.totalInvestment || '0');
+      }
+    });
+    return sum;
+  } else {
+    // Bei spezifischem Bot: Summiert aus den Bot-Einträgen
+    return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+  }
+}, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
+2. BOT-FILTER DROPDOWN
+Was wurde implementiert:
+Ein durchsuchbares Dropdown zur Auswahl von Bots.
+
+Funktionen:
+"Gesamt"-Option: Zeigt Daten von ALLEN aktiven Bot-Types (nicht archiviert)
+Individuelle Bots: Filtert Daten für einen spezifischen Bot-Type
+Suchfunktion: Ermöglicht schnelles Finden von Bot-Namen
+Live-Updates: Liste aktualisiert sich automatisch alle 2 Sekunden
+Datenquellen:
+const { data: botTypes = [] } = useQuery<BotType[]>({
+  queryKey: ['/api/bot-types'],
+  refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
+});
+const uniqueBotNames = useMemo(() => {
+  const allNames = availableBotTypes.map(bt => bt.name);
+  return ["Gesamt", ...allNames.sort()];
+}, [availableBotTypes]);
+3. UPDATE VERLAUF CHART-SECTION
+Was wurde implementiert:
+Ein großer Bereich mit einem Linien-Chart und Einstellungen.
+
+3.1 Chart (Links)
+Linien-Chart: Zeigt zeitbasierte Daten (aktuell Placeholder mit 0-Werten)
+X-Achse: Zeit (00:00 bis 24:00)
+Y-Achse: Wert
+Responsive: Passt sich an Bildschirmgröße an
+3.2 From/Until Update-Selektoren (Oben)
+Wichtige Funktion zur Zeitraum-Auswahl:
+
+From-Button: Öffnet Dialog zur Auswahl des Start-Updates
+Until-Button: Öffnet Dialog zur Auswahl des End-Updates
+Nur aktiv bei spezifischem Bot: Bei "Gesamt" sind die Buttons deaktiviert
+Update-Dialog Funktionen:
+
+Liste aller Bot-Type-Updates für den ausgewählten Bot
+Sortierbar nach: Datum, Grid Profit, Grid Profit 24H Ø, Ges. Invest
+Auf-/Absteigend sortierbar
+Zeigt jedes Update mit:
+Status & Version-Nummer
+Erstellungsdatum (formatiert: dd.MM.yyyy HH:mm)
+Grid Profit 24H Ø (in USDT)
+Grid Profit (in USDT, 4 Dezimalstellen)
+Gesamt-Investment (in USDT)
+const sortedUpdates = useMemo(() => {
+  return [...selectedBotTypeUpdates].sort((a, b) => {
+    let valueA: number = 0;
+    let valueB: number = 0;
+    
+    switch (updateSortBy) {
+      case 'datum':
+        valueA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+        valueB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+        break;
+      case 'gridProfit':
+        valueA = parseFloat(a.overallGridProfitUsdt || '0') || 0;
+        valueB = parseFloat(b.overallGridProfitUsdt || '0') || 0;
+        break;
+      // ... weitere Sortier-Optionen
+    }
+    
+    return updateSortDirection === 'desc' ? valueB - valueA : valueA - valueB;
+  });
+}, [selectedBotTypeUpdates, updateSortBy, updateSortDirection]);
+3.3 Graph-Einstellungen (Rechts - Einklappbar)
+Einklapp-Funktion:
+
+Button mit Pfeil-Icon oben rechts
+Klappt die Einstellungs-Seitenleiste ein/aus
+Bei eingeklapptem Zustand: Chart nutzt volle Breite
+Einstellungsoptionen:
+
+Zeitraum-Auswahl ("Letzten"):
+
+Dropdown mit Optionen: Custom, 1h, 24h, 1 Day, 7 Days, 30 Days
+Bei "Custom": Erweiterte Eingabefelder erscheinen
+Tage, Stunden, Minuten (separate Inputs)
+Kalender-Button für Datumsbereich-Auswahl
+Apply-Button zum Übernehmen
+Toggle-Switches:
+
+Grid Profit (An/Aus)
+Trend P&L (An/Aus)
+Highest Value (An/Aus)
+Lowest Value (An/Aus)
+Charttyp-Auswahl:
+
+Aktuell: "Linie" (Button)
+Vorbereitet für weitere Chart-Typen
+Apply-Button:
+
+Wendet alle Einstellungen an
+Loggt aktuell in Console (für zukünftige Implementierung)
+const handleApplySettings = () => {
+  console.log('Settings applied:', { 
+    selectedTimeRange, 
+    customDays, 
+    customHours, 
+    customMinutes, 
+    dateRange,
+    activeMetricCards,
+    showGridProfit,
+    showTrendPnl,
+    showHighestValue,
+    showLowestValue
+  });
+};
+4. ALLE EINTRÄGE TABELLE
+Was wurde implementiert:
+Eine vollständige Datentabelle mit allen Bot-Einträgen.
+
+Funktionen:
+Spalten: Datum, Bot-Name, Investment, Profit, Profit %, Zeitraum
+Sortierbar: Jede Spalte kann aufsteigend/absteigend sortiert werden
+Filterbar: Nach Periode (Tag/Woche/Monat) und Bot-Namen
+Responsive: Scrollt horizontal auf kleinen Bildschirmen
+Bot-Auswahl-Dialog:
+Trigger: "Bot-Version hinzufügen" Card unter der Tabelle
+Funktionen:
+Suchfeld zum Filtern von Bot-Namen
+Checkboxen für jeden Bot
+Anzeige der Anzahl ausgewählter Bots
+Speichern/Abbrechen Buttons
+Temporäre Auswahl (wird erst beim Speichern übernommen)
+const filteredEntriesForTable = useMemo(() => {
+  let filtered = [...allEntries];
+  
+  if (selectedBotsForTable.length > 0) {
+    filtered = filtered.filter(entry => selectedBotsForTable.includes(entry.botName));
+  }
+  
+  if (selectedPeriod) {
+    filtered = filtered.filter(entry => entry.periodType === selectedPeriod);
+  }
+  
+  if (sortColumn) {
+    filtered.sort((a, b) => {
+      // Sortierlogik für verschiedene Datentypen
+      // ...
+    });
+  }
+  
+  return filtered;
+}, [allEntries, selectedBotsForTable, selectedPeriod, sortColumn, sortDirection]);
+5. PROFIT BAR CHART (Unten)
+Was wurde implementiert:
+Ein erweiterter Bar-Chart mit Metriken- und Bot-Filterung.
+
+Funktionen:
+5.1 Metriken-Auswahl (Links)
+Aktive Metriken: Zeigen als farbige Badges mit Häkchen
+Inaktive Metriken: Zeigen als Outline-Badges
+Klickbar: Toggle Metriken an/aus
+Verfügbare Metriken:
+Profit (Grün)
+Investment (Blau)
+Profit % (Lila)
+5.2 Bot-Filter (Rechts)
+Suchfeld: Filtert Bot-Namen
+Checkboxen: Für jeden Bot
+Live-Update: Chart aktualisiert sich sofort
+5.3 Chart
+Balken-Diagramm: Zeigt Daten für bis zu 6 Bots
+Multi-Metrik: Kann mehrere Metriken gleichzeitig anzeigen
+Farbcodiert: Jede Metrik hat eigene Farbe
+Sortiert: Nach der ersten ausgewählten Metrik (absteigend)
+const chartData = useMemo(() => {
+  const botsToShow = selectedBots.length > 0 ? selectedBots : uniqueBotNames;
+  
+  return botsToShow.slice(0, 6).map(botName => {
+    const botEntries = entries.filter(e => e.botName === botName);
+    const dataPoint: any = { name: botName };
+    
+    selectedMetrics.forEach(metric => {
+      const total = botEntries.reduce((sum, entry) => {
+        const value = entry[metric as keyof BotEntry];
+        return sum + (value ? parseFloat(value.toString()) : 0);
+      }, 0);
+      dataPoint[metric] = total;
+    });
+    
+    return dataPoint;
+  }).sort((a, b) => {
+    const firstMetric = selectedMetrics[0] || 'profit';
+    return (b[firstMetric] || 0) - (a[firstMetric] || 0);
+  });
+}, [entries, selectedBots, uniqueBotNames, selectedMetrics]);
+6. TECHNISCHE DETAILS & HOOK-REIHENFOLGE
+Wichtig: Hook-Calling-Reihenfolge
+Alle useMemo und useQuery Hooks müssen VOR jeglichen bedingten Returns stehen:
+
+// ✅ RICHTIG: Alle Hooks zuerst
+const allEntries = useMemo(() => [...entries], [entries]);
+const availableBotTypes = useMemo(() => { /* ... */ }, [botTypes]);
+const totalInvestment = useMemo(() => { /* ... */ }, [/* deps */]);
+// ... alle weiteren Hooks
+// ✅ Dann erst bedingtes Rendering
+if (isLoading) {
+  return <Skeleton />;
+}
+Auto-Refresh-Mechanismus
+const { data: botTypes = [] } = useQuery<BotType[]>({
+  queryKey: ['/api/bot-types'],
+  refetchInterval: 2000, // Lädt Daten alle 2 Sekunden neu
+});
+State-Management
+Lokaler State für UI-Interaktionen (Dialoge, Selektion, etc.)
+React Query für Server-Daten (mit Caching und Auto-Refresh)
+useMemo für berechnete Werte (Performance-Optimierung)
+7. RESPONSIVE DESIGN
+Desktop (>1024px): 2-Spalten-Layout für Chart-Einstellungen
+Tablet (768-1024px): Angepasste Grid-Layouts
+Mobile (<768px): Alle Spalten gestapelt, horizontales Scrollen für Tabelle
+8. ZUSAMMENFASSUNG DER HAUPTFUNKTIONEN
+✅ Bot-Type-basierte Berechnung für "Gesamt"-Ansicht
+✅ From/Until Update-Selektor mit sortierbarer Update-Liste
+✅ Einklappbare Graph-Einstellungen mit Custom-Zeitraum
+✅ Klickbare Metrikkarten mit Highlight-Effekt
+✅ Erweiterte Tabellen-Filterung (Bots & Perioden)
+✅ Multi-Metrik Bar-Chart mit Bot-Filterung
+✅ Auto-Refresh alle 2 Sekunden
+✅ Vollständig responsive für alle Bildschirmgrößen
