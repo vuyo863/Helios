@@ -264,6 +264,7 @@ export default function Dashboard() {
   }, [selectedBotTypeUpdates, updateSortBy, updateSortDirection]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
+  // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
   const totalInvestment = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       // Prüfe ob alle benötigten Daten vorhanden sind
@@ -273,19 +274,22 @@ export default function Dashboard() {
       }
       
       // Summiere Gesamtinvestment-Ø von allen aktiven Bot Types
+      // Gesamtinvestment-Ø = Durchschnitt aller totalInvestment von Updates mit Status "Update Metrics"
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
       let sum = 0;
       
       activeBotTypes.forEach(botType => {
-        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
-        if (updatesForType.length > 0) {
-          // Nimm den neuesten Update (sortiert nach createdAt desc, also erster)
-          const sortedUpdates = [...updatesForType].sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          const latestUpdate = sortedUpdates[0];
-          const gesamtInvestment = parseFloat(latestUpdate.totalInvestment || '0') || 0;
-          sum += gesamtInvestment;
+        // Nur Updates mit Status "Update Metrics" verwenden (wie auf Bot-Types-Seite)
+        const updateMetricsOnly = allBotTypeUpdates.filter(
+          update => update.botTypeId === botType.id && update.status === "Update Metrics"
+        );
+        
+        if (updateMetricsOnly.length > 0) {
+          // Berechne Durchschnitt aller totalInvestment Werte
+          const avgInvestment = updateMetricsOnly.reduce(
+            (s, u) => s + (parseFloat(u.totalInvestment || '0') || 0), 0
+          ) / updateMetricsOnly.length;
+          sum += avgInvestment;
         }
       });
       
@@ -296,6 +300,9 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
   
+  // Berechne totalProfit - Dieselbe Logik wie Bot-Types-Seite:
+  // - Update Metrics: overallGridProfitUsdt (Grid Profit)
+  // - Closed Bots: profit (Gesamt Profit)
   const totalProfit = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       // Prüfe ob alle benötigten Daten vorhanden sind
@@ -310,15 +317,19 @@ export default function Dashboard() {
       
       activeBotTypes.forEach(botType => {
         const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
-        if (updatesForType.length > 0) {
-          // Nimm den neuesten Update (sortiert nach createdAt desc, also erster)
-          const sortedUpdates = [...updatesForType].sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          const latestUpdate = sortedUpdates[0];
-          const gesamtProfit = parseFloat(latestUpdate.overallGridProfitUsdt || '0') || 0;
-          sum += gesamtProfit;
-        }
+        
+        // Gesamt Profit: Alle Updates, aber unterschiedliche Felder je nach Status
+        // - Update Metrics: overallGridProfitUsdt (Grid Profit)
+        // - Closed Bots: profit (Gesamt Profit)
+        const totalGridProfit = updatesForType.reduce((s, update) => {
+          if (update.status === 'Closed Bots') {
+            return s + (parseFloat(update.profit || '0') || 0);
+          } else {
+            return s + (parseFloat(update.overallGridProfitUsdt || '0') || 0);
+          }
+        }, 0);
+        
+        sum += totalGridProfit;
       });
       
       return sum;
