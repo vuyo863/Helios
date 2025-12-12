@@ -1,0 +1,174 @@
+Bot-Type Content Card - Metriken
+Zeile 1: Gesamt Profit
+
+Aggregiert alle Profits aus ALLEN Updates (sowohl "Update Metrics" als auch "Closed Bots")
+Für "Closed Bots": Verwendet das profit Feld
+Für "Update Metrics": Verwendet das overallGridProfitUsdt Feld
+Zeigt Vorzeichen (+/-) bei positiven/negativen Werten
+Zeile 2: 24h Ø Profit
+
+GEWICHTETER Durchschnitt basierend auf Runtime
+NUR "Update Metrics" werden verwendet, "Closed Bots" werden NICHT einberechnet
+Berechnung: (Summe aller Grid Profits) / (Summe aller Runtimes in Stunden) × 24
+Zeigt Vorzeichen (+/-)
+Zeile 3: Real 24h Profit
+
+Summe der "echten" 24h Grid Profit Werte für jeden Update Metrics Eintrag
+NUR "Update Metrics" werden verwendet
+Logik pro Eintrag:
+Runtime < 24 Stunden: Nimmt den gesamten Grid Profit (den echten, erreichten Wert)
+Runtime >= 24 Stunden: Nimmt den durchschnittlichen Grid Profit pro Tag (avgGridProfitDay)
+Bei Bots die >= 24h laufen sind "Real 24h Profit" und "24h Ø Profit" identisch
+Zeile 4: Gesamtinvestment-Ø
+
+Durchschnittliches Investment über alle Updates
+NUR "Update Metrics" werden verwendet, "Closed Bots" werden NICHT einberechnet
+Update-Verlauf Modal
+Öffnet sich wenn man auf das Auge-Icon bei einem Bot-Type klickt.
+
+Sortierung:
+
+Dropdown mit Optionen: Datum, Grid Profit, Grid Profit 24H Ø, Ges. Invest.
+Pfeile für aufsteigend/absteigend
+Standard: Datum absteigend (neueste zuerst)
+WICHTIG: Sortierung nach createdAt
+
+Updates werden ZUERST nach createdAt (Erstellungsdatum) sortiert (absteigend)
+Dies stellt sicher, dass der NEUESTE Update korrekt erkannt wird
+Erst DANACH wird nach Status gefiltert (für Metriken-Berechnungen)
+Update-Verlauf Content Cards
+Es gibt zwei verschiedene Card-Layouts abhängig vom Status:
+
+A) "Closed Bots" Cards
+Titel: "Closed Bots #[Version]"
+
+Farbe: GRÜN wenn Gesamt Profit > 0, ROT wenn Gesamt Profit < 0
+Zeile 1: Datum
+
+Format: Start Date: [Datum] End Date: [Datum]
+Start Date = Closing Timestamp - Runtime (Berechnung: Ende minus Laufzeit)
+End Date = Closing Timestamp (aus Screenshot kopiert)
+Zeile 2: Gesamt Profit
+
+Zeigt nur das profit Feld mit Vorzeichen
+Zeile 3: Gesamt-Investment
+
+Zeigt das totalInvestment Feld
+Icons (rechts):
+
+Sprechblase (Notizen)
+Auge (Details anzeigen)
+Dokument (Reports)
+X (Löschen)
+B) "Update Metrics" Cards
+Titel: "Update Metrics #[Version]"
+
+Normale Textfarbe
+Zeile 1: Datum
+
+Format: From: [lastUpload] Until: [thisUpload]
+Bei Startmetrik: "From: -" (leer)
+thisUpload = aktuelle Echtzeit beim Upload
+Zeile 2: Grid Profit Metriken
+
+Real 24h Grid Profit:
+Runtime < 24h: Zeigt gesamten Grid Profit (echten Wert)
+Runtime >= 24h: Zeigt durchschnittlichen Grid Profit pro Tag
+Grid Profit 24H Ø: Durchschnittlicher Grid Profit pro Tag (avgGridProfitDay)
+Grid Profit: Gesamter Grid Profit (overallGridProfitUsdt)
+Zeile 3: Gesamt-Investment
+
+Zeigt das totalInvestment Feld
+Icons (rechts):
+
+Sprechblase (Notizen bearbeiten)
+Auge (Details anzeigen)
+Dokument (Reports)
+X (Eintrag löschen)
+Löschen von Einträgen
+X-Button ganz rechts in der Icon-Gruppe
+Bei Klick erscheint englischer Bestätigungs-Dialog:
+Titel: "Delete Entry"
+Text: "Do you really want to delete this entry? This action cannot be undone."
+Buttons: "No" (Abbrechen) / "Yes" (Löschen)
+Funktioniert für BEIDE Typen (Closed Bots und Update Metrics)
+Detail-Modal (Auge-Icon)
+Zeigt alle gespeicherten Daten eines Updates:
+
+Info Section:
+
+Datum und Uhrzeit
+Bot-Richtung
+Hebel
+Anzahl (Screenshots)
+Berechnungsmodus (Normal/Vergleich)
+Längste Laufzeit
+Durchschnittliche Laufzeit
+Upload Laufzeit
+From / Until Zeitstempel
+Grid Trading Section:
+
+Gesamter Grid Profit (USDT)
+Gesamter Grid Profit (%) - Gesamtinvestment
+Gesamter Grid Profit (%) - Investitionsmenge
+Ø Grid Profit (USDT)
+Ø Grid Profit (%) - Gesamtinvestment
+Ø Grid Profit (%) - Investitionsmenge
+Ø Grid Profit / Stunde
+Ø Grid Profit / Tag
+Ø Grid Profit / Woche
+Last Grid Profit Durchschnitt Section:
+
+Stunde (vorheriger Wert)
+Tag (vorheriger Wert)
+Woche (vorheriger Wert)
+Change ($) und Change (%)
+Notizen Section:
+
+Zeigt gespeicherte Notizen (falls vorhanden)
+Notizen bearbeiten
+Sprechblase-Icon öffnet Dialog
+Textarea zum Bearbeiten
+Buttons: "Abbrechen" / "Speichern"
+Icon wird farbig wenn Notizen vorhanden
+Zwei unabhängige Modi auf Upload-Seite
+1. Update Metrics (GOLDEN STATE)
+
+Für aktive Bots
+Darf NIEMALS durch Closed Bots beeinflusst werden
+Eigener State-Container
+2. Closed Bots
+
+Für geschlossene Positionen
+Komplett separater State
+Eigene Berechnungen
+Datum-Logik
+Startmetrik (erster Upload):
+
+AI berechnet das Datum: aktuelles Datum minus längste Runtime
+lastUpload = leer/"-"
+thisUpload = aktuelle Echtzeit
+Normal Upload:
+
+Server setzt date = null
+Frontend verwendet aktuelle Echtzeit
+lastUpload = Datum des vorherigen Uploads
+thisUpload = aktuelle Echtzeit
+Closed Bots:
+
+End Date = Closing Timestamp aus Screenshot (verbatim kopiert)
+Start Date = End Date - Runtime (Subtraktion)
+Format sekundengenau: "12h 31m 22s"
+Berechnungsmodi
+NEU Mode:
+
+Berechnet aktuelle Gesamtwerte
+Prozente basierend auf Gesamtinvestment UND Investitionsmenge
+VERGLEICH Mode:
+
+Server berechnet Differenzen (current - previous)
+100% zuverlässig (keine AI-Berechnungsfehler)
+AI liefert nur NEU-Werte, Server subtrahiert
+Status-Werte in Datenbank
+"Closed Bots" (NICHT "closed")
+"Update Metrics" (NICHT "active")
