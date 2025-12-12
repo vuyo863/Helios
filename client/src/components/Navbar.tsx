@@ -6,7 +6,7 @@ export default function Navbar() {
   const [location] = useLocation();
 
   const navItems = [
-    { path: '/', label: 'Übersicht', icon: BarChart3 },
+    { path: '/', label: 'Dashboard', icon: BarChart3 },
     { path: '/upload', label: 'AI Analyse', icon: Upload },
     { path: '/bot-types', label: 'Bot Types', icon: Layers },
     { path: '/future', label: 'Future', icon: TrendingUp },

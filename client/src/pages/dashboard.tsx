@@ -450,7 +450,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <h1 className="text-2xl font-bold mb-8">Übersicht</h1>
+          <h1 className="text-2xl font-bold mb-8">Dashboard</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-32" />
@@ -465,7 +465,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center gap-4 mb-8 flex-wrap">
-          <h1 className="text-2xl font-bold" data-testid="heading-dashboard">Übersicht</h1>
+          <h1 className="text-2xl font-bold" data-testid="heading-dashboard">Dashboard</h1>
           
           <div className="flex items-center gap-2">
             <Popover open={open} onOpenChange={setOpen}>
