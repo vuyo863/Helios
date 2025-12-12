@@ -2069,12 +2069,11 @@ export default function Upload() {
           runtimeHoursForGridProfit = parseLongestRuntime(closedBotsUploadRuntime);
           console.log('Closed Bots Upload Laufzeit verwendet:', closedBotsUploadRuntime, '-> Stunden:', runtimeHoursForGridProfit);
         } else if (activeIsStartMetric) {
-          // Bei Startmetrik: AUSNAHME - Upload Laufzeit = Längste Laufzeit aus allen Bot-Cards
-          // Das ist die einzige Ausnahme, weil es keinen vorherigen Upload gibt, 
-          // aber die Laufzeit für Grid Profit Durchschnitt Berechnungen benötigt wird
-          const longestRuntimeStr = toStr(calculatedValues.longestRuntime);
-          uploadRuntimeValue = longestRuntimeStr; // Längste Laufzeit als Upload Laufzeit anzeigen
-          runtimeHoursForGridProfit = parseLongestRuntime(longestRuntimeStr);
+          // Bei Startmetrik: Upload Laufzeit = DURCHSCHNITTLICHE Laufzeit (avgRuntime)
+          // NICHT die längste Laufzeit! Upload-Laufzeit soll avgRuntime replizieren.
+          const avgRuntimeStr = toStr(calculatedValues.avgRuntime);
+          uploadRuntimeValue = avgRuntimeStr; // Durchschnittliche Laufzeit als Upload Laufzeit
+          runtimeHoursForGridProfit = parseLongestRuntime(avgRuntimeStr);
         } else if (lastUploadDateTime) {
           // Bei normalem Upload: Upload Laufzeit = This Upload - Last Upload
           uploadRuntimeValue = calculateRuntimeDiff(lastUploadDateTime);
