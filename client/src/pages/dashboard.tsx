@@ -428,10 +428,26 @@ export default function Dashboard() {
       
       return sum;
     } else {
-      // Für spezifischen Bot: Summiere aus Entries
-      return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+      // Für spezifischen Bot-Type: Verwende Updates wie auf Bot-Types-Seite
+      if (!selectedBotTypeData || !allBotTypeUpdates) {
+        return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
+      }
+      
+      // Nur Updates mit Status "Update Metrics" für diesen Bot-Type
+      const updateMetricsOnly = allBotTypeUpdates.filter(
+        update => update.botTypeId === selectedBotTypeData.id && update.status === "Update Metrics"
+      );
+      
+      if (updateMetricsOnly.length > 0) {
+        // Berechne Durchschnitt aller totalInvestment Werte
+        return updateMetricsOnly.reduce(
+          (s, u) => s + (parseFloat(u.totalInvestment || '0') || 0), 0
+        ) / updateMetricsOnly.length;
+      }
+      
+      return 0;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
   // Berechne totalProfit - Dieselbe Logik wie Bot-Types-Seite:
   // - Update Metrics: overallGridProfitUsdt (Grid Profit)
@@ -467,10 +483,24 @@ export default function Dashboard() {
       
       return sum;
     } else {
-      // Für spezifischen Bot: Summiere aus Entries
-      return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
+      // Für spezifischen Bot-Type: Verwende Updates wie auf Bot-Types-Seite
+      if (!selectedBotTypeData || !allBotTypeUpdates) {
+        return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
+      }
+      
+      // Alle Updates für diesen Bot-Type
+      const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
+      
+      // Gesamt Profit: Alle Updates, aber unterschiedliche Felder je nach Status
+      return updatesForType.reduce((s, update) => {
+        if (update.status === 'Closed Bots') {
+          return s + (parseFloat(update.profit || '0') || 0);
+        } else {
+          return s + (parseFloat(update.overallGridProfitUsdt || '0') || 0);
+        }
+      }, 0);
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
   const totalProfitPercent = useMemo(() => 
     totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0,
@@ -514,10 +544,35 @@ export default function Dashboard() {
       
       return totalAvg24h;
     } else {
-      // Für spezifischen Bot: Fallback
+      // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
+      if (!selectedBotTypeData || !allBotTypeUpdates) {
+        return 0;
+      }
+      
+      const updateMetricsOnly = allBotTypeUpdates.filter(
+        update => update.botTypeId === selectedBotTypeData.id && update.status === 'Update Metrics'
+      );
+      
+      if (updateMetricsOnly.length > 0) {
+        let totalProfit = 0;
+        let totalHours = 0;
+        
+        updateMetricsOnly.forEach(update => {
+          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+          totalProfit += gridProfit;
+          totalHours += runtimeHours;
+        });
+        
+        if (totalHours > 0) {
+          const profitPerHour = totalProfit / totalHours;
+          return profitPerHour * 24;
+        }
+      }
+      
       return 0;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates]);
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
 
   // Real Profit/Tag: Summe der "Real 24h Profit" von allen aktiven Bot-Types
   // Berechnung wie auf Bot-Types-Seite:
@@ -554,9 +609,33 @@ export default function Dashboard() {
       
       return totalReal24h;
     } else {
-      return 0;
+      // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
+      if (!selectedBotTypeData || !allBotTypeUpdates) {
+        return 0;
+      }
+      
+      const updateMetricsOnly = allBotTypeUpdates.filter(
+        update => update.botTypeId === selectedBotTypeData.id && update.status === 'Update Metrics'
+      );
+      
+      let totalReal24h = 0;
+      updateMetricsOnly.forEach(update => {
+        const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+        const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+        const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+        
+        if (runtimeHours < 24) {
+          // Bot läuft weniger als 24h: Nimm den gesamten Grid Profit
+          totalReal24h += gridProfit;
+        } else {
+          // Bot läuft 24h oder länger: Nimm den Durchschnitt pro Tag
+          totalReal24h += avgGridProfitDay;
+        }
+      });
+      
+      return totalReal24h;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates]);
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
 
   const lineChartData = useMemo(() => 
     filteredEntriesForStats
