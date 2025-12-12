@@ -109,7 +109,7 @@ export interface BotTypeTableData {
   gesamtProfit: number;
   real24hProfit: number;
   avg24hProfit: number;
-  wontLiqRate: number;
+  wontLiqBudget: number;
   metricStarted: Date | null;
   latestDate: Date | null;
   periodType: string;
@@ -203,10 +203,10 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                     <SortIcon column="avg24hProfit" />
                   </div>
                 </TableHead>
-                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[100px]" data-testid="header-wont-liq-rate">
-                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('wontLiqRate')}>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[120px]" data-testid="header-wont-liq-budget">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('wontLiqBudget')}>
                     <span>Wont Liq</span>
-                    <SortIcon column="wontLiqRate" />
+                    <SortIcon column="wontLiqBudget" />
                   </div>
                 </TableHead>
                 <TableHead className="sticky top-0 z-10 bg-muted border-b w-[200px]" data-testid="header-runtime">
@@ -288,8 +288,8 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                     <TableCell className={`text-right text-sm font-medium ${botType.avg24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-avg-24h-profit-${botType.id}`}>
                       {formatWithSign(botType.avg24hProfit, 2)}
                     </TableCell>
-                    <TableCell className="text-right text-sm" data-testid={`cell-wont-liq-rate-${botType.id}`}>
-                      {formatNumber(botType.wontLiqRate)}%
+                    <TableCell className="text-right text-sm" data-testid={`cell-wont-liq-budget-${botType.id}`}>
+                      {formatNumber(botType.wontLiqBudget)}
                     </TableCell>
                     <TableCell className="text-sm" data-testid={`cell-runtime-${botType.id}`}>
                       <div className="flex flex-col text-xs">
@@ -394,17 +394,10 @@ export function calculateBotTypeTableData(
     }
   }
   
-  // Wont Liq Rate
-  let wontLiqRate = 0;
-  if (botType.wontLiqBudget && updateMetricsOnly.length > 0) {
-    const wontLiqBudget = parseFloat(botType.wontLiqBudget) || 0;
-    if (gesamtInvestmentAvg > 0 && wontLiqBudget > 0) {
-      wontLiqRate = (wontLiqBudget / gesamtInvestmentAvg) * 100;
-    }
-  }
+  // Wont Liq Budget: Direkt von Bot-Type Karte
+  const wontLiqBudget = parseFloat(botType.wontLiqBudget || '0') || 0;
   
   // Metric Started (frühstes Startdatum) und Latest Date (spätestes Enddatum)
-  // Berechnung wie auf der Bot-Type-Seite beim Auge-Modal
   const allStartDates: Date[] = [];
   const allEndDates: Date[] = [];
   
@@ -483,7 +476,7 @@ export function calculateBotTypeTableData(
     gesamtProfit,
     real24hProfit,
     avg24hProfit,
-    wontLiqRate,
+    wontLiqBudget,
     metricStarted,
     latestDate,
     periodType: 'Tag'

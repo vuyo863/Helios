@@ -186,12 +186,15 @@ export default function Dashboard() {
     );
     
     // Sortierung anwenden
+    // Pfeil runter (desc) = größter Wert oben
+    // Pfeil hoch (asc) = kleinster Wert oben
     if (sortColumn) {
       tableData.sort((a, b) => {
         let aValue: any = a[sortColumn as keyof BotTypeTableData];
         let bValue: any = b[sortColumn as keyof BotTypeTableData];
         
-        if (sortColumn === 'lastUpdated') {
+        // Datum-Spalten: In Zeitstempel umwandeln
+        if (sortColumn === 'lastUpdated' || sortColumn === 'metricStarted' || sortColumn === 'latestDate') {
           aValue = aValue ? new Date(aValue).getTime() : 0;
           bValue = bValue ? new Date(bValue).getTime() : 0;
         } else if (sortColumn === 'name') {
@@ -206,7 +209,9 @@ export default function Dashboard() {
           comparison = -1;
         }
         
-        return sortDirection === 'asc' ? comparison : -comparison;
+        // desc = größter Wert oben (comparison * -1)
+        // asc = kleinster Wert oben (comparison)
+        return sortDirection === 'desc' ? -comparison : comparison;
       });
     }
     
