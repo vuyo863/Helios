@@ -548,11 +548,48 @@ export default function BotTypesPage() {
                         <span className="font-medium" data-testid={`text-runtime-${botType.id}`}>
                           {(() => {
                             if (updatesForType.length === 0) return '-';
-                            const metricStarted = updatesForType[updatesForType.length - 1]?.date;
-                            const lastUpdated = updatesForType[0]?.createdAt;
-                            if (!metricStarted || !lastUpdated) return '-';
                             
-                            const startDate = new Date(metricStarted);
+                            // Helper: Parse runtime string (e.g. "12d 5h 30m 22s") to milliseconds
+                            const parseRuntimeToMs = (runtime: string): number => {
+                              if (!runtime) return 0;
+                              let totalMs = 0;
+                              const days = runtime.match(/(\d+)\s*d/);
+                              const hours = runtime.match(/(\d+)\s*h/);
+                              const minutes = runtime.match(/(\d+)\s*m/);
+                              const seconds = runtime.match(/(\d+)\s*s/);
+                              if (days) totalMs += parseInt(days[1]) * 24 * 60 * 60 * 1000;
+                              if (hours) totalMs += parseInt(hours[1]) * 60 * 60 * 1000;
+                              if (minutes) totalMs += parseInt(minutes[1]) * 60 * 1000;
+                              if (seconds) totalMs += parseInt(seconds[1]) * 1000;
+                              return totalMs;
+                            };
+                            
+                            // Finde das früheste Startdatum aus allen Updates (Update Metrics + Closed Bots)
+                            const allDates: Date[] = [];
+                            updatesForType.forEach(update => {
+                              // Für Closed Bots: Startdatum = thisUpload - longestRuntime
+                              if (update.status === 'closed' && update.thisUpload && update.longestRuntime) {
+                                const endDate = new Date(update.thisUpload as string);
+                                const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
+                                const startDate = new Date(endDate.getTime() - runtimeMs);
+                                allDates.push(startDate);
+                              }
+                              // Für Update Metrics: date ist das Startdatum
+                              else if (update.status === 'active' && update.date) {
+                                allDates.push(new Date(update.date as string));
+                              }
+                            });
+                            
+                            if (allDates.length === 0) return '-';
+                            
+                            const metricStarted = allDates.reduce((earliest, current) => 
+                              current < earliest ? current : earliest
+                            );
+                            
+                            const lastUpdated = updatesForType[0]?.createdAt;
+                            if (!lastUpdated) return '-';
+                            
+                            const startDate = metricStarted;
                             const endDate = new Date(lastUpdated);
                             const diffMs = endDate.getTime() - startDate.getTime();
                             
@@ -809,9 +846,47 @@ export default function BotTypesPage() {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Metric Started</p>
                         <p className="font-semibold">
-                          {updates[updates.length - 1]?.date 
-                            ? format(new Date(updates[updates.length - 1].date as string), "dd.MM.yyyy HH:mm", { locale: de })
-                            : '-'}
+                          {(() => {
+                            // Helper: Parse runtime string (e.g. "12d 5h 30m 22s") to milliseconds
+                            const parseRuntimeToMs = (runtime: string): number => {
+                              if (!runtime) return 0;
+                              let totalMs = 0;
+                              const days = runtime.match(/(\d+)\s*d/);
+                              const hours = runtime.match(/(\d+)\s*h/);
+                              const minutes = runtime.match(/(\d+)\s*m/);
+                              const seconds = runtime.match(/(\d+)\s*s/);
+                              if (days) totalMs += parseInt(days[1]) * 24 * 60 * 60 * 1000;
+                              if (hours) totalMs += parseInt(hours[1]) * 60 * 60 * 1000;
+                              if (minutes) totalMs += parseInt(minutes[1]) * 60 * 1000;
+                              if (seconds) totalMs += parseInt(seconds[1]) * 1000;
+                              return totalMs;
+                            };
+                            
+                            // Finde das früheste Startdatum aus allen Updates (Update Metrics + Closed Bots)
+                            const allDates: Date[] = [];
+                            updates.forEach(update => {
+                              // Für Closed Bots: Startdatum = thisUpload - longestRuntime
+                              if (update.status === 'closed' && update.thisUpload && update.longestRuntime) {
+                                const endDate = new Date(update.thisUpload as string);
+                                const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
+                                const startDate = new Date(endDate.getTime() - runtimeMs);
+                                allDates.push(startDate);
+                              }
+                              // Für Update Metrics: date ist das Startdatum
+                              else if (update.status === 'active' && update.date) {
+                                allDates.push(new Date(update.date as string));
+                              }
+                            });
+                            
+                            if (allDates.length === 0) return '-';
+                            
+                            // Finde das früheste Datum
+                            const earliestDate = allDates.reduce((earliest, current) => 
+                              current < earliest ? current : earliest
+                            );
+                            
+                            return format(earliestDate, "dd.MM.yyyy HH:mm", { locale: de });
+                          })()}
                         </p>
                       </div>
                     </div>
