@@ -825,9 +825,9 @@ export default function Dashboard() {
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-40 p-2" align="end">
+                  <PopoverContent className="w-48 p-2" align="end">
                     <div className="space-y-1">
-                      {['Custom', '1 h', '24 h', '1 Day', '7 Days', '30 Days'].map((option) => (
+                      {['Custom', '1h', '24h', '7 Days', '30 Days'].map((option) => (
                         <Button
                           key={option}
                           variant={selectedTimeRange === option ? "default" : "ghost"}
@@ -838,6 +838,15 @@ export default function Dashboard() {
                           {option}
                         </Button>
                       ))}
+                      <Separator className="my-1" />
+                      <Button
+                        variant={selectedTimeRange === 'First-Last Update' ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => handleTimeRangeSelect('First-Last Update')}
+                      >
+                        First-Last Update
+                      </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
