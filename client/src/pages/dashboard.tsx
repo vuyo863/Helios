@@ -80,17 +80,44 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
   return totalHours;
 }
 
+// Helper function to parse German date format (dd.MM.yyyy HH:mm:ss or dd.MM.yyyy HH:mm)
+function parseGermanDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  
+  // Format: "24.11.2025 16:42:12" or "24.11.2025 16:42" or "08.12.2025 12:42"
+  const match = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    const [, day, month, year, hour, minute, second = '0'] = match;
+    const date = new Date(
+      parseInt(year),
+      parseInt(month) - 1, // Months are 0-indexed
+      parseInt(day),
+      parseInt(hour),
+      parseInt(minute),
+      parseInt(second)
+    );
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  return null;
+}
+
 // Helper function to get timestamp from update for date comparison
+// Uses the displayed date on the Content Card (thisUpload = End Date/Until, lastUpload = Start Date/From)
 function getUpdateTimestamp(update: { thisUpload?: string | null; lastUpload?: string | null; createdAt?: Date | null }): number {
-  // Prefer thisUpload (End Date), then lastUpload (Start Date), then createdAt
+  // For comparison, use thisUpload (End Date for Closed Bots, Until for Update Metrics)
+  // This is the date displayed on the Content Card
   if (update.thisUpload) {
-    const parsed = Date.parse(update.thisUpload);
-    if (!isNaN(parsed)) return parsed;
+    const parsed = parseGermanDate(update.thisUpload);
+    if (parsed) return parsed.getTime();
   }
+  // Fallback to lastUpload (Start Date/From)
   if (update.lastUpload) {
-    const parsed = Date.parse(update.lastUpload);
-    if (!isNaN(parsed)) return parsed;
+    const parsed = parseGermanDate(update.lastUpload);
+    if (parsed) return parsed.getTime();
   }
+  // Final fallback to createdAt
   if (update.createdAt) {
     return new Date(update.createdAt).getTime();
   }
