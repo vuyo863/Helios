@@ -1154,8 +1154,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ 
           success: true,
           values: calculatedValues,
-          // Berechnungsmodus: "Startmetrik" wenn manuell ausgewählt, sonst "Normal"
-          calculationMode: manualStartmetrikMode ? 'Startmetrik' : 'Normal'
+          // Berechnungsmodus: "Startmetrik" wenn echter erster Upload ODER manuell ausgewählt
+          // WICHTIG: Bei echtem Startmetrik (isStartMetric=true) ist es IMMER "Startmetrik"
+          calculationMode: isStartMetric || manualStartmetrikMode ? 'Startmetrik' : 'Normal'
         });
       } catch (parseError) {
         console.error("Failed to parse AI JSON response:", aiResponse);

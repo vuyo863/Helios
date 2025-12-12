@@ -2613,10 +2613,11 @@ export default function Upload() {
                         <div className="flex items-center gap-2">
                           <Label className="text-sm text-muted-foreground whitespace-nowrap">Modus:</Label>
                           <Select
-                            value={infoSectionMode}
+                            value={isStartMetric ? 'Startmetrik' : infoSectionMode}
                             onValueChange={(value: 'Normal' | 'Startmetrik') => setInfoSectionMode(value)}
+                            disabled={isStartMetric}
                           >
-                            <SelectTrigger className="w-32 h-8" data-testid="select-info-mode">
+                            <SelectTrigger className={`w-32 h-8 ${isStartMetric ? 'opacity-50 cursor-not-allowed' : ''}`} data-testid="select-info-mode">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -3283,10 +3284,11 @@ export default function Upload() {
                         <div className="flex items-center gap-2">
                           <Label className="text-sm text-muted-foreground whitespace-nowrap">Modus:</Label>
                           <Select
-                            value={closedInfoSectionMode}
+                            value={closedIsStartMetric ? 'Startmetrik' : closedInfoSectionMode}
                             onValueChange={(value: 'Normal' | 'Startmetrik') => setClosedInfoSectionMode(value)}
+                            disabled={closedIsStartMetric}
                           >
-                            <SelectTrigger className="w-32 h-8" data-testid="closed-select-info-mode">
+                            <SelectTrigger className={`w-32 h-8 ${closedIsStartMetric ? 'opacity-50 cursor-not-allowed' : ''}`} data-testid="closed-select-info-mode">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
