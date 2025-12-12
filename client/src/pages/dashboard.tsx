@@ -50,7 +50,7 @@ export default function Dashboard() {
   const [selectedBotName, setSelectedBotName] = useState<string>("Gesamt");
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedBotsForTable, setSelectedBotsForTable] = useState<string[]>([]);
+  const [removedBotsFromTable, setRemovedBotsFromTable] = useState<string[]>([]);
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -117,6 +117,14 @@ export default function Dashboard() {
     const allNames = availableBotTypes.map(bt => bt.name);
     return allNames.sort();
   }, [availableBotTypes]);
+
+  // Automatisch alle aktiven Bot-Types anzeigen, außer die manuell entfernten
+  const selectedBotsForTable = useMemo(() => {
+    const activeBotNames = availableBotTypes
+      .filter(bt => bt.isActive)
+      .map(bt => bt.name);
+    return activeBotNames.filter(name => !removedBotsFromTable.includes(name));
+  }, [availableBotTypes, removedBotsFromTable]);
 
   const filteredEntriesForTable = useMemo(() => {
     let filtered = [...allEntries];
@@ -340,15 +348,23 @@ export default function Dashboard() {
   };
 
   const handleSaveSelection = () => {
-    setSelectedBotsForTable([...tempSelectedBots]);
+    // Berechne welche Bots entfernt wurden vs. welche hinzugefügt wurden
+    const activeBotNames = availableBotTypes
+      .filter(bt => bt.isActive)
+      .map(bt => bt.name);
+    
+    // Bots die aktiv sind aber nicht in tempSelectedBots -> zu removedBotsFromTable hinzufügen
+    // Bots die in tempSelectedBots sind -> aus removedBotsFromTable entfernen
+    const newRemovedBots = activeBotNames.filter(name => !tempSelectedBots.includes(name));
+    setRemovedBotsFromTable(newRemovedBots);
     setDialogOpen(false);
   };
 
   const handleRemoveBotType = (botTypeId: string) => {
-    // Finde den Bot-Type Namen basierend auf der ID
+    // Finde den Bot-Type Namen basierend auf der ID und füge ihn zu removedBotsFromTable hinzu
     const botType = availableBotTypes.find(bt => bt.id === botTypeId);
     if (botType) {
-      setSelectedBotsForTable(prev => prev.filter(name => name !== botType.name));
+      setRemovedBotsFromTable(prev => [...prev, botType.name]);
     }
   };
 
