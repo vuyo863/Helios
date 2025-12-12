@@ -154,6 +154,7 @@ export default function Dashboard() {
   const [showTrendPnl, setShowTrendPnl] = useState(false);
   const [showHighestValue, setShowHighestValue] = useState(false);
   const [showLowestValue, setShowLowestValue] = useState(false);
+  const [chartSequence, setChartSequence] = useState<'hours' | 'days' | 'weeks' | 'months'>('days');
   
   // From/Until update selection
   const [fromUpdateDialogOpen, setFromUpdateDialogOpen] = useState(false);
@@ -1084,6 +1085,20 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <span className="text-sm">Charttyp</span>
                 <Button variant="outline" size="sm">Linie</Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Sequenz</span>
+                <Select value={chartSequence} onValueChange={(value: 'hours' | 'days' | 'weeks' | 'months') => setChartSequence(value)}>
+                  <SelectTrigger className="w-[100px] h-8" data-testid="select-chart-sequence">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hours">Stunden</SelectItem>
+                    <SelectItem value="days">Tage</SelectItem>
+                    <SelectItem value="weeks">Wochen</SelectItem>
+                    <SelectItem value="months">Monate</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="mt-4 flex justify-end">
