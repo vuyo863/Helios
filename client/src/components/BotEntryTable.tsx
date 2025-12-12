@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BotType, BotTypeUpdate } from "@shared/schema";
-import { format } from "date-fns";
+import { format, parse, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronDown, ArrowUp, ArrowDown, X } from "lucide-react";
 
@@ -35,6 +35,42 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
   if (minutesMatch) totalHours += parseInt(minutesMatch[1]) / 60;
   
   return totalHours;
+}
+
+// Helper function to parse runtime string to milliseconds
+function parseRuntimeToMs(runtime: string | null | undefined): number {
+  if (!runtime) return 0;
+  let totalMs = 0;
+  const days = runtime.match(/(\d+)\s*d/);
+  const hours = runtime.match(/(\d+)\s*h/);
+  const minutes = runtime.match(/(\d+)\s*m/);
+  const seconds = runtime.match(/(\d+)\s*s/);
+  if (days) totalMs += parseInt(days[1]) * 24 * 60 * 60 * 1000;
+  if (hours) totalMs += parseInt(hours[1]) * 60 * 60 * 1000;
+  if (minutes) totalMs += parseInt(minutes[1]) * 60 * 1000;
+  if (seconds) totalMs += parseInt(seconds[1]) * 1000;
+  return totalMs;
+}
+
+// Helper function to parse German date format
+function parseGermanDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  // Try with seconds first
+  let parsed = parse(dateStr, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
+  if (isValid(parsed)) return parsed;
+  // Try without seconds
+  parsed = parse(dateStr, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
+  if (isValid(parsed)) return parsed;
+  // Try date only
+  parsed = parse(dateStr, "dd.MM.yyyy", new Date(), { locale: de });
+  if (isValid(parsed)) return parsed;
+  // Try ISO format
+  parsed = parseISO(dateStr);
+  if (isValid(parsed)) return parsed;
+  // Fallback to native Date
+  parsed = new Date(dateStr);
+  if (isValid(parsed)) return parsed;
+  return null;
 }
 
 // Formatiert Werte mit "+" Präfix bei positiven Zahlen
@@ -74,7 +110,8 @@ export interface BotTypeTableData {
   real24hProfit: number;
   avg24hProfit: number;
   wontLiqRate: number;
-  runtime: string;
+  metricStarted: Date | null;
+  latestDate: Date | null;
   periodType: string;
 }
 
@@ -125,158 +162,172 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <div className="max-h-[320px] overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-last-updated">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('lastUpdated')}>
-                  <span>LastUpdated</span>
-                  <SortIcon column="lastUpdated" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-bot-name">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('name')}>
-                  <span>Bot-Name</span>
-                  <SortIcon column="name" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-investition">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('gesamtInvestmentAvg')}>
-                  <span>Investition (USDT)</span>
-                  <SortIcon column="gesamtInvestmentAvg" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-profit-usdt">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('gesamtProfit')}>
-                  <span>Profit (USDT)</span>
-                  <SortIcon column="gesamtProfit" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-real-24h-profit">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('real24hProfit')}>
-                  <span>Real 24h Profit</span>
-                  <SortIcon column="real24hProfit" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-avg-24h-profit">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('avg24hProfit')}>
-                  <span>24h Ø Profit</span>
-                  <SortIcon column="avg24hProfit" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-wont-liq-rate">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('wontLiqRate')}>
-                  <span>Wont Liq Rate</span>
-                  <SortIcon column="wontLiqRate" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-runtime">
-                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('runtime')}>
-                  <span>Runtime</span>
-                  <SortIcon column="runtime" />
-                </div>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-zeitraum">
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-1 hover-elevate px-2 py-1 rounded-md cursor-pointer" data-testid="dropdown-zeitraum">
-                    <span>Zeitraum</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" data-testid="dropdown-zeitraum-content">
-                    <DropdownMenuItem 
-                      onClick={() => onPeriodChange(null)}
-                      className={selectedPeriod === null ? "bg-accent" : ""}
-                      data-testid="dropdown-option-alle"
-                    >
-                      Alle
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onPeriodChange("Tag")}
-                      className={selectedPeriod === "Tag" ? "bg-accent" : ""}
-                      data-testid="dropdown-option-tag"
-                    >
-                      Tag
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onPeriodChange("Woche")}
-                      className={selectedPeriod === "Woche" ? "bg-accent" : ""}
-                      data-testid="dropdown-option-woche"
-                    >
-                      Woche
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onPeriodChange("Monat")}
-                      className={selectedPeriod === "Monat" ? "bg-accent" : ""}
-                      data-testid="dropdown-option-monat"
-                    >
-                      Monat
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b w-12" data-testid="header-actions">
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {botTypeData.length === 0 ? (
+      <div className="overflow-x-auto">
+        <div className="max-h-[400px] overflow-y-auto">
+          <Table className="min-w-[1200px]">
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
-                  Keine Einträge vorhanden
-                </TableCell>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[120px]" data-testid="header-last-updated">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('lastUpdated')}>
+                    <span>LastUpdated</span>
+                    <SortIcon column="lastUpdated" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[140px]" data-testid="header-bot-name">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('name')}>
+                    <span>Bot-Name</span>
+                    <SortIcon column="name" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[130px]" data-testid="header-investition">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('gesamtInvestmentAvg')}>
+                    <span>Investition</span>
+                    <SortIcon column="gesamtInvestmentAvg" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[130px]" data-testid="header-profit-usdt">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('gesamtProfit')}>
+                    <span>Profit</span>
+                    <SortIcon column="gesamtProfit" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[130px]" data-testid="header-real-24h-profit">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('real24hProfit')}>
+                    <span>Real 24h</span>
+                    <SortIcon column="real24hProfit" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[130px]" data-testid="header-avg-24h-profit">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('avg24hProfit')}>
+                    <span>24h Ø</span>
+                    <SortIcon column="avg24hProfit" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[100px]" data-testid="header-wont-liq-rate">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('wontLiqRate')}>
+                    <span>Wont Liq</span>
+                    <SortIcon column="wontLiqRate" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[200px]" data-testid="header-runtime">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('metricStarted')}>
+                    <span>Zeitraum</span>
+                    <SortIcon column="metricStarted" />
+                  </div>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[80px]" data-testid="header-period">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-1 hover-elevate px-2 py-1 rounded-md cursor-pointer" data-testid="dropdown-zeitraum">
+                      <span>Periode</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" data-testid="dropdown-zeitraum-content">
+                      <DropdownMenuItem 
+                        onClick={() => onPeriodChange(null)}
+                        className={selectedPeriod === null ? "bg-accent" : ""}
+                        data-testid="dropdown-option-alle"
+                      >
+                        Alle
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onPeriodChange("Tag")}
+                        className={selectedPeriod === "Tag" ? "bg-accent" : ""}
+                        data-testid="dropdown-option-tag"
+                      >
+                        Tag
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onPeriodChange("Woche")}
+                        className={selectedPeriod === "Woche" ? "bg-accent" : ""}
+                        data-testid="dropdown-option-woche"
+                      >
+                        Woche
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onPeriodChange("Monat")}
+                        className={selectedPeriod === "Monat" ? "bg-accent" : ""}
+                        data-testid="dropdown-option-monat"
+                      >
+                        Monat
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[50px]" data-testid="header-actions">
+                </TableHead>
               </TableRow>
-            ) : (
-              botTypeData.map((botType) => (
-                <TableRow key={botType.id} className="hover-elevate" data-testid={`row-entry-${botType.id}`}>
-                  <TableCell data-testid={`cell-last-updated-${botType.id}`}>
-                    {botType.lastUpdated 
-                      ? format(new Date(botType.lastUpdated), 'dd.MM.yyyy', { locale: de })
-                      : '-'
-                    }
-                  </TableCell>
-                  <TableCell className="font-medium" data-testid={`cell-bot-name-${botType.id}`}>
-                    {botType.name}
-                  </TableCell>
-                  <TableCell className="text-right" data-testid={`cell-investment-${botType.id}`}>
-                    {formatNumber(botType.gesamtInvestmentAvg)}
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${botType.gesamtProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-profit-${botType.id}`}>
-                    {formatWithSign(botType.gesamtProfit, 4)} USDT
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${botType.real24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-real-24h-profit-${botType.id}`}>
-                    {formatWithSign(botType.real24hProfit, 2)} USDT
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${botType.avg24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-avg-24h-profit-${botType.id}`}>
-                    {formatWithSign(botType.avg24hProfit, 2)} USDT
-                  </TableCell>
-                  <TableCell className="text-right" data-testid={`cell-wont-liq-rate-${botType.id}`}>
-                    {formatNumber(botType.wontLiqRate)}%
-                  </TableCell>
-                  <TableCell data-testid={`cell-runtime-${botType.id}`}>
-                    {botType.runtime || '-'}
-                  </TableCell>
-                  <TableCell data-testid={`cell-period-${botType.id}`}>
-                    <Badge variant={getPeriodBadgeVariant(botType.periodType)} data-testid={`badge-period-${botType.id}`}>
-                      {botType.periodType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell data-testid={`cell-actions-${botType.id}`}>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveBotType(botType.id)}
-                      data-testid={`button-remove-${botType.id}`}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {botTypeData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
+                    Keine Einträge vorhanden
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                botTypeData.map((botType) => (
+                  <TableRow key={botType.id} className="hover-elevate" data-testid={`row-entry-${botType.id}`}>
+                    <TableCell className="text-sm" data-testid={`cell-last-updated-${botType.id}`}>
+                      {botType.lastUpdated 
+                        ? format(new Date(botType.lastUpdated), 'dd.MM.yyyy', { locale: de })
+                        : '-'
+                      }
+                    </TableCell>
+                    <TableCell className="font-medium text-sm" data-testid={`cell-bot-name-${botType.id}`}>
+                      {botType.name}
+                    </TableCell>
+                    <TableCell className="text-right text-sm" data-testid={`cell-investment-${botType.id}`}>
+                      {formatNumber(botType.gesamtInvestmentAvg)}
+                    </TableCell>
+                    <TableCell className={`text-right text-sm font-medium ${botType.gesamtProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-profit-${botType.id}`}>
+                      {formatWithSign(botType.gesamtProfit, 2)}
+                    </TableCell>
+                    <TableCell className={`text-right text-sm font-medium ${botType.real24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-real-24h-profit-${botType.id}`}>
+                      {formatWithSign(botType.real24hProfit, 2)}
+                    </TableCell>
+                    <TableCell className={`text-right text-sm font-medium ${botType.avg24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-avg-24h-profit-${botType.id}`}>
+                      {formatWithSign(botType.avg24hProfit, 2)}
+                    </TableCell>
+                    <TableCell className="text-right text-sm" data-testid={`cell-wont-liq-rate-${botType.id}`}>
+                      {formatNumber(botType.wontLiqRate)}%
+                    </TableCell>
+                    <TableCell className="text-sm" data-testid={`cell-runtime-${botType.id}`}>
+                      <div className="flex flex-col text-xs">
+                        <span>
+                          {botType.metricStarted 
+                            ? format(new Date(botType.metricStarted), 'dd.MM.yy', { locale: de })
+                            : '-'
+                          }
+                          {' - '}
+                          {botType.latestDate 
+                            ? format(new Date(botType.latestDate), 'dd.MM.yy', { locale: de })
+                            : '-'
+                          }
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell data-testid={`cell-period-${botType.id}`}>
+                      <Badge variant={getPeriodBadgeVariant(botType.periodType)} data-testid={`badge-period-${botType.id}`}>
+                        {botType.periodType}
+                      </Badge>
+                    </TableCell>
+                    <TableCell data-testid={`cell-actions-${botType.id}`}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => onRemoveBotType(botType.id)}
+                        data-testid={`button-remove-${botType.id}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
@@ -290,8 +341,6 @@ export function calculateBotTypeTableData(
   const updatesForType = updates.filter(update => update.botTypeId === botType.id);
   
   // Gesamt Profit: Alle Updates, aber unterschiedliche Felder je nach Status
-  // - Update Metrics: overallGridProfitUsdt (Grid Profit)
-  // - Closed Bots: profit (Gesamt Profit)
   const gesamtProfit = updatesForType.reduce((sum, update) => {
     if (update.status === 'Closed Bots') {
       return sum + (parseFloat(update.profit || '0') || 0);
@@ -303,7 +352,7 @@ export function calculateBotTypeTableData(
   // Nur Update Metrics für die folgenden Berechnungen
   const updateMetricsOnly = updatesForType.filter(update => update.status === 'Update Metrics');
   
-  // Gesamtinvestment-Ø: Durchschnitt über alle Update Metrics
+  // Gesamtinvestment-Ø
   let gesamtInvestmentAvg = 0;
   if (updateMetricsOnly.length > 0) {
     const totalInvestment = updateMetricsOnly.reduce((sum, update) => {
@@ -312,9 +361,7 @@ export function calculateBotTypeTableData(
     gesamtInvestmentAvg = totalInvestment / updateMetricsOnly.length;
   }
   
-  // Real 24h Profit: Summe der "echten" 24h Werte für jeden Update
-  // - Runtime < 24h: Gesamten Grid Profit (den echten Wert)
-  // - Runtime >= 24h: Durchschnittlichen Grid Profit pro Tag
+  // Real 24h Profit
   let real24hProfit = 0;
   updateMetricsOnly.forEach(update => {
     const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
@@ -328,8 +375,7 @@ export function calculateBotTypeTableData(
     }
   });
   
-  // 24h Ø Profit: Gewichteter Durchschnitt basierend auf Runtime
-  // (Summe aller Grid Profits) / (Summe aller Runtimes in Stunden) × 24
+  // 24h Ø Profit
   let avg24hProfit = 0;
   if (updateMetricsOnly.length > 0) {
     let totalProfit = 0;
@@ -348,8 +394,7 @@ export function calculateBotTypeTableData(
     }
   }
   
-  // Wont Liq Rate: Berechnung basierend auf wontLiqBudget und totalInvestment
-  // Falls wontLiqBudget vorhanden: (wontLiqBudget / totalInvestment) * 100
+  // Wont Liq Rate
   let wontLiqRate = 0;
   if (botType.wontLiqBudget && updateMetricsOnly.length > 0) {
     const wontLiqBudget = parseFloat(botType.wontLiqBudget) || 0;
@@ -358,16 +403,63 @@ export function calculateBotTypeTableData(
     }
   }
   
-  // Runtime: Neueste Runtime aus den Updates
-  let runtime = '-';
-  if (updateMetricsOnly.length > 0) {
-    // Sortiere nach createdAt um den neuesten zu finden
-    const sortedUpdates = [...updateMetricsOnly].sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
-      return dateB - dateA;
-    });
-    runtime = sortedUpdates[0]?.avgRuntime || '-';
+  // Metric Started (frühstes Startdatum) und Latest Date (spätestes Enddatum)
+  // Berechnung wie auf der Bot-Type-Seite beim Auge-Modal
+  const allStartDates: Date[] = [];
+  const allEndDates: Date[] = [];
+  
+  updatesForType.forEach(update => {
+    if (update.status === 'Closed Bots') {
+      // Closed Bots: Start Date = End Date (thisUpload) - Runtime
+      if (update.thisUpload && update.longestRuntime) {
+        const endDate = parseGermanDate(update.thisUpload as string);
+        if (endDate) {
+          allEndDates.push(endDate);
+          const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
+          const startDate = new Date(endDate.getTime() - runtimeMs);
+          if (isValid(startDate)) {
+            allStartDates.push(startDate);
+          }
+        }
+      }
+    } else if (update.status === 'Update Metrics') {
+      // Update Metrics: lastUpload = From, thisUpload = Until
+      if (update.lastUpload) {
+        const fromDate = parseGermanDate(update.lastUpload as string);
+        if (fromDate) {
+          allStartDates.push(fromDate);
+        }
+      }
+      if (update.thisUpload) {
+        const untilDate = parseGermanDate(update.thisUpload as string);
+        if (untilDate) {
+          allEndDates.push(untilDate);
+        }
+      }
+      // Auch das date Feld prüfen (bei Startmetrik)
+      if (update.date) {
+        const dateVal = parseGermanDate(update.date as string);
+        if (dateVal) {
+          allStartDates.push(dateVal);
+        }
+      }
+    }
+  });
+  
+  // Frühstes Startdatum (Metric Started)
+  let metricStarted: Date | null = null;
+  if (allStartDates.length > 0) {
+    metricStarted = allStartDates.reduce((earliest, current) => 
+      current < earliest ? current : earliest
+    );
+  }
+  
+  // Spätestes Enddatum (Latest Date)
+  let latestDate: Date | null = null;
+  if (allEndDates.length > 0) {
+    latestDate = allEndDates.reduce((latest, current) => 
+      current > latest ? current : latest
+    );
   }
   
   // Last Updated: Das neueste createdAt Datum aus allen Updates
@@ -392,7 +484,8 @@ export function calculateBotTypeTableData(
     real24hProfit,
     avg24hProfit,
     wontLiqRate,
-    runtime,
-    periodType: 'Tag' // Default, wird später angepasst
+    metricStarted,
+    latestDate,
+    periodType: 'Tag'
   };
 }
