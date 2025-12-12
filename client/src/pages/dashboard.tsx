@@ -182,6 +182,34 @@ export default function Dashboard() {
   const [updateSortBy, setUpdateSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
   const [updateSortDirection, setUpdateSortDirection] = useState<'desc' | 'asc'>('desc');
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
+  
+  // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
+  const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
+  
+  // Handler für Update-Auswahl Icons
+  const handleConfirmUpdateSelection = () => {
+    if (selectedFromUpdate && selectedUntilUpdate) {
+      setUpdateSelectionMode('confirmed');
+    }
+  };
+  
+  const handleEditUpdateSelection = () => {
+    setUpdateSelectionMode('editing');
+  };
+  
+  const handleClearUpdateSelection = () => {
+    setSelectedFromUpdate(null);
+    setSelectedUntilUpdate(null);
+    setUpdateSelectionMode('idle');
+  };
+  
+  const handleSaveUpdateSelection = () => {
+    if (selectedFromUpdate && selectedUntilUpdate) {
+      setUpdateSelectionMode('confirmed');
+    } else {
+      setUpdateSelectionMode('idle');
+    }
+  };
 
   // Drag and drop state for metric cards
   const [isCardEditMode, setIsCardEditMode] = useState(false);
@@ -980,33 +1008,82 @@ export default function Dashboard() {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold">Update Verlauf</h3>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">From:</span>
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">From:</span>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="gap-2 min-w-[120px]"
-                      onClick={() => selectedBotName !== "Gesamt" && setFromUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt"}
+                      className="gap-2 min-w-[100px]"
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && setFromUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed'}
                     >
                       {selectedFromUpdate ? `#${selectedFromUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Until:</span>
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Until:</span>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="gap-2 min-w-[120px]"
-                      onClick={() => selectedBotName !== "Gesamt" && setUntilUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt"}
+                      className="gap-2 min-w-[100px]"
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && setUntilUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed'}
                     >
                       {selectedUntilUpdate ? `#${selectedUntilUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </div>
+                  
+                  {/* Icon-Buttons für Update-Auswahl Bestätigung */}
+                  {updateSelectionMode === 'idle' && selectedFromUpdate && selectedUntilUpdate && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleConfirmUpdateSelection}
+                      title="Auswahl bestätigen"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  {updateSelectionMode === 'confirmed' && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleEditUpdateSelection}
+                      title="Auswahl bearbeiten"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  {updateSelectionMode === 'editing' && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleClearUpdateSelection}
+                        title="Auswahl leeren"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleSaveUpdateSelection}
+                        title="Auswahl speichern"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                  
                   <Button
                     variant="outline"
                     size="icon"
@@ -1068,11 +1145,16 @@ export default function Dashboard() {
           <Card className="p-4 relative flex flex-col">
             <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
             <div className="space-y-3 flex-1">
-              <div className="flex items-center justify-between">
+              <div className={cn("flex items-center justify-between", updateSelectionMode === 'confirmed' && "opacity-50")}>
                 <span className="text-sm">Letzten</span>
-                <Popover open={timeRangeOpen} onOpenChange={setTimeRangeOpen}>
+                <Popover open={timeRangeOpen} onOpenChange={(open) => updateSelectionMode !== 'confirmed' && setTimeRangeOpen(open)}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2"
+                      disabled={updateSelectionMode === 'confirmed'}
+                    >
                       {selectedTimeRange}
                       <ChevronDown className="h-3 w-3" />
                     </Button>
