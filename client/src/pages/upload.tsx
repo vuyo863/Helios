@@ -112,7 +112,13 @@ export default function Upload() {
           });
           if (response.ok) {
             const updates: BotTypeUpdate[] = await response.json();
-            history[bt.name] = updates.map(u => ({
+            // WICHTIG: Sortiere nach createdAt (neueste zuerst) um korrektes "letztes Update" zu finden
+            const sortedUpdates = [...updates].sort((a, b) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA;
+            });
+            history[bt.name] = sortedUpdates.map(u => ({
               updateName: `${u.status} #${u.version}`,
               updateDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString('de-DE') : '',
               updateTime: u.createdAt ? new Date(u.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
