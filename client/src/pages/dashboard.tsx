@@ -1161,10 +1161,26 @@ export default function Dashboard() {
           </div>
           
           {/* Settings Container - Right side, same height as chart */}
-          <div className="flex flex-shrink-0">
+          <div className="flex flex-shrink-0 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg">
+            {/* Collapse Toggle Strip - Left Side */}
+            <div 
+              className={cn(
+                "flex flex-col items-center justify-start pt-3 w-10 bg-muted/30 cursor-pointer hover-elevate border",
+                settingsCollapsed ? "rounded-md" : "rounded-l-md border-r-0"
+              )}
+              onClick={() => setSettingsCollapsed(!settingsCollapsed)}
+              title={settingsCollapsed ? "Graph-Einstellungen ausklappen" : "Graph-Einstellungen einklappen"}
+            >
+              {settingsCollapsed ? (
+                <PanelLeft className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            
             {/* Settings Content - conditionally rendered */}
             {!settingsCollapsed && (
-              <Card className="p-4 flex flex-col rounded-r-none border-r-0 w-64">
+              <Card className="p-4 flex flex-col rounded-l-none border-l-0 w-64">
                 <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
                 <div className="space-y-3 flex-1">
               <div className={cn("flex items-center justify-between", updateSelectionMode === 'confirmed' && "opacity-50")}>
@@ -1348,18 +1364,6 @@ export default function Dashboard() {
                 </div>
               </Card>
             )}
-            
-            {/* Collapse Toggle Strip - Right Side */}
-            <div 
-              className={cn(
-                "flex flex-col items-center justify-start pt-3 w-10 bg-muted/30 cursor-pointer hover-elevate border",
-                settingsCollapsed ? "rounded-md" : "rounded-r-md border-l-0"
-              )}
-              onClick={() => setSettingsCollapsed(!settingsCollapsed)}
-              title={settingsCollapsed ? "Graph-Einstellungen ausklappen" : "Graph-Einstellungen einklappen"}
-            >
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
-            </div>
           </div>
         </div>
 
