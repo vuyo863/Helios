@@ -519,7 +519,20 @@ export default function BotTypesPage() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
                       <span>
-                        Last Updated: {format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de })}
+                        Last Updated: {(() => {
+                          // Finde das neueste Update nach createdAt aus allen Updates für diesen Bot-Typ
+                          if (updatesForType.length === 0) {
+                            return format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de });
+                          }
+                          const latestUpdate = [...updatesForType].sort((a, b) => {
+                            const dateA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+                            const dateB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+                            return dateB - dateA;
+                          })[0];
+                          return latestUpdate?.createdAt 
+                            ? format(new Date(latestUpdate.createdAt as Date), "dd.MM.yyyy", { locale: de }) 
+                            : format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de });
+                        })()}
                       </span>
                     </div>
                     <div className="space-y-1 text-sm">
@@ -718,6 +731,7 @@ export default function BotTypesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {archivedBotTypes.map((botType) => {
                   const entriesForType = botEntries.filter(entry => entry.botTypeId === botType.id);
+                  const updatesForTypeArchived = allUpdates.filter(update => update.botTypeId === botType.id);
                   const totalProfit = entriesForType.reduce((sum, entry) => sum + (parseFloat(entry.profit) || 0), 0);
                   const avgProfit = entriesForType.length > 0 ? totalProfit / entriesForType.length : 0;
                   
@@ -752,7 +766,20 @@ export default function BotTypesPage() {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            Last Updated: {format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de })}
+                            Last Updated: {(() => {
+                              // Finde das neueste Update nach createdAt aus allen Updates für diesen Bot-Typ
+                              if (updatesForTypeArchived.length === 0) {
+                                return format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de });
+                              }
+                              const latestUpdate = [...updatesForTypeArchived].sort((a, b) => {
+                                const dateA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+                                const dateB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+                                return dateB - dateA;
+                              })[0];
+                              return latestUpdate?.createdAt 
+                                ? format(new Date(latestUpdate.createdAt as Date), "dd.MM.yyyy", { locale: de }) 
+                                : format(new Date(botType.createdAt), "dd.MM.yyyy", { locale: de });
+                            })()}
                           </span>
                         </div>
                         <div className="space-y-1 text-sm">
