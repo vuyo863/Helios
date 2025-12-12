@@ -1490,6 +1490,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a specific bot type update
+  app.delete("/api/bot-type-updates/:updateId", async (req, res) => {
+    try {
+      const deleted = await storage.deleteBotTypeUpdate(req.params.updateId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Update not found" });
+      }
+      res.json({ success: true, message: "Update deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting update:', error);
+      res.status(500).json({ error: "Failed to delete update" });
+    }
+  });
+
   app.get("/api/entries", async (req, res) => {
     try {
       const entries = await storage.getAllBotEntries();

@@ -130,11 +130,15 @@ export default function BotTypesPage() {
   // Sortierung State für Update Verlauf
   const [sortBy, setSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+  
+  // Delete Update State
+  const [deleteUpdateDialogOpen, setDeleteUpdateDialogOpen] = useState(false);
+  const [updateToDelete, setUpdateToDelete] = useState<BotTypeUpdate | null>(null);
 
   const { toast } = useToast();
   
   // Check if any modal is open
-  const anyModalOpen = viewDialogOpen || deleteDialogOpen || updateDetailDialogOpen || notesDialogOpen;
+  const anyModalOpen = viewDialogOpen || deleteDialogOpen || updateDetailDialogOpen || notesDialogOpen || deleteUpdateDialogOpen;
   
   // Listen for pending updates and show confirmation dialog if a modal is open
   useEffect(() => {
@@ -277,6 +281,42 @@ export default function BotTypesPage() {
         updateId: notesUpdate.id,
         notes: editingNotes
       });
+    }
+  };
+  
+  // Delete Update Handler
+  const handleDeleteUpdateClick = (update: BotTypeUpdate) => {
+    setUpdateToDelete(update);
+    setDeleteUpdateDialogOpen(true);
+  };
+  
+  const deleteUpdateMutation = useMutation({
+    mutationFn: async (updateId: string) => {
+      return await apiRequest('DELETE', `/api/bot-type-updates/${updateId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types', selectedBotType?.id, 'updates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-type-updates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bot-types'] });
+      setDeleteUpdateDialogOpen(false);
+      setUpdateToDelete(null);
+      toast({
+        title: "Entry deleted",
+        description: "The entry has been successfully deleted.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "The entry could not be deleted.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const handleDeleteUpdateConfirm = () => {
+    if (updateToDelete) {
+      deleteUpdateMutation.mutate(updateToDelete.id);
     }
   };
 
@@ -1082,10 +1122,21 @@ export default function BotTypesPage() {
                         return (
                         <Card 
                           key={update.id} 
-                          className="hover-elevate active-elevate-2 transition-all"
+                          className="hover-elevate active-elevate-2 transition-all relative"
                           data-testid={`card-update-${update.id}`}
                         >
-                          <CardContent className="p-4">
+                          {/* X-Button zum Löschen oben rechts */}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-1 right-1 w-6 h-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteUpdateClick(update)}
+                            data-testid={`button-delete-update-${update.id}`}
+                            title="Delete entry"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                          <CardContent className="p-4 pr-8">
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
                                 <p className={`font-semibold text-sm mb-2 ${closedBotsTitleColor}`}>
@@ -1559,6 +1610,33 @@ export default function BotTypesPage() {
               <AlertDialogAction onClick={handleUpdateConfirm} data-testid="button-update-confirm">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Update now
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        
+        {/* Delete Update Confirmation Dialog (English) */}
+        <AlertDialog open={deleteUpdateDialogOpen} onOpenChange={setDeleteUpdateDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                Delete Entry
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Do you really want to delete this entry? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteUpdateDialogOpen(false)} data-testid="button-delete-update-cancel">
+                No
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteUpdateConfirm} 
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                data-testid="button-delete-update-confirm"
+              >
+                Yes
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
