@@ -1753,10 +1753,11 @@ export default function Upload() {
         // Das "+" Vorzeichen wird nur bei der Anzeige in Reports hinzugefügt
         
         // Datum-Logik:
-        // - Startmetrik: AI liefert das früheste Bot-Startdatum aus Screenshots
+        // - Startmetrik: "Datum und Uhrzeit" = AKTUELLES Upload-Datum (NICHT AI-Datum!)
         // - Normale Uploads: Aktuelles Echtzeit-Datum des Uploads
         // - thisUpload: Immer aktuelles Echtzeit-Datum
         // - uploadRuntime: Zeitdifferenz zwischen Last Upload und This Upload
+        // - Startmetrik lastUpload: ÄLTESTES createdAt aus allen Screenshots
         const now = new Date();
         // Lokale Zeit statt UTC verwenden (toISOString gibt UTC zurück)
         const year = now.getFullYear();
@@ -1767,8 +1768,37 @@ export default function Upload() {
         const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`; // Format: YYYY-MM-DDTHH:MM für datetime-local
         const currentDateTimeDisplay = now.toLocaleDateString('de-DE') + ' ' + now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         
-        // Bei Startmetrik: AI-Datum verwenden, sonst aktuelles Datum
-        const dateValue = activeIsStartMetric ? toStr(calculatedValues.date) : currentDateTime;
+        // WICHTIG: Bei Startmetrik "Datum und Uhrzeit" = aktuelles Upload-Datum (NICHT AI-Datum!)
+        const dateValue = currentDateTime;
+        
+        // === STARTMETRIK: LAST UPLOAD = ÄLTESTES CREATED-DATUM ===
+        // Bei natürlicher Startmetrik: Finde das älteste "createdAt" Datum aus allen Screenshots
+        // Dieses Datum wird als "Last Upload" angezeigt (= Bot-Startdatum)
+        if (activeIsStartMetric && activeExtractedData?.screenshots?.length > 0) {
+          let oldestDate: Date | null = null;
+          let oldestDateStr = '';
+          
+          for (const screenshot of activeExtractedData.screenshots) {
+            if (screenshot.createdAt) {
+              // Parse createdAt: Format "YYYY-MM-DD HH:MM:SS" oder "YYYY-MM-DD"
+              const createdDate = new Date(screenshot.createdAt);
+              
+              if (!isNaN(createdDate.getTime())) {
+                if (!oldestDate || createdDate < oldestDate) {
+                  oldestDate = createdDate;
+                  // Format für Anzeige: TT.MM.JJJJ HH:MM
+                  oldestDateStr = createdDate.toLocaleDateString('de-DE') + ' ' + 
+                    createdDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                }
+              }
+            }
+          }
+          
+          if (oldestDateStr) {
+            lastUploadDate = oldestDateStr;
+            console.log('Startmetrik: Ältestes createdAt gefunden:', oldestDateStr);
+          }
+        }
         
         // Upload Laufzeit berechnen:
         // - Bei Startmetrik: LEER (kein vorheriger Upload zum Vergleichen)
