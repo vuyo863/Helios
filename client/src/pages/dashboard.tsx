@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -1007,9 +1007,12 @@ export default function Dashboard() {
                   />
                   <YAxis 
                     dataKey="wert"
+                    domain={['auto', 'auto']}
                     label={{ value: 'Wert', angle: -90, position: 'insideLeft', style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' } }}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(value) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   />
+                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--popover))',
@@ -1017,6 +1020,7 @@ export default function Dashboard() {
                       borderRadius: '6px',
                       fontSize: '14px'
                     }}
+                    formatter={(value: number) => [value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USDT', 'Wert']}
                   />
                   <Line 
                     type="monotone" 
