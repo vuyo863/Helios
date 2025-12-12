@@ -659,7 +659,7 @@ export default function Dashboard() {
           >
             <StatCard
               label="Gesamtkapital"
-              value={`${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              value={`${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
               icon={Wallet}
               iconColor="bg-blue-100 text-blue-600"
             />
@@ -674,7 +674,7 @@ export default function Dashboard() {
           >
             <StatCard
               label="Gesamtprofit"
-              value={`${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              value={`${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
               icon={TrendingUp}
               iconColor="bg-green-100 text-green-600"
             />
@@ -704,7 +704,7 @@ export default function Dashboard() {
           >
             <StatCard
               label="Ø Profit/Tag"
-              value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
               icon={CalendarIcon}
               iconColor="bg-orange-100 text-orange-600"
             />
@@ -720,7 +720,7 @@ export default function Dashboard() {
           >
             <StatCard
               label="Real Profit/Tag"
-              value={`${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              value={`${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
               icon={Zap}
               iconColor="bg-yellow-100 text-yellow-600"
             />
