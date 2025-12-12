@@ -21,7 +21,7 @@ import {
 import { BotType, BotTypeUpdate, BotEntry } from "@shared/schema";
 import { Layers, Calendar, Pencil, Eye, Plus, Check, X, TrendingUp, Trash2, FileText, RotateCcw, Archive, MessageCircle, RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
+import { format, parse, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
 import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -577,19 +577,44 @@ export default function BotTypesPage() {
                               return totalMs;
                             };
                             
+                            // Helper: Parse German date format (dd.MM.yyyy HH:mm:ss or dd.MM.yyyy HH:mm)
+                            const parseGermanDate = (dateStr: string): Date | null => {
+                              if (!dateStr) return null;
+                              // Try with seconds first
+                              let parsed = parse(dateStr, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
+                              if (isValid(parsed)) return parsed;
+                              // Try without seconds
+                              parsed = parse(dateStr, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
+                              if (isValid(parsed)) return parsed;
+                              // Try ISO format
+                              parsed = parseISO(dateStr);
+                              if (isValid(parsed)) return parsed;
+                              // Fallback to native Date
+                              parsed = new Date(dateStr);
+                              if (isValid(parsed)) return parsed;
+                              return null;
+                            };
+                            
                             // Finde das früheste Startdatum aus allen Updates (Update Metrics + Closed Bots)
                             const allDates: Date[] = [];
                             updatesForType.forEach(update => {
                               // Für Closed Bots: Startdatum = thisUpload - longestRuntime
                               if (update.status === 'Closed Bots' && update.thisUpload && update.longestRuntime) {
-                                const endDate = new Date(update.thisUpload as string);
-                                const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
-                                const startDate = new Date(endDate.getTime() - runtimeMs);
-                                allDates.push(startDate);
+                                const endDate = parseGermanDate(update.thisUpload as string);
+                                if (endDate) {
+                                  const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
+                                  const startDate = new Date(endDate.getTime() - runtimeMs);
+                                  if (isValid(startDate)) {
+                                    allDates.push(startDate);
+                                  }
+                                }
                               }
                               // Für Update Metrics: date ist das Startdatum
                               else if (update.status === 'Update Metrics' && update.date) {
-                                allDates.push(new Date(update.date as string));
+                                const dateVal = parseGermanDate(update.date as string);
+                                if (dateVal) {
+                                  allDates.push(dateVal);
+                                }
                               }
                             });
                             
@@ -889,19 +914,44 @@ export default function BotTypesPage() {
                               return totalMs;
                             };
                             
+                            // Helper: Parse German date format (dd.MM.yyyy HH:mm:ss or dd.MM.yyyy HH:mm)
+                            const parseGermanDate = (dateStr: string): Date | null => {
+                              if (!dateStr) return null;
+                              // Try with seconds first
+                              let parsed = parse(dateStr, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
+                              if (isValid(parsed)) return parsed;
+                              // Try without seconds
+                              parsed = parse(dateStr, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
+                              if (isValid(parsed)) return parsed;
+                              // Try ISO format
+                              parsed = parseISO(dateStr);
+                              if (isValid(parsed)) return parsed;
+                              // Fallback to native Date
+                              parsed = new Date(dateStr);
+                              if (isValid(parsed)) return parsed;
+                              return null;
+                            };
+                            
                             // Finde das früheste Startdatum aus allen Updates (Update Metrics + Closed Bots)
                             const allDates: Date[] = [];
                             updates.forEach(update => {
                               // Für Closed Bots: Startdatum = thisUpload - longestRuntime
                               if (update.status === 'Closed Bots' && update.thisUpload && update.longestRuntime) {
-                                const endDate = new Date(update.thisUpload as string);
-                                const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
-                                const startDate = new Date(endDate.getTime() - runtimeMs);
-                                allDates.push(startDate);
+                                const endDate = parseGermanDate(update.thisUpload as string);
+                                if (endDate) {
+                                  const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
+                                  const startDate = new Date(endDate.getTime() - runtimeMs);
+                                  if (isValid(startDate)) {
+                                    allDates.push(startDate);
+                                  }
+                                }
                               }
                               // Für Update Metrics: date ist das Startdatum
                               else if (update.status === 'Update Metrics' && update.date) {
-                                allDates.push(new Date(update.date as string));
+                                const dateVal = parseGermanDate(update.date as string);
+                                if (dateVal) {
+                                  allDates.push(dateVal);
+                                }
                               }
                             });
                             
