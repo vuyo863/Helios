@@ -1349,7 +1349,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto py-4 space-y-3">
+            <div className="flex-1 overflow-y-auto py-2 space-y-2">
               {sortedUpdates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Keine Updates vorhanden
@@ -1364,18 +1364,18 @@ export default function Dashboard() {
                     )}
                     onClick={() => handleFromUpdateSelect(update)}
                   >
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
+                    <CardContent className="p-3">
+                      <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <p className={cn(
-                            "font-semibold",
-                            update.status === 'Closed Bots' ? 'text-orange-500' : 'text-foreground'
+                            "font-semibold text-sm",
+                            update.status === 'Closed Bots' ? 'text-destructive' : 'text-foreground'
                           )}>
                             {update.status} #{update.version}
                           </p>
                         </div>
                         {/* Zeile 1: Datum (Start/End Date für Closed Bots, From/Until für Update Metrics) */}
-                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                        <div className="flex items-center flex-wrap gap-x-4 text-xs">
                           {update.lastUpload && update.thisUpload ? (
                             <>
                               <span className="flex items-center gap-1 text-muted-foreground">
@@ -1398,19 +1398,24 @@ export default function Dashboard() {
                           )}
                         </div>
                         {/* Zeile 2: Profit-Werte */}
-                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                        <div className="flex items-center flex-wrap gap-x-4 text-xs">
                           {update.status === 'Closed Bots' ? (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1">
                               <span className="text-muted-foreground">Gesamt Profit:</span>
-                              <span className="font-medium text-primary">
+                              <span className={cn("font-medium", parseFloat(update.profit || '0') >= 0 ? 'text-primary' : 'text-destructive')}>
                                 {update.profit ? `${parseFloat(update.profit) > 0 ? '+' : ''}${parseFloat(update.profit).toFixed(2)}` : '0.00'} USDT
                               </span>
                             </span>
                           ) : (
                             <>
-                              <span className="flex items-center gap-1.5">
+                              <span className="flex items-center gap-1">
                                 <span className="text-muted-foreground">Real 24h Grid Profit:</span>
-                                <span className="font-medium text-primary">
+                                <span className={cn("font-medium", (() => {
+                                  const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                                  const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+                                  const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+                                  return (runtimeHours < 24 ? gridProfit : avgGridProfitDay) >= 0;
+                                })() ? 'text-primary' : 'text-destructive')}>
                                   {(() => {
                                     const runtimeHours = parseRuntimeToHours(update.avgRuntime);
                                     const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
@@ -1420,9 +1425,9 @@ export default function Dashboard() {
                                   })()} USDT
                                 </span>
                               </span>
-                              <span className="flex items-center gap-1.5">
+                              <span className="flex items-center gap-1">
                                 <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
-                                <span className="font-medium text-primary">
+                                <span className={cn("font-medium", parseFloat(update.avgGridProfitDay || '0') >= 0 ? 'text-primary' : 'text-destructive')}>
                                   {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
                                 </span>
                               </span>
@@ -1430,16 +1435,16 @@ export default function Dashboard() {
                           )}
                         </div>
                         {/* Zeile 3: Grid Profit + Investment */}
-                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                        <div className="flex items-center flex-wrap gap-x-4 text-xs">
                           {update.status !== 'Closed Bots' && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1">
                               <span className="text-muted-foreground">Grid Profit:</span>
-                              <span className="font-medium text-primary">
+                              <span className={cn("font-medium", parseFloat(update.overallGridProfitUsdt || '0') >= 0 ? 'text-primary' : 'text-destructive')}>
                                 {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(2)}` : '0.00'} USDT
                               </span>
                             </span>
                           )}
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1">
                             <span className="text-muted-foreground">Gesamt-Investment:</span>
                             <span className="font-medium">{parseFloat(update.totalInvestment || '0').toFixed(2)} USDT</span>
                           </span>
@@ -1502,7 +1507,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto py-4 space-y-3">
+            <div className="flex-1 overflow-y-auto py-2 space-y-2">
               {sortedUpdates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Keine Updates vorhanden
@@ -1517,18 +1522,18 @@ export default function Dashboard() {
                     )}
                     onClick={() => handleUntilUpdateSelect(update)}
                   >
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
+                    <CardContent className="p-3">
+                      <div className="space-y-1">
                         <div className="flex items-center justify-between">
                           <p className={cn(
-                            "font-semibold",
-                            update.status === 'Closed Bots' ? 'text-orange-500' : 'text-foreground'
+                            "font-semibold text-sm",
+                            update.status === 'Closed Bots' ? 'text-destructive' : 'text-foreground'
                           )}>
                             {update.status} #{update.version}
                           </p>
                         </div>
                         {/* Zeile 1: Datum (Start/End Date für Closed Bots, From/Until für Update Metrics) */}
-                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                        <div className="flex items-center flex-wrap gap-x-4 text-xs">
                           {update.lastUpload && update.thisUpload ? (
                             <>
                               <span className="flex items-center gap-1 text-muted-foreground">
@@ -1551,19 +1556,24 @@ export default function Dashboard() {
                           )}
                         </div>
                         {/* Zeile 2: Profit-Werte */}
-                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                        <div className="flex items-center flex-wrap gap-x-4 text-xs">
                           {update.status === 'Closed Bots' ? (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1">
                               <span className="text-muted-foreground">Gesamt Profit:</span>
-                              <span className="font-medium text-primary">
+                              <span className={cn("font-medium", parseFloat(update.profit || '0') >= 0 ? 'text-primary' : 'text-destructive')}>
                                 {update.profit ? `${parseFloat(update.profit) > 0 ? '+' : ''}${parseFloat(update.profit).toFixed(2)}` : '0.00'} USDT
                               </span>
                             </span>
                           ) : (
                             <>
-                              <span className="flex items-center gap-1.5">
+                              <span className="flex items-center gap-1">
                                 <span className="text-muted-foreground">Real 24h Grid Profit:</span>
-                                <span className="font-medium text-primary">
+                                <span className={cn("font-medium", (() => {
+                                  const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                                  const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+                                  const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+                                  return (runtimeHours < 24 ? gridProfit : avgGridProfitDay) >= 0;
+                                })() ? 'text-primary' : 'text-destructive')}>
                                   {(() => {
                                     const runtimeHours = parseRuntimeToHours(update.avgRuntime);
                                     const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
@@ -1573,9 +1583,9 @@ export default function Dashboard() {
                                   })()} USDT
                                 </span>
                               </span>
-                              <span className="flex items-center gap-1.5">
+                              <span className="flex items-center gap-1">
                                 <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
-                                <span className="font-medium text-primary">
+                                <span className={cn("font-medium", parseFloat(update.avgGridProfitDay || '0') >= 0 ? 'text-primary' : 'text-destructive')}>
                                   {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
                                 </span>
                               </span>
@@ -1583,16 +1593,16 @@ export default function Dashboard() {
                           )}
                         </div>
                         {/* Zeile 3: Grid Profit + Investment */}
-                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                        <div className="flex items-center flex-wrap gap-x-4 text-xs">
                           {update.status !== 'Closed Bots' && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1">
                               <span className="text-muted-foreground">Grid Profit:</span>
-                              <span className="font-medium text-primary">
+                              <span className={cn("font-medium", parseFloat(update.overallGridProfitUsdt || '0') >= 0 ? 'text-primary' : 'text-destructive')}>
                                 {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(2)}` : '0.00'} USDT
                               </span>
                             </span>
                           )}
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1">
                             <span className="text-muted-foreground">Gesamt-Investment:</span>
                             <span className="font-medium">{parseFloat(update.totalInvestment || '0').toFixed(2)} USDT</span>
                           </span>
