@@ -1364,37 +1364,85 @@ export default function Dashboard() {
                     )}
                     onClick={() => handleFromUpdateSelect(update)}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="p-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-sm">
+                          <p className={cn(
+                            "font-semibold",
+                            update.status === 'Closed Bots' ? 'text-orange-500' : 'text-foreground'
+                          )}>
                             {update.status} #{update.version}
                           </p>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <CalendarIcon className="w-3 h-3" />
-                            {update.createdAt 
-                              ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
-                              : '-'
-                            }
-                          </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Grid Profit 24H Ø</span>
-                            <p className="font-medium text-primary">
-                              {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Grid Profit</span>
-                            <p className="font-medium text-primary">
-                              {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
-                            </p>
-                          </div>
-                          <div className="col-span-2">
-                            <span className="text-muted-foreground">Gesamt-Investment</span>
-                            <p className="font-medium">{update.totalInvestment || '0.00'} USDT</p>
-                          </div>
+                        {/* Zeile 1: Datum (Start/End Date für Closed Bots, From/Until für Update Metrics) */}
+                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                          {update.lastUpload && update.thisUpload ? (
+                            <>
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <span className="font-medium">{update.status === 'Closed Bots' ? 'Start Date:' : 'From:'}</span>
+                                {update.lastUpload || '-'}
+                              </span>
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <span className="font-medium">{update.status === 'Closed Bots' ? 'End Date:' : 'Until:'}</span>
+                                {update.thisUpload || '-'}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <CalendarIcon className="w-3 h-3" />
+                              {update.createdAt 
+                                ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                                : '-'
+                              }
+                            </span>
+                          )}
+                        </div>
+                        {/* Zeile 2: Profit-Werte */}
+                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                          {update.status === 'Closed Bots' ? (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground">Gesamt Profit:</span>
+                              <span className="font-medium text-primary">
+                                {update.profit ? `${parseFloat(update.profit) > 0 ? '+' : ''}${parseFloat(update.profit).toFixed(2)}` : '0.00'} USDT
+                              </span>
+                            </span>
+                          ) : (
+                            <>
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Real 24h Grid Profit:</span>
+                                <span className="font-medium text-primary">
+                                  {(() => {
+                                    const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                                    const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+                                    const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+                                    const realProfit = runtimeHours < 24 ? gridProfit : avgGridProfitDay;
+                                    return `${realProfit > 0 ? '+' : ''}${realProfit.toFixed(2)}`;
+                                  })()} USDT
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                <span className="font-medium text-primary">
+                                  {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
+                                </span>
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {/* Zeile 3: Grid Profit + Investment */}
+                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                          {update.status !== 'Closed Bots' && (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground">Grid Profit:</span>
+                              <span className="font-medium text-primary">
+                                {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(2)}` : '0.00'} USDT
+                              </span>
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Gesamt-Investment:</span>
+                            <span className="font-medium">{parseFloat(update.totalInvestment || '0').toFixed(2)} USDT</span>
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -1469,37 +1517,85 @@ export default function Dashboard() {
                     )}
                     onClick={() => handleUntilUpdateSelect(update)}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="p-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-sm">
+                          <p className={cn(
+                            "font-semibold",
+                            update.status === 'Closed Bots' ? 'text-orange-500' : 'text-foreground'
+                          )}>
                             {update.status} #{update.version}
                           </p>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <CalendarIcon className="w-3 h-3" />
-                            {update.createdAt 
-                              ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
-                              : '-'
-                            }
-                          </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Grid Profit 24H Ø</span>
-                            <p className="font-medium text-primary">
-                              {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Grid Profit</span>
-                            <p className="font-medium text-primary">
-                              {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(4)}` : '0.00'} USDT
-                            </p>
-                          </div>
-                          <div className="col-span-2">
-                            <span className="text-muted-foreground">Gesamt-Investment</span>
-                            <p className="font-medium">{update.totalInvestment || '0.00'} USDT</p>
-                          </div>
+                        {/* Zeile 1: Datum (Start/End Date für Closed Bots, From/Until für Update Metrics) */}
+                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                          {update.lastUpload && update.thisUpload ? (
+                            <>
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <span className="font-medium">{update.status === 'Closed Bots' ? 'Start Date:' : 'From:'}</span>
+                                {update.lastUpload || '-'}
+                              </span>
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <span className="font-medium">{update.status === 'Closed Bots' ? 'End Date:' : 'Until:'}</span>
+                                {update.thisUpload || '-'}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <CalendarIcon className="w-3 h-3" />
+                              {update.createdAt 
+                                ? format(new Date(update.createdAt as Date), "dd.MM.yyyy HH:mm", { locale: de })
+                                : '-'
+                              }
+                            </span>
+                          )}
+                        </div>
+                        {/* Zeile 2: Profit-Werte */}
+                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                          {update.status === 'Closed Bots' ? (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground">Gesamt Profit:</span>
+                              <span className="font-medium text-primary">
+                                {update.profit ? `${parseFloat(update.profit) > 0 ? '+' : ''}${parseFloat(update.profit).toFixed(2)}` : '0.00'} USDT
+                              </span>
+                            </span>
+                          ) : (
+                            <>
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Real 24h Grid Profit:</span>
+                                <span className="font-medium text-primary">
+                                  {(() => {
+                                    const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                                    const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+                                    const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+                                    const realProfit = runtimeHours < 24 ? gridProfit : avgGridProfitDay;
+                                    return `${realProfit > 0 ? '+' : ''}${realProfit.toFixed(2)}`;
+                                  })()} USDT
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                <span className="font-medium text-primary">
+                                  {update.avgGridProfitDay ? `${parseFloat(update.avgGridProfitDay) > 0 ? '+' : ''}${parseFloat(update.avgGridProfitDay).toFixed(2)}` : '0.00'} USDT
+                                </span>
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {/* Zeile 3: Grid Profit + Investment */}
+                        <div className="flex items-center flex-wrap gap-x-6 text-sm">
+                          {update.status !== 'Closed Bots' && (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-muted-foreground">Grid Profit:</span>
+                              <span className="font-medium text-primary">
+                                {update.overallGridProfitUsdt ? `${parseFloat(update.overallGridProfitUsdt) > 0 ? '+' : ''}${parseFloat(update.overallGridProfitUsdt).toFixed(2)}` : '0.00'} USDT
+                              </span>
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Gesamt-Investment:</span>
+                            <span className="font-medium">{parseFloat(update.totalInvestment || '0').toFixed(2)} USDT</span>
+                          </span>
                         </div>
                       </div>
                     </CardContent>
