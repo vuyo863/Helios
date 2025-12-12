@@ -1036,6 +1036,12 @@ export default function BotTypesPage() {
                         // Berechne Grid Profit 24H Ø
                         const gridProfit24h = update.avgGridProfitDay || '0.00';
                         
+                        // Für Closed Bots: Titel-Farbe basierend auf Gesamt Profit
+                        const profitValue = parseFloat(update.profit || '0') || 0;
+                        const closedBotsTitleColor = update.status === 'Closed Bots' 
+                          ? (profitValue > 0 ? 'text-green-600' : profitValue < 0 ? 'text-red-600' : '')
+                          : '';
+                        
                         return (
                         <Card 
                           key={update.id} 
@@ -1045,7 +1051,7 @@ export default function BotTypesPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm mb-2">
+                                <p className={`font-semibold text-sm mb-2 ${closedBotsTitleColor}`}>
                                   {update.status} #{update.version}
                                 </p>
                                 <div className="flex flex-col gap-y-1 text-xs">
