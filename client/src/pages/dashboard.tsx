@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Search, Check, Plus } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -41,6 +41,27 @@ import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+
+// Helper function to parse runtime string to hours (same as bot-types.tsx)
+function parseRuntimeToHours(runtime: string | null | undefined): number {
+  if (!runtime) return 0;
+  
+  let totalHours = 0;
+  
+  // Match days
+  const daysMatch = runtime.match(/(\d+)d/);
+  if (daysMatch) totalHours += parseInt(daysMatch[1]) * 24;
+  
+  // Match hours
+  const hoursMatch = runtime.match(/(\d+)h/);
+  if (hoursMatch) totalHours += parseInt(hoursMatch[1]);
+  
+  // Match minutes
+  const minutesMatch = runtime.match(/(\d+)m/);
+  if (minutesMatch) totalHours += parseInt(minutesMatch[1]) / 60;
+  
+  return totalHours;
+}
 
 export default function Dashboard() {
   const { data: entries = [], isLoading } = useQuery<BotEntry[]>({
@@ -344,17 +365,86 @@ export default function Dashboard() {
     [totalInvestment, totalProfit]
   );
 
-  const dayCount = useMemo(() => 
-    filteredEntriesForStats.length > 0 
-      ? Math.max(1, Math.ceil((new Date().getTime() - new Date(filteredEntriesForStats[filteredEntriesForStats.length - 1].date).getTime()) / (1000 * 60 * 60 * 24)))
-      : 1,
-    [filteredEntriesForStats]
-  );
-  
-  const avgDailyProfit = useMemo(() => 
-    totalProfit / dayCount,
-    [totalProfit, dayCount]
-  );
+  // Ø Profit/Tag: Summe der "24h Ø Profit" von allen aktiven Bot-Types
+  // Berechnung wie auf Bot-Types-Seite: weighted average (totalProfit / totalHours * 24)
+  const avgDailyProfit = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+        return 0;
+      }
+      
+      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+      let totalAvg24h = 0;
+      
+      activeBotTypes.forEach(botType => {
+        const updateMetricsOnly = allBotTypeUpdates.filter(
+          update => update.botTypeId === botType.id && update.status === 'Update Metrics'
+        );
+        
+        if (updateMetricsOnly.length > 0) {
+          let totalProfit = 0;
+          let totalHours = 0;
+          
+          updateMetricsOnly.forEach(update => {
+            const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+            const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+            totalProfit += gridProfit;
+            totalHours += runtimeHours;
+          });
+          
+          if (totalHours > 0) {
+            const profitPerHour = totalProfit / totalHours;
+            const avg24h = profitPerHour * 24;
+            totalAvg24h += avg24h;
+          }
+        }
+      });
+      
+      return totalAvg24h;
+    } else {
+      // Für spezifischen Bot: Fallback
+      return 0;
+    }
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates]);
+
+  // Real Profit/Tag: Summe der "Real 24h Profit" von allen aktiven Bot-Types
+  // Berechnung wie auf Bot-Types-Seite:
+  // - Wenn Runtime < 24h: Nimm den gesamten Grid Profit
+  // - Wenn Runtime >= 24h: Nimm den avgGridProfitDay
+  const real24hProfit = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+        return 0;
+      }
+      
+      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+      let totalReal24h = 0;
+      
+      activeBotTypes.forEach(botType => {
+        const updateMetricsOnly = allBotTypeUpdates.filter(
+          update => update.botTypeId === botType.id && update.status === 'Update Metrics'
+        );
+        
+        updateMetricsOnly.forEach(update => {
+          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+          const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+          
+          if (runtimeHours < 24) {
+            // Bot läuft weniger als 24h: Nimm den gesamten Grid Profit
+            totalReal24h += gridProfit;
+          } else {
+            // Bot läuft 24h oder länger: Nimm den Durchschnitt pro Tag
+            totalReal24h += avgGridProfitDay;
+          }
+        });
+      });
+      
+      return totalReal24h;
+    } else {
+      return 0;
+    }
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates]);
 
   const lineChartData = useMemo(() => 
     filteredEntriesForStats
@@ -558,7 +648,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div 
             onClick={() => toggleMetricCard('Gesamtkapital')}
             className={`cursor-pointer transition-all ${
@@ -617,6 +707,22 @@ export default function Dashboard() {
               value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
               icon={CalendarIcon}
               iconColor="bg-orange-100 text-orange-600"
+            />
+          </div>
+          <div 
+            onClick={() => toggleMetricCard('Real Profit/Tag')}
+            className={`cursor-pointer transition-all ${
+              activeMetricCards.includes('Real Profit/Tag') 
+                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
+                : ''
+            }`}
+            data-testid="card-real-profit-tag"
+          >
+            <StatCard
+              label="Real Profit/Tag"
+              value={`${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} USDT`}
+              icon={Zap}
+              iconColor="bg-yellow-100 text-yellow-600"
             />
           </div>
         </div>
