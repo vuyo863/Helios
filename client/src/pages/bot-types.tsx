@@ -458,6 +458,24 @@ export default function BotTypesPage() {
                 }
               }
               
+              // Real 24h Grid Profit: Summe der "echten" 24h Werte für jeden Update
+              // - Runtime < 24h: Gesamten Grid Profit (den echten Wert)
+              // - Runtime >= 24h: Durchschnittlichen Grid Profit pro Tag
+              let real24hProfit = 0;
+              updateMetricsOnly.forEach(update => {
+                const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+                const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+                
+                if (runtimeHours < 24) {
+                  // Bot läuft weniger als 24h: Nimm den gesamten Grid Profit
+                  real24hProfit += gridProfit;
+                } else {
+                  // Bot läuft 24h oder länger: Nimm den Durchschnitt pro Tag
+                  real24hProfit += avgGridProfitDay;
+                }
+              });
+              
               return (
                 <Card 
                   key={botType.id} 
@@ -563,8 +581,7 @@ export default function BotTypesPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Real 24h Profit:</span>
                         <span className="font-medium" data-testid={`text-real-24h-profit-${botType.id}`}>
-                          {/* Platzhalter - Logik wird später implementiert */}
-                          0.00 USDT
+                          {real24hProfit > 0 ? '+' : ''}{real24hProfit.toFixed(2)} USDT
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -1108,8 +1125,20 @@ export default function BotTypesPage() {
                                     ) : (
                                       <>
                                         <span className="flex items-center gap-1.5">
-                                          <span className="text-muted-foreground">Real 24h:</span>
-                                          <span className="font-medium text-primary">0.00 USDT</span>
+                                          <span className="text-muted-foreground">Real 24h Grid Profit:</span>
+                                          <span className="font-medium text-primary">
+                                            {(() => {
+                                              // Real 24h Grid Profit Logik:
+                                              // - Runtime < 24h: Zeige gesamten Grid Profit (den echten Wert)
+                                              // - Runtime >= 24h: Zeige durchschnittlichen Grid Profit pro Tag
+                                              const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+                                              if (runtimeHours < 24) {
+                                                return formatUsdtWithSign(update.overallGridProfitUsdt) + ' USDT';
+                                              } else {
+                                                return formatWithSign(gridProfit24h) + ' USDT';
+                                              }
+                                            })()}
+                                          </span>
                                         </span>
                                         <span className="flex items-center gap-1.5">
                                           <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
