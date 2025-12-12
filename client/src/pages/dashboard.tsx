@@ -80,6 +80,23 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
   return totalHours;
 }
 
+// Helper function to get timestamp from update for date comparison
+function getUpdateTimestamp(update: { thisUpload?: string | null; lastUpload?: string | null; createdAt?: Date | null }): number {
+  // Prefer thisUpload (End Date), then lastUpload (Start Date), then createdAt
+  if (update.thisUpload) {
+    const parsed = Date.parse(update.thisUpload);
+    if (!isNaN(parsed)) return parsed;
+  }
+  if (update.lastUpload) {
+    const parsed = Date.parse(update.lastUpload);
+    if (!isNaN(parsed)) return parsed;
+  }
+  if (update.createdAt) {
+    return new Date(update.createdAt).getTime();
+  }
+  return 0;
+}
+
 // Default order for metric cards
 const DEFAULT_CARD_ORDER = ['Gesamtkapital', 'Gesamtprofit', 'Gesamtprofit %', 'Ø Profit/Tag', 'Real Profit/Tag'];
 
@@ -395,6 +412,20 @@ export default function Dashboard() {
       return updateSortDirection === 'desc' ? valueB - valueA : valueA - valueB;
     });
   }, [selectedBotTypeUpdates, updateSortBy, updateSortDirection]);
+
+  // Gefilterte Updates für Until-Dialog: Nur Updates die NACH dem From-Update-Datum liegen
+  const filteredUpdatesForUntil = useMemo(() => {
+    if (!selectedFromUpdate) return sortedUpdates;
+    
+    const fromTimestamp = getUpdateTimestamp(selectedFromUpdate);
+    if (fromTimestamp === 0) return sortedUpdates;
+    
+    // Nur Updates mit späterem Datum als das From-Update anzeigen
+    return sortedUpdates.filter(update => {
+      const updateTimestamp = getUpdateTimestamp(update);
+      return updateTimestamp > fromTimestamp;
+    });
+  }, [sortedUpdates, selectedFromUpdate]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
@@ -1310,7 +1341,7 @@ export default function Dashboard() {
         </Dialog>
 
         <Dialog open={fromUpdateDialogOpen} onOpenChange={setFromUpdateDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-6">
             <DialogHeader>
               <DialogTitle>From Update auswählen - {selectedBotName}</DialogTitle>
             </DialogHeader>
@@ -1349,7 +1380,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto py-2 space-y-2">
+            <div className="flex-1 overflow-y-auto py-2 space-y-3 px-1">
               {sortedUpdates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Keine Updates vorhanden
@@ -1475,7 +1506,7 @@ export default function Dashboard() {
         </Dialog>
 
         <Dialog open={untilUpdateDialogOpen} onOpenChange={setUntilUpdateDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-6">
             <DialogHeader>
               <DialogTitle>Until Update auswählen - {selectedBotName}</DialogTitle>
             </DialogHeader>
@@ -1514,13 +1545,15 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto py-2 space-y-2">
-              {sortedUpdates.length === 0 ? (
+            <div className="flex-1 overflow-y-auto py-2 space-y-3 px-1">
+              {filteredUpdatesForUntil.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Keine Updates vorhanden
+                  {selectedFromUpdate 
+                    ? "Keine Updates nach dem From-Datum vorhanden"
+                    : "Keine Updates vorhanden"}
                 </div>
               ) : (
-                sortedUpdates.map((update) => {
+                filteredUpdatesForUntil.map((update) => {
                   const profitValue = parseFloat(update.profit || '0') || 0;
                   const closedBotsTitleColor = update.status === 'Closed Bots' 
                     ? (profitValue > 0 ? 'text-green-600' : profitValue < 0 ? 'text-red-600' : '')
