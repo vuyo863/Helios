@@ -563,8 +563,9 @@ export default function BotTypesPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gesamtinvestment-Ø:</span>
                         <span className="font-medium" data-testid={`text-avg-investment-${botType.id}`}>
-                          {updatesForType.length > 0 
-                            ? (updatesForType.reduce((sum, u) => sum + (parseFloat(u.totalInvestment || '0') || 0), 0) / updatesForType.length).toFixed(2)
+                          {/* Nur Update Metrics verwenden, Closed Bots werden nicht einberechnet */}
+                          {updateMetricsOnly.length > 0 
+                            ? (updateMetricsOnly.reduce((sum, u) => sum + (parseFloat(u.totalInvestment || '0') || 0), 0) / updateMetricsOnly.length).toFixed(2)
                             : '0.00'} USDT
                         </span>
                       </div>
