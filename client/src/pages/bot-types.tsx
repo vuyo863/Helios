@@ -1108,6 +1108,10 @@ export default function BotTypesPage() {
                                     ) : (
                                       <>
                                         <span className="flex items-center gap-1.5">
+                                          <span className="text-muted-foreground">Real 24h:</span>
+                                          <span className="font-medium text-primary">0.00 USDT</span>
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
                                           <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
                                           <span className="font-medium text-primary">{formatWithSign(gridProfit24h)} USDT</span>
                                         </span>
