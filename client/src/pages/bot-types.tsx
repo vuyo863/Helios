@@ -421,19 +421,31 @@ export default function BotTypesPage() {
               const isEditing = editingBotTypeId === botType.id;
               // Calculate total Grid Profit from all updates for this bot type
               const updatesForType = allUpdates.filter(update => update.botTypeId === botType.id);
-              const totalGridProfit = updatesForType.reduce((sum, update) => sum + (parseFloat(update.overallGridProfitUsdt || '0') || 0), 0);
+              
+              // Gesamt Profit: Alle Updates, aber unterschiedliche Felder je nach Status
+              // - Update Metrics: overallGridProfitUsdt (Grid Profit)
+              // - Closed Bots: profit (Gesamt Profit)
+              const totalGridProfit = updatesForType.reduce((sum, update) => {
+                if (update.status === 'Closed Bots') {
+                  return sum + (parseFloat(update.profit || '0') || 0);
+                } else {
+                  return sum + (parseFloat(update.overallGridProfitUsdt || '0') || 0);
+                }
+              }, 0);
               
               // Calculate 24h average profit using WEIGHTED average (Methode 2)
-              // 1. Sum all Grid Profits
+              // WICHTIG: Nur "Update Metrics" verwenden, Closed Bots werden NICHT einberechnet
+              // 1. Sum all Grid Profits (nur Update Metrics)
               // 2. Sum all runtimes in hours
               // 3. profitPerHour = totalProfit / totalHours
               // 4. profit24h = profitPerHour * 24
               let avg24hProfit = 0;
-              if (updatesForType.length > 0) {
+              const updateMetricsOnly = updatesForType.filter(update => update.status === 'Update Metrics');
+              if (updateMetricsOnly.length > 0) {
                 let totalProfit = 0;
                 let totalHours = 0;
                 
-                updatesForType.forEach(update => {
+                updateMetricsOnly.forEach(update => {
                   const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
                   const runtimeHours = parseRuntimeToHours(update.avgRuntime);
                   totalProfit += gridProfit;
