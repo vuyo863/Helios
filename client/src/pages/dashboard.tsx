@@ -279,8 +279,11 @@ export default function Dashboard() {
       activeBotTypes.forEach(botType => {
         const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
         if (updatesForType.length > 0) {
-          // Nimm den neuesten Update (erster in der Liste)
-          const latestUpdate = updatesForType[0];
+          // Nimm den neuesten Update (sortiert nach createdAt desc, also erster)
+          const sortedUpdates = [...updatesForType].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          const latestUpdate = sortedUpdates[0];
           const gesamtInvestment = parseFloat(latestUpdate.totalInvestment || '0') || 0;
           sum += gesamtInvestment;
         }
@@ -293,10 +296,37 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
   
-  const totalProfit = useMemo(() => 
-    filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0),
-    [filteredEntriesForStats]
-  );
+  const totalProfit = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      // Prüfe ob alle benötigten Daten vorhanden sind
+      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+        // Falls Daten fehlen, nutze Entries als Fallback
+        return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
+      }
+      
+      // Summiere Gesamt Profit von allen aktiven Bot Types
+      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+      let sum = 0;
+      
+      activeBotTypes.forEach(botType => {
+        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+        if (updatesForType.length > 0) {
+          // Nimm den neuesten Update (sortiert nach createdAt desc, also erster)
+          const sortedUpdates = [...updatesForType].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          const latestUpdate = sortedUpdates[0];
+          const gesamtProfit = parseFloat(latestUpdate.overallGridProfitUsdt || '0') || 0;
+          sum += gesamtProfit;
+        }
+      });
+      
+      return sum;
+    } else {
+      // Für spezifischen Bot: Summiere aus Entries
+      return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
+    }
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats]);
   
   const totalProfitPercent = useMemo(() => 
     totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0,
