@@ -1166,18 +1166,36 @@ export default function Dashboard() {
                 <Button variant="outline" size="sm">Linie</Button>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">Sequenz</span>
-                <Select value={chartSequence} onValueChange={(value: 'hours' | 'days' | 'weeks' | 'months') => setChartSequence(value)}>
-                  <SelectTrigger className="w-[100px] h-8" data-testid="select-chart-sequence">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hours">Stunden</SelectItem>
-                    <SelectItem value="days">Tage</SelectItem>
-                    <SelectItem value="weeks">Wochen</SelectItem>
-                    <SelectItem value="months">Monate</SelectItem>
-                  </SelectContent>
-                </Select>
+                <span className="text-sm">Sequence</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2" data-testid="select-chart-sequence">
+                      {chartSequence === 'hours' ? 'Hours' : chartSequence === 'days' ? 'Days' : chartSequence === 'weeks' ? 'Weeks' : 'Months'}
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-2" align="end">
+                    <div className="space-y-1">
+                      {[
+                        { value: 'hours', label: 'Hours' },
+                        { value: 'days', label: 'Days' },
+                        { value: 'weeks', label: 'Weeks' },
+                        { value: 'months', label: 'Months' }
+                      ].map((option) => (
+                        <Button
+                          key={option.value}
+                          variant={chartSequence === option.value ? "default" : "ghost"}
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => setChartSequence(option.value as 'hours' | 'days' | 'weeks' | 'months')}
+                          data-testid={`sequence-option-${option.value}`}
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             <div className="mt-4 flex justify-end">
