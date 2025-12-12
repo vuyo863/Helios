@@ -581,14 +581,14 @@ export default function BotTypesPage() {
                             const allDates: Date[] = [];
                             updatesForType.forEach(update => {
                               // Für Closed Bots: Startdatum = thisUpload - longestRuntime
-                              if (update.status === 'closed' && update.thisUpload && update.longestRuntime) {
+                              if (update.status === 'Closed Bots' && update.thisUpload && update.longestRuntime) {
                                 const endDate = new Date(update.thisUpload as string);
                                 const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
                                 const startDate = new Date(endDate.getTime() - runtimeMs);
                                 allDates.push(startDate);
                               }
                               // Für Update Metrics: date ist das Startdatum
-                              else if (update.status === 'active' && update.date) {
+                              else if (update.status === 'Update Metrics' && update.date) {
                                 allDates.push(new Date(update.date as string));
                               }
                             });
@@ -893,14 +893,14 @@ export default function BotTypesPage() {
                             const allDates: Date[] = [];
                             updates.forEach(update => {
                               // Für Closed Bots: Startdatum = thisUpload - longestRuntime
-                              if (update.status === 'closed' && update.thisUpload && update.longestRuntime) {
+                              if (update.status === 'Closed Bots' && update.thisUpload && update.longestRuntime) {
                                 const endDate = new Date(update.thisUpload as string);
                                 const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
                                 const startDate = new Date(endDate.getTime() - runtimeMs);
                                 allDates.push(startDate);
                               }
                               // Für Update Metrics: date ist das Startdatum
-                              else if (update.status === 'active' && update.date) {
+                              else if (update.status === 'Update Metrics' && update.date) {
                                 allDates.push(new Date(update.date as string));
                               }
                             });
