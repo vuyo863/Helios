@@ -169,8 +169,8 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                     <SortIcon column="gesamtProfit" />
                   </div>
                 </TableHead>
-                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[100px]" data-testid="header-profit-percent">
-                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profitPercent')}>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[110px]" data-testid="header-profit-percent">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1 whitespace-nowrap" onClick={() => onSort('profitPercent')}>
                     <span>Profit %</span>
                     <SortIcon column="profitPercent" />
                   </div>
