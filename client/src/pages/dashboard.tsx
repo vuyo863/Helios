@@ -53,7 +53,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format } from "date-fns";
@@ -1159,21 +1159,25 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </Card>
           </div>
-          {!settingsCollapsed ? (
-            <Card className="p-4 relative flex flex-col">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold">Graph-Einstellungen</h4>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setSettingsCollapsed(true)}
-                  title="Einklappen"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-3 flex-1">
+          <div className="flex">
+            {/* Collapse Toggle Strip - ChatGPT Style */}
+            <div 
+              className="flex flex-col items-center justify-start pt-3 px-1 bg-muted/30 rounded-l-md border border-r-0 cursor-pointer hover-elevate"
+              onClick={() => setSettingsCollapsed(!settingsCollapsed)}
+              title={settingsCollapsed ? "Graph-Einstellungen ausklappen" : "Graph-Einstellungen einklappen"}
+            >
+              {settingsCollapsed ? (
+                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            
+            {/* Settings Content - conditionally rendered */}
+            {!settingsCollapsed && (
+              <Card className="p-4 flex flex-col rounded-l-none border-l-0 flex-1">
+                <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
+                <div className="space-y-3 flex-1">
               <div className={cn("flex items-center justify-between", updateSelectionMode === 'confirmed' && "opacity-50")}>
                 <span className="text-sm">Letzten</span>
                 <Popover open={timeRangeOpen} onOpenChange={(open) => updateSelectionMode !== 'confirmed' && setTimeRangeOpen(open)}>
@@ -1343,30 +1347,19 @@ export default function Dashboard() {
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
-              <div className="mt-4 flex justify-end">
-                <Button 
-                  size="sm"
-                  onClick={handleApplySettings}
-                  data-testid="button-apply-settings"
-                >
-                  Apply
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <Card className="p-2 flex items-center justify-center">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setSettingsCollapsed(false)}
-                title="Graph-Einstellungen ausklappen"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </Card>
-          )}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button 
+                    size="sm"
+                    onClick={handleApplySettings}
+                    data-testid="button-apply-settings"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
 
         <div className="mb-8">
