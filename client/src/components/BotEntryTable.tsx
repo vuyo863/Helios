@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,7 @@ import {
 import { BotType, BotTypeUpdate } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronDown, ArrowUp, ArrowDown, X } from "lucide-react";
 
 // Helper function to parse runtime string like "1d 14h 28m" to hours
 function parseRuntimeToHours(runtime: string | null | undefined): number {
@@ -71,6 +72,9 @@ export interface BotTypeTableData {
   gesamtInvestmentAvg: number;
   gesamtProfit: number;
   real24hProfit: number;
+  avg24hProfit: number;
+  wontLiqRate: number;
+  runtime: string;
   periodType: string;
 }
 
@@ -81,9 +85,10 @@ interface BotEntryTableProps {
   sortColumn: string | null;
   sortDirection: 'asc' | 'desc';
   onSort: (column: string) => void;
+  onRemoveBotType: (botTypeId: string) => void;
 }
 
-export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodChange, sortColumn, sortDirection, onSort }: BotEntryTableProps) {
+export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodChange, sortColumn, sortDirection, onSort, onRemoveBotType }: BotEntryTableProps) {
   const getPeriodBadgeVariant = (periodType: string) => {
     switch (periodType.toLowerCase()) {
       case 'tag':
@@ -124,9 +129,9 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-datum">
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-last-updated">
                 <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('lastUpdated')}>
-                  <span>Datum</span>
+                  <span>LastUpdated</span>
                   <SortIcon column="lastUpdated" />
                 </div>
               </TableHead>
@@ -152,6 +157,24 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                 <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('real24hProfit')}>
                   <span>Real 24h Profit</span>
                   <SortIcon column="real24hProfit" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-avg-24h-profit">
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('avg24hProfit')}>
+                  <span>24h Ø Profit</span>
+                  <SortIcon column="avg24hProfit" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b text-right" data-testid="header-wont-liq-rate">
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('wontLiqRate')}>
+                  <span>Wont Liq Rate</span>
+                  <SortIcon column="wontLiqRate" />
+                </div>
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-runtime">
+                <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('runtime')}>
+                  <span>Runtime</span>
+                  <SortIcon column="runtime" />
                 </div>
               </TableHead>
               <TableHead className="sticky top-0 z-10 bg-muted border-b" data-testid="header-zeitraum">
@@ -192,19 +215,21 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-muted border-b w-12" data-testid="header-actions">
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {botTypeData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
                   Keine Einträge vorhanden
                 </TableCell>
               </TableRow>
             ) : (
               botTypeData.map((botType) => (
                 <TableRow key={botType.id} className="hover-elevate" data-testid={`row-entry-${botType.id}`}>
-                  <TableCell data-testid={`cell-date-${botType.id}`}>
+                  <TableCell data-testid={`cell-last-updated-${botType.id}`}>
                     {botType.lastUpdated 
                       ? format(new Date(botType.lastUpdated), 'dd.MM.yyyy', { locale: de })
                       : '-'
@@ -222,10 +247,30 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                   <TableCell className={`text-right font-medium ${botType.real24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-real-24h-profit-${botType.id}`}>
                     {formatWithSign(botType.real24hProfit, 2)} USDT
                   </TableCell>
+                  <TableCell className={`text-right font-medium ${botType.avg24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-avg-24h-profit-${botType.id}`}>
+                    {formatWithSign(botType.avg24hProfit, 2)} USDT
+                  </TableCell>
+                  <TableCell className="text-right" data-testid={`cell-wont-liq-rate-${botType.id}`}>
+                    {formatNumber(botType.wontLiqRate)}%
+                  </TableCell>
+                  <TableCell data-testid={`cell-runtime-${botType.id}`}>
+                    {botType.runtime || '-'}
+                  </TableCell>
                   <TableCell data-testid={`cell-period-${botType.id}`}>
                     <Badge variant={getPeriodBadgeVariant(botType.periodType)} data-testid={`badge-period-${botType.id}`}>
                       {botType.periodType}
                     </Badge>
+                  </TableCell>
+                  <TableCell data-testid={`cell-actions-${botType.id}`}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemoveBotType(botType.id)}
+                      data-testid={`button-remove-${botType.id}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -255,8 +300,10 @@ export function calculateBotTypeTableData(
     }
   }, 0);
   
-  // Gesamtinvestment-Ø: Durchschnitt über alle Update Metrics
+  // Nur Update Metrics für die folgenden Berechnungen
   const updateMetricsOnly = updatesForType.filter(update => update.status === 'Update Metrics');
+  
+  // Gesamtinvestment-Ø: Durchschnitt über alle Update Metrics
   let gesamtInvestmentAvg = 0;
   if (updateMetricsOnly.length > 0) {
     const totalInvestment = updateMetricsOnly.reduce((sum, update) => {
@@ -281,6 +328,48 @@ export function calculateBotTypeTableData(
     }
   });
   
+  // 24h Ø Profit: Gewichteter Durchschnitt basierend auf Runtime
+  // (Summe aller Grid Profits) / (Summe aller Runtimes in Stunden) × 24
+  let avg24hProfit = 0;
+  if (updateMetricsOnly.length > 0) {
+    let totalProfit = 0;
+    let totalHours = 0;
+    
+    updateMetricsOnly.forEach(update => {
+      const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+      totalProfit += gridProfit;
+      totalHours += runtimeHours;
+    });
+    
+    if (totalHours > 0) {
+      const profitPerHour = totalProfit / totalHours;
+      avg24hProfit = profitPerHour * 24;
+    }
+  }
+  
+  // Wont Liq Rate: Berechnung basierend auf wontLiqBudget und totalInvestment
+  // Falls wontLiqBudget vorhanden: (wontLiqBudget / totalInvestment) * 100
+  let wontLiqRate = 0;
+  if (botType.wontLiqBudget && updateMetricsOnly.length > 0) {
+    const wontLiqBudget = parseFloat(botType.wontLiqBudget) || 0;
+    if (gesamtInvestmentAvg > 0 && wontLiqBudget > 0) {
+      wontLiqRate = (wontLiqBudget / gesamtInvestmentAvg) * 100;
+    }
+  }
+  
+  // Runtime: Neueste Runtime aus den Updates
+  let runtime = '-';
+  if (updateMetricsOnly.length > 0) {
+    // Sortiere nach createdAt um den neuesten zu finden
+    const sortedUpdates = [...updateMetricsOnly].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+      return dateB - dateA;
+    });
+    runtime = sortedUpdates[0]?.avgRuntime || '-';
+  }
+  
   // Last Updated: Das neueste createdAt Datum aus allen Updates
   let lastUpdated: Date | null = null;
   if (updatesForType.length > 0) {
@@ -301,6 +390,9 @@ export function calculateBotTypeTableData(
     gesamtInvestmentAvg,
     gesamtProfit,
     real24hProfit,
+    avg24hProfit,
+    wontLiqRate,
+    runtime,
     periodType: 'Tag' // Default, wird später angepasst
   };
 }

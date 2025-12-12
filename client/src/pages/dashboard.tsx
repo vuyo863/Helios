@@ -339,6 +339,14 @@ export default function Dashboard() {
     setDialogOpen(false);
   };
 
+  const handleRemoveBotType = (botTypeId: string) => {
+    // Finde den Bot-Type Namen basierend auf der ID
+    const botType = availableBotTypes.find(bt => bt.id === botTypeId);
+    if (botType) {
+      setSelectedBotsForTable(prev => prev.filter(name => name !== botType.name));
+    }
+  };
+
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -788,6 +796,7 @@ export default function Dashboard() {
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             onSort={handleSort}
+            onRemoveBotType={handleRemoveBotType}
           />
           
           <Card 
