@@ -1110,15 +1110,6 @@ export default function Dashboard() {
                       </Button>
                     </>
                   )}
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setSettingsCollapsed(!settingsCollapsed)}
-                  >
-                    {settingsCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </Button>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={300}>
@@ -1168,10 +1159,21 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </Card>
           </div>
-          {!settingsCollapsed && (
-          <Card className="p-4 relative flex flex-col">
-            <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
-            <div className="space-y-3 flex-1">
+          {!settingsCollapsed ? (
+            <Card className="p-4 relative flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold">Graph-Einstellungen</h4>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setSettingsCollapsed(true)}
+                  title="Einklappen"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="space-y-3 flex-1">
               <div className={cn("flex items-center justify-between", updateSelectionMode === 'confirmed' && "opacity-50")}>
                 <span className="text-sm">Letzten</span>
                 <Popover open={timeRangeOpen} onOpenChange={(open) => updateSelectionMode !== 'confirmed' && setTimeRangeOpen(open)}>
@@ -1342,16 +1344,28 @@ export default function Dashboard() {
                 </Popover>
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
-              <Button 
-                size="sm"
-                onClick={handleApplySettings}
-                data-testid="button-apply-settings"
+              <div className="mt-4 flex justify-end">
+                <Button 
+                  size="sm"
+                  onClick={handleApplySettings}
+                  data-testid="button-apply-settings"
+                >
+                  Apply
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <Card className="p-2 flex items-center justify-center">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setSettingsCollapsed(false)}
+                title="Graph-Einstellungen ausklappen"
               >
-                Apply
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            </div>
-          </Card>
+            </Card>
           )}
         </div>
 
