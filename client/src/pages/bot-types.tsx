@@ -561,6 +561,13 @@ export default function BotTypesPage() {
                         </span>
                       </div>
                       <div className="flex justify-between">
+                        <span className="text-muted-foreground">Real 24h Profit:</span>
+                        <span className="font-medium" data-testid={`text-real-24h-profit-${botType.id}`}>
+                          {/* Platzhalter - Logik wird später implementiert */}
+                          0.00 USDT
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Gesamtinvestment-Ø:</span>
                         <span className="font-medium" data-testid={`text-avg-investment-${botType.id}`}>
                           {/* Nur Update Metrics verwenden, Closed Bots werden nicht einberechnet */}
