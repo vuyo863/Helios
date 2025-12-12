@@ -1072,16 +1072,25 @@ export default function BotTypesPage() {
                                       </span>
                                     )}
                                   </div>
-                                  {/* Zeile 2: Grid Profit 24H Ø + Grid Profit */}
+                                  {/* Zeile 2: Für Closed Bots nur "Gesamt Profit", für Update Metrics "Grid Profit 24H Ø + Grid Profit" */}
                                   <div className="flex items-center flex-wrap gap-x-6">
-                                    <span className="flex items-center gap-1.5">
-                                      <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
-                                      <span className="font-medium text-primary">{formatWithSign(gridProfit24h)} USDT</span>
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                      <span className="text-muted-foreground">Grid Profit:</span>
-                                      <span className="font-medium text-primary">{formatUsdtWithSign(update.overallGridProfitUsdt)} USDT</span>
-                                    </span>
+                                    {update.status === 'Closed Bots' ? (
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="text-muted-foreground">Gesamt Profit:</span>
+                                        <span className="font-medium text-primary">{formatUsdtWithSign(update.profit)} USDT</span>
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="text-muted-foreground">Grid Profit 24H Ø:</span>
+                                          <span className="font-medium text-primary">{formatWithSign(gridProfit24h)} USDT</span>
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="text-muted-foreground">Grid Profit:</span>
+                                          <span className="font-medium text-primary">{formatUsdtWithSign(update.overallGridProfitUsdt)} USDT</span>
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                   {/* Zeile 3: Gesamt-Investment */}
                                   <div className="flex items-center flex-wrap gap-x-6">
