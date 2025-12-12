@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, TrendingUp, Percent, Search, Check, Plus } from "lucide-react";
 import StatCard from "@/components/StatCard";
-import BotEntryTable from "@/components/BotEntryTable";
+import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
 import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
@@ -172,6 +172,46 @@ export default function Dashboard() {
       name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [uniqueBotNamesOnly, searchQuery]);
+
+  // Berechne Bot-Type-Tabellendaten für die ausgewählten Bots
+  const botTypeTableData = useMemo((): BotTypeTableData[] => {
+    // Finde die ausgewählten Bot-Types basierend auf den Namen
+    const selectedBotTypes = selectedBotsForTable.length > 0
+      ? availableBotTypes.filter(bt => selectedBotsForTable.includes(bt.name))
+      : [];
+    
+    // Berechne die Tabellendaten für jeden ausgewählten Bot-Type
+    let tableData = selectedBotTypes.map(botType => 
+      calculateBotTypeTableData(botType, allBotTypeUpdates)
+    );
+    
+    // Sortierung anwenden
+    if (sortColumn) {
+      tableData.sort((a, b) => {
+        let aValue: any = a[sortColumn as keyof BotTypeTableData];
+        let bValue: any = b[sortColumn as keyof BotTypeTableData];
+        
+        if (sortColumn === 'lastUpdated') {
+          aValue = aValue ? new Date(aValue).getTime() : 0;
+          bValue = bValue ? new Date(bValue).getTime() : 0;
+        } else if (sortColumn === 'name') {
+          aValue = aValue?.toLowerCase() || '';
+          bValue = bValue?.toLowerCase() || '';
+        }
+        
+        let comparison = 0;
+        if (aValue > bValue) {
+          comparison = 1;
+        } else if (aValue < bValue) {
+          comparison = -1;
+        }
+        
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    return tableData;
+  }, [selectedBotsForTable, availableBotTypes, allBotTypeUpdates, sortColumn, sortDirection]);
 
   // Hole Updates für den ausgewählten Bot Type
   const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
@@ -742,7 +782,7 @@ export default function Dashboard() {
             Alle Einträge
           </h2>
           <BotEntryTable 
-            entries={filteredEntriesForTable} 
+            botTypeData={botTypeTableData} 
             selectedPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}
             sortColumn={sortColumn}
