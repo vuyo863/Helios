@@ -6,18 +6,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { BotType, BotTypeUpdate } from "@shared/schema";
 import { format, parse, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronDown, ArrowUp, ArrowDown, X } from "lucide-react";
+import { ArrowUp, ArrowDown, X } from "lucide-react";
 
 // Helper function to parse runtime string like "1d 14h 28m" to hours
 function parseRuntimeToHours(runtime: string | null | undefined): number {
@@ -107,38 +100,23 @@ export interface BotTypeTableData {
   lastUpdated: Date | null;
   gesamtInvestmentAvg: number;
   gesamtProfit: number;
+  profitPercent: number;
   real24hProfit: number;
   avg24hProfit: number;
   wontLiqBudget: number;
   metricStarted: Date | null;
   latestDate: Date | null;
-  periodType: string;
 }
 
 interface BotEntryTableProps {
   botTypeData: BotTypeTableData[];
-  selectedPeriod: string | null;
-  onPeriodChange: (period: string | null) => void;
   sortColumn: string | null;
   sortDirection: 'asc' | 'desc';
   onSort: (column: string) => void;
   onRemoveBotType: (botTypeId: string) => void;
 }
 
-export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodChange, sortColumn, sortDirection, onSort, onRemoveBotType }: BotEntryTableProps) {
-  const getPeriodBadgeVariant = (periodType: string) => {
-    switch (periodType.toLowerCase()) {
-      case 'tag':
-        return 'default';
-      case 'woche':
-        return 'secondary';
-      case 'monat':
-        return 'outline';
-      default:
-        return 'default';
-    }
-  };
-
+export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, onSort, onRemoveBotType }: BotEntryTableProps) {
   const formatNumber = (value: string | number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
     return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -191,6 +169,12 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                     <SortIcon column="gesamtProfit" />
                   </div>
                 </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[100px]" data-testid="header-profit-percent">
+                  <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('profitPercent')}>
+                    <span>Profit %</span>
+                    <SortIcon column="profitPercent" />
+                  </div>
+                </TableHead>
                 <TableHead className="sticky top-0 z-10 bg-muted border-b text-right w-[130px]" data-testid="header-real-24h-profit">
                   <div className="flex items-center justify-between w-full cursor-pointer hover-elevate rounded px-2 py-1" onClick={() => onSort('real24hProfit')}>
                     <span>Real 24h</span>
@@ -215,44 +199,6 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                     <SortIcon column="metricStarted" />
                   </div>
                 </TableHead>
-                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[80px]" data-testid="header-period">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center gap-1 hover-elevate px-2 py-1 rounded-md cursor-pointer" data-testid="dropdown-zeitraum">
-                      <span>Periode</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" data-testid="dropdown-zeitraum-content">
-                      <DropdownMenuItem 
-                        onClick={() => onPeriodChange(null)}
-                        className={selectedPeriod === null ? "bg-accent" : ""}
-                        data-testid="dropdown-option-alle"
-                      >
-                        Alle
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onPeriodChange("Tag")}
-                        className={selectedPeriod === "Tag" ? "bg-accent" : ""}
-                        data-testid="dropdown-option-tag"
-                      >
-                        Tag
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onPeriodChange("Woche")}
-                        className={selectedPeriod === "Woche" ? "bg-accent" : ""}
-                        data-testid="dropdown-option-woche"
-                      >
-                        Woche
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onPeriodChange("Monat")}
-                        className={selectedPeriod === "Monat" ? "bg-accent" : ""}
-                        data-testid="dropdown-option-monat"
-                      >
-                        Monat
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableHead>
                 <TableHead className="sticky top-0 z-10 bg-muted border-b w-[50px]" data-testid="header-actions">
                 </TableHead>
               </TableRow>
@@ -260,7 +206,7 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
             <TableBody>
               {botTypeData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
                     Keine Einträge vorhanden
                   </TableCell>
                 </TableRow>
@@ -281,6 +227,9 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                     </TableCell>
                     <TableCell className={`text-right text-sm font-medium ${botType.gesamtProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-profit-${botType.id}`}>
                       {formatWithSign(botType.gesamtProfit, 2)}
+                    </TableCell>
+                    <TableCell className={`text-right text-sm font-medium ${botType.profitPercent >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-profit-percent-${botType.id}`}>
+                      {formatWithSign(botType.profitPercent, 2)}%
                     </TableCell>
                     <TableCell className={`text-right text-sm font-medium ${botType.real24hProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid={`cell-real-24h-profit-${botType.id}`}>
                       {formatWithSign(botType.real24hProfit, 2)}
@@ -305,11 +254,6 @@ export default function BotEntryTable({ botTypeData, selectedPeriod, onPeriodCha
                           }
                         </span>
                       </div>
-                    </TableCell>
-                    <TableCell data-testid={`cell-period-${botType.id}`}>
-                      <Badge variant={getPeriodBadgeVariant(botType.periodType)} data-testid={`badge-period-${botType.id}`}>
-                        {botType.periodType}
-                      </Badge>
                     </TableCell>
                     <TableCell data-testid={`cell-actions-${botType.id}`}>
                       <Button
@@ -468,17 +412,22 @@ export function calculateBotTypeTableData(
     }
   }
   
+  // Profit % = (Gesamt Profit / Gesamtinvestment-Ø) * 100
+  const profitPercent = gesamtInvestmentAvg > 0 
+    ? (gesamtProfit / gesamtInvestmentAvg) * 100 
+    : 0;
+  
   return {
     id: botType.id,
     name: botType.name,
     lastUpdated,
     gesamtInvestmentAvg,
     gesamtProfit,
+    profitPercent,
     real24hProfit,
     avg24hProfit,
     wontLiqBudget,
     metricStarted,
-    latestDate,
-    periodType: 'Tag'
+    latestDate
   };
 }

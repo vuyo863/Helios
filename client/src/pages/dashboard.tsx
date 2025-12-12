@@ -812,8 +812,6 @@ export default function Dashboard() {
           </h2>
           <BotEntryTable 
             botTypeData={botTypeTableData} 
-            selectedPeriod={selectedPeriod}
-            onPeriodChange={setSelectedPeriod}
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             onSort={handleSort}
