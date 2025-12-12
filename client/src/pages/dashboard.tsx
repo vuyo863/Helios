@@ -1,12 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
 import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Command,
   CommandEmpty,
@@ -63,6 +80,49 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
   return totalHours;
 }
 
+// Default order for metric cards
+const DEFAULT_CARD_ORDER = ['Gesamtkapital', 'Gesamtprofit', 'Gesamtprofit %', 'Ø Profit/Tag', 'Real Profit/Tag'];
+
+// SortableItem component for drag and drop
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
+  isEditMode: boolean;
+}
+
+function SortableItem({ id, children, isEditMode }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !isEditMode });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      {isEditMode && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute -top-2 -left-2 z-10 bg-primary text-primary-foreground rounded-full p-1 cursor-grab active:cursor-grabbing shadow-md"
+        >
+          <GripVertical className="h-3 w-3" />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: entries = [], isLoading } = useQuery<BotEntry[]>({
     queryKey: ['/api/entries'],
@@ -104,6 +164,57 @@ export default function Dashboard() {
   const [updateSortBy, setUpdateSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
   const [updateSortDirection, setUpdateSortDirection] = useState<'desc' | 'asc'>('desc');
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
+
+  // Drag and drop state for metric cards
+  const [isCardEditMode, setIsCardEditMode] = useState(false);
+  const [cardOrder, setCardOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('dashboardCardOrder');
+    return saved ? JSON.parse(saved) : DEFAULT_CARD_ORDER;
+  });
+  const [tempCardOrder, setTempCardOrder] = useState<string[]>(cardOrder);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setTempCardOrder((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  // Save card order
+  const handleSaveCardOrder = () => {
+    setCardOrder(tempCardOrder);
+    localStorage.setItem('dashboardCardOrder', JSON.stringify(tempCardOrder));
+    setIsCardEditMode(false);
+  };
+
+  // Cancel card order edit
+  const handleCancelCardOrder = () => {
+    setTempCardOrder(cardOrder);
+    setIsCardEditMode(false);
+  };
+
+  // Start edit mode
+  const handleStartCardEdit = () => {
+    setTempCardOrder(cardOrder);
+    setIsCardEditMode(true);
+  };
 
   // Hole alle Bot-Types (aktiv + inaktiv, aber nicht archiviert)
   const { data: botTypes = [] } = useQuery<BotType[]>({
@@ -645,87 +756,113 @@ export default function Dashboard() {
                 </Command>
               </PopoverContent>
             </Popover>
+            
+            {isCardEditMode ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSaveCardOrder}
+                  className="h-8 w-8"
+                  data-testid="button-save-card-order"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCancelCardOrder}
+                  className="h-8 w-8"
+                  data-testid="button-cancel-card-order"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleStartCardEdit}
+                className="h-8 w-8"
+                data-testid="button-edit-card-order"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div 
-            onClick={() => toggleMetricCard('Gesamtkapital')}
-            className={`cursor-pointer transition-all ${
-              activeMetricCards.includes('Gesamtkapital') 
-                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
-                : ''
-            }`}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={isCardEditMode ? tempCardOrder : cardOrder}
+            strategy={horizontalListSortingStrategy}
           >
-            <StatCard
-              label="Gesamtkapital"
-              value={`${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
-              icon={Wallet}
-              iconColor="bg-blue-100 text-blue-600"
-            />
-          </div>
-          <div 
-            onClick={() => toggleMetricCard('Gesamtprofit')}
-            className={`cursor-pointer transition-all ${
-              activeMetricCards.includes('Gesamtprofit') 
-                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
-                : ''
-            }`}
-          >
-            <StatCard
-              label="Gesamtprofit"
-              value={`${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
-              icon={TrendingUp}
-              iconColor="bg-green-100 text-green-600"
-            />
-          </div>
-          <div 
-            onClick={() => toggleMetricCard('Gesamtprofit %')}
-            className={`cursor-pointer transition-all ${
-              activeMetricCards.includes('Gesamtprofit %') 
-                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
-                : ''
-            }`}
-          >
-            <StatCard
-              label="Gesamtprofit %"
-              value={`${totalProfitPercent.toFixed(2)}%`}
-              icon={Percent}
-              iconColor="bg-purple-100 text-purple-600"
-            />
-          </div>
-          <div 
-            onClick={() => toggleMetricCard('Ø Profit/Tag')}
-            className={`cursor-pointer transition-all ${
-              activeMetricCards.includes('Ø Profit/Tag') 
-                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
-                : ''
-            }`}
-          >
-            <StatCard
-              label="Ø Profit/Tag"
-              value={`${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
-              icon={CalendarIcon}
-              iconColor="bg-orange-100 text-orange-600"
-            />
-          </div>
-          <div 
-            onClick={() => toggleMetricCard('Real Profit/Tag')}
-            className={`cursor-pointer transition-all ${
-              activeMetricCards.includes('Real Profit/Tag') 
-                ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
-                : ''
-            }`}
-            data-testid="card-real-profit-tag"
-          >
-            <StatCard
-              label="Real Profit/Tag"
-              value={`${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`}
-              icon={Zap}
-              iconColor="bg-yellow-100 text-yellow-600"
-            />
-          </div>
-        </div>
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 ${isCardEditMode ? 'pt-4' : ''}`}>
+              {(isCardEditMode ? tempCardOrder : cardOrder).map((cardId) => {
+                const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string }> = {
+                  'Gesamtkapital': {
+                    label: 'Gesamtkapital',
+                    value: `${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    icon: Wallet,
+                    iconColor: 'bg-blue-100 text-blue-600',
+                  },
+                  'Gesamtprofit': {
+                    label: 'Gesamtprofit',
+                    value: `${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    icon: TrendingUp,
+                    iconColor: 'bg-green-100 text-green-600',
+                  },
+                  'Gesamtprofit %': {
+                    label: 'Gesamtprofit %',
+                    value: `${totalProfitPercent.toFixed(2)}%`,
+                    icon: Percent,
+                    iconColor: 'bg-purple-100 text-purple-600',
+                  },
+                  'Ø Profit/Tag': {
+                    label: 'Ø Profit/Tag',
+                    value: `${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    icon: CalendarIcon,
+                    iconColor: 'bg-orange-100 text-orange-600',
+                  },
+                  'Real Profit/Tag': {
+                    label: 'Real Profit/Tag',
+                    value: `${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    icon: Zap,
+                    iconColor: 'bg-yellow-100 text-yellow-600',
+                  },
+                };
+                
+                const config = cardConfig[cardId];
+                if (!config) return null;
+                
+                return (
+                  <SortableItem key={cardId} id={cardId} isEditMode={isCardEditMode}>
+                    <div 
+                      onClick={() => !isCardEditMode && toggleMetricCard(cardId)}
+                      className={`cursor-pointer transition-all ${
+                        activeMetricCards.includes(cardId) 
+                          ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
+                          : ''
+                      } ${isCardEditMode ? 'ring-2 ring-dashed ring-muted-foreground/30 rounded-lg' : ''}`}
+                      data-testid={`card-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                    >
+                      <StatCard
+                        label={config.label}
+                        value={config.value}
+                        icon={config.icon}
+                        iconColor={config.iconColor}
+                      />
+                    </div>
+                  </SortableItem>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         <div className={`grid grid-cols-1 gap-6 mb-8 ${settingsCollapsed ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
           <div className={settingsCollapsed ? '' : 'lg:col-span-2'}>
