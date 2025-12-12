@@ -1030,9 +1030,9 @@ export default function Dashboard() {
           </SortableContext>
         </DndContext>
 
-        <div className={`grid grid-cols-1 gap-6 mb-8 ${settingsCollapsed ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
-          <div className={settingsCollapsed ? '' : 'lg:col-span-2'}>
-            <Card className="p-6">
+        <div className="flex items-stretch gap-4 mb-8">
+          <div className="flex-1">
+            <Card className="p-6 h-full">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold">Update Verlauf</h3>
                 <div className="flex items-center gap-2">
@@ -1159,10 +1159,12 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </Card>
           </div>
-          <div className="flex">
+          
+          {/* Settings Container - Right side, same height as chart */}
+          <div className="flex flex-shrink-0">
             {/* Settings Content - conditionally rendered */}
             {!settingsCollapsed && (
-              <Card className="p-4 flex flex-col rounded-r-none border-r-0 flex-1">
+              <Card className="p-4 flex flex-col rounded-r-none border-r-0 w-64">
                 <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
                 <div className="space-y-3 flex-1">
               <div className={cn("flex items-center justify-between", updateSelectionMode === 'confirmed' && "opacity-50")}>
