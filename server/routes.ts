@@ -1441,8 +1441,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filteredUpdates = allUpdates.filter(u => u.status === status);
       }
       
-      // Sort by version (descending) to get the latest
-      filteredUpdates.sort((a, b) => (b.version || 0) - (a.version || 0));
+      // Sort by createdAt (descending) to get the most recent upload
+      filteredUpdates.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
       
       // Return the latest one, or null if none found
       const latest = filteredUpdates[0] || null;
