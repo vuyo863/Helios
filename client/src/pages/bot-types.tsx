@@ -1122,20 +1122,9 @@ export default function BotTypesPage() {
                         return (
                         <Card 
                           key={update.id} 
-                          className="hover-elevate active-elevate-2 transition-all relative"
+                          className="hover-elevate active-elevate-2 transition-all"
                           data-testid={`card-update-${update.id}`}
                         >
-                          {/* X-Button zum Löschen oben rechts */}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-2 w-6 h-6 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteUpdateClick(update)}
-                            data-testid={`button-delete-update-${update.id}`}
-                            title="Delete entry"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
@@ -1244,6 +1233,16 @@ export default function BotTypesPage() {
                                     <FileText className="w-4 h-4" />
                                   </Button>
                                 </Link>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost"
+                                  className="w-8 h-8 text-muted-foreground hover:text-destructive"
+                                  onClick={() => handleDeleteUpdateClick(update)}
+                                  data-testid={`button-delete-update-${update.id}`}
+                                  title="Delete entry"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
