@@ -1774,9 +1774,36 @@ export default function Upload() {
         // === STARTMETRIK: LAST UPLOAD = ÄLTESTES CREATED-DATUM ===
         // Bei natürlicher Startmetrik: Finde das älteste "createdAt" Datum aus allen Screenshots
         // Dieses Datum wird als "Last Upload" angezeigt (= Bot-Startdatum)
-        if (activeIsStartMetric && activeExtractedData?.screenshots?.length > 0) {
+        
+        // === STARTMETRIK: THIS UPLOAD = NÄCHSTES (createdAt + runtime) ===
+        // Für jeden Screenshot: createdAt + runtime = End-Datum
+        // Wähle das End-Datum, das am NÄCHSTEN am aktuellen Datum liegt
+        let startmetrikThisUpload = '';
+        
+        // Helper: Parse runtime string zu Millisekunden
+        const parseRuntimeToMs = (runtime: string): number => {
+          if (!runtime) return 0;
+          const normalized = runtime.replace(/\s+/g, '').toLowerCase();
+          let totalMs = 0;
+          const dayMatch = normalized.match(/(\d+)d/);
+          const hourMatch = normalized.match(/(\d+)h/);
+          const minMatch = normalized.match(/(\d+)m/);
+          const secMatch = normalized.match(/(\d+)s/);
+          if (dayMatch) totalMs += parseInt(dayMatch[1]) * 24 * 60 * 60 * 1000;
+          if (hourMatch) totalMs += parseInt(hourMatch[1]) * 60 * 60 * 1000;
+          if (minMatch) totalMs += parseInt(minMatch[1]) * 60 * 1000;
+          if (secMatch) totalMs += parseInt(secMatch[1]) * 1000;
+          return totalMs;
+        };
+        
+        if (activeIsStartMetric && !isClosedBots && activeExtractedData?.screenshots?.length > 0) {
           let oldestDate: Date | null = null;
           let oldestDateStr = '';
+          
+          // Für This Upload: Finde das (createdAt + runtime) das am nächsten an now liegt
+          let closestEndDate: Date | null = null;
+          let closestEndDateStr = '';
+          let smallestDiff = Infinity;
           
           for (const screenshot of activeExtractedData.screenshots) {
             if (screenshot.createdAt) {
@@ -1784,11 +1811,33 @@ export default function Upload() {
               const createdDate = new Date(screenshot.createdAt);
               
               if (!isNaN(createdDate.getTime())) {
+                // === LAST UPLOAD: Ältestes createdAt ===
                 if (!oldestDate || createdDate < oldestDate) {
                   oldestDate = createdDate;
-                  // Format für Anzeige: TT.MM.JJJJ HH:MM
                   oldestDateStr = createdDate.toLocaleDateString('de-DE') + ' ' + 
                     createdDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                }
+                
+                // === THIS UPLOAD: createdAt + runtime, nächstes an now ===
+                if (screenshot.runtime) {
+                  const runtimeMs = parseRuntimeToMs(screenshot.runtime);
+                  const endDate = new Date(createdDate.getTime() + runtimeMs);
+                  const diffToNow = Math.abs(now.getTime() - endDate.getTime());
+                  
+                  console.log('Startmetrik This Upload Berechnung:', {
+                    createdAt: screenshot.createdAt,
+                    runtime: screenshot.runtime,
+                    runtimeMs,
+                    endDate: endDate.toISOString(),
+                    diffToNow
+                  });
+                  
+                  if (diffToNow < smallestDiff) {
+                    smallestDiff = diffToNow;
+                    closestEndDate = endDate;
+                    closestEndDateStr = endDate.toLocaleDateString('de-DE') + ' ' + 
+                      endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                  }
                 }
               }
             }
@@ -1796,7 +1845,12 @@ export default function Upload() {
           
           if (oldestDateStr) {
             lastUploadDate = oldestDateStr;
-            console.log('Startmetrik: Ältestes createdAt gefunden:', oldestDateStr);
+            console.log('Startmetrik: Ältestes createdAt (Last Upload):', oldestDateStr);
+          }
+          
+          if (closestEndDateStr) {
+            startmetrikThisUpload = closestEndDateStr;
+            console.log('Startmetrik: Nächstes End-Datum (This Upload):', closestEndDateStr);
           }
         }
         
@@ -2167,8 +2221,11 @@ export default function Upload() {
         
         // === FINALE WERTE FÜR UPLOAD-ZEITFELDER ===
         // Für Closed Bots: Spezielle Datumslogik (thisUpload=EndDate, lastUpload=StartDate, uploadRuntime=Laufzeit)
-        // Für Update Metrics: Standard-Logik (thisUpload=jetzt, lastUpload=letzter Upload, uploadRuntime=Differenz)
-        const finalThisUpload = isClosedBots && closedBotsThisUpload ? closedBotsThisUpload : currentDateTimeDisplay;
+        // Für Startmetrik (Update Metrics): thisUpload = nächstes (createdAt + runtime) Datum
+        // Für normale Update Metrics: Standard-Logik (thisUpload=jetzt, lastUpload=letzter Upload)
+        const finalThisUpload = isClosedBots && closedBotsThisUpload 
+          ? closedBotsThisUpload 
+          : (activeIsStartMetric && startmetrikThisUpload ? startmetrikThisUpload : currentDateTimeDisplay);
         const finalLastUpload = isClosedBots && closedBotsLastUpload ? closedBotsLastUpload : lastUploadDate;
         const finalUploadRuntime = isClosedBots && closedBotsUploadRuntime ? closedBotsUploadRuntime : uploadRuntimeValue;
         
