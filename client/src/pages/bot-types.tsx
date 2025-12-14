@@ -672,23 +672,13 @@ export default function BotTypesPage() {
                               return null;
                             };
                             
-                            // Finde das früheste Startdatum aus allen Updates (Update Metrics + Closed Bots)
+                            // Finde das früheste "From"-Datum aus allen Content-Cards
+                            // Das "From"-Datum wird aus lastUpload genommen (wie in der Content-Card angezeigt)
                             const allDates: Date[] = [];
                             updatesForType.forEach(update => {
-                              // Für Closed Bots: Startdatum = thisUpload - longestRuntime
-                              if (update.status === 'Closed Bots' && update.thisUpload && update.longestRuntime) {
-                                const endDate = parseGermanDate(update.thisUpload as string);
-                                if (endDate) {
-                                  const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
-                                  const startDate = new Date(endDate.getTime() - runtimeMs);
-                                  if (isValid(startDate)) {
-                                    allDates.push(startDate);
-                                  }
-                                }
-                              }
-                              // Für Update Metrics: date ist das Startdatum
-                              else if (update.status === 'Update Metrics' && update.date) {
-                                const dateVal = parseGermanDate(update.date as string);
+                              // Für beide Modi (Update Metrics + Closed Bots): lastUpload ist das "From"-Datum
+                              if (update.lastUpload) {
+                                const dateVal = parseGermanDate(update.lastUpload as string);
                                 if (dateVal) {
                                   allDates.push(dateVal);
                                 }
@@ -1009,23 +999,13 @@ export default function BotTypesPage() {
                               return null;
                             };
                             
-                            // Finde das früheste Startdatum aus allen Updates (Update Metrics + Closed Bots)
+                            // Finde das früheste "From"-Datum aus allen Content-Cards
+                            // Das "From"-Datum wird aus lastUpload genommen (wie in der Content-Card angezeigt)
                             const allDates: Date[] = [];
                             updates.forEach(update => {
-                              // Für Closed Bots: Startdatum = thisUpload - longestRuntime
-                              if (update.status === 'Closed Bots' && update.thisUpload && update.longestRuntime) {
-                                const endDate = parseGermanDate(update.thisUpload as string);
-                                if (endDate) {
-                                  const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
-                                  const startDate = new Date(endDate.getTime() - runtimeMs);
-                                  if (isValid(startDate)) {
-                                    allDates.push(startDate);
-                                  }
-                                }
-                              }
-                              // Für Update Metrics: date ist das Startdatum
-                              else if (update.status === 'Update Metrics' && update.date) {
-                                const dateVal = parseGermanDate(update.date as string);
+                              // Für beide Modi (Update Metrics + Closed Bots): lastUpload ist das "From"-Datum
+                              if (update.lastUpload) {
+                                const dateVal = parseGermanDate(update.lastUpload as string);
                                 if (dateVal) {
                                   allDates.push(dateVal);
                                 }

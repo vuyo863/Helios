@@ -341,44 +341,24 @@ export function calculateBotTypeTableData(
   // Wont Liq Budget: Direkt von Bot-Type Karte
   const wontLiqBudget = parseFloat(botType.wontLiqBudget || '0') || 0;
   
-  // Metric Started (frühstes Startdatum) und Latest Date (spätestes Enddatum)
+  // Metric Started (frühstes "From"-Datum aus Content-Cards) und Latest Date (spätestes Enddatum)
+  // Das "From"-Datum wird aus lastUpload genommen (wie in der Content-Card angezeigt)
   const allStartDates: Date[] = [];
   const allEndDates: Date[] = [];
   
   updatesForType.forEach(update => {
-    if (update.status === 'Closed Bots') {
-      // Closed Bots: Start Date = End Date (thisUpload) - Runtime
-      if (update.thisUpload && update.longestRuntime) {
-        const endDate = parseGermanDate(update.thisUpload as string);
-        if (endDate) {
-          allEndDates.push(endDate);
-          const runtimeMs = parseRuntimeToMs(update.longestRuntime as string);
-          const startDate = new Date(endDate.getTime() - runtimeMs);
-          if (isValid(startDate)) {
-            allStartDates.push(startDate);
-          }
-        }
+    // Für beide Modi (Update Metrics + Closed Bots): lastUpload ist das "From"-Datum
+    if (update.lastUpload) {
+      const fromDate = parseGermanDate(update.lastUpload as string);
+      if (fromDate) {
+        allStartDates.push(fromDate);
       }
-    } else if (update.status === 'Update Metrics') {
-      // Update Metrics: lastUpload = From, thisUpload = Until
-      if (update.lastUpload) {
-        const fromDate = parseGermanDate(update.lastUpload as string);
-        if (fromDate) {
-          allStartDates.push(fromDate);
-        }
-      }
-      if (update.thisUpload) {
-        const untilDate = parseGermanDate(update.thisUpload as string);
-        if (untilDate) {
-          allEndDates.push(untilDate);
-        }
-      }
-      // Auch das date Feld prüfen (bei Startmetrik)
-      if (update.date) {
-        const dateVal = parseGermanDate(update.date as string);
-        if (dateVal) {
-          allStartDates.push(dateVal);
-        }
+    }
+    // thisUpload ist das "Until"/"End Date"
+    if (update.thisUpload) {
+      const untilDate = parseGermanDate(update.thisUpload as string);
+      if (untilDate) {
+        allEndDates.push(untilDate);
       }
     }
   });
