@@ -1475,7 +1475,12 @@ export default function Upload() {
       }
     }
     
-    const activeIsStartMetric = isClosedBots ? closedIsStartMetric : isStartMetric;
+    // Startmetrik-Logik greift bei:
+    // 1. Natürlicher Startmetrik (keine vorherige Metrik vorhanden) ODER
+    // 2. Manueller Auswahl des Modus "Startmetrik" im Dropdown
+    const activeIsStartMetric = isClosedBots 
+      ? (closedIsStartMetric || closedInfoSectionMode === 'Startmetrik')
+      : (isStartMetric || infoSectionMode === 'Startmetrik');
     const activeSelectedBotTypeId = isClosedBots ? closedSelectedBotTypeId : selectedBotTypeId;
     const activeManualOverridesRef = isClosedBots ? closedManualOverridesRef : manualOverridesRef;
     const activeInfoSectionMode = isClosedBots ? closedInfoSectionMode : infoSectionMode;
