@@ -672,33 +672,26 @@ export default function BotTypesPage() {
                               return null;
                             };
                             
-                            // Finde das früheste "From"-Datum aus allen Content-Cards
-                            // Das "From"-Datum wird aus lastUpload genommen (wie in der Content-Card angezeigt)
-                            const allDates: Date[] = [];
+                            // Runtime = Summe aller einzelnen Runtimes (From bis Until für jede Content-Card)
+                            let totalRuntimeMs = 0;
+                            
                             updatesForType.forEach(update => {
-                              // Für beide Modi (Update Metrics + Closed Bots): lastUpload ist das "From"-Datum
-                              if (update.lastUpload) {
-                                const dateVal = parseGermanDate(update.lastUpload as string);
-                                if (dateVal) {
-                                  allDates.push(dateVal);
+                              // Für jede Content-Card: Runtime = lastUpload (From) bis thisUpload (Until)
+                              if (update.lastUpload && update.thisUpload) {
+                                const fromDate = parseGermanDate(update.lastUpload as string);
+                                const untilDate = parseGermanDate(update.thisUpload as string);
+                                if (fromDate && untilDate) {
+                                  const diffMs = untilDate.getTime() - fromDate.getTime();
+                                  if (diffMs > 0) {
+                                    totalRuntimeMs += diffMs;
+                                  }
                                 }
                               }
                             });
                             
-                            if (allDates.length === 0) return '-';
+                            if (totalRuntimeMs === 0) return '-';
                             
-                            const metricStarted = allDates.reduce((earliest, current) => 
-                              current < earliest ? current : earliest
-                            );
-                            
-                            const lastUpdated = updatesForType[0]?.createdAt;
-                            if (!lastUpdated) return '-';
-                            
-                            const startDate = metricStarted;
-                            const endDate = new Date(lastUpdated);
-                            const diffMs = endDate.getTime() - startDate.getTime();
-                            
-                            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                            const diffMinutes = Math.floor(totalRuntimeMs / (1000 * 60));
                             const diffHours = Math.floor(diffMinutes / 60);
                             const diffDays = Math.floor(diffHours / 24);
                             
