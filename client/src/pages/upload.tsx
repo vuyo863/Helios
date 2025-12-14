@@ -3276,7 +3276,7 @@ export default function Upload() {
                               data-testid="input-avg-grid-profit-percent"
                             />
                           </div>
-                          <Select value={highestGridProfitPercentBase} onValueChange={(val) => setHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
+                          <Select value={avgGridProfitPercentBase} onValueChange={(val) => setAvgGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                             <SelectTrigger className="w-44 h-10 text-xs" data-testid="select-avg-grid-profit-percent-base">
                               <SelectValue />
                             </SelectTrigger>
@@ -3924,7 +3924,7 @@ export default function Upload() {
                                   data-testid="closed-input-avg-grid-profit-percent"
                                 />
                               </div>
-                              <Select value={closedHighestGridProfitPercentBase} onValueChange={(val) => setClosedHighestGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
+                              <Select value={closedAvgGridProfitPercentBase} onValueChange={(val) => setClosedAvgGridProfitPercentBase(val as 'gesamtinvestment' | 'investitionsmenge')}>
                                 <SelectTrigger className="w-44 h-10 text-xs" data-testid="closed-select-avg-grid-profit-percent-base">
                                   <SelectValue />
                                 </SelectTrigger>
