@@ -672,22 +672,51 @@ export default function BotTypesPage() {
                               return null;
                             };
                             
-                            // Runtime = Summe aller einzelnen Runtimes (From bis Until für jede Content-Card)
-                            let totalRuntimeMs = 0;
+                            // Runtime = Interval-Merge aller Zeiträume (From bis Until für jede Content-Card)
+                            // Überlappende Zeiträume werden zusammengeführt und nur einmal gezählt
+                            
+                            // Schritt 1: Alle Intervalle sammeln
+                            const intervals: Array<[number, number]> = [];
                             
                             updatesForType.forEach(update => {
-                              // Für jede Content-Card: Runtime = lastUpload (From) bis thisUpload (Until)
                               if (update.lastUpload && update.thisUpload) {
                                 const fromDate = parseGermanDate(update.lastUpload as string);
                                 const untilDate = parseGermanDate(update.thisUpload as string);
                                 if (fromDate && untilDate) {
-                                  const diffMs = untilDate.getTime() - fromDate.getTime();
-                                  if (diffMs > 0) {
-                                    totalRuntimeMs += diffMs;
+                                  const start = fromDate.getTime();
+                                  const end = untilDate.getTime();
+                                  if (end > start) {
+                                    intervals.push([start, end]);
                                   }
                                 }
                               }
                             });
+                            
+                            // Schritt 2: Intervalle nach Startzeit sortieren
+                            intervals.sort((a, b) => a[0] - b[0]);
+                            
+                            // Schritt 3: Überlappende Intervalle zusammenführen
+                            const merged: Array<[number, number]> = [];
+                            for (const [start, end] of intervals) {
+                              if (merged.length === 0) {
+                                merged.push([start, end]);
+                              } else {
+                                const last = merged[merged.length - 1];
+                                if (start <= last[1]) {
+                                  // Überlappung: Ende erweitern falls nötig
+                                  last[1] = Math.max(last[1], end);
+                                } else {
+                                  // Keine Überlappung: Neues Intervall hinzufügen
+                                  merged.push([start, end]);
+                                }
+                              }
+                            }
+                            
+                            // Schritt 4: Gesamtzeit aller zusammengeführten Intervalle berechnen
+                            let totalRuntimeMs = 0;
+                            for (const [start, end] of merged) {
+                              totalRuntimeMs += end - start;
+                            }
                             
                             if (totalRuntimeMs === 0) return '-';
                             
