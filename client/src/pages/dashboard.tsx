@@ -1018,9 +1018,12 @@ export default function Dashboard() {
       const startDate = new Date(startTimestamp);
       
       // Prüfe ob dieses Update im Vergleichs-Modus ist
-      // "Normal" = Vergleichs-Modus (Update nach Startmetrik)
-      // "Startmetrik" = Erster Upload (keine vorherigen Daten)
-      const isVergleichsModus = update.calculationMode === 'Normal';
+      // Ein Update ist im Vergleichs-Modus wenn es *_absolute Felder hat die sich von den Hauptfeldern unterscheiden
+      // Das bedeutet, die Hauptfelder enthalten Delta-Werte und die *_absolute Felder die Absolut-Werte
+      const hasAbsoluteFields = update.overallGridProfitUsdtAbsolute !== null && update.overallGridProfitUsdtAbsolute !== undefined;
+      const mainValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      const absoluteValue = parseFloat(update.overallGridProfitUsdtAbsolute || '0') || 0;
+      const isVergleichsModus = hasAbsoluteFields && Math.abs(mainValue - absoluteValue) > 0.01;
       
       // Berechne alle Metriken für dieses Update
       // Gesamtkapital = totalInvestment ODER investment (baseInvestment) je nach Auswahl
@@ -1153,8 +1156,12 @@ export default function Dashboard() {
       
       if (currentUpdateIndex >= 0 && currentUpdateIndex < filteredUpdates.length - 1) {
         const nextUpdate = filteredUpdates[currentUpdateIndex + 1];
-        // "Normal" = Vergleichs-Modus (Update nach Startmetrik)
-        const isNextVergleich = nextUpdate.calculationMode === 'Normal';
+        // Prüfe ob das nächste Update per-Section Vergleich-Werte hat
+        // Erkennbar an *_absolute Feldern die sich von den Hauptfeldern unterscheiden
+        const nextHasAbsoluteFields = nextUpdate.overallGridProfitUsdtAbsolute !== null && nextUpdate.overallGridProfitUsdtAbsolute !== undefined;
+        const nextMainValue = parseFloat(nextUpdate.overallGridProfitUsdt || '0') || 0;
+        const nextAbsoluteValue = parseFloat(nextUpdate.overallGridProfitUsdtAbsolute || '0') || 0;
+        const isNextVergleich = nextHasAbsoluteFields && Math.abs(nextMainValue - nextAbsoluteValue) > 0.01;
         
         if (isNextVergleich) {
           // Dieser Endpunkt ist AUCH der Startpunkt für das nächste Update
