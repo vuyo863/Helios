@@ -259,3 +259,13 @@ Preferred communication style: Simple, everyday language.
 - When metrics added/removed: Chart re-renders completely with fresh animation
 - No more jumping back to default values
 - Unified animation for all lines simultaneously
+
+**Chart Offset für Profit-Metriken (December 15, 2025):**
+- Spezialfall: Bei einem einzigen Update + aktiver Gesamtkapital-Card
+- ALLE Profit-Metriken starten auf Gesamtkapital-Höhe (nicht bei 0):
+  - Gesamtprofit
+  - Gesamtprofit %
+  - Ø Profit/Tag
+  - Real Profit/Tag
+- Tooltips zeigen weiterhin die echten (nicht-offsetted) Werte an
+- Ermöglicht visuell besseren Vergleich aller Metriken mit dem Kapital

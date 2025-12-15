@@ -914,14 +914,14 @@ export default function Dashboard() {
   }, [chartData, activeMetricCards]);
 
   // Transformierte Chart-Daten für Spezialfall
-  // Wenn Bedingungen erfüllt: Gesamtprofit und Gesamtprofit % werden um Gesamtkapital offsettet
+  // Wenn Bedingungen erfüllt: Alle Profit-Metriken werden um Gesamtkapital offsettet
   const transformedChartData = useMemo(() => {
     if (!chartData || chartData.length === 0) return chartData;
     
     // Wenn Spezialfall nicht aktiv, normale Daten zurückgeben
     if (!isSingleUpdateWithCapital) return chartData;
     
-    // Transformiere die Daten: Profit-Werte um Gesamtkapital erhöhen
+    // Transformiere die Daten: ALLE Profit-Werte um Gesamtkapital erhöhen
     return chartData.map(point => {
       const gesamtkapital = point['Gesamtkapital'] || 0;
       
@@ -931,9 +931,15 @@ export default function Dashboard() {
         'Gesamtprofit': point['Gesamtprofit'] + gesamtkapital,
         // Gesamtprofit % startet auch ab Gesamtkapital (für visuelle Konsistenz)
         'Gesamtprofit %': point['Gesamtprofit %'] + gesamtkapital,
+        // Ø Profit/Tag startet ab Gesamtkapital
+        'Ø Profit/Tag': point['Ø Profit/Tag'] + gesamtkapital,
+        // Real Profit/Tag startet ab Gesamtkapital
+        'Real Profit/Tag': point['Real Profit/Tag'] + gesamtkapital,
         // Speichere Originalwerte für Tooltips
         '_rawGesamtprofit': point['Gesamtprofit'],
         '_rawGesamtprofitPercent': point['Gesamtprofit %'],
+        '_rawAvgDailyProfit': point['Ø Profit/Tag'],
+        '_rawRealDailyProfit': point['Real Profit/Tag'],
       };
     });
   }, [chartData, isSingleUpdateWithCapital]);
@@ -2118,13 +2124,17 @@ export default function Dashboard() {
                       return label;
                     }}
                     formatter={(value: number, name: string, props: any) => {
-                      // Im Spezialfall: Zeige die echten Werte für Gesamtprofit und Gesamtprofit %
+                      // Im Spezialfall: Zeige die echten Werte für alle Profit-Metriken
                       let displayValue = value;
                       if (isSingleUpdateWithCapital && props?.payload) {
                         if (name === 'Gesamtprofit' && props.payload._rawGesamtprofit !== undefined) {
                           displayValue = props.payload._rawGesamtprofit;
                         } else if (name === 'Gesamtprofit %' && props.payload._rawGesamtprofitPercent !== undefined) {
                           displayValue = props.payload._rawGesamtprofitPercent;
+                        } else if (name === 'Ø Profit/Tag' && props.payload._rawAvgDailyProfit !== undefined) {
+                          displayValue = props.payload._rawAvgDailyProfit;
+                        } else if (name === 'Real Profit/Tag' && props.payload._rawRealDailyProfit !== undefined) {
+                          displayValue = props.payload._rawRealDailyProfit;
                         }
                       }
                       const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
