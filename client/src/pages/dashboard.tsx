@@ -2943,50 +2943,84 @@ export default function Dashboard() {
                       />
                     ))
                   )}
-                  {/* Highest Value Marker - Pfeil von unten nach oben mit H */}
-                  {showHighestValue && !isMultiBotChartMode && activeMetricCards.map((metricName) => {
-                    const highest = extremeValues.highest[metricName];
-                    if (!highest) return null;
-                    const color = metricColors[metricName] || '#888888';
-                    return (
+                  {/* Highest Value Marker - UNTER dem Punkt, Pfeil nach oben mit H */}
+                  {showHighestValue && !isMultiBotChartMode && (() => {
+                    // Sammle alle Highest-Marker mit ihren Positionen
+                    const highestMarkers = activeMetricCards
+                      .map((metricName, idx) => {
+                        const highest = extremeValues.highest[metricName];
+                        if (!highest) return null;
+                        return { metricName, ...highest, color: metricColors[metricName] || '#888888', idx };
+                      })
+                      .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
+                    
+                    // Gruppiere Marker die nah beieinander sind (gleicher Timestamp oder sehr nah)
+                    // Und berechne Stapel-Offset für jeden
+                    const processedMarkers = highestMarkers.map((marker, i) => {
+                      // Zähle wie viele Marker vor diesem auf gleichem/ähnlichem Timestamp sind
+                      const samePositionIndex = highestMarkers
+                        .slice(0, i)
+                        .filter(m => Math.abs(m.timestamp - marker.timestamp) < 3600000) // 1 Stunde Toleranz
+                        .length;
+                      return { ...marker, stackOffset: samePositionIndex };
+                    });
+                    
+                    return processedMarkers.map((marker) => (
                       <ReferenceDot
-                        key={`highest-${metricName}`}
-                        x={highest.timestamp}
-                        y={highest.value}
+                        key={`highest-${marker.metricName}`}
+                        x={marker.timestamp}
+                        y={marker.value}
                         r={0}
                         label={{
                           value: '↑H',
-                          position: 'top',
-                          fill: color,
+                          position: 'bottom',
+                          fill: marker.color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: 8,
+                          offset: 8 + (marker.stackOffset * 18), // Stapeln mit 18px Abstand
                         }}
                       />
-                    );
-                  })}
-                  {/* Lowest Value Marker - Pfeil von oben nach unten mit L */}
-                  {showLowestValue && !isMultiBotChartMode && activeMetricCards.map((metricName) => {
-                    const lowest = extremeValues.lowest[metricName];
-                    if (!lowest) return null;
-                    const color = metricColors[metricName] || '#888888';
-                    return (
+                    ));
+                  })()}
+                  {/* Lowest Value Marker - ÜBER dem Punkt, Pfeil nach unten mit L */}
+                  {showLowestValue && !isMultiBotChartMode && (() => {
+                    // Sammle alle Lowest-Marker mit ihren Positionen
+                    const lowestMarkers = activeMetricCards
+                      .map((metricName, idx) => {
+                        const lowest = extremeValues.lowest[metricName];
+                        if (!lowest) return null;
+                        return { metricName, ...lowest, color: metricColors[metricName] || '#888888', idx };
+                      })
+                      .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
+                    
+                    // Gruppiere Marker die nah beieinander sind (gleicher Timestamp oder sehr nah)
+                    // Und berechne Stapel-Offset für jeden
+                    const processedMarkers = lowestMarkers.map((marker, i) => {
+                      // Zähle wie viele Marker vor diesem auf gleichem/ähnlichem Timestamp sind
+                      const samePositionIndex = lowestMarkers
+                        .slice(0, i)
+                        .filter(m => Math.abs(m.timestamp - marker.timestamp) < 3600000) // 1 Stunde Toleranz
+                        .length;
+                      return { ...marker, stackOffset: samePositionIndex };
+                    });
+                    
+                    return processedMarkers.map((marker) => (
                       <ReferenceDot
-                        key={`lowest-${metricName}`}
-                        x={lowest.timestamp}
-                        y={lowest.value}
+                        key={`lowest-${marker.metricName}`}
+                        x={marker.timestamp}
+                        y={marker.value}
                         r={0}
                         label={{
                           value: '↓L',
-                          position: 'bottom',
-                          fill: color,
+                          position: 'top',
+                          fill: marker.color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: 8,
+                          offset: 8 + (marker.stackOffset * 18), // Stapeln mit 18px Abstand
                         }}
                       />
-                    );
-                  })}
+                    ));
+                  })()}
                 </LineChart>
               </ResponsiveContainer>
               </div>
