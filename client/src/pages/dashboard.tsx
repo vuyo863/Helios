@@ -1018,7 +1018,9 @@ export default function Dashboard() {
       const startDate = new Date(startTimestamp);
       
       // Prüfe ob dieses Update im Vergleichs-Modus ist
-      const isVergleichsModus = update.calculationMode === 'Vergleich';
+      // "Normal" = Vergleichs-Modus (Update nach Startmetrik)
+      // "Startmetrik" = Erster Upload (keine vorherigen Daten)
+      const isVergleichsModus = update.calculationMode === 'Normal';
       
       // Berechne alle Metriken für dieses Update
       // Gesamtkapital = totalInvestment ODER investment (baseInvestment) je nach Auswahl
@@ -1151,7 +1153,8 @@ export default function Dashboard() {
       
       if (currentUpdateIndex >= 0 && currentUpdateIndex < filteredUpdates.length - 1) {
         const nextUpdate = filteredUpdates[currentUpdateIndex + 1];
-        const isNextVergleich = nextUpdate.calculationMode === 'Vergleich';
+        // "Normal" = Vergleichs-Modus (Update nach Startmetrik)
+        const isNextVergleich = nextUpdate.calculationMode === 'Normal';
         
         if (isNextVergleich) {
           // Dieser Endpunkt ist AUCH der Startpunkt für das nächste Update
@@ -2658,6 +2661,50 @@ export default function Dashboard() {
                           })}
                         </div>
                       );
+                      
+                      // Bei Endpunkt der AUCH Startpunkt des nächsten Vergleichs ist: Zwei Info-Boxen
+                      if (isAlsoStartOfNext) {
+                        // Sammle die End-Werte (aktuelle Werte dieses Endpunkts)
+                        const endBoxValues: { name: string; value: number; color: string }[] = [];
+                        // Die Start-Werte für das nächste Update (sind identisch mit End-Werten)
+                        const startBoxValues: { name: string; value: number; color: string }[] = [];
+                        
+                        props.payload.forEach((entry: any) => {
+                          const name = entry.name;
+                          let currentValue = entry.value;
+                          
+                          // Wenn Gesamtkapital aktiv: Zeige die echten Werte
+                          if (hasGesamtkapitalActive && entry.payload) {
+                            if (name === 'Gesamtprofit' && entry.payload._rawGesamtprofit !== undefined) {
+                              currentValue = entry.payload._rawGesamtprofit;
+                            } else if (name === 'Gesamtprofit %' && entry.payload._rawGesamtprofitPercent !== undefined) {
+                              currentValue = entry.payload._rawGesamtprofitPercent;
+                            } else if (name === 'Ø Profit/Tag' && entry.payload._rawAvgDailyProfit !== undefined) {
+                              currentValue = entry.payload._rawAvgDailyProfit;
+                            } else if (name === 'Real Profit/Tag' && entry.payload._rawRealDailyProfit !== undefined) {
+                              currentValue = entry.payload._rawRealDailyProfit;
+                            }
+                          }
+                          
+                          // End-Werte = aktuelle Werte
+                          endBoxValues.push({ name, value: currentValue, color: entry.color });
+                          
+                          // Start-Werte für nächstes Update (aus _nextStartInfo wenn verfügbar, sonst identisch)
+                          const startValue = dataPoint._nextStartInfo?.[name as keyof typeof dataPoint._nextStartInfo];
+                          if (typeof startValue === 'number') {
+                            startBoxValues.push({ name, value: startValue, color: entry.color });
+                          } else {
+                            startBoxValues.push({ name, value: currentValue, color: entry.color });
+                          }
+                        });
+                        
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {renderInfoBox('End', dateLabel, true, endBoxValues)}
+                            {renderInfoBox('Start', dateLabel, false, startBoxValues)}
+                          </div>
+                        );
+                      }
                       
                       // Bei Vergleichs-Modus mit _prevEndValues: Zwei Info-Boxen
                       if (hasPrevEndValues) {
