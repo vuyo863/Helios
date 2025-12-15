@@ -280,18 +280,7 @@ export default function Dashboard() {
       // Nicht zoomen während des Dragging (verhindert Konflikte mit Trackpad-Gesten)
       if (isDraggingRef.current) return;
       
-      // Nur zoomen wenn ctrlKey gedrückt (Pinch-Geste) ODER reines Scrollrad
-      // Bei Touchpad-Drag: deltaY ist oft sehr klein und ctrlKey ist false
-      // Bei Pinch-to-Zoom: ctrlKey ist true
-      // Bei Mausrad: größere deltaY Werte
-      const isPinchGesture = e.ctrlKey;
-      const isMouseWheel = Math.abs(e.deltaY) >= 10 && !e.ctrlKey;
-      
-      if (!isPinchGesture && !isMouseWheel) {
-        // Kleine Bewegungen ohne Ctrl ignorieren (wahrscheinlich Touchpad-Scroll während Drag)
-        return;
-      }
-      
+      // Zoom für alle Scroll-Events (Mausrad, Touchpad, Pinch)
       const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
       
       // Zoom für beide Achsen gleichzeitig
