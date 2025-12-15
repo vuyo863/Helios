@@ -974,6 +974,7 @@ export default function Dashboard() {
       // Für Tooltip: Zeige auch vorherigen Endpunkt-Wert wenn dieser Punkt beides ist
       _prevEndValues?: {
         timestamp: number;
+        'Gesamtkapital': number;
         'Gesamtprofit': number;
         'Gesamtprofit %': number;
         'Ø Profit/Tag': number;
@@ -988,6 +989,8 @@ export default function Dashboard() {
     let cumulativeRealDaily = 0;
     // Speichere vorherigen Endpunkt-Timestamp für Tooltip
     let prevEndTimestamp = 0;
+    // Speichere vorheriges Gesamtkapital für Tooltip bei Vergleichs-Modus
+    let prevGesamtkapital = 0;
     
     filteredUpdates.forEach((update, index) => {
       // Endpunkt: thisUpload (Ende des Updates)
@@ -1033,9 +1036,10 @@ export default function Dashboard() {
       const runtimeDays = runtimeHours / 24;
       const realDailyProfit = runtimeDays > 0 ? gesamtprofit / runtimeDays : 0;
       
-      // Speichere vorherige Endwerte vor dem Update (inkl. Timestamp)
+      // Speichere vorherige Endwerte vor dem Update (inkl. Timestamp und Gesamtkapital)
       const prevEndValues = {
         timestamp: prevEndTimestamp,
+        'Gesamtkapital': prevGesamtkapital,
         'Gesamtprofit': cumulativeProfit,
         'Gesamtprofit %': cumulativeProfitPercent,
         'Ø Profit/Tag': cumulativeAvgDaily,
@@ -1113,8 +1117,9 @@ export default function Dashboard() {
         _prevEndValues: isVergleichsModus && index > 0 ? prevEndValues : undefined,
       });
       
-      // Speichere aktuellen Endpunkt-Timestamp für nächstes Update
+      // Speichere aktuellen Endpunkt-Timestamp und Gesamtkapital für nächstes Update
       prevEndTimestamp = endTimestamp;
+      prevGesamtkapital = gesamtkapital;
     });
     
     // Sortiere alle Punkte nach Zeitstempel
