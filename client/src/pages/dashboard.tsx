@@ -231,16 +231,16 @@ export default function Dashboard() {
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
   
-  // Chart Animation Key - wird nur bei echten User-Aktionen erhöht
+  // Chart Animation Key - wird nur bei echten User-Aktionen erhöht (Apply, Bot-Wechsel)
   const [chartAnimationKey, setChartAnimationKey] = useState(0);
-  
-  // Separater Key NUR für Metrik-Wechsel (activeMetricCards Änderung)
-  // Dieser Key mountet den Chart komplett neu = alte Linien verschwinden sofort
-  const [metricChangeKey, setMetricChangeKey] = useState(0);
   
   // Animation nur aktiv für kurze Zeit nach chartAnimationKey Änderung
   // Verhindert Re-Animation bei Hover/Scroll
   const [shouldAnimate, setShouldAnimate] = useState(true);
+  
+  // Trackt welche Metriken gerade NEU hinzugefügt werden (nur diese animieren)
+  const [animatingMetrics, setAnimatingMetrics] = useState<Set<string>>(new Set());
+  const animatingMetricsTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   
   useEffect(() => {
     setShouldAnimate(true);
@@ -1480,26 +1480,63 @@ export default function Dashboard() {
   };
 
   const toggleMetricCard = (cardName: string) => {
+    // Prüfe ob Metrik hinzugefügt wird (nicht entfernt)
+    const isAdding = !activeMetricCards.includes(cardName);
+    
     // Bei Multi-Bot-Auswahl (>1): Nur EINE Metrik-Card erlauben
     if (selectedChartBotTypes.length > 1) {
-      setActiveMetricCards(prev => 
-        prev.includes(cardName) && prev.length === 1
-          ? [] // Deselektieren wenn schon ausgewählt und einzige
-          : [cardName] // Sonst: Ersetze Auswahl mit neuer Card
-      );
+      const newMetrics = activeMetricCards.includes(cardName) && activeMetricCards.length === 1
+        ? [] 
+        : [cardName];
+      setActiveMetricCards(newMetrics);
+      
+      // Wenn neue Metrik hinzugefügt wird, tracke sie für Animation
+      if (newMetrics.includes(cardName) && isAdding) {
+        // Clear existing timeout for this metric
+        const existingTimeout = animatingMetricsTimeoutsRef.current.get(cardName);
+        if (existingTimeout) clearTimeout(existingTimeout);
+        
+        // Add to animating set
+        setAnimatingMetrics(prev => new Set(Array.from(prev).concat(cardName)));
+        
+        // Schedule removal after animation completes
+        const timeout = setTimeout(() => {
+          setAnimatingMetrics(prev => {
+            const next = new Set(prev);
+            next.delete(cardName);
+            return next;
+          });
+          animatingMetricsTimeoutsRef.current.delete(cardName);
+        }, 900);
+        animatingMetricsTimeoutsRef.current.set(cardName, timeout);
+      }
     } else {
       // Single-Bot oder kein Multi-Bot: Normales Toggle-Verhalten
-      setActiveMetricCards(prev => 
-        prev.includes(cardName) 
-          ? prev.filter(name => name !== cardName)
-          : [...prev, cardName]
-      );
+      if (isAdding) {
+        setActiveMetricCards(prev => [...prev, cardName]);
+        
+        // Clear existing timeout for this metric
+        const existingTimeout = animatingMetricsTimeoutsRef.current.get(cardName);
+        if (existingTimeout) clearTimeout(existingTimeout);
+        
+        // Add to animating set
+        setAnimatingMetrics(prev => new Set(Array.from(prev).concat(cardName)));
+        
+        // Schedule removal after animation completes
+        const timeout = setTimeout(() => {
+          setAnimatingMetrics(prev => {
+            const next = new Set(prev);
+            next.delete(cardName);
+            return next;
+          });
+          animatingMetricsTimeoutsRef.current.delete(cardName);
+        }, 900);
+        animatingMetricsTimeoutsRef.current.set(cardName, timeout);
+      } else {
+        // Entfernen - keine Animation nötig, Linie verschwindet sofort
+        setActiveMetricCards(prev => prev.filter(name => name !== cardName));
+      }
     }
-    // Trigger Animation bei Metrik-Änderung
-    setChartAnimationKey(prev => prev + 1);
-    // NEU: metricChangeKey erhöhen = Chart komplett neu mounten
-    // Das verhindert den "alte Linie bleibt sichtbar" Bug
-    setMetricChangeKey(prev => prev + 1);
   };
 
   const handleFromUpdateSelect = (update: any) => {
@@ -1868,7 +1905,6 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
-                  key={`chart-metric-${metricChangeKey}`}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
@@ -2161,6 +2197,7 @@ export default function Dashboard() {
                     ))
                   ) : (
                     // Single-Bot Modus: Lines für alle aktiven Metriken
+                    // Nur NEU hinzugefügte Metriken animieren (animatingMetrics Set)
                     activeMetricCards.map((metricName) => (
                       <Line 
                         key={metricName}
@@ -2171,7 +2208,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
                         connectNulls
-                        isAnimationActive={shouldAnimate}
+                        isAnimationActive={shouldAnimate || animatingMetrics.has(metricName)}
                         animationDuration={800}
                       />
                     ))
