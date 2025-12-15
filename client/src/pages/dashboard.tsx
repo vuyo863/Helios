@@ -1208,38 +1208,11 @@ export default function Dashboard() {
     return activeMetricCards.includes('Gesamtkapital');
   }, [activeMetricCards]);
 
-  // Transformierte Chart-Daten
-  // Wenn Gesamtkapital aktiv: Alle Profit-Metriken werden um Gesamtkapital offsettet
-  // Das gilt für ALLE Updates, nicht nur für einen einzelnen
+  // Transformierte Chart-Daten - KEINE Transformation mehr
+  // Die Differenz-Werte bei Vergleich sollen unverändert bleiben (können negativ sein)
   const transformedChartData = useMemo(() => {
-    if (!chartData || chartData.length === 0) return chartData;
-    
-    // Wenn Gesamtkapital nicht aktiv, normale Daten zurückgeben
-    if (!hasGesamtkapitalActive) return chartData;
-    
-    // Transformiere die Daten: ALLE Profit-Werte um Gesamtkapital erhöhen
-    // Bei jedem Update-Startpunkt und Endpunkt wird der Profit-Wert + Gesamtkapital angezeigt
-    return chartData.map(point => {
-      const gesamtkapital = point['Gesamtkapital'] || 0;
-      
-      return {
-        ...point,
-        // Gesamtprofit startet ab Gesamtkapital
-        'Gesamtprofit': point['Gesamtprofit'] + gesamtkapital,
-        // Gesamtprofit % startet auch ab Gesamtkapital (für visuelle Konsistenz)
-        'Gesamtprofit %': point['Gesamtprofit %'] + gesamtkapital,
-        // Ø Profit/Tag startet ab Gesamtkapital
-        'Ø Profit/Tag': point['Ø Profit/Tag'] + gesamtkapital,
-        // Real Profit/Tag startet ab Gesamtkapital
-        'Real Profit/Tag': point['Real Profit/Tag'] + gesamtkapital,
-        // Speichere Originalwerte für Tooltips
-        '_rawGesamtprofit': point['Gesamtprofit'],
-        '_rawGesamtprofitPercent': point['Gesamtprofit %'],
-        '_rawAvgDailyProfit': point['Ø Profit/Tag'],
-        '_rawRealDailyProfit': point['Real Profit/Tag'],
-      };
-    });
-  }, [chartData, hasGesamtkapitalActive]);
+    return chartData;
+  }, [chartData]);
 
   // Berechne Highest und Lowest Value für jede aktive Metrik
   // Diese werden als Marker im Chart angezeigt wenn die entsprechenden Toggles aktiv sind
@@ -2690,10 +2663,8 @@ export default function Dashboard() {
                       
                       // Bei Endpunkt der AUCH Startpunkt des nächsten Vergleichs ist: Zwei Info-Boxen
                       if (isAlsoStartOfNext) {
-                        // END Box: Werte direkt aus dataPoint holen (mit _raw* für transformierte Werte)
-                        const endGesamtprofit = hasGesamtkapitalActive && dataPoint._rawGesamtprofit !== undefined
-                          ? dataPoint._rawGesamtprofit
-                          : dataPoint['Gesamtprofit'];
+                        // END Box: Werte direkt aus dataPoint holen
+                        const endGesamtprofit = dataPoint['Gesamtprofit'];
                         const endGesamtkapital = dataPoint['Gesamtkapital'];
                         
                         // START Box: Werte aus _nextStartInfo (sind dieselben wie END, aber ohne Runtime)
@@ -2772,20 +2743,7 @@ export default function Dashboard() {
                         
                         props.payload.forEach((entry: any) => {
                           const name = entry.name;
-                          let currentValue = entry.value;
-                          
-                          // Wenn Gesamtkapital aktiv: Zeige die echten Werte
-                          if (hasGesamtkapitalActive && entry.payload) {
-                            if (name === 'Gesamtprofit' && entry.payload._rawGesamtprofit !== undefined) {
-                              currentValue = entry.payload._rawGesamtprofit;
-                            } else if (name === 'Gesamtprofit %' && entry.payload._rawGesamtprofitPercent !== undefined) {
-                              currentValue = entry.payload._rawGesamtprofitPercent;
-                            } else if (name === 'Ø Profit/Tag' && entry.payload._rawAvgDailyProfit !== undefined) {
-                              currentValue = entry.payload._rawAvgDailyProfit;
-                            } else if (name === 'Real Profit/Tag' && entry.payload._rawRealDailyProfit !== undefined) {
-                              currentValue = entry.payload._rawRealDailyProfit;
-                            }
-                          }
+                          const currentValue = entry.value;
                           
                           // Vorheriger Endpunkt-Wert
                           const prevValue = dataPoint._prevEndValues[name];
@@ -2825,21 +2783,8 @@ export default function Dashboard() {
                         >
                           <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
                           {props.payload.map((entry: any, index: number) => {
-                            let displayValue = entry.value;
+                            const displayValue = entry.value;
                             const name = entry.name;
-                            
-                            // Wenn Gesamtkapital aktiv: Zeige die echten Werte
-                            if (hasGesamtkapitalActive && entry.payload) {
-                              if (name === 'Gesamtprofit' && entry.payload._rawGesamtprofit !== undefined) {
-                                displayValue = entry.payload._rawGesamtprofit;
-                              } else if (name === 'Gesamtprofit %' && entry.payload._rawGesamtprofitPercent !== undefined) {
-                                displayValue = entry.payload._rawGesamtprofitPercent;
-                              } else if (name === 'Ø Profit/Tag' && entry.payload._rawAvgDailyProfit !== undefined) {
-                                displayValue = entry.payload._rawAvgDailyProfit;
-                              } else if (name === 'Real Profit/Tag' && entry.payload._rawRealDailyProfit !== undefined) {
-                                displayValue = entry.payload._rawRealDailyProfit;
-                              }
-                            }
                             
                             // Titel anpassen: Wenn Investitionsmenge ausgewählt, zeige "Investitionsmenge" statt "Gesamtkapital"
                             let displayName = name;
