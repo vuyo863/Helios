@@ -6,7 +6,7 @@ import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
 import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -231,13 +231,15 @@ export default function Dashboard() {
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
   
-  // Crosshair State für Hover-Interaktion
-  const [crosshairX, setCrosshairX] = useState<number | null>(null);
-  const [crosshairY, setCrosshairY] = useState<number | null>(null);
+  // Crosshair State für Hover-Interaktion - useRef statt useState um Re-Renders zu vermeiden
+  const crosshairXRef = useRef<number | null>(null);
+  const crosshairYRef = useRef<number | null>(null);
+  // State nur für das Forcieren eines Re-Renders der ReferenceLines
+  const [crosshairUpdate, setCrosshairUpdate] = useState(0);
   
-  // Chart Animation State - Animation immer aktiv für flüssige Übergänge
-  // Recharts animiert automatisch bei Datenänderungen
-  const chartAnimationActive = true;
+  // Chart Animation Key - wird nur bei echten User-Aktionen erhöht
+  // Verhindert Re-Animation bei Hover/Scroll
+  const [chartAnimationKey, setChartAnimationKey] = useState(0);
   
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
@@ -1057,22 +1059,25 @@ export default function Dashboard() {
     return [0, 'auto'];
   }, [transformedChartData, activeMetricCards, isSingleUpdateWithCapital]);
 
-  // Crosshair Handler für Hover-Interaktion
+  // Crosshair Handler für Hover-Interaktion - nutzt Refs um Re-Renders zu vermeiden
   const handleChartMouseMove = (e: any) => {
     if (e && e.activePayload && e.activePayload.length > 0) {
       const payload = e.activePayload[0].payload;
-      setCrosshairX(payload.timestamp);
+      crosshairXRef.current = payload.timestamp;
       // Y-Wert der ersten aktiven Metrik
       const activeMetric = activeMetricCards[0];
       if (activeMetric && payload[activeMetric] !== undefined) {
-        setCrosshairY(payload[activeMetric]);
+        crosshairYRef.current = payload[activeMetric];
       }
+      // Force update für ReferenceLines
+      setCrosshairUpdate(prev => prev + 1);
     }
   };
 
   const handleChartMouseLeave = () => {
-    setCrosshairX(null);
-    setCrosshairY(null);
+    crosshairXRef.current = null;
+    crosshairYRef.current = null;
+    setCrosshairUpdate(prev => prev + 1);
   };
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
@@ -1481,6 +1486,8 @@ export default function Dashboard() {
     setChartApplied(true);
     // Automatisch "Gesamtprofit" Content-Karte aktivieren/hervorheben
     setActiveMetricCards(['Gesamtprofit']);
+    // Trigger Animation bei Apply
+    setChartAnimationKey(prev => prev + 1);
   };
 
   const toggleMetricCard = (cardName: string) => {
@@ -1499,6 +1506,8 @@ export default function Dashboard() {
           : [...prev, cardName]
       );
     }
+    // Trigger Animation bei Metrik-Änderung
+    setChartAnimationKey(prev => prev + 1);
   };
 
   const handleFromUpdateSelect = (update: any) => {
@@ -1572,6 +1581,8 @@ export default function Dashboard() {
                             ) || "Gesamt";
                             setSelectedBotName(selectedName);
                             setOpen(false);
+                            // Trigger Animation bei Bot-Auswahl
+                            setChartAnimationKey(prev => prev + 1);
                           }}
                           data-testid={`option-bot-${botName}`}
                         >
@@ -1714,6 +1725,8 @@ export default function Dashboard() {
                                     e.stopPropagation();
                                     setProfitPercentBase('gesamtinvestment');
                                     setProfitPercentDropdownOpen(false);
+                                    // Trigger Animation bei Basis-Wechsel
+                                    setChartAnimationKey(prev => prev + 1);
                                   }}
                                   data-testid="option-gesamtinvestment"
                                 >
@@ -1728,6 +1741,8 @@ export default function Dashboard() {
                                     e.stopPropagation();
                                     setProfitPercentBase('investitionsmenge');
                                     setProfitPercentDropdownOpen(false);
+                                    // Trigger Animation bei Basis-Wechsel
+                                    setChartAnimationKey(prev => prev + 1);
                                   }}
                                   data-testid="option-investitionsmenge"
                                 >
@@ -1831,6 +1846,7 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
+                  key={`chart-${chartAnimationKey}`}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
@@ -2056,12 +2072,12 @@ export default function Dashboard() {
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   {/* Crosshair - vertikale Linie */}
-                  {crosshairX !== null && (
-                    <ReferenceLine x={crosshairX} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
+                  {crosshairXRef.current !== null && (
+                    <ReferenceLine x={crosshairXRef.current} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
                   )}
                   {/* Crosshair - horizontale Linie */}
-                  {crosshairY !== null && (
-                    <ReferenceLine y={crosshairY} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
+                  {crosshairYRef.current !== null && (
+                    <ReferenceLine y={crosshairYRef.current} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
                   )}
                   <Tooltip 
                     contentStyle={{ 
@@ -2127,7 +2143,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: getBotTypeColor(index), r: 4 }}
                         connectNulls
-                        isAnimationActive={chartAnimationActive}
+                        isAnimationActive={true}
                         animationDuration={800}
                       />
                     ))
@@ -2143,7 +2159,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
                         connectNulls
-                        isAnimationActive={chartAnimationActive}
+                        isAnimationActive={true}
                         animationDuration={800}
                       />
                     ))
