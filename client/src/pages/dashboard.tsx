@@ -268,6 +268,8 @@ export default function Dashboard() {
     isDraggingRef.current = isDragging;
   }, [isDragging]);
   
+  // Native Wheel-Event Listener für Chart-Zoom
+  // Muss native sein weil React's onWheel passiv ist und preventDefault() nicht funktioniert
   useEffect(() => {
     const container = chartContainerRef.current;
     if (!container) return;
@@ -277,7 +279,7 @@ export default function Dashboard() {
       e.preventDefault();
       e.stopPropagation();
       
-      // Nicht zoomen während des Dragging (verhindert Konflikte mit Trackpad-Gesten)
+      // Nicht zoomen während des Dragging
       if (isDraggingRef.current) return;
       
       // Zoom für alle Scroll-Events (Mausrad, Touchpad, Pinch)
@@ -294,7 +296,7 @@ export default function Dashboard() {
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
-  }, []);
+  });
   
   const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Nur linke Maustaste für Pan
