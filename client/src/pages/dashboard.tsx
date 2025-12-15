@@ -2865,7 +2865,37 @@ export default function Dashboard() {
                         name={metricName}
                         stroke={metricColors[metricName] || '#888888'}
                         strokeWidth={2}
-                        dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
+                        dot={(props: any) => {
+                          const { cx, cy, payload } = props;
+                          const color = metricColors[metricName] || '#888888';
+                          const isClosedBot = payload?.status === 'Closed Bots';
+                          
+                          if (isClosedBot) {
+                            // Closed Bots: Hohler Kreis (nur Rand, kein Fill)
+                            return (
+                              <circle
+                                key={`dot-${payload?.timestamp}-${metricName}`}
+                                cx={cx}
+                                cy={cy}
+                                r={5}
+                                fill="hsl(var(--background))"
+                                stroke={color}
+                                strokeWidth={2}
+                              />
+                            );
+                          }
+                          
+                          // Normale Punkte: Gefüllter Kreis
+                          return (
+                            <circle
+                              key={`dot-${payload?.timestamp}-${metricName}`}
+                              cx={cx}
+                              cy={cy}
+                              r={4}
+                              fill={color}
+                            />
+                          );
+                        }}
                         connectNulls
                         isAnimationActive={true}
                         animationDuration={1200}
