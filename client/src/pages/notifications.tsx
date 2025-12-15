@@ -239,8 +239,27 @@ export default function Notifications() {
     sehr_gefährlich: false
   });
   
-  // Aktive Alarmierungen
-  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([]);
+  // Aktive Alarmierungen - Mit Mock-Daten zum Testen
+  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([
+    {
+      id: 'mock-alarm-1',
+      trendPriceName: 'BTC/USDT',
+      threshold: '50000',
+      alarmLevel: 'achtung',
+      triggeredAt: new Date(Date.now() - 1000 * 60 * 15), // 15 Minuten her
+      message: 'Preis über Schwellenwert gestiegen',
+      note: 'Wichtiger Widerstandslevel erreicht'
+    },
+    {
+      id: 'mock-alarm-2',
+      trendPriceName: 'ETH/USDT',
+      threshold: '3000',
+      alarmLevel: 'gefährlich',
+      triggeredAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 Stunden her
+      message: 'Preis unter Schwellenwert gefallen',
+      note: 'Kritische Support-Zone durchbrochen'
+    }
+  ]);
 
   // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
   const filteredSuggestions = allBinancePairs
@@ -406,7 +425,20 @@ export default function Notifications() {
 
   const approveAlarm = (alarmId: string) => {
     setActiveAlarms(prev => prev.filter(alarm => alarm.id !== alarmId));
-  };;
+  };
+
+  const getTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Gerade eben';
+    if (diffMins < 60) return `vor ${diffMins} Min`;
+    if (diffHours < 24) return `vor ${diffHours} Std`;
+    return `vor ${diffDays} Tag${diffDays > 1 ? 'en' : ''}`;
+  };
 
 
   return (
@@ -435,35 +467,38 @@ export default function Notifications() {
           </div>
         </div>
 
-        {/* Aktive Alarmierungen */}
+        {/* Aktive Alarmierungen - Kompakt */}
         {activeAlarms.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-6 h-6 text-destructive animate-pulse" />
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bell className="w-5 h-5 text-destructive animate-pulse" />
                 Aktive Alarmierungen ({activeAlarms.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className={cn(
+                "space-y-2",
+                activeAlarms.length > 3 && "max-h-[300px] overflow-y-auto pr-2"
+              )}>
                 {activeAlarms.map((alarm) => (
                   <div
                     key={alarm.id}
-                    className="flex items-center justify-between p-4 rounded-lg border"
+                    className="flex items-start justify-between p-3 rounded-lg border gap-3"
                     style={{ 
                       borderColor: getAlarmLevelColor(alarm.alarmLevel),
-                      backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}10`
+                      backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}08`
                     }}
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <div 
-                          className="w-3 h-3 rounded-full" 
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
                           style={{ backgroundColor: getAlarmLevelColor(alarm.alarmLevel) }}
                         />
-                        <h4 className="font-semibold">{alarm.trendPriceName}</h4>
+                        <h4 className="font-semibold text-sm">{alarm.trendPriceName}</h4>
                         <span 
-                          className="text-xs px-2 py-1 rounded"
+                          className="text-xs px-1.5 py-0.5 rounded font-medium"
                           style={{ 
                             backgroundColor: getAlarmLevelColor(alarm.alarmLevel),
                             color: 'white'
@@ -471,34 +506,33 @@ export default function Notifications() {
                         >
                           {getAlarmLevelLabel(alarm.alarmLevel)}
                         </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {getTimeAgo(alarm.triggeredAt)}
+                        </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Schwellenwert: ${alarm.threshold} | {alarm.message}
+                      <p className="text-xs text-muted-foreground">
+                        ${alarm.threshold} | {alarm.message}
                       </p>
                       {alarm.note && (
                         <div 
-                          className="text-sm mt-2 p-2 rounded border-l-4"
+                          className="text-xs mt-1.5 p-1.5 rounded border-l-2"
                           style={{ 
                             borderLeftColor: getAlarmLevelColor(alarm.alarmLevel),
-                            backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}15`
+                            backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}10`
                           }}
                         >
-                          <span className="font-medium">Notiz: </span>
                           {alarm.note}
                         </div>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {alarm.triggeredAt.toLocaleString('de-DE')}
-                      </p>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => approveAlarm(alarm.id)}
-                      className="ml-4"
+                      className="flex-shrink-0 h-8"
                       style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
                     >
-                      <Check className="w-4 h-4 mr-2" />
+                      <Check className="w-3.5 h-3.5 mr-1" />
                       Approve
                     </Button>
                   </div>
