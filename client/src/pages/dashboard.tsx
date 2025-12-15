@@ -234,32 +234,20 @@ export default function Dashboard() {
   // Chart Animation Key - wird nur bei echten User-Aktionen erhöht
   const [chartAnimationKey, setChartAnimationKey] = useState(0);
   
+  // Separater Key NUR für Metrik-Wechsel (activeMetricCards Änderung)
+  // Dieser Key mountet den Chart komplett neu = alte Linien verschwinden sofort
+  const [metricChangeKey, setMetricChangeKey] = useState(0);
+  
   // Animation nur aktiv für kurze Zeit nach chartAnimationKey Änderung
   // Verhindert Re-Animation bei Hover/Scroll
   const [shouldAnimate, setShouldAnimate] = useState(true);
   
-  // Transitioning State: Blendet Chart kurz aus beim Metrik-Wechsel
-  // Verhindert den "alten Linien bleiben sichtbar" Bug
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  
   useEffect(() => {
-    // Erst kurz ausblenden (10ms), dann Animation starten
-    setIsTransitioning(true);
-    setShouldAnimate(false);
-    
-    const showTimer = setTimeout(() => {
-      setIsTransitioning(false);
-      setShouldAnimate(true);
-    }, 10); // Kurze Pause zum "Reset" des Charts
-    
-    const animEndTimer = setTimeout(() => {
+    setShouldAnimate(true);
+    const timer = setTimeout(() => {
       setShouldAnimate(false);
-    }, 910); // 10ms delay + 800ms Animation + 100ms Puffer
-    
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(animEndTimer);
-    };
+    }, 900); // Animation dauert 800ms, +100ms Puffer
+    return () => clearTimeout(timer);
   }, [chartAnimationKey]);
   
   // Handler für Update-Auswahl Icons
@@ -1509,6 +1497,9 @@ export default function Dashboard() {
     }
     // Trigger Animation bei Metrik-Änderung
     setChartAnimationKey(prev => prev + 1);
+    // NEU: metricChangeKey erhöhen = Chart komplett neu mounten
+    // Das verhindert den "alte Linie bleibt sichtbar" Bug
+    setMetricChangeKey(prev => prev + 1);
   };
 
   const handleFromUpdateSelect = (update: any) => {
@@ -1877,6 +1868,7 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
+                  key={`chart-metric-${metricChangeKey}`}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
@@ -2151,8 +2143,7 @@ export default function Dashboard() {
                     }}
                   />
                   {/* Dynamisch Lines rendern - Multi-Bot-Mode oder Single-Bot mit Metriken */}
-                  {/* Während Transition: Keine Linien rendern (verhindert "alte Linie bleibt sichtbar" Bug) */}
-                  {!isTransitioning && (isMultiBotChartMode ? (
+                  {isMultiBotChartMode ? (
                     // Multi-Bot-Type Modus: Eine Linie pro Bot-Type (zeigt Gesamtprofit)
                     multiBotChartData.botTypeNames.map((botTypeName, index) => (
                       <Line 
@@ -2184,7 +2175,7 @@ export default function Dashboard() {
                         animationDuration={800}
                       />
                     ))
-                  ))}
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </Card>
