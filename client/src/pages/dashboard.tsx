@@ -184,7 +184,7 @@ export default function Dashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   const [timeRangeOpen, setTimeRangeOpen] = useState(false);
-  const [selectedTimeRange, setSelectedTimeRange] = useState('7 Days');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('First-Last Update');
   const [customTimeOpen, setCustomTimeOpen] = useState(false);
   const [customDays, setCustomDays] = useState('');
   const [customHours, setCustomHours] = useState('');
@@ -1530,6 +1530,37 @@ export default function Dashboard() {
     setTempSelectedUpdate(null);
   };
 
+  // Auto-Apply: Wenn ein Bot-Type ausgewählt wird (nicht "Gesamt"), automatisch Default-Einstellungen anwenden
+  useEffect(() => {
+    if (selectedBotName !== "Gesamt") {
+      // Default-Einstellungen setzen
+      setSelectedTimeRange('First-Last Update');
+      setChartSequence('days');
+      // From/Until Update zurücksetzen
+      setSelectedFromUpdate(null);
+      setSelectedUntilUpdate(null);
+      setUpdateSelectionMode('idle');
+      // Automatisch Apply mit Default-Einstellungen
+      setAppliedChartSettings({
+        timeRange: 'First-Last Update',
+        sequence: 'days',
+        fromUpdate: null,
+        untilUpdate: null,
+        customDays: '',
+        customHours: '',
+        customMinutes: '',
+      });
+      setChartApplied(true);
+      setActiveMetricCards(['Gesamtprofit']);
+      // Trigger Animation
+      setChartAnimationKey(prev => prev + 1);
+    } else {
+      // Bei "Gesamt": Chart zurücksetzen
+      setChartApplied(false);
+      setAppliedChartSettings(null);
+    }
+  }, [selectedBotName]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -1581,8 +1612,7 @@ export default function Dashboard() {
                             ) || "Gesamt";
                             setSelectedBotName(selectedName);
                             setOpen(false);
-                            // Trigger Animation bei Bot-Auswahl
-                            setChartAnimationKey(prev => prev + 1);
+                            // Animation wird durch Auto-Apply useEffect getriggert
                           }}
                           data-testid={`option-bot-${botName}`}
                         >
