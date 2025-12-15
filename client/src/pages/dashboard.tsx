@@ -1157,7 +1157,9 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
-  // Berechne totalBaseInvestment (Investitionsmenge) - Summe der "investment" Felder
+  // Berechne totalBaseInvestment (Investitionsmenge-Ø) - GLEICHE LOGIK wie Gesamtinvestment-Ø
+  // Pro Bot-Type: Durchschnitt aller "investment" Werte von "Update Metrics" Updates
+  // Dann alle Bot-Type-Durchschnitte summieren
   const totalBaseInvestment = useMemo(() => {
     if (selectedBotName === "Gesamt") {
       if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
@@ -1168,12 +1170,18 @@ export default function Dashboard() {
       let sum = 0;
       
       activeBotTypes.forEach(botType => {
-        // Summe aller investment Werte (sowohl Update Metrics als auch Closed Bots)
-        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+        // Nur Updates mit Status "Update Metrics" verwenden (wie bei Gesamtinvestment-Ø)
+        const updateMetricsOnly = allBotTypeUpdates.filter(
+          update => update.botTypeId === botType.id && update.status === "Update Metrics"
+        );
         
-        updatesForType.forEach(update => {
-          sum += parseFloat(update.investment || '0') || 0;
-        });
+        if (updateMetricsOnly.length > 0) {
+          // Berechne Durchschnitt aller investment Werte pro Bot-Type
+          const avgInvestment = updateMetricsOnly.reduce(
+            (s, u) => s + (parseFloat(u.investment || '0') || 0), 0
+          ) / updateMetricsOnly.length;
+          sum += avgInvestment;
+        }
       });
       
       return sum;
@@ -1182,9 +1190,19 @@ export default function Dashboard() {
         return 0;
       }
       
-      const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
+      // Nur Updates mit Status "Update Metrics" für diesen Bot-Type
+      const updateMetricsOnly = allBotTypeUpdates.filter(
+        update => update.botTypeId === selectedBotTypeData.id && update.status === "Update Metrics"
+      );
       
-      return updatesForType.reduce((s, u) => s + (parseFloat(u.investment || '0') || 0), 0);
+      if (updateMetricsOnly.length > 0) {
+        // Berechne Durchschnitt aller investment Werte
+        return updateMetricsOnly.reduce(
+          (s, u) => s + (parseFloat(u.investment || '0') || 0), 0
+        ) / updateMetricsOnly.length;
+      }
+      
+      return 0;
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
   
@@ -1692,7 +1710,7 @@ export default function Dashboard() {
               {(isCardEditMode ? tempCardOrder : cardOrder).map((cardId) => {
                 const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string }> = {
                   'Gesamtkapital': {
-                    label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital (GI)' : 'Gesamtkapital (IM)',
+                    label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge',
                     value: `${displayedInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
                     icon: Wallet,
                     iconColor: 'bg-blue-100 text-blue-600',
