@@ -1601,33 +1601,46 @@ export default function Dashboard() {
                       
                       if (sequence === 'hours') {
                         // ADAPTIVE Stunden-Intervalle basierend auf Zeitraum
-                        // Größere Intervalle für längere Zeiträume um Überlappung zu vermeiden
-                        let tickIntervalHours: number;
-                        if (totalHours <= 48) {          // bis 2 Tage
-                          tickIntervalHours = 1;
-                        } else if (totalHours <= 168) {  // bis 1 Woche
-                          tickIntervalHours = 3;
-                        } else if (totalHours <= 336) {  // bis 2 Wochen
-                          tickIntervalHours = 6;
-                        } else if (totalHours <= 720) {  // bis 1 Monat
-                          tickIntervalHours = 12;
-                        } else {                          // > 1 Monat
-                          tickIntervalHours = Math.ceil(totalHours / 30);
-                        }
+                        // Bei längeren Zeiträumen (>7 Tage): NUR Mitternacht-Labels (1 pro Tag)
+                        // Bei kürzeren Zeiträumen: Zusätzlich Stunden-Labels
                         
                         const hour = date.getHours();
                         const isMidnight = hour === 0 && date.getMinutes() === 0;
-                        const isIntervalHour = index % tickIntervalHours === 0;
                         
-                        if (isMidnight) {
-                          // Mitternacht = Datum mit blauer Umrandung
-                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                          isMajor = true;
-                          showLabel = true;
-                        } else if (isIntervalHour) {
-                          // Intervall-Stunde = Uhrzeit
-                          label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                          showLabel = true;
+                        if (totalDays > 7) {
+                          // Bei >7 Tagen: NUR Mitternacht zeigen (1 Label pro Tag)
+                          // Verhindert Überlappung bei längeren Zeiträumen
+                          if (isMidnight) {
+                            label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                            isMajor = true;
+                            showLabel = true;
+                          }
+                          // Keine Zwischen-Stunden-Labels!
+                        } else {
+                          // Bei ≤7 Tagen: Mitternacht + Intervall-Stunden
+                          let tickIntervalHours: number;
+                          if (totalHours <= 24) {           // bis 1 Tag
+                            tickIntervalHours = 2;
+                          } else if (totalHours <= 48) {    // bis 2 Tage
+                            tickIntervalHours = 3;
+                          } else if (totalHours <= 72) {    // bis 3 Tage
+                            tickIntervalHours = 4;
+                          } else {                          // 3-7 Tage
+                            tickIntervalHours = 6;
+                          }
+                          
+                          const isIntervalHour = hour % tickIntervalHours === 0 && date.getMinutes() === 0;
+                          
+                          if (isMidnight) {
+                            // Mitternacht = Datum mit blauer Umrandung
+                            label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                            isMajor = true;
+                            showLabel = true;
+                          } else if (isIntervalHour) {
+                            // Intervall-Stunde = Uhrzeit
+                            label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            showLabel = true;
+                          }
                         }
                         
                       } else if (sequence === 'days') {
