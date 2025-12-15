@@ -1537,6 +1537,8 @@ export default function Dashboard() {
         setActiveMetricCards(prev => prev.filter(name => name !== cardName));
       }
     }
+    // Trigger Animation für ALLE Linien (Übergangs-Effekt bei Skalenänderung)
+    setChartAnimationKey(prev => prev + 1);
   };
 
   const handleFromUpdateSelect = (update: any) => {
