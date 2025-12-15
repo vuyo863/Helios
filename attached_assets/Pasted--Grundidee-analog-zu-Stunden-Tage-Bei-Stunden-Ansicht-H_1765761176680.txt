@@ -1,0 +1,94 @@
+🧠 Grundidee (analog zu Stunden → Tage)
+
+Bei Stunden-Ansicht:
+
+Haupt-Ticks = Stunden
+
+Orientierung = ab und zu Tage einblenden
+
+Bei Wochen-Ansicht soll es genauso sein:
+
+Haupt-Ticks = Tage
+
+Orientierung = ab und zu Wochen (z. B. KW oder „Woche X“)
+
+Der Zeitraum bleibt wieder gleich, nur die Granularität ändert sich.
+
+🔧 Logik für „Wochen“-Ansicht
+
+Zeitraum bleibt fest (z. B. 15.11.–26.11.)
+
+Du generierst Tages-Ticks (also jeden Tag ein Punkt auf der Achse)
+
+Beim Zeichnen entscheidest du:
+
+Normale Ticks: Tag anzeigen (z. B. 15.11, 16.11, …)
+
+Alle 7 Tage oder am Wochenanfang: Wochenlabel anzeigen (z. B. KW 47)
+
+💻 Beispiel-Logik in JavaScript
+
+Du hast wieder:
+
+const viewMode = "weeks"; // "hours" | "days" | "weeks"
+
+
+Und deine Tick-Formatierung könnte so aussehen:
+
+function getISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+}
+
+function formatTick(t, index) {
+  const d = new Date(t);
+
+  if (viewMode === "weeks") {
+    const isWeekStart = d.getDay() === 1; // Montag = Wochenanfang
+
+    if (isWeekStart) {
+      // Haupt-Orientierung: Kalenderwoche
+      return "KW " + getISOWeek(d);
+    }
+
+    // ansonsten z.B. nur das Datum zeigen
+    return d.toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+    });
+  }
+
+  // ... hier kämen deine Fälle für "hours" & "days" wie vorher
+}
+
+
+Wichtig dabei:
+
+Ticks generierst du täglich, nicht wöchentlich
+
+Aber Labels auf der Achse sind:
+
+meistens Tage
+
+manchmal Wochen (KW), um Orientierung zu geben
+
+In deiner Chart-Library sagst du dann wie gehabt:
+
+Recharts: tickFormatter={(value, index) => formatTick(value, index)}
+
+Chart.js: ticks.callback = (value, index, ticks) => formatTick(value, index)
+
+Kurzfassung für Sie, Sir
+
+Stunden-Modus: Ticks = Stunden, Labels = meistens Uhrzeit, ab und zu Datum.
+
+Tage-Modus: Ticks = Tage, Labels = Datum.
+
+Wochen-Modus: Ticks = Tage,
+
+normale Labels = Datum,
+
+besondere Labels (z. B. jeder Montag) = KW XX.

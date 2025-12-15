@@ -1,0 +1,88 @@
+Du brauchst im Prinzip zwei Arten von Ticks:
+
+Stunden-Ticks = jeder Strich
+
+Tages-Ticks = jeder x-te Strich (z. B. alle 5) oder wenn ein neuer Tag beginnt
+
+Die Daten bleiben gleich (alle Punkte stündlich), du änderst nur, wie die Achse beschriftet wird.
+
+1. Grundidee
+
+Zeitraum bleibt z. B. 15.11. – 26.11.
+
+Du generierst stündliche Zeitpunkte als Ticks.
+
+Beim Zeichnen der X-Achsen-Labels entscheidest du:
+
+Meistens: HH:mm
+
+Ab und zu: DD.MM (oder DD.MM HH:mm), z. B. alle 5 Ticks oder immer bei 00:00.
+
+2. Beispiel-Logik in JavaScript
+
+Nehmen wir an, du hast ein Array ticks mit Date-Objekten (jede Stunde):
+
+const viewMode = "hours"; // "hours" | "days" | "weeks"
+
+function formatTick(t, index) {
+  if (viewMode === "hours") {
+    const d = new Date(t);
+
+    // 1) Wenn Tageswechsel: Datum zeigen
+    const isMidnight = d.getHours() === 0;
+
+    // 2) Oder jeder 5. Strich: Datum zeigen
+    const isEvery5th = index % 5 === 0;
+
+    if (isMidnight || isEvery5th) {
+      // Tag sichtbar machen
+      return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+    } else {
+      // Nur Uhrzeit
+      return d.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+
+  if (viewMode === "days") {
+    const d = new Date(t);
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+  }
+
+  if (viewMode === "weeks") {
+    const d = new Date(t);
+    return "KW " + getISOWeek(d); // eigene Funktion
+  }
+}
+
+
+In deiner Chart-Lib (z. B. Recharts / Chart.js) gibst du dann so etwas an wie:
+
+Recharts: tickFormatter={(value, index) => formatTick(value, index)}
+
+Chart.js (time scale): ticks.callback = (value, index, ticks) => formatTick(value, index)
+
+3. Wichtig für dein Ziel
+
+Zeitraum bleibt fix → 15.11. bis 26.11. ändert sich nicht.
+
+Bei „Stunden“:
+
+Alle Datenpunkte bleiben.
+
+Du zeigst jede Stunde als Strich,
+
+aber nur jede x-te Stunde bzw. bei Mitternacht das Datum als Label.
+
+Bei „Tage“:
+
+Tick-Abstand = 1 Tag, Label = Datum.
+
+Bei „Wochen“:
+
+Tick-Abstand = 1 Woche, Label = Woche.
+
+So hast du genau das, was du willst, Sir:
+gleicher Zeitraum, aber unten je nach Auswahl mehr oder weniger Detail – mit Tagen als Orientierung beim Stunden-Zoom.

@@ -1568,15 +1568,41 @@ export default function Dashboard() {
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                    tickFormatter={(ts) => {
+                    tickFormatter={(ts, index) => {
                       if (!ts || ts === 0) return '-';
                       const date = new Date(ts);
                       const sequence = appliedChartSettings?.sequence || 'days';
+                      
                       if (sequence === 'hours') {
-                        return date.toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                      } else if (sequence === 'weeks' || sequence === 'months') {
-                        return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        // Bei Stunden-Ansicht:
+                        // - Bei Mitternacht (00:00): Datum zeigen
+                        // - Jeder 5. Tick: Datum zeigen
+                        // - Sonst: nur Uhrzeit
+                        const isMidnight = date.getHours() === 0 && date.getMinutes() === 0;
+                        const isEvery5th = index % 5 === 0;
+                        
+                        if (isMidnight || isEvery5th) {
+                          // Datum anzeigen (DD.MM)
+                          return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        } else {
+                          // Nur Uhrzeit (HH:mm)
+                          return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                        }
+                      } else if (sequence === 'weeks') {
+                        // Kalenderwoche anzeigen (KW X)
+                        const getISOWeek = (d: Date): number => {
+                          const date = new Date(d.getTime());
+                          date.setHours(0, 0, 0, 0);
+                          date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+                          const week1 = new Date(date.getFullYear(), 0, 4);
+                          return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+                        };
+                        return `KW ${getISOWeek(date)}`;
+                      } else if (sequence === 'months') {
+                        // Monat + Jahr (MMM YY)
+                        return date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
                       } else {
+                        // Tage: DD.MM
                         return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                       }
                     }}
