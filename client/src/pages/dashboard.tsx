@@ -973,6 +973,7 @@ export default function Dashboard() {
       'Real Profit/Tag': number;
       // Für Tooltip: Zeige auch vorherigen Endpunkt-Wert wenn dieser Punkt beides ist
       _prevEndValues?: {
+        timestamp: number;
         'Gesamtprofit': number;
         'Gesamtprofit %': number;
         'Ø Profit/Tag': number;
@@ -985,6 +986,8 @@ export default function Dashboard() {
     let cumulativeProfitPercent = 0;
     let cumulativeAvgDaily = 0;
     let cumulativeRealDaily = 0;
+    // Speichere vorherigen Endpunkt-Timestamp für Tooltip
+    let prevEndTimestamp = 0;
     
     filteredUpdates.forEach((update, index) => {
       // Endpunkt: thisUpload (Ende des Updates)
@@ -1030,8 +1033,9 @@ export default function Dashboard() {
       const runtimeDays = runtimeHours / 24;
       const realDailyProfit = runtimeDays > 0 ? gesamtprofit / runtimeDays : 0;
       
-      // Speichere vorherige Endwerte vor dem Update
+      // Speichere vorherige Endwerte vor dem Update (inkl. Timestamp)
       const prevEndValues = {
+        timestamp: prevEndTimestamp,
         'Gesamtprofit': cumulativeProfit,
         'Gesamtprofit %': cumulativeProfitPercent,
         'Ø Profit/Tag': cumulativeAvgDaily,
@@ -1105,6 +1109,9 @@ export default function Dashboard() {
         // Speichere vorherige Werte für Tooltip bei Vergleichs-Modus
         _prevEndValues: isVergleichsModus && index > 0 ? prevEndValues : undefined,
       });
+      
+      // Speichere aktuellen Endpunkt-Timestamp für nächstes Update
+      prevEndTimestamp = endTimestamp;
     });
     
     // Sortiere alle Punkte nach Zeitstempel
@@ -2527,6 +2534,114 @@ export default function Dashboard() {
                         });
                       }
                       
+                      // Prüfe ob dieser Punkt auch der Endpunkt eines vorherigen Updates ist (Vergleichs-Modus)
+                      const hasPrevEndValues = dataPoint._prevEndValues && Object.keys(dataPoint._prevEndValues).length > 0;
+                      
+                      // Helper: Formatiere einen Metrik-Wert
+                      const formatMetricValue = (name: string, value: number) => {
+                        const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
+                        return typeof value === 'number' 
+                          ? value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
+                          : value;
+                      };
+                      
+                      // Helper: Formatiere ein Datum als Label
+                      const formatDateLabel = (timestamp: number) => {
+                        const d = new Date(timestamp);
+                        if (sequence === 'hours') {
+                          return d.toLocaleString('de-DE', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          });
+                        } else if (sequence === 'days') {
+                          return d.toLocaleString('de-DE', { 
+                            weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          });
+                        } else {
+                          return d.toLocaleString('de-DE', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric'
+                          });
+                        }
+                      };
+                      
+                      // Helper: Rendere eine Info-Box mit eigenem Datum
+                      const renderInfoBox = (title: string, boxDateLabel: string, isFirstBox: boolean, values: { name: string; value: number; color: string }[]) => (
+                        <div 
+                          style={{ 
+                            backgroundColor: 'hsl(var(--popover))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            color: 'hsl(var(--foreground))',
+                            padding: '8px 12px',
+                            marginTop: isFirstBox ? 0 : '8px'
+                          }}
+                        >
+                          <p style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>{title}</p>
+                          <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{boxDateLabel}</p>
+                          {values.map((item, idx) => {
+                            let displayName = item.name;
+                            if (item.name === 'Gesamtkapital' && profitPercentBase === 'investitionsmenge') {
+                              displayName = 'Investitionsmenge';
+                            }
+                            return (
+                              <p key={idx} style={{ color: item.color, margin: '2px 0' }}>
+                                {displayName}: {formatMetricValue(item.name, item.value)}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      );
+                      
+                      // Bei Vergleichs-Modus mit _prevEndValues: Zwei Info-Boxen
+                      if (hasPrevEndValues) {
+                        // Sammle die Werte für vorheriges Ende und aktuellen Start
+                        const prevEndBoxValues: { name: string; value: number; color: string }[] = [];
+                        const currentStartBoxValues: { name: string; value: number; color: string }[] = [];
+                        
+                        props.payload.forEach((entry: any) => {
+                          const name = entry.name;
+                          let currentValue = entry.value;
+                          
+                          // Wenn Gesamtkapital aktiv: Zeige die echten Werte
+                          if (hasGesamtkapitalActive && entry.payload) {
+                            if (name === 'Gesamtprofit' && entry.payload._rawGesamtprofit !== undefined) {
+                              currentValue = entry.payload._rawGesamtprofit;
+                            } else if (name === 'Gesamtprofit %' && entry.payload._rawGesamtprofitPercent !== undefined) {
+                              currentValue = entry.payload._rawGesamtprofitPercent;
+                            } else if (name === 'Ø Profit/Tag' && entry.payload._rawAvgDailyProfit !== undefined) {
+                              currentValue = entry.payload._rawAvgDailyProfit;
+                            } else if (name === 'Real Profit/Tag' && entry.payload._rawRealDailyProfit !== undefined) {
+                              currentValue = entry.payload._rawRealDailyProfit;
+                            }
+                          }
+                          
+                          // Vorheriger Endpunkt-Wert
+                          const prevValue = dataPoint._prevEndValues[name];
+                          if (prevValue !== undefined) {
+                            prevEndBoxValues.push({ name, value: prevValue, color: entry.color });
+                          }
+                          
+                          // Aktueller Startpunkt-Wert
+                          currentStartBoxValues.push({ name, value: currentValue, color: entry.color });
+                        });
+                        
+                        // Berechne die Datum-Labels für beide Boxen
+                        const prevEndDateLabel = dataPoint._prevEndValues.timestamp > 0 
+                          ? formatDateLabel(dataPoint._prevEndValues.timestamp) 
+                          : dateLabel;
+                        const currentStartDateLabel = dateLabel;
+                        
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {renderInfoBox('Vorheriges Update (Ende)', prevEndDateLabel, true, prevEndBoxValues)}
+                            {renderInfoBox('Aktuelles Update (Start)', currentStartDateLabel, false, currentStartBoxValues)}
+                          </div>
+                        );
+                      }
+                      
+                      // Standard: Eine Info-Box
                       return (
                         <div 
                           style={{ 
