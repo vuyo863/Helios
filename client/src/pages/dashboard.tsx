@@ -2568,12 +2568,12 @@ export default function Dashboard() {
                         }
                       };
                       
-                      // Helper: Rendere eine Info-Box mit eigenem Datum
-                      const renderInfoBox = (title: string, boxDateLabel: string, isFirstBox: boolean, values: { name: string; value: number; color: string }[]) => (
+                      // Helper: Rendere eine Info-Box mit eigenem Datum und Start/End Markierung
+                      const renderInfoBox = (marker: 'End' | 'Start', boxDateLabel: string, isFirstBox: boolean, values: { name: string; value: number; color: string }[], runtimeMs?: number) => (
                         <div 
                           style={{ 
                             backgroundColor: 'hsl(var(--popover))',
-                            border: '1px solid hsl(var(--border))',
+                            border: marker === 'End' ? '2px solid #ef4444' : '2px solid #22c55e',
                             borderRadius: '6px',
                             fontSize: '14px',
                             color: 'hsl(var(--foreground))',
@@ -2581,8 +2581,17 @@ export default function Dashboard() {
                             marginTop: isFirstBox ? 0 : '8px'
                           }}
                         >
-                          <p style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>{title}</p>
                           <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{boxDateLabel}</p>
+                          <p style={{ 
+                            fontWeight: 'bold', 
+                            marginBottom: '4px', 
+                            fontSize: '11px', 
+                            color: marker === 'End' ? '#ef4444' : '#22c55e',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            {marker === 'End' ? 'End Runtime' : 'Start Time'}
+                          </p>
                           {values.map((item, idx) => {
                             let displayName = item.name;
                             if (item.name === 'Gesamtkapital' && profitPercentBase === 'investitionsmenge') {
@@ -2637,9 +2646,9 @@ export default function Dashboard() {
                         const currentStartDateLabel = dateLabel;
                         
                         return (
-                          <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
-                            {renderInfoBox('Vorheriges Update (Ende)', prevEndDateLabel, true, prevEndBoxValues)}
-                            {renderInfoBox('Aktuelles Update (Start)', currentStartDateLabel, true, currentStartBoxValues)}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {renderInfoBox('End', prevEndDateLabel, true, prevEndBoxValues)}
+                            {renderInfoBox('Start', currentStartDateLabel, false, currentStartBoxValues)}
                           </div>
                         );
                       }
