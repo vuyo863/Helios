@@ -1005,6 +1005,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // STRATEGIE: Server berechnet VERGLEICH Differenzen
         // AI hat bereits die aktuellen Gesamtwerte berechnet (NEU Modus)
 
+        // ABSOLUTE WERTE SPEICHERN (VOR jeder Differenzberechnung)
+        // Diese werden immer gespeichert, egal ob Neu- oder Vergleichsmodus
+        // Bei Neu-Modus sind sie gleich den normalen Feldern
+        // Bei Vergleichsmodus enthalten sie die kompletten Werte (nicht Differenz)
+        const absoluteValues: any = {
+          investmentAbsolute: calculatedValues.investment,
+          extraMarginAbsolute: calculatedValues.extraMargin,
+          totalInvestmentAbsolute: calculatedValues.totalInvestment,
+          profitAbsolute: calculatedValues.profit,
+          profitPercent_gesamtinvestment_absolute: null as string | null,
+          profitPercent_investitionsmenge_absolute: null as string | null,
+          overallTrendPnlUsdtAbsolute: calculatedValues.overallTrendPnlUsdt,
+          overallTrendPnlPercent_gesamtinvestment_absolute: null as string | null,
+          overallTrendPnlPercent_investitionsmenge_absolute: null as string | null,
+          overallGridProfitUsdtAbsolute: calculatedValues.overallGridProfitUsdt,
+          overallGridProfitPercent_gesamtinvestment_absolute: null as string | null,
+          overallGridProfitPercent_investitionsmenge_absolute: null as string | null,
+          avgGridProfitHourAbsolute: calculatedValues.avgGridProfitHour,
+          avgGridProfitDayAbsolute: calculatedValues.avgGridProfitDay,
+          avgGridProfitWeekAbsolute: calculatedValues.avgGridProfitWeek,
+        };
+
+        // Berechne absolute Prozentwerte (basierend auf absoluten USDT-Werten)
+        const absInv = parseFloat(absoluteValues.investmentAbsolute || 0);
+        const absTotalInv = parseFloat(absoluteValues.totalInvestmentAbsolute || 0);
+        const absProfit = parseFloat(absoluteValues.profitAbsolute || 0);
+        const absTrend = parseFloat(absoluteValues.overallTrendPnlUsdtAbsolute || 0);
+        const absGrid = parseFloat(absoluteValues.overallGridProfitUsdtAbsolute || 0);
+
+        if (absTotalInv > 0) {
+          absoluteValues.profitPercent_gesamtinvestment_absolute = ((absProfit / absTotalInv) * 100).toFixed(2);
+          absoluteValues.overallTrendPnlPercent_gesamtinvestment_absolute = ((absTrend / absTotalInv) * 100).toFixed(2);
+          absoluteValues.overallGridProfitPercent_gesamtinvestment_absolute = ((absGrid / absTotalInv) * 100).toFixed(2);
+        }
+        if (absInv > 0) {
+          absoluteValues.profitPercent_investitionsmenge_absolute = ((absProfit / absInv) * 100).toFixed(2);
+          absoluteValues.overallTrendPnlPercent_investitionsmenge_absolute = ((absTrend / absInv) * 100).toFixed(2);
+          absoluteValues.overallGridProfitPercent_investitionsmenge_absolute = ((absGrid / absInv) * 100).toFixed(2);
+        }
+
         // STARTMETRIK GUARD: Wenn Startmetrik-Modus (echt oder manuell) mit VERGLEICH Modi → setze auf 0.00
         if (effectiveStartMetrik) {
           // Für Startmetrik: setze alle VERGLEICH Felder auf "0.00"
@@ -1154,6 +1194,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ 
           success: true,
           values: calculatedValues,
+          // Absolute Werte (komplette Werte, nicht Differenz) - wichtig für Charts
+          absoluteValues: absoluteValues,
           // Berechnungsmodus: "Startmetrik" wenn echter erster Upload ODER manuell ausgewählt
           // WICHTIG: Bei echtem Startmetrik (isStartMetric=true) ist es IMMER "Startmetrik"
           calculationMode: isStartMetric || manualStartmetrikMode ? 'Startmetrik' : 'Normal'

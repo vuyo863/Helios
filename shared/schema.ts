@@ -169,6 +169,25 @@ export const botTypeUpdates = pgTable("bot_type_updates", {
   
   // Notizen Section (wird NICHT an AI gesendet, keine Modi)
   notes: text("notes"),
+  
+  // ABSOLUTE WERTE (bei Vergleichsmodus werden hier die kompletten Werte gespeichert)
+  // Bei Neu-Modus sind diese gleich den normalen Feldern
+  // Bei Vergleichsmodus: normale Felder = Differenz, absolute Felder = kompletter Wert
+  investmentAbsolute: text("investment_absolute"),
+  extraMarginAbsolute: text("extra_margin_absolute"),
+  totalInvestmentAbsolute: text("total_investment_absolute"),
+  profitAbsolute: text("profit_absolute"),
+  profitPercent_gesamtinvestment_absolute: text("profit_percent_gesamtinvestment_absolute"),
+  profitPercent_investitionsmenge_absolute: text("profit_percent_investitionsmenge_absolute"),
+  overallTrendPnlUsdtAbsolute: text("overall_trend_pnl_usdt_absolute"),
+  overallTrendPnlPercent_gesamtinvestment_absolute: text("overall_trend_pnl_percent_gesamtinvestment_absolute"),
+  overallTrendPnlPercent_investitionsmenge_absolute: text("overall_trend_pnl_percent_investitionsmenge_absolute"),
+  overallGridProfitUsdtAbsolute: text("overall_grid_profit_usdt_absolute"),
+  overallGridProfitPercent_gesamtinvestment_absolute: text("overall_grid_profit_percent_gesamtinvestment_absolute"),
+  overallGridProfitPercent_investitionsmenge_absolute: text("overall_grid_profit_percent_investitionsmenge_absolute"),
+  avgGridProfitHourAbsolute: text("avg_grid_profit_hour_absolute"),
+  avgGridProfitDayAbsolute: text("avg_grid_profit_day_absolute"),
+  avgGridProfitWeekAbsolute: text("avg_grid_profit_week_absolute"),
 });
 
 export const insertBotTypeUpdateSchema = createInsertSchema(botTypeUpdates).omit({
