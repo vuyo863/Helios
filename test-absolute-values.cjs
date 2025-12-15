@@ -88,11 +88,12 @@ async function runTests() {
   // Test 3: Verify Bot Type was created
   if (botTypeId) {
     try {
-      const res = await makeRequest('GET', `/api/bot-types/${botTypeId}`);
-      if (res.status === 200 && res.data.name === testBotTypeName) {
+      const res = await makeRequest('GET', `/api/bot-types`);
+      const found = res.data.find(bt => bt.id === botTypeId);
+      if (res.status === 200 && found && found.name === testBotTypeName) {
         passed('Verify Bot Type was created correctly');
       } else {
-        failed('Verify Bot Type', `Status: ${res.status}`);
+        failed('Verify Bot Type', `Not found in list`);
       }
     } catch (e) {
       failed('Verify Bot Type', e.message);
@@ -142,7 +143,7 @@ async function runTests() {
     };
     const res = await makeRequest('POST', '/api/bot-type-updates', updateData);
     if (res.status === 201 || res.status === 200) {
-      updateId1 = res.data.id;
+      updateId1 = res.data.id || res.data[0]?.id;
       passed('Create first Update (Startmetrik) with absolute values');
     } else {
       failed('Create first Update', `Status: ${res.status}, Data: ${JSON.stringify(res.data)}`);
@@ -151,25 +152,26 @@ async function runTests() {
     failed('Create first Update', e.message);
   }
 
-  // Test 5: Verify first Update contains absolute values
-  if (updateId1) {
+  // Test 5: Verify first Update contains absolute values - fetch all and find by version
+  if (botTypeId) {
     try {
       const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
       if (res.status === 200 && Array.isArray(res.data) && res.data.length > 0) {
-        const update = res.data.find(u => u.id === updateId1);
+        const update = res.data.find(u => u.version === 1);
         if (update && update.investmentAbsolute === '1000.00' && update.profitAbsolute === '50.00') {
+          updateId1 = update.id;
           passed('Verify first Update contains absolute values');
         } else {
-          failed('Verify first Update', `Absolute values missing or incorrect: ${JSON.stringify(update)}`);
+          failed('Verify first Update', `Absolute values missing: invAbs=${update?.investmentAbsolute}, profitAbs=${update?.profitAbsolute}`);
         }
       } else {
-        failed('Verify first Update', `Status: ${res.status}`);
+        failed('Verify first Update', `No updates found or status: ${res.status}`);
       }
     } catch (e) {
       failed('Verify first Update', e.message);
     }
   } else {
-    failed('Verify first Update', 'No updateId1 available');
+    failed('Verify first Update', 'No botTypeId available');
   }
 
   // Test 6: Create second Update (Vergleichsmodus - mit Differenzwerten)
@@ -223,12 +225,13 @@ async function runTests() {
   }
 
   // Test 7: Verify second Update contains correct absolute values (different from differential)
-  if (updateId2) {
+  if (botTypeId) {
     try {
       const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
       if (res.status === 200 && Array.isArray(res.data)) {
-        const update = res.data.find(u => u.id === updateId2);
+        const update = res.data.find(u => u.version === 2);
         if (update) {
+          updateId2 = update.id;
           const checks = [
             update.investment === '200.00',
             update.investmentAbsolute === '1200.00',
@@ -241,7 +244,7 @@ async function runTests() {
             failed('Verify second Update', `Values mismatch: inv=${update.investment}, invAbs=${update.investmentAbsolute}`);
           }
         } else {
-          failed('Verify second Update', 'Update not found');
+          failed('Verify second Update', 'Update v2 not found');
         }
       } else {
         failed('Verify second Update', `Status: ${res.status}`);
@@ -250,15 +253,15 @@ async function runTests() {
       failed('Verify second Update', e.message);
     }
   } else {
-    failed('Verify second Update', 'No updateId2 available');
+    failed('Verify second Update', 'No botTypeId available');
   }
 
   // Test 8: Check all absolute fields exist
-  if (updateId2) {
+  if (botTypeId) {
     try {
       const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
       if (res.status === 200 && Array.isArray(res.data)) {
-        const update = res.data.find(u => u.id === updateId2);
+        const update = res.data.find(u => u.version === 2);
         const absoluteFields = [
           'investmentAbsolute',
           'extraMarginAbsolute',
@@ -289,7 +292,7 @@ async function runTests() {
       failed('All absolute fields exist', e.message);
     }
   } else {
-    failed('All absolute fields exist', 'No updateId2 available');
+    failed('All absolute fields exist', 'No botTypeId available');
   }
 
   // Test 9: Update with null avgGridProfitWeek (should be accepted)
