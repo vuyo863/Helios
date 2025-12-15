@@ -226,6 +226,10 @@ export default function Dashboard() {
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
   
+  // Crosshair State für Hover-Interaktion
+  const [crosshairX, setCrosshairX] = useState<number | null>(null);
+  const [crosshairY, setCrosshairY] = useState<number | null>(null);
+  
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
     if (selectedFromUpdate && selectedUntilUpdate) {
@@ -750,6 +754,68 @@ export default function Dashboard() {
     
     return dataPoints;
   }, [chartApplied, appliedChartSettings, sortedUpdates]);
+
+  // Berechne X-Achsen-Ticks für regelmäßige Tages-Intervalle
+  const xAxisTicks = useMemo(() => {
+    if (!chartData || chartData.length === 0) return [];
+    
+    const timestamps = chartData.map(d => d.timestamp).filter(t => t > 0);
+    if (timestamps.length === 0) return [];
+    
+    const minTs = Math.min(...timestamps);
+    const maxTs = Math.max(...timestamps);
+    
+    const sequence = appliedChartSettings?.sequence || 'days';
+    let intervalMs: number;
+    
+    switch (sequence) {
+      case 'hours':
+        intervalMs = 60 * 60 * 1000; // 1 Stunde
+        break;
+      case 'days':
+        intervalMs = 24 * 60 * 60 * 1000; // 1 Tag
+        break;
+      case 'weeks':
+        intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+        break;
+      case 'months':
+        intervalMs = 30 * 24 * 60 * 60 * 1000; // ~1 Monat
+        break;
+      default:
+        intervalMs = 24 * 60 * 60 * 1000;
+    }
+    
+    const ticks: number[] = [];
+    // Starte bei Mitternacht des ersten Tages
+    const startDate = new Date(minTs);
+    startDate.setHours(0, 0, 0, 0);
+    let currentTs = startDate.getTime();
+    
+    while (currentTs <= maxTs + intervalMs) {
+      ticks.push(currentTs);
+      currentTs += intervalMs;
+    }
+    
+    return ticks;
+  }, [chartData, appliedChartSettings?.sequence]);
+
+  // Crosshair Handler für Hover-Interaktion
+  const handleChartMouseMove = (e: any) => {
+    if (e && e.activePayload && e.activePayload.length > 0) {
+      const payload = e.activePayload[0].payload;
+      setCrosshairX(payload.timestamp);
+      // Y-Wert der ersten aktiven Metrik
+      const activeMetric = activeMetricCards[0];
+      if (activeMetric && payload[activeMetric] !== undefined) {
+        setCrosshairY(payload[activeMetric]);
+      }
+    }
+  };
+
+  const handleChartMouseLeave = () => {
+    setCrosshairX(null);
+    setCrosshairY(null);
+  };
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
@@ -1386,31 +1452,55 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart 
                   data={chartData.length > 0 ? chartData : [
-                    { time: '-', 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
+                    { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
                   ]}
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
+                  onMouseMove={handleChartMouseMove}
+                  onMouseLeave={handleChartMouseLeave}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
-                    dataKey="time"
+                    dataKey="timestamp"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    ticks={xAxisTicks.length > 0 ? xAxisTicks : undefined}
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                    interval="preserveStartEnd"
-                    tickCount={8}
-                    minTickGap={40}
+                    tickFormatter={(ts) => {
+                      if (!ts || ts === 0) return '-';
+                      const date = new Date(ts);
+                      const sequence = appliedChartSettings?.sequence || 'days';
+                      if (sequence === 'hours') {
+                        return date.toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                      } else if (sequence === 'weeks' || sequence === 'months') {
+                        return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                      } else {
+                        return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                      }
+                    }}
                     angle={-45}
                     textAnchor="end"
                     height={60}
+                    tickSize={8}
                   />
                   <YAxis 
                     domain={['auto', 'auto']}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                    tickSize={8}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                     tickFormatter={(value) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
+                  {/* Crosshair - vertikale Linie */}
+                  {crosshairX !== null && (
+                    <ReferenceLine x={crosshairX} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
+                  )}
+                  {/* Crosshair - horizontale Linie */}
+                  {crosshairY !== null && (
+                    <ReferenceLine y={crosshairY} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
+                  )}
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--popover))',
