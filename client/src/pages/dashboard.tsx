@@ -1678,7 +1678,7 @@ export default function Dashboard() {
                         value={config.value}
                         icon={config.icon}
                         iconColor={config.iconColor}
-                        dropdown={cardId === 'Gesamtprofit %' && !isCardEditMode ? (
+                        dropdown={cardId === 'Gesamtkapital' && !isCardEditMode ? (
                           <Popover open={profitPercentDropdownOpen} onOpenChange={setProfitPercentDropdownOpen}>
                             <PopoverTrigger asChild>
                               <Button
