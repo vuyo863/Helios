@@ -519,8 +519,17 @@ export default function Dashboard() {
     return { total: filteredUpdates.length, updateMetrics, closedBots };
   }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange]);
 
+  // Farben für die verschiedenen Metriken (passend zu den Card-Farben)
+  const metricColors: Record<string, string> = {
+    'Gesamtkapital': '#2563eb',      // Blau
+    'Gesamtprofit': '#16a34a',       // Grün
+    'Gesamtprofit %': '#9333ea',     // Lila
+    'Ø Profit/Tag': '#ea580c',       // Orange
+    'Real Profit/Tag': '#ca8a04',    // Gelb/Gold
+  };
+
   // Chart-Daten basierend auf appliedChartSettings generieren
-  // Default: Gesamtprofit anzeigen
+  // Unterstützt mehrere Metriken gleichzeitig
   // Für jeden Update werden ZWEI Punkte erstellt: Start (lastUpload) und Ende (thisUpload)
   const chartData = useMemo(() => {
     if (!chartApplied || !appliedChartSettings || !sortedUpdates || sortedUpdates.length === 0) {
@@ -565,13 +574,19 @@ export default function Dashboard() {
     
     // Generiere Chart-Daten mit ZWEI Punkten pro Update: Start und Ende
     // Das zeigt den ganzen Zeitraum des Updates an (FROM bis UNTIL)
+    // Jeder Punkt enthält ALLE Metrik-Werte
     const dataPoints: Array<{
       time: string;
       timestamp: number;
-      wert: number;
       version: number;
       status: string;
       isStartPoint?: boolean;
+      // Alle Metriken
+      'Gesamtkapital': number;
+      'Gesamtprofit': number;
+      'Gesamtprofit %': number;
+      'Ø Profit/Tag': number;
+      'Real Profit/Tag': number;
     }> = [];
     
     filteredUpdates.forEach((update, index) => {
@@ -589,6 +604,10 @@ export default function Dashboard() {
       }
       const startDate = new Date(startTimestamp);
       
+      // Berechne alle Metriken für dieses Update
+      // Gesamtkapital = totalInvestment
+      const gesamtkapital = parseFloat(update.totalInvestment || '0') || 0;
+      
       // Gesamtprofit: für Update Metrics = overallGridProfitUsdt, für Closed Bots = profit
       let gesamtprofit = 0;
       if (update.status === 'Closed Bots') {
@@ -597,26 +616,46 @@ export default function Dashboard() {
         gesamtprofit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
       }
       
+      // Gesamtprofit % = (Gesamtprofit / Gesamtkapital) * 100
+      const gesamtprofitPercent = gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
+      
+      // Ø Profit/Tag = avgGridProfitDay
+      const avgDailyProfit = parseFloat(update.avgGridProfitDay || '0') || 0;
+      
+      // Real Profit/Tag = Berechnung basierend auf Laufzeit
+      const runtimeHours = parseRuntimeToHours(update.longestRuntime || update.runtime);
+      const runtimeDays = runtimeHours / 24;
+      const realDailyProfit = runtimeDays > 0 ? gesamtprofit / runtimeDays : 0;
+      
       // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
       if (update.lastUpload && startTimestamp !== endTimestamp) {
         dataPoints.push({
           time: formatTimeLabel(startDate),
           timestamp: startTimestamp,
-          wert: 0, // Startpunkt beginnt bei 0
           version: update.version || index + 1,
           status: update.status,
-          isStartPoint: true
+          isStartPoint: true,
+          // Startwerte bei 0
+          'Gesamtkapital': 0,
+          'Gesamtprofit': 0,
+          'Gesamtprofit %': 0,
+          'Ø Profit/Tag': 0,
+          'Real Profit/Tag': 0,
         });
       }
       
-      // Endpunkt mit Gesamtprofit
+      // Endpunkt mit allen Metrik-Werten
       dataPoints.push({
         time: formatTimeLabel(endDate),
         timestamp: endTimestamp,
-        wert: gesamtprofit,
         version: update.version || index + 1,
         status: update.status,
-        isStartPoint: false
+        isStartPoint: false,
+        'Gesamtkapital': gesamtkapital,
+        'Gesamtprofit': gesamtprofit,
+        'Gesamtprofit %': gesamtprofitPercent,
+        'Ø Profit/Tag': avgDailyProfit,
+        'Real Profit/Tag': realDailyProfit,
       });
     });
     
@@ -1257,7 +1296,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart 
                   data={chartData.length > 0 ? chartData : [
-                    { time: '-', wert: 0 },
+                    { time: '-', 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
                   ]}
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                 >
@@ -1273,9 +1312,7 @@ export default function Dashboard() {
                     height={60}
                   />
                   <YAxis 
-                    dataKey="wert"
                     domain={['auto', 'auto']}
-                    label={{ value: 'Wert', angle: -90, position: 'insideLeft', style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' } }}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickFormatter={(value) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   />
@@ -1287,15 +1324,24 @@ export default function Dashboard() {
                       borderRadius: '6px',
                       fontSize: '14px'
                     }}
-                    formatter={(value: number) => [value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USDT', 'Wert']}
+                    formatter={(value: number, name: string) => {
+                      const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
+                      return [value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix, name];
+                    }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="wert" 
-                    stroke="hsl(var(--chart-2))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--chart-2))', r: 4 }}
-                  />
+                  {/* Dynamisch Lines für alle aktiven Metriken rendern */}
+                  {activeMetricCards.map((metricName) => (
+                    <Line 
+                      key={metricName}
+                      type="monotone" 
+                      dataKey={metricName}
+                      name={metricName}
+                      stroke={metricColors[metricName] || '#888888'}
+                      strokeWidth={2}
+                      dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
+                      connectNulls
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </Card>
