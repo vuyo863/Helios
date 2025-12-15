@@ -26,27 +26,62 @@ interface TrendPriceSettings {
 }
 
 export default function Notifications() {
-  // Verfügbare Trading Pairs für Suche
-  const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([
-    { id: '1', name: 'BTC/USDT', symbol: 'BTCUSDT', price: 'Loading...' },
-    { id: '2', name: 'ETH/USDT', symbol: 'ETHUSDT', price: 'Loading...' },
-    { id: '3', name: 'SOL/USDT', symbol: 'SOLUSDT', price: 'Loading...' },
-    { id: '4', name: 'BNB/USDT', symbol: 'BNBUSDT', price: 'Loading...' },
-    { id: '5', name: 'XRP/USDT', symbol: 'XRPUSDT', price: 'Loading...' },
-    { id: '6', name: 'ADA/USDT', symbol: 'ADAUSDT', price: 'Loading...' },
-    { id: '7', name: 'DOGE/USDT', symbol: 'DOGEUSDT', price: 'Loading...' },
-    { id: '8', name: 'MATIC/USDT', symbol: 'MATICUSDT', price: 'Loading...' },
-    { id: '9', name: 'ICP/USDT', symbol: 'ICPUSDT', price: 'Loading...' },
-    { id: '10', name: 'DOT/USDT', symbol: 'DOTUSDT', price: 'Loading...' },
-    { id: '11', name: 'AVAX/USDT', symbol: 'AVAXUSDT', price: 'Loading...' },
-    { id: '12', name: 'LINK/USDT', symbol: 'LINKUSDT', price: 'Loading...' },
-  ]);
+  // Verfügbare Trading Pairs für Suche - werden dynamisch von Binance geladen
+  const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([]);
+  const [allBinancePairs, setAllBinancePairs] = useState<TrendPrice[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [watchlist, setWatchlist] = useState<string[]>(() => {
+    // Load watchlist from localStorage on mount
+    const saved = localStorage.getItem('notifications-watchlist');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
   const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
+
+  // Funktion zum Laden aller verfügbaren Binance Trading Pairs
+  const fetchAllBinancePairs = async () => {
+    try {
+      const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      
+      // Filter für USDT und USDC Pairs
+      const pairs: TrendPrice[] = data.symbols
+        .filter((s: any) => 
+          s.status === 'TRADING' && 
+          (s.symbol.endsWith('USDT') || s.symbol.endsWith('USDC'))
+        )
+        .map((s: any, index: number) => ({
+          id: `binance-${index}`,
+          name: s.symbol.replace('USDT', '/USDT').replace('USDC', '/USDC'),
+          symbol: s.symbol,
+          price: 'Loading...'
+        }));
+      
+      setAllBinancePairs(pairs);
+      
+      // Initialize availableTradingPairs with popular pairs
+      const popularSymbols = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+        'DOGEUSDT', 'MATICUSDT', 'ICPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
+        'BTCUSDC', 'ETHUSDC', 'SOLUSDC', 'BNBUSDC' // USDC pairs
+      ];
+      
+      const popularPairs = pairs.filter(p => popularSymbols.includes(p.symbol));
+      setAvailableTradingPairs(popularPairs);
+      
+    } catch (error) {
+      console.error('Error fetching Binance pairs:', error);
+    }
+  };
+
+  // Load all Binance pairs on mount
+  useEffect(() => {
+    fetchAllBinancePairs();
+  }, []);
 
   // Funktion zum Abrufen der aktuellen Preise von Binance API
   const fetchPrices = async (symbols: string[]) => {
@@ -88,16 +123,28 @@ export default function Notifications() {
     }
   };
 
-  // Initial fetch und regelmäßige Updates für alle Trading Pairs
+  // Save watchlist to localStorage whenever it changes
   useEffect(() => {
-    const allSymbols = availableTradingPairs.map(p => p.symbol);
+    localStorage.setItem('notifications-watchlist', JSON.stringify(watchlist));
+  }, [watchlist]);
+
+  // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
+  useEffect(() => {
+    if (allBinancePairs.length === 0) return;
+    
+    // Get symbols from watchlist
+    const watchlistSymbols = watchlist
+      .map(id => allBinancePairs.find(p => p.id === id)?.symbol)
+      .filter(Boolean) as string[];
+
+    if (watchlistSymbols.length === 0) return;
 
     // Initial fetch
-    fetchPrices(allSymbols);
+    fetchPrices(watchlistSymbols);
 
     // Update alle 2 Sekunden
     priceUpdateIntervalRef.current = setInterval(() => {
-      fetchPrices(allSymbols);
+      fetchPrices(watchlistSymbols);
     }, 2000);
 
     return () => {
@@ -105,7 +152,7 @@ export default function Notifications() {
         clearInterval(priceUpdateIntervalRef.current);
       }
     };
-  }, []); // Run only once on mount
+  }, [watchlist, allBinancePairs]); // Update when watchlist or pairs change
 
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
@@ -129,11 +176,13 @@ export default function Notifications() {
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
 
-  // Gefilterte Vorschläge basierend auf Suchanfrage
-  const filteredSuggestions = availableTradingPairs.filter(pair =>
-    pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    !watchlist.includes(pair.id)
-  );
+  // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
+  const filteredSuggestions = allBinancePairs
+    .filter(pair =>
+      pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !watchlist.includes(pair.id)
+    )
+    .slice(0, 10); // Zeige maximal 10 Vorschläge
 
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
@@ -182,7 +231,9 @@ export default function Notifications() {
   };
 
   const getTrendPrice = (id: string) => {
-    return availableTradingPairs.find(tp => tp.id === id);
+    // Search in both available and all pairs
+    return availableTradingPairs.find(tp => tp.id === id) || 
+           allBinancePairs.find(tp => tp.id === id);
   };
 
   // Helper to get the name, falling back to ID if not found
