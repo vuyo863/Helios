@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { BotEntry } from "@shared/schema";
 import { Search, Check } from "lucide-react";
 
@@ -35,6 +35,21 @@ export default function ProfitBarChartAdvanced({ entries, title }: ProfitBarChar
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['profit']);
   const [botSearchQuery, setBotSearchQuery] = useState("");
   const [selectedBots, setSelectedBots] = useState<string[]>([]);
+  
+  // Animation nur bei echten Änderungen, nicht bei Auto-Refresh
+  const [animationActive, setAnimationActive] = useState(true);
+  
+  useEffect(() => {
+    // Animation aktivieren bei Änderungen
+    setAnimationActive(true);
+    
+    // Nach 1.5s deaktivieren (Auto-Refresh soll nicht animieren)
+    const timer = setTimeout(() => {
+      setAnimationActive(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [selectedMetrics.join(','), selectedBots.join(',')]);
 
   const uniqueBotNames = useMemo(() => {
     const names = Array.from(new Set(entries.map(entry => entry.botName)));
@@ -119,7 +134,8 @@ export default function ProfitBarChartAdvanced({ entries, title }: ProfitBarChar
               name={metric.label}
               fill={metric.color}
               radius={[4, 4, 0, 0]}
-              isAnimationActive={false}
+              isAnimationActive={animationActive}
+              animationDuration={800}
             />
           ))}
         </BarChart>

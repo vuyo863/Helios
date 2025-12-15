@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from "react";
 
 interface ChartDataPoint {
   date: string;
@@ -12,6 +13,21 @@ interface ProfitLineChartProps {
 }
 
 export default function ProfitLineChart({ data, title }: ProfitLineChartProps) {
+  // Animation nur bei echten Datenänderungen, nicht bei Auto-Refresh
+  const [animationActive, setAnimationActive] = useState(true);
+  
+  useEffect(() => {
+    // Animation aktivieren bei Datenänderung
+    setAnimationActive(true);
+    
+    // Nach 1.5s deaktivieren (Auto-Refresh soll nicht animieren)
+    const timer = setTimeout(() => {
+      setAnimationActive(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [data.length, title]);
+
   return (
     <Card className="p-6">
       <h3 className="text-lg font-bold mb-6">{title}</h3>
@@ -40,7 +56,8 @@ export default function ProfitLineChart({ data, title }: ProfitLineChartProps) {
             stroke="hsl(var(--chart-2))" 
             strokeWidth={2}
             dot={{ fill: 'hsl(var(--chart-2))', r: 4 }}
-            isAnimationActive={false}
+            isAnimationActive={animationActive}
+            animationDuration={800}
           />
         </LineChart>
       </ResponsiveContainer>
