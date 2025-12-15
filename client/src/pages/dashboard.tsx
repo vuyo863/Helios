@@ -725,8 +725,9 @@ export default function Dashboard() {
           version: update.version || index + 1,
           status: update.status,
           isStartPoint: true,
-          // Startwerte bei 0
-          'Gesamtkapital': 0,
+          // Gesamtkapital bleibt konstant (kein Anstieg von 0)
+          // Profit-Metriken starten bei 0 und steigen zum Endwert
+          'Gesamtkapital': gesamtkapital,
           'Gesamtprofit': 0,
           'Gesamtprofit %': 0,
           'Ø Profit/Tag': 0,
@@ -798,6 +799,46 @@ export default function Dashboard() {
     
     return ticks;
   }, [chartData, appliedChartSettings?.sequence]);
+
+  // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken
+  // Für Gesamtkapital: Domain nahe am tatsächlichen Wert (nicht bei 0 starten)
+  // Für Profit-Metriken: Domain bei 0 starten (Wachstum zeigen)
+  const yAxisDomain = useMemo((): [number | string, number | string] => {
+    if (!chartData || chartData.length === 0 || activeMetricCards.length === 0) {
+      return ['auto', 'auto'];
+    }
+    
+    // Sammle alle Werte der aktiven Metriken
+    const allValues: number[] = [];
+    activeMetricCards.forEach(metric => {
+      chartData.forEach(point => {
+        const val = point[metric as keyof typeof point] as number;
+        if (typeof val === 'number' && !isNaN(val)) {
+          allValues.push(val);
+        }
+      });
+    });
+    
+    if (allValues.length === 0) return ['auto', 'auto'];
+    
+    const minVal = Math.min(...allValues);
+    const maxVal = Math.max(...allValues);
+    
+    // Wenn ALLE aktiven Metriken "konstante" Typen sind (nur Gesamtkapital)
+    // dann soll die Y-Achse NICHT bei 0 starten
+    const constantMetrics = ['Gesamtkapital'];
+    const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
+    
+    if (allConstant) {
+      // Domain nahe am Min/Max mit etwas Padding
+      const range = maxVal - minVal;
+      const padding = range > 0 ? range * 0.1 : maxVal * 0.05;
+      return [Math.max(0, minVal - padding), maxVal + padding];
+    }
+    
+    // Für Profit-Metriken: Bei 0 starten
+    return [0, 'auto'];
+  }, [chartData, activeMetricCards]);
 
   // Crosshair Handler für Hover-Interaktion
   const handleChartMouseMove = (e: any) => {
@@ -1485,7 +1526,7 @@ export default function Dashboard() {
                     tickSize={8}
                   />
                   <YAxis 
-                    domain={['auto', 'auto']}
+                    domain={yAxisDomain}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     tickSize={8}
