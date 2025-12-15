@@ -1206,20 +1206,36 @@ export default function Dashboard() {
   // Transformierte Chart-Daten für visuelle Darstellung
   // Wenn Gesamtkapital/Investitionsmenge aktiv ist: Profit-Werte starten auf Investment-Höhe
   // WICHTIG: Nur visuelle Transformation für Chart - ändert KEINE Berechnungen oder Modi!
+  // Die echten Werte werden als _actual Felder gespeichert für den Tooltip
   const transformedChartData = useMemo(() => {
     if (!hasGesamtkapitalActive || !chartData || chartData.length === 0) {
       // Kein Offset nötig - Daten unverändert durchreichen
-      return chartData;
+      // Aber trotzdem _actual Felder hinzufügen für konsistenten Tooltip-Zugriff
+      return chartData.map(point => ({
+        ...point,
+        _actualGesamtprofit: point['Gesamtprofit'],
+        _actualAvgDaily: point['Ø Profit/Tag'],
+        _actualRealDaily: point['Real Profit/Tag'],
+        _actualGesamtkapital: point['Gesamtkapital'],
+        _actualProfitPercent: point['Gesamtprofit %'],
+      }));
     }
     
     // Wenn Gesamtkapital aktiv: Profit-Metriken auf Investment-Level offsetten
     // So starten alle Linien auf der gleichen Höhe wie das Investment
+    // Die echten Werte werden als _actual Felder gespeichert
     return chartData.map(point => {
       const investmentBase = point['Gesamtkapital'];
       
       return {
         ...point,
-        // Profit-Werte werden zum Investment addiert (visueller Offset)
+        // Echte Werte für Tooltip speichern
+        _actualGesamtprofit: point['Gesamtprofit'],
+        _actualAvgDaily: point['Ø Profit/Tag'],
+        _actualRealDaily: point['Real Profit/Tag'],
+        _actualGesamtkapital: point['Gesamtkapital'],
+        _actualProfitPercent: point['Gesamtprofit %'],
+        // Profit-Werte werden zum Investment addiert (visueller Offset für Chart)
         'Gesamtprofit': point['Gesamtprofit'] + investmentBase,
         'Ø Profit/Tag': point['Ø Profit/Tag'] + investmentBase,
         'Real Profit/Tag': point['Real Profit/Tag'] + investmentBase,
@@ -2787,6 +2803,27 @@ export default function Dashboard() {
                       }
                       
                       // Standard: Eine Info-Box
+                      // Helper: Hole den echten Wert (nicht offsetted) aus den _actual Feldern
+                      const getActualValue = (metricName: string, displayValue: number): number => {
+                        if (metricName === 'Gesamtprofit' && dataPoint._actualGesamtprofit !== undefined) {
+                          return dataPoint._actualGesamtprofit;
+                        }
+                        if (metricName === 'Ø Profit/Tag' && dataPoint._actualAvgDaily !== undefined) {
+                          return dataPoint._actualAvgDaily;
+                        }
+                        if (metricName === 'Real Profit/Tag' && dataPoint._actualRealDaily !== undefined) {
+                          return dataPoint._actualRealDaily;
+                        }
+                        if (metricName === 'Gesamtkapital' && dataPoint._actualGesamtkapital !== undefined) {
+                          return dataPoint._actualGesamtkapital;
+                        }
+                        if (metricName === 'Gesamtprofit %' && dataPoint._actualProfitPercent !== undefined) {
+                          return dataPoint._actualProfitPercent;
+                        }
+                        // Fallback: Displaywert verwenden
+                        return displayValue;
+                      };
+                      
                       return (
                         <div 
                           style={{ 
@@ -2800,8 +2837,9 @@ export default function Dashboard() {
                         >
                           <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
                           {props.payload.map((entry: any, index: number) => {
-                            const displayValue = entry.value;
                             const name = entry.name;
+                            // Hole den echten Wert (nicht offsetted) für den Tooltip
+                            const displayValue = getActualValue(name, entry.value);
                             
                             // Titel anpassen: Wenn Investitionsmenge ausgewählt, zeige "Investitionsmenge" statt "Gesamtkapital"
                             let displayName = name;
