@@ -1057,6 +1057,10 @@ export default function Notifications() {
                                     updateAlarmLevelConfig(level, 'repeatCount', 1);
                                   } else {
                                     updateAlarmLevelConfig(level, 'repeatCount', 'infinite');
+                                    // Automatisch Approval erforderlich aktivieren bei Unendlich
+                                    if (!config.requiresApproval) {
+                                      updateAlarmLevelConfig(level, 'requiresApproval', true);
+                                    }
                                   }
                                 }}
                               >
