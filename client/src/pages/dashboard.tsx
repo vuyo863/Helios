@@ -2193,6 +2193,8 @@ export default function Dashboard() {
                         connectNulls
                         isAnimationActive={shouldAnimate}
                         animationDuration={800}
+                        animationBegin={0}
+                        animationEasing="ease-out"
                       />
                     ))
                   ) : (
@@ -2209,7 +2211,9 @@ export default function Dashboard() {
                         dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
                         connectNulls
                         isAnimationActive={shouldAnimate || animatingMetrics.has(metricName)}
-                        animationDuration={800}
+                        animationDuration={1000}
+                        animationBegin={0}
+                        animationEasing="ease-out"
                       />
                     ))
                   )}
