@@ -1571,7 +1571,7 @@ export default function Dashboard() {
                     tick={(props: any) => {
                       const { x, y, payload, index } = props;
                       if (!payload || !payload.value || payload.value === 0) {
-                        return <text x={x} y={y} textAnchor="end" fill="hsl(var(--muted-foreground))" fontSize={11}>-</text>;
+                        return <g />;
                       }
                       
                       const date = new Date(payload.value);
@@ -1587,49 +1587,89 @@ export default function Dashboard() {
                       };
                       
                       let label = '';
-                      let isMajor = false;
+                      let isMajor = false;  // Major = größere Einheit (Datum/KW/Monat) mit blauer Umrandung
+                      let showLabel = false; // Ob überhaupt ein Label angezeigt wird
                       
                       if (sequence === 'hours') {
-                        const isMidnight = date.getHours() === 0 && date.getMinutes() === 0;
-                        const isEvery5th = index % 5 === 0;
-                        isMajor = isMidnight || isEvery5th;
+                        // Stunden-Ansicht:
+                        // - Ticks = jede Stunde
+                        // - Label nur bei: Mitternacht (Datum) ODER jede 4. Stunde (Uhrzeit)
+                        // - Alle anderen: kein Label
+                        const hour = date.getHours();
+                        const isMidnight = hour === 0 && date.getMinutes() === 0;
+                        const isEvery4thHour = index % 4 === 0;
                         
-                        if (isMajor) {
+                        if (isMidnight) {
+                          // Mitternacht = Tag anzeigen mit blauer Umrandung
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                        } else {
+                          isMajor = true;
+                          showLabel = true;
+                        } else if (isEvery4thHour) {
+                          // Jede 4. Stunde = Uhrzeit anzeigen (ohne Umrandung)
                           label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                          isMajor = false;
+                          showLabel = true;
                         }
+                        // Sonst: kein Label (showLabel bleibt false)
+                        
+                      } else if (sequence === 'days') {
+                        // Tage-Ansicht:
+                        // - Ticks = jeden Tag
+                        // - Label nur jeder 2. Tag
+                        const isEvery2ndDay = index % 2 === 0;
+                        
+                        if (isEvery2ndDay) {
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          showLabel = true;
+                        }
+                        
                       } else if (sequence === 'weeks') {
+                        // Wochen-Ansicht:
+                        // - Ticks = jeden Tag
+                        // - Label nur: Montag (KW mit Umrandung) ODER jeder 3. Tag (Datum)
                         const isMonday = date.getDay() === 1;
-                        isMajor = isMonday;
+                        const isEvery3rdDay = index % 3 === 0;
                         
-                        if (isMajor) {
+                        if (isMonday) {
                           label = `KW ${getISOWeek(date)}`;
-                        } else {
+                          isMajor = true;
+                          showLabel = true;
+                        } else if (isEvery3rdDay) {
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          showLabel = true;
                         }
-                      } else if (sequence === 'months') {
-                        const isFirstOfMonth = date.getDate() === 1;
-                        isMajor = isFirstOfMonth;
                         
-                        if (isMajor) {
+                      } else if (sequence === 'months') {
+                        // Monate-Ansicht:
+                        // - Ticks = jeden Tag
+                        // - Label nur: 1. des Monats (Monat mit Umrandung) ODER jeder 5. Tag (Datum)
+                        const isFirstOfMonth = date.getDate() === 1;
+                        const isEvery5thDay = index % 5 === 0;
+                        
+                        if (isFirstOfMonth) {
                           label = date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
-                        } else {
+                          isMajor = true;
+                          showLabel = true;
+                        } else if (isEvery5thDay) {
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          showLabel = true;
                         }
-                      } else {
-                        label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                      }
+                      
+                      // Kein Label? Leeres Element zurückgeben
+                      if (!showLabel) {
+                        return <g />;
                       }
                       
                       if (isMajor) {
-                        // Major tick: Blauer Ring, größere Schrift
-                        const textWidth = label.length * 6 + 8;
-                        const textHeight = 16;
+                        // Major tick: Blauer Ring, größere Schrift (Datum/KW/Monat)
+                        const textWidth = label.length * 6 + 10;
+                        const textHeight = 18;
                         return (
                           <g transform={`translate(${x},${y}) rotate(-45)`}>
                             <rect
                               x={-textWidth + 4}
-                              y={-textHeight / 2 - 1}
+                              y={-textHeight / 2}
                               width={textWidth}
                               height={textHeight}
                               rx={4}
@@ -1640,7 +1680,7 @@ export default function Dashboard() {
                             />
                             <text
                               x={0}
-                              y={4}
+                              y={5}
                               textAnchor="end"
                               fill="hsl(217, 91%, 60%)"
                               fontSize={12}
@@ -1651,7 +1691,7 @@ export default function Dashboard() {
                           </g>
                         );
                       } else {
-                        // Minor tick: Normal
+                        // Minor tick: Normal (Uhrzeit/Datum ohne Umrandung)
                         return (
                           <g transform={`translate(${x},${y}) rotate(-45)`}>
                             <text
