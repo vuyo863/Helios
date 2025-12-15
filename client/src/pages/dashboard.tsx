@@ -2943,153 +2943,64 @@ export default function Dashboard() {
                       />
                     ))
                   )}
-                  {/* Highest Value Marker - UNTER dem Punkt, Pfeil nach oben mit H */}
-                  {/* Bumper-System: Minimal spacing, weicht Graphen aus, nie auf X-Achse */}
-                  {showHighestValue && !isMultiBotChartMode && (() => {
-                    // Sammle alle Highest-Marker
-                    const highestMarkers = activeMetricCards
-                      .map((metricName, idx) => {
-                        const highest = extremeValues.highest[metricName];
-                        if (!highest) return null;
-                        return { metricName, ...highest, color: metricColors[metricName] || '#888888', idx };
-                      })
-                      .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
+                  {/* Highest Value Marker - unter dem Punkt mit ↑H */}
+                  {/* Regel: Berührt nichts (keine Graphen, keine anderen Marker), aber so nah wie möglich */}
+                  {showHighestValue && !isMultiBotChartMode && activeMetricCards.map((metricName, idx) => {
+                    const highest = extremeValues.highest[metricName];
+                    if (!highest) return null;
+                    const color = metricColors[metricName] || '#888888';
                     
-                    // Finde alle Y-Werte im Chart
-                    const allYValues = transformedChartData.flatMap(p => 
-                      activeMetricCards.map(m => p[m as keyof typeof p] as number).filter(v => typeof v === 'number')
-                    );
-                    const minYValue = Math.min(...allYValues);
-                    const maxYValue = Math.max(...allYValues);
-                    const yRange = maxYValue - minYValue;
+                    // Basis-Offset (nah am Punkt)
+                    const baseOffset = 10;
+                    // Stapel-Offset basierend auf Index (jede Metrik bekommt eigene Position)
+                    const stackOffset = idx * 16;
                     
-                    // Finde alle Y-Werte bei einem Timestamp
-                    const getOtherValuesAtTimestamp = (timestamp: number, excludeMetric: string) => {
-                      const point = transformedChartData.find(p => p.timestamp === timestamp);
-                      if (!point) return [];
-                      return activeMetricCards
-                        .filter(m => m !== excludeMetric)
-                        .map(m => point[m as keyof typeof point] as number)
-                        .filter(v => typeof v === 'number');
-                    };
-                    
-                    // Minimal spacing
-                    const minPadding = 5; // Sehr nah am Punkt
-                    const markerSpacing = 14;
-                    
-                    // Sortiere nach Y-Wert (höchste zuerst)
-                    const sortedMarkers = [...highestMarkers].sort((a, b) => b.value - a.value);
-                    
-                    const processedMarkers = sortedMarkers.map((marker, i) => {
-                      let offset = minPadding;
-                      
-                      // Stapeln wenn andere H-Marker auf gleichem Timestamp
-                      const sameTimestampBefore = sortedMarkers.slice(0, i).filter(
-                        m => Math.abs(m.timestamp - marker.timestamp) < 3600000
-                      ).length;
-                      offset += sameTimestampBefore * markerSpacing;
-                      
-                      // Prüfe ob Marker nah an X-Achse wäre (untere 15%)
-                      const isNearXAxis = (marker.value - minYValue) < (yRange * 0.15);
-                      
-                      // Prüfe ob andere Graph-Linien unter dem Punkt sind (würden H-Marker berühren)
-                      const otherValues = getOtherValuesAtTimestamp(marker.timestamp, marker.metricName);
-                      const hasLineBelow = otherValues.some(v => {
-                        const diff = marker.value - v;
-                        return diff > 0 && diff < (yRange * 0.08); // Linie ist knapp darunter
-                      });
-                      
-                      // Flippe nach oben wenn nah an X-Achse ODER Linie darunter
-                      const flipToTop = isNearXAxis || hasLineBelow;
-                      
-                      return { ...marker, offset, flipToTop };
-                    });
-                    
-                    return processedMarkers.map((marker) => (
+                    return (
                       <ReferenceDot
-                        key={`highest-${marker.metricName}`}
-                        x={marker.timestamp}
-                        y={marker.value}
+                        key={`highest-${metricName}`}
+                        x={highest.timestamp}
+                        y={highest.value}
                         r={0}
                         label={{
                           value: '↑H',
-                          position: marker.flipToTop ? 'top' : 'bottom',
-                          fill: marker.color,
+                          position: 'bottom',
+                          fill: color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: marker.offset,
+                          offset: baseOffset + stackOffset,
                         }}
                       />
-                    ));
-                  })()}
-                  {/* Lowest Value Marker - ÜBER dem Punkt, Pfeil nach unten mit L */}
-                  {/* Bumper-System: Minimal spacing, gestapelt, weicht H-Markern aus */}
-                  {showLowestValue && !isMultiBotChartMode && (() => {
-                    // Sammle alle Lowest-Marker
-                    const lowestMarkers = activeMetricCards
-                      .map((metricName, idx) => {
-                        const lowest = extremeValues.lowest[metricName];
-                        if (!lowest) return null;
-                        return { metricName, ...lowest, color: metricColors[metricName] || '#888888', idx };
-                      })
-                      .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
+                    );
+                  })}
+                  {/* Lowest Value Marker - über dem Punkt mit ↓L */}
+                  {/* Regel: Berührt nichts (keine Graphen, keine anderen Marker), aber so nah wie möglich */}
+                  {showLowestValue && !isMultiBotChartMode && activeMetricCards.map((metricName, idx) => {
+                    const lowest = extremeValues.lowest[metricName];
+                    if (!lowest) return null;
+                    const color = metricColors[metricName] || '#888888';
                     
-                    // Prüfe ob an diesem Timestamp auch ein H-Marker ist (für Kollisionsvermeidung)
-                    const hasHMarkerAtTimestamp = (timestamp: number) => {
-                      if (!showHighestValue) return false;
-                      return activeMetricCards.some(m => {
-                        const h = extremeValues.highest[m];
-                        return h && Math.abs(h.timestamp - timestamp) < 3600000;
-                      });
-                    };
+                    // Basis-Offset (nah am Punkt)
+                    const baseOffset = 10;
+                    // Stapel-Offset basierend auf Index (jede Metrik bekommt eigene Position)
+                    const stackOffset = idx * 16;
                     
-                    // Minimal spacing
-                    const minPadding = 5;
-                    const markerSpacing = 14;
-                    
-                    // Sortiere nach Timestamp, dann nach Y-Wert
-                    const sortedMarkers = [...lowestMarkers].sort((a, b) => {
-                      const timeDiff = a.timestamp - b.timestamp;
-                      if (Math.abs(timeDiff) > 3600000) return timeDiff;
-                      return a.value - b.value;
-                    });
-                    
-                    const processedMarkers = sortedMarkers.map((marker, i) => {
-                      let offset = minPadding;
-                      
-                      // Zähle L-Marker vor diesem auf gleichem Timestamp
-                      const sameTimestampBefore = sortedMarkers.slice(0, i).filter(
-                        m => Math.abs(m.timestamp - marker.timestamp) < 3600000
-                      ).length;
-                      
-                      // Stapeln
-                      offset += sameTimestampBefore * markerSpacing;
-                      
-                      // Extra Offset wenn H-Marker am gleichen Timestamp (Kollisionsvermeidung)
-                      if (hasHMarkerAtTimestamp(marker.timestamp)) {
-                        offset += markerSpacing;
-                      }
-                      
-                      return { ...marker, offset };
-                    });
-                    
-                    return processedMarkers.map((marker) => (
+                    return (
                       <ReferenceDot
-                        key={`lowest-${marker.metricName}`}
-                        x={marker.timestamp}
-                        y={marker.value}
+                        key={`lowest-${metricName}`}
+                        x={lowest.timestamp}
+                        y={lowest.value}
                         r={0}
                         label={{
                           value: '↓L',
                           position: 'top',
-                          fill: marker.color,
+                          fill: color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: marker.offset,
+                          offset: baseOffset + stackOffset,
                         }}
                       />
-                    ));
-                  })()}
+                    );
+                  })}
                 </LineChart>
               </ResponsiveContainer>
               </div>
