@@ -1678,57 +1678,57 @@ export default function Dashboard() {
                         value={config.value}
                         icon={config.icon}
                         iconColor={config.iconColor}
+                        dropdown={cardId === 'Gesamtprofit %' && !isCardEditMode ? (
+                          <Popover open={profitPercentDropdownOpen} onOpenChange={setProfitPercentDropdownOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProfitPercentDropdownOpen(!profitPercentDropdownOpen);
+                                }}
+                                data-testid="dropdown-profit-percent-base"
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-1" align="start">
+                              <div className="flex flex-col gap-1">
+                                <Button
+                                  variant={profitPercentBase === 'gesamtinvestment' ? 'secondary' : 'ghost'}
+                                  size="sm"
+                                  className="justify-start"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setProfitPercentBase('gesamtinvestment');
+                                    setProfitPercentDropdownOpen(false);
+                                  }}
+                                  data-testid="option-gesamtinvestment"
+                                >
+                                  {profitPercentBase === 'gesamtinvestment' && <Check className="h-4 w-4 mr-2" />}
+                                  Gesamtinvestment
+                                </Button>
+                                <Button
+                                  variant={profitPercentBase === 'investitionsmenge' ? 'secondary' : 'ghost'}
+                                  size="sm"
+                                  className="justify-start"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setProfitPercentBase('investitionsmenge');
+                                    setProfitPercentDropdownOpen(false);
+                                  }}
+                                  data-testid="option-investitionsmenge"
+                                >
+                                  {profitPercentBase === 'investitionsmenge' && <Check className="h-4 w-4 mr-2" />}
+                                  Investitionsmenge
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : undefined}
                       />
-                      {cardId === 'Gesamtprofit %' && !isCardEditMode && (
-                        <Popover open={profitPercentDropdownOpen} onOpenChange={setProfitPercentDropdownOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="absolute top-2 right-2 h-6 w-6"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setProfitPercentDropdownOpen(!profitPercentDropdownOpen);
-                              }}
-                              data-testid="dropdown-profit-percent-base"
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-48 p-1" align="end">
-                            <div className="flex flex-col gap-1">
-                              <Button
-                                variant={profitPercentBase === 'gesamtinvestment' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="justify-start"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setProfitPercentBase('gesamtinvestment');
-                                  setProfitPercentDropdownOpen(false);
-                                }}
-                                data-testid="option-gesamtinvestment"
-                              >
-                                {profitPercentBase === 'gesamtinvestment' && <Check className="h-4 w-4 mr-2" />}
-                                Gesamtinvestment
-                              </Button>
-                              <Button
-                                variant={profitPercentBase === 'investitionsmenge' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="justify-start"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setProfitPercentBase('investitionsmenge');
-                                  setProfitPercentDropdownOpen(false);
-                                }}
-                                data-testid="option-investitionsmenge"
-                              >
-                                {profitPercentBase === 'investitionsmenge' && <Check className="h-4 w-4 mr-2" />}
-                                Investitionsmenge
-                              </Button>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      )}
                     </div>
                   </SortableItem>
                 );
