@@ -114,9 +114,11 @@ interface BotEntryTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (column: string) => void;
   onRemoveBotType: (botTypeId: string) => void;
+  selectedChartBotTypes?: string[];
+  onToggleChartBotType?: (botTypeId: string) => void;
 }
 
-export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, onSort, onRemoveBotType }: BotEntryTableProps) {
+export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, onSort, onRemoveBotType, selectedChartBotTypes = [], onToggleChartBotType }: BotEntryTableProps) {
   const formatNumber = (value: string | number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
     return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -259,7 +261,19 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                       </div>
                     </TableCell>
                     <TableCell className="text-center" data-testid={`cell-chart-${botType.id}`}>
-                      <LineChart className="h-4 w-4 text-muted-foreground mx-auto" />
+                      <button
+                        onClick={() => onToggleChartBotType?.(botType.id)}
+                        className="p-1 rounded hover-elevate cursor-pointer"
+                        data-testid={`button-chart-${botType.id}`}
+                      >
+                        <LineChart 
+                          className={`h-4 w-4 mx-auto transition-colors ${
+                            selectedChartBotTypes.includes(botType.id) 
+                              ? 'text-blue-500' 
+                              : 'text-muted-foreground'
+                          }`} 
+                        />
+                      </button>
                     </TableCell>
                     <TableCell data-testid={`cell-actions-${botType.id}`}>
                       <Button

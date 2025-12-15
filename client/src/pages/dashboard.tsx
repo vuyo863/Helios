@@ -176,6 +176,7 @@ export default function Dashboard() {
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [removedBotsFromTable, setRemovedBotsFromTable] = useState<string[]>([]);
+  const [selectedChartBotTypes, setSelectedChartBotTypes] = useState<string[]>([]);
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -2098,6 +2099,14 @@ export default function Dashboard() {
             sortDirection={sortDirection}
             onSort={handleSort}
             onRemoveBotType={handleRemoveBotType}
+            selectedChartBotTypes={selectedChartBotTypes}
+            onToggleChartBotType={(botTypeId) => {
+              setSelectedChartBotTypes(prev => 
+                prev.includes(botTypeId)
+                  ? prev.filter(id => id !== botTypeId)
+                  : [...prev, botTypeId]
+              );
+            }}
           />
           
           <Card 
