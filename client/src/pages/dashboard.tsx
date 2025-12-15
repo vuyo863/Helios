@@ -199,8 +199,9 @@ export default function Dashboard() {
   const [showTrendPnl, setShowTrendPnl] = useState(false);
   const [showHighestValue, setShowHighestValue] = useState(false);
   const [showLowestValue, setShowLowestValue] = useState(false);
-  const [showInvestmentAmount, setShowInvestmentAmount] = useState(false);
-  const [showInvestmentProfitPercent, setShowInvestmentProfitPercent] = useState(false);
+  // Dropdown-State für Gesamtprofit % - wählt zwischen Gesamtinvestment und Investitionsmenge
+  const [profitPercentBase, setProfitPercentBase] = useState<'gesamtinvestment' | 'investitionsmenge'>('gesamtinvestment');
+  const [profitPercentDropdownOpen, setProfitPercentDropdownOpen] = useState(false);
   const [chartSequence, setChartSequence] = useState<'hours' | 'days' | 'weeks' | 'months'>('days');
   const [sequencePopoverOpen, setSequencePopoverOpen] = useState(false);
   
@@ -839,8 +840,16 @@ export default function Dashboard() {
         gesamtprofit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
       }
       
-      // Gesamtprofit % = (Gesamtprofit / Gesamtkapital) * 100
-      const gesamtprofitPercent = gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
+      // Gesamtprofit % = basierend auf gewählter Basis (Gesamtinvestment oder Investitionsmenge)
+      let gesamtprofitPercent = 0;
+      if (profitPercentBase === 'investitionsmenge' && update.profitPercent_investitionsmenge) {
+        gesamtprofitPercent = parseFloat(update.profitPercent_investitionsmenge) || 0;
+      } else if (profitPercentBase === 'gesamtinvestment' && update.profitPercent_gesamtinvestment) {
+        gesamtprofitPercent = parseFloat(update.profitPercent_gesamtinvestment) || 0;
+      } else {
+        // Fallback: Berechne aus Gesamtprofit / Gesamtkapital
+        gesamtprofitPercent = gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
+      }
       
       // Ø Profit/Tag = avgGridProfitDay
       const avgDailyProfit = parseFloat(update.avgGridProfitDay || '0') || 0;
@@ -887,7 +896,7 @@ export default function Dashboard() {
     dataPoints.sort((a, b) => a.timestamp - b.timestamp);
     
     return dataPoints;
-  }, [chartApplied, appliedChartSettings, sortedUpdates]);
+  }, [chartApplied, appliedChartSettings, sortedUpdates, profitPercentBase]);
 
   // Prüfe ob SPEZIALFALL aktiv ist:
   // 1. Nur EIN Update (= 2 Datenpunkte: Start + Ende)
@@ -1173,10 +1182,51 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
-  const totalProfitPercent = useMemo(() => 
-    totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0,
-    [totalInvestment, totalProfit]
-  );
+  // Berechne Investitionsmenge (Summe aller baseInvestment Werte) für Prozentberechnung
+  const totalBaseInvestment = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0) {
+        return 0;
+      }
+      
+      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+      let sum = 0;
+      
+      activeBotTypes.forEach(botType => {
+        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+        const latestUpdate = updatesForType.sort((a, b) => 
+          new Date(b.createdAt as Date).getTime() - new Date(a.createdAt as Date).getTime()
+        )[0];
+        
+        if (latestUpdate) {
+          sum += parseFloat(latestUpdate.baseInvestment || '0') || 0;
+        }
+      });
+      
+      return sum;
+    } else {
+      if (!selectedBotTypeData || !allBotTypeUpdates) {
+        return 0;
+      }
+      
+      const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
+      const latestUpdate = updatesForType.sort((a, b) => 
+        new Date(b.createdAt as Date).getTime() - new Date(a.createdAt as Date).getTime()
+      )[0];
+      
+      return latestUpdate ? parseFloat(latestUpdate.baseInvestment || '0') || 0 : 0;
+    }
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
+
+  const totalProfitPercent = useMemo(() => {
+    if (profitPercentBase === 'investitionsmenge') {
+      // Berechne Prozent basierend auf Investitionsmenge (baseInvestment)
+      return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
+    } else {
+      // Berechne Prozent basierend auf Gesamtinvestment (totalInvestment)
+      return totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+    }
+  }, [totalInvestment, totalProfit, totalBaseInvestment, profitPercentBase]);
 
   // Ø Profit/Tag: Summe der "24h Ø Profit" von allen aktiven Bot-Types
   // Berechnung wie auf Bot-Types-Seite: weighted average (totalProfit / totalHours * 24)
@@ -1580,7 +1630,7 @@ export default function Dashboard() {
                     iconColor: 'bg-green-100 text-green-600',
                   },
                   'Gesamtprofit %': {
-                    label: 'Gesamtprofit %',
+                    label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtprofit % (GI)' : 'Gesamtprofit % (IM)',
                     value: `${totalProfitPercent.toFixed(2)}%`,
                     icon: Percent,
                     iconColor: 'bg-purple-100 text-purple-600',
@@ -1606,7 +1656,7 @@ export default function Dashboard() {
                   <SortableItem key={cardId} id={cardId} isEditMode={isCardEditMode}>
                     <div 
                       onClick={() => !isCardEditMode && toggleMetricCard(cardId)}
-                      className={`cursor-pointer transition-all ${
+                      className={`cursor-pointer transition-all relative ${
                         activeMetricCards.includes(cardId) 
                           ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
                           : ''
@@ -1619,6 +1669,56 @@ export default function Dashboard() {
                         icon={config.icon}
                         iconColor={config.iconColor}
                       />
+                      {cardId === 'Gesamtprofit %' && !isCardEditMode && (
+                        <Popover open={profitPercentDropdownOpen} onOpenChange={setProfitPercentDropdownOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-2 right-2 h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProfitPercentDropdownOpen(!profitPercentDropdownOpen);
+                              }}
+                              data-testid="dropdown-profit-percent-base"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-1" align="end">
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                variant={profitPercentBase === 'gesamtinvestment' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="justify-start"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProfitPercentBase('gesamtinvestment');
+                                  setProfitPercentDropdownOpen(false);
+                                }}
+                                data-testid="option-gesamtinvestment"
+                              >
+                                {profitPercentBase === 'gesamtinvestment' && <Check className="h-4 w-4 mr-2" />}
+                                Gesamtinvestment
+                              </Button>
+                              <Button
+                                variant={profitPercentBase === 'investitionsmenge' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="justify-start"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProfitPercentBase('investitionsmenge');
+                                  setProfitPercentDropdownOpen(false);
+                                }}
+                                data-testid="option-investitionsmenge"
+                              >
+                                {profitPercentBase === 'investitionsmenge' && <Check className="h-4 w-4 mr-2" />}
+                                Investitionsmenge
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
                     </div>
                   </SortableItem>
                 );
@@ -2181,22 +2281,6 @@ export default function Dashboard() {
                   <Switch
                     checked={showLowestValue}
                     onCheckedChange={setShowLowestValue}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Investmentmenge</span>
-                  <Switch
-                    checked={showInvestmentAmount}
-                    onCheckedChange={setShowInvestmentAmount}
-                    data-testid="switch-investment-amount"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Investment Profit %</span>
-                  <Switch
-                    checked={showInvestmentProfitPercent}
-                    onCheckedChange={setShowInvestmentProfitPercent}
-                    data-testid="switch-investment-profit-percent"
                   />
                 </div>
               </div>
