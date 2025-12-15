@@ -656,6 +656,33 @@ export default function Dashboard() {
     });
   }, [sortedUpdates, selectedFromUpdate]);
 
+  // Helper: Berechne Millisekunden für "Letzten"-Zeitraum
+  const parseTimeRangeToMs = (timeRange: string, customDays?: string, customHours?: string, customMinutes?: string): number | null => {
+    const MS_PER_MINUTE = 60 * 1000;
+    const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+    const MS_PER_DAY = 24 * MS_PER_HOUR;
+    
+    switch (timeRange) {
+      case '1h':
+        return 1 * MS_PER_HOUR;
+      case '24h':
+        return 24 * MS_PER_HOUR;
+      case '7 Days':
+        return 7 * MS_PER_DAY;
+      case '30 Days':
+        return 30 * MS_PER_DAY;
+      case 'Custom':
+        const days = parseInt(customDays || '0') || 0;
+        const hours = parseInt(customHours || '0') || 0;
+        const minutes = parseInt(customMinutes || '0') || 0;
+        return (days * MS_PER_DAY) + (hours * MS_PER_HOUR) + (minutes * MS_PER_MINUTE);
+      case 'First-Last Update':
+        return null; // Alle Updates anzeigen
+      default:
+        return null;
+    }
+  };
+
   // Berechne die Anzahl der angezeigten Updates basierend auf Auswahl
   // NUR wenn Apply geklickt wurde ODER From/Until manuell ausgewählt
   const displayedUpdatesCount = useMemo(() => {
@@ -855,33 +882,6 @@ export default function Dashboard() {
 
     return { data: dataPoints, botTypeNames };
   }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, chartApplied]);
-
-  // Helper: Berechne Millisekunden für "Letzten"-Zeitraum
-  const parseTimeRangeToMs = (timeRange: string, customDays?: string, customHours?: string, customMinutes?: string): number | null => {
-    const MS_PER_MINUTE = 60 * 1000;
-    const MS_PER_HOUR = 60 * MS_PER_MINUTE;
-    const MS_PER_DAY = 24 * MS_PER_HOUR;
-    
-    switch (timeRange) {
-      case '1h':
-        return 1 * MS_PER_HOUR;
-      case '24h':
-        return 24 * MS_PER_HOUR;
-      case '7 Days':
-        return 7 * MS_PER_DAY;
-      case '30 Days':
-        return 30 * MS_PER_DAY;
-      case 'Custom':
-        const days = parseInt(customDays || '0') || 0;
-        const hours = parseInt(customHours || '0') || 0;
-        const minutes = parseInt(customMinutes || '0') || 0;
-        return (days * MS_PER_DAY) + (hours * MS_PER_HOUR) + (minutes * MS_PER_MINUTE);
-      case 'First-Last Update':
-        return null; // Alle Updates anzeigen
-      default:
-        return null;
-    }
-  };
 
   // Chart-Daten basierend auf appliedChartSettings generieren
   // Unterstützt mehrere Metriken gleichzeitig
