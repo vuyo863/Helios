@@ -882,6 +882,24 @@ export default function Dashboard() {
     const minVal = Math.min(...allValues);
     const maxVal = Math.max(...allValues);
     
+    // SPEZIALFALL: Einzelnes Update mit Gesamtkapital + Profit-Metriken
+    // Die Profit-Werte sind bereits auf Gesamtkapital gestapelt
+    // -> Y-Achse soll NICHT bei 0 starten, sondern den Bereich nahe dem Kapital zoomen
+    // So ist die Profit-Steigerung deutlich sichtbar!
+    if (isSingleUpdateWithCapital) {
+      // Berechne sinnvolle Grenzen:
+      // - Unten: Etwas unter dem Gesamtkapital (aber nicht unter 0)
+      // - Oben: Über dem gestapelten Profit
+      const range = maxVal - minVal;
+      // Mindest-Padding: 20% des Bereichs oder 5% des Maximalwerts
+      const padding = Math.max(range * 0.3, maxVal * 0.02);
+      
+      const lowerBound = Math.max(0, minVal - padding);
+      const upperBound = maxVal + padding;
+      
+      return [lowerBound, upperBound];
+    }
+    
     // Wenn ALLE aktiven Metriken "konstante" Typen sind (nur Gesamtkapital)
     // dann soll die Y-Achse NICHT bei 0 starten
     const constantMetrics = ['Gesamtkapital'];
@@ -896,7 +914,7 @@ export default function Dashboard() {
     
     // Für Profit-Metriken: Bei 0 starten
     return [0, 'auto'];
-  }, [transformedChartData, activeMetricCards]);
+  }, [transformedChartData, activeMetricCards, isSingleUpdateWithCapital]);
 
   // Crosshair Handler für Hover-Interaktion
   const handleChartMouseMove = (e: any) => {
