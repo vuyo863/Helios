@@ -1247,26 +1247,30 @@ export default function Dashboard() {
     
     // Berechne Basis-Domain mit ausreichend Padding (10% auf jeder Seite)
     const dataRange = maxVal - minVal;
-    const minPadding = dataRange > 0 ? dataRange * 0.1 : maxVal * 0.1;
+    const padding = dataRange > 0 ? dataRange * 0.1 : Math.abs(maxVal) * 0.1 || 1;
     
     // IMMER Padding unten UND oben, damit Punkte nicht am Rand abgeschnitten werden
-    // Auch wenn Werte bei 0 starten, brauchen wir etwas Platz unter 0
-    const bottomPadding = minPadding * 0.5; // Halbes Padding unten für visuellen Abstand
-    
-    if (hasGesamtkapitalActive) {
-      baseLower = Math.max(-bottomPadding, minVal - minPadding);
-      baseUpper = maxVal + minPadding;
+    // Bei negativen Werten: Padding UNTER dem Minimum hinzufügen (nicht begrenzen!)
+    if (minVal < 0) {
+      // Negative Werte vorhanden: Padding nach unten UND nach oben
+      baseLower = minVal - padding;
+      baseUpper = maxVal + padding;
+    } else if (hasGesamtkapitalActive) {
+      // Keine negativen Werte, Gesamtkapital aktiv
+      baseLower = Math.max(0, minVal - padding);
+      baseUpper = maxVal + padding;
     } else {
       const constantMetrics = ['Gesamtkapital'];
       const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
       
       if (allConstant) {
-        baseLower = Math.max(-bottomPadding, minVal - minPadding);
-        baseUpper = maxVal + minPadding;
+        baseLower = Math.max(0, minVal - padding);
+        baseUpper = maxVal + padding;
       } else {
-        // Profit-Metriken: Etwas unter 0 starten für visuellen Abstand
+        // Profit-Metriken ohne negative Werte: bei 0 oder leicht darunter starten
+        const bottomPadding = padding * 0.5;
         baseLower = -bottomPadding;
-        baseUpper = maxVal + minPadding;
+        baseUpper = maxVal + padding;
       }
     }
     
