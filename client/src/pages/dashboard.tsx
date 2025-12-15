@@ -1068,13 +1068,21 @@ export default function Dashboard() {
         'Real Profit/Tag': cumulativeRealDaily,
       };
       
-      // WICHTIG: Immer den RAW-Wert verwenden, KEINE Kumulierung!
-      // Bei Vergleichs-Modus ist overallGridProfitUsdt bereits die DIFFERENZ
-      // Diese soll direkt im Chart angezeigt werden (kann negativ sein)
-      cumulativeProfit = gesamtprofit;
-      cumulativeProfitPercent = gesamtprofitPercent;
-      cumulativeAvgDaily = avgDailyProfit;
-      cumulativeRealDaily = realDailyProfit;
+      // Bei Vergleichs-Modus: Werte auf kumulative Summe aufaddieren
+      // Bei Neu-Modus (Startmetrik): Kumulative Werte auf aktuelle Werte setzen
+      if (isVergleichsModus && index > 0) {
+        // Vergleichs-Modus: Werte sind Differenzen, addiere zum kumulativen Wert
+        cumulativeProfit += gesamtprofit;
+        cumulativeProfitPercent += gesamtprofitPercent;
+        cumulativeAvgDaily += avgDailyProfit;
+        cumulativeRealDaily += realDailyProfit;
+      } else {
+        // Neu-Modus oder erstes Update: Setze kumulative Werte auf aktuelle Werte
+        cumulativeProfit = gesamtprofit;
+        cumulativeProfitPercent = gesamtprofitPercent;
+        cumulativeAvgDaily = avgDailyProfit;
+        cumulativeRealDaily = realDailyProfit;
+      }
       
       // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
       // ABER: Bei Vergleichs-Modus KEINEN separaten Startpunkt erstellen!
