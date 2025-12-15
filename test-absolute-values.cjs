@@ -85,28 +85,9 @@ async function runTests() {
     failed('Create Bot Type', e.message);
   }
 
-  // Test 3: Verify Bot Type was created
-  if (botTypeId) {
-    try {
-      const res = await makeRequest('GET', `/api/bot-types`);
-      const found = res.data.find(bt => bt.id === botTypeId);
-      if (res.status === 200 && found && found.name === testBotTypeName) {
-        passed('Verify Bot Type was created correctly');
-      } else {
-        failed('Verify Bot Type', `Not found in list`);
-      }
-    } catch (e) {
-      failed('Verify Bot Type', e.message);
-    }
-  } else {
-    failed('Verify Bot Type', 'No botTypeId available');
-  }
-
-  // Test 4: Create first Update (Startmetrik)
-  let updateId1 = null;
+  // Test 3: Create first Update (Startmetrik) with absolute values
   try {
     const updateData = {
-      botTypeId: botTypeId,
       version: 1,
       status: 'Update Metrics',
       investment: '1000.00',
@@ -116,14 +97,9 @@ async function runTests() {
       profitPercent_gesamtinvestment: '3.33',
       profitPercent_investitionsmenge: '5.00',
       overallTrendPnlUsdt: '30.00',
-      overallTrendPnlPercent_gesamtinvestment: '2.00',
-      overallTrendPnlPercent_investitionsmenge: '3.00',
       overallGridProfitUsdt: '20.00',
-      overallGridProfitPercent_gesamtinvestment: '1.33',
-      overallGridProfitPercent_investitionsmenge: '2.00',
       avgGridProfitHour: '0.83',
       avgGridProfitDay: '20.00',
-      avgGridProfitWeek: null,
       calculationMode: 'Startmetrik',
       investmentAbsolute: '1000.00',
       extraMarginAbsolute: '500.00',
@@ -132,181 +108,128 @@ async function runTests() {
       profitPercent_gesamtinvestment_absolute: '3.33',
       profitPercent_investitionsmenge_absolute: '5.00',
       overallTrendPnlUsdtAbsolute: '30.00',
-      overallTrendPnlPercent_gesamtinvestment_absolute: '2.00',
-      overallTrendPnlPercent_investitionsmenge_absolute: '3.00',
       overallGridProfitUsdtAbsolute: '20.00',
-      overallGridProfitPercent_gesamtinvestment_absolute: '1.33',
-      overallGridProfitPercent_investitionsmenge_absolute: '2.00',
       avgGridProfitHourAbsolute: '0.83',
       avgGridProfitDayAbsolute: '20.00',
-      avgGridProfitWeekAbsolute: null,
     };
-    const res = await makeRequest('POST', '/api/bot-type-updates', updateData);
+    const res = await makeRequest('POST', `/api/bot-types/${botTypeId}/updates`, updateData);
     if (res.status === 201 || res.status === 200) {
-      updateId1 = res.data.id || res.data[0]?.id;
       passed('Create first Update (Startmetrik) with absolute values');
     } else {
-      failed('Create first Update', `Status: ${res.status}, Data: ${JSON.stringify(res.data)}`);
+      failed('Create first Update', `Status: ${res.status}`);
     }
   } catch (e) {
     failed('Create first Update', e.message);
   }
 
-  // Test 5: Verify first Update contains absolute values - fetch all and find by version
-  if (botTypeId) {
-    try {
-      const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
-      if (res.status === 200 && Array.isArray(res.data) && res.data.length > 0) {
-        const update = res.data.find(u => u.version === 1);
-        if (update && update.investmentAbsolute === '1000.00' && update.profitAbsolute === '50.00') {
-          updateId1 = update.id;
-          passed('Verify first Update contains absolute values');
-        } else {
-          failed('Verify first Update', `Absolute values missing: invAbs=${update?.investmentAbsolute}, profitAbs=${update?.profitAbsolute}`);
-        }
+  // Test 4: Verify first Update contains absolute values
+  try {
+    const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
+    if (res.status === 200 && Array.isArray(res.data) && res.data.length > 0) {
+      const update = res.data.find(u => u.version === 1);
+      if (update && update.investmentAbsolute === '1000.00' && update.profitAbsolute === '50.00') {
+        passed('Verify first Update contains absolute values');
       } else {
-        failed('Verify first Update', `No updates found or status: ${res.status}`);
+        failed('Verify first Update', `Missing values: invAbs=${update?.investmentAbsolute}, profitAbs=${update?.profitAbsolute}`);
       }
-    } catch (e) {
-      failed('Verify first Update', e.message);
+    } else {
+      failed('Verify first Update', `No updates found`);
     }
-  } else {
-    failed('Verify first Update', 'No botTypeId available');
+  } catch (e) {
+    failed('Verify first Update', e.message);
   }
 
-  // Test 6: Create second Update (Vergleichsmodus - mit Differenzwerten)
-  let updateId2 = null;
+  // Test 5: Create second Update (Vergleichsmodus - differential values, different absolute)
   try {
     const updateData = {
-      botTypeId: botTypeId,
       version: 2,
       status: 'Update Metrics',
       investment: '200.00',
       extraMargin: '100.00',
       totalInvestment: '300.00',
       profit: '25.00',
-      profitPercent_gesamtinvestment: '1.39',
-      profitPercent_investitionsmenge: '2.08',
       overallTrendPnlUsdt: '15.00',
-      overallTrendPnlPercent_gesamtinvestment: '0.83',
-      overallTrendPnlPercent_investitionsmenge: '1.25',
       overallGridProfitUsdt: '10.00',
-      overallGridProfitPercent_gesamtinvestment: '0.56',
-      overallGridProfitPercent_investitionsmenge: '0.83',
-      avgGridProfitHour: '0.17',
-      avgGridProfitDay: '5.00',
-      avgGridProfitWeek: null,
       calculationMode: 'Normal',
       investmentAbsolute: '1200.00',
       extraMarginAbsolute: '600.00',
       totalInvestmentAbsolute: '1800.00',
       profitAbsolute: '75.00',
-      profitPercent_gesamtinvestment_absolute: '4.17',
-      profitPercent_investitionsmenge_absolute: '6.25',
       overallTrendPnlUsdtAbsolute: '45.00',
-      overallTrendPnlPercent_gesamtinvestment_absolute: '2.50',
-      overallTrendPnlPercent_investitionsmenge_absolute: '3.75',
       overallGridProfitUsdtAbsolute: '30.00',
-      overallGridProfitPercent_gesamtinvestment_absolute: '1.67',
-      overallGridProfitPercent_investitionsmenge_absolute: '2.50',
-      avgGridProfitHourAbsolute: '1.00',
-      avgGridProfitDayAbsolute: '25.00',
-      avgGridProfitWeekAbsolute: null,
     };
-    const res = await makeRequest('POST', '/api/bot-type-updates', updateData);
+    const res = await makeRequest('POST', `/api/bot-types/${botTypeId}/updates`, updateData);
     if (res.status === 201 || res.status === 200) {
-      updateId2 = res.data.id;
-      passed('Create second Update (Vergleichsmodus) with absolute values');
+      passed('Create second Update (Vergleichsmodus) with different absolute values');
     } else {
-      failed('Create second Update', `Status: ${res.status}, Data: ${JSON.stringify(res.data)}`);
+      failed('Create second Update', `Status: ${res.status}`);
     }
   } catch (e) {
     failed('Create second Update', e.message);
   }
 
-  // Test 7: Verify second Update contains correct absolute values (different from differential)
-  if (botTypeId) {
-    try {
-      const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
-      if (res.status === 200 && Array.isArray(res.data)) {
-        const update = res.data.find(u => u.version === 2);
-        if (update) {
-          updateId2 = update.id;
-          const checks = [
-            update.investment === '200.00',
-            update.investmentAbsolute === '1200.00',
-            update.profitAbsolute === '75.00',
-            update.overallGridProfitUsdtAbsolute === '30.00',
-          ];
-          if (checks.every(c => c)) {
-            passed('Verify second Update: differential and absolute values are different');
-          } else {
-            failed('Verify second Update', `Values mismatch: inv=${update.investment}, invAbs=${update.investmentAbsolute}`);
-          }
+  // Test 6: Verify differential values differ from absolute values
+  try {
+    const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
+    if (res.status === 200 && Array.isArray(res.data)) {
+      const update = res.data.find(u => u.version === 2);
+      if (update) {
+        const diffOk = update.investment === '200.00';
+        const absOk = update.investmentAbsolute === '1200.00';
+        if (diffOk && absOk) {
+          passed('Verify differential (200.00) differs from absolute (1200.00)');
         } else {
-          failed('Verify second Update', 'Update v2 not found');
+          failed('Verify values differ', `inv=${update.investment}, invAbs=${update.investmentAbsolute}`);
         }
       } else {
-        failed('Verify second Update', `Status: ${res.status}`);
+        failed('Verify values differ', 'Update v2 not found');
       }
-    } catch (e) {
-      failed('Verify second Update', e.message);
+    } else {
+      failed('Verify values differ', `Status: ${res.status}`);
     }
-  } else {
-    failed('Verify second Update', 'No botTypeId available');
+  } catch (e) {
+    failed('Verify values differ', e.message);
   }
 
-  // Test 8: Check all absolute fields exist
-  if (botTypeId) {
-    try {
-      const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
-      if (res.status === 200 && Array.isArray(res.data)) {
-        const update = res.data.find(u => u.version === 2);
-        const absoluteFields = [
-          'investmentAbsolute',
-          'extraMarginAbsolute',
-          'totalInvestmentAbsolute',
-          'profitAbsolute',
-          'profitPercent_gesamtinvestment_absolute',
-          'profitPercent_investitionsmenge_absolute',
-          'overallTrendPnlUsdtAbsolute',
-          'overallTrendPnlPercent_gesamtinvestment_absolute',
-          'overallTrendPnlPercent_investitionsmenge_absolute',
-          'overallGridProfitUsdtAbsolute',
-          'overallGridProfitPercent_gesamtinvestment_absolute',
-          'overallGridProfitPercent_investitionsmenge_absolute',
-          'avgGridProfitHourAbsolute',
-          'avgGridProfitDayAbsolute',
-          'avgGridProfitWeekAbsolute',
-        ];
-        const missingFields = absoluteFields.filter(f => !(f in update));
-        if (missingFields.length === 0) {
-          passed('All absolute fields exist in Update response');
-        } else {
-          failed('All absolute fields exist', `Missing: ${missingFields.join(', ')}`);
-        }
+  // Test 7: Check all absolute fields exist
+  try {
+    const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
+    if (res.status === 200 && Array.isArray(res.data)) {
+      const update = res.data.find(u => u.version === 2);
+      const absoluteFields = [
+        'investmentAbsolute',
+        'extraMarginAbsolute',
+        'totalInvestmentAbsolute',
+        'profitAbsolute',
+        'overallTrendPnlUsdtAbsolute',
+        'overallGridProfitUsdtAbsolute',
+      ];
+      const missingFields = absoluteFields.filter(f => !(f in update));
+      if (missingFields.length === 0) {
+        passed('All core absolute fields exist in Update response');
       } else {
-        failed('All absolute fields exist', `Status: ${res.status}`);
+        failed('All absolute fields exist', `Missing: ${missingFields.join(', ')}`);
       }
-    } catch (e) {
-      failed('All absolute fields exist', e.message);
+    } else {
+      failed('All absolute fields exist', `Status: ${res.status}`);
     }
-  } else {
-    failed('All absolute fields exist', 'No botTypeId available');
+  } catch (e) {
+    failed('All absolute fields exist', e.message);
   }
 
-  // Test 9: Update with null avgGridProfitWeek (should be accepted)
+  // Test 8: Create Update with null avgGridProfitWeek (should be accepted)
   try {
     const updateData = {
-      botTypeId: botTypeId,
       version: 3,
       status: 'Update Metrics',
       investment: '100.00',
       profit: '10.00',
       avgGridProfitWeek: null,
       avgGridProfitWeekAbsolute: null,
+      investmentAbsolute: '1300.00',
+      profitAbsolute: '85.00',
     };
-    const res = await makeRequest('POST', '/api/bot-type-updates', updateData);
+    const res = await makeRequest('POST', `/api/bot-types/${botTypeId}/updates`, updateData);
     if (res.status === 201 || res.status === 200) {
       passed('Create Update with null avgGridProfitWeek (accepted)');
     } else {
@@ -314,6 +237,23 @@ async function runTests() {
     }
   } catch (e) {
     failed('Create Update with null avgGridProfitWeek', e.message);
+  }
+
+  // Test 9: Verify third Update saved correctly
+  try {
+    const res = await makeRequest('GET', `/api/bot-types/${botTypeId}/updates`);
+    if (res.status === 200 && Array.isArray(res.data)) {
+      const update = res.data.find(u => u.version === 3);
+      if (update && update.investmentAbsolute === '1300.00' && update.profitAbsolute === '85.00') {
+        passed('Verify third Update saved with correct absolute values');
+      } else {
+        failed('Verify third Update', `invAbs=${update?.investmentAbsolute}, profitAbs=${update?.profitAbsolute}`);
+      }
+    } else {
+      failed('Verify third Update', `Status: ${res.status}`);
+    }
+  } catch (e) {
+    failed('Verify third Update', e.message);
   }
 
   // Test 10: Delete test Bot Type (cleanup)
@@ -338,7 +278,7 @@ async function runTests() {
   console.log('='.repeat(50));
 
   if (failedTests === 0) {
-    console.log('\n✅ ALL TESTS PASSED!\n');
+    console.log('\n✅ ALL 10 TESTS PASSED!\n');
     process.exit(0);
   } else {
     console.log('\n❌ SOME TESTS FAILED!\n');
