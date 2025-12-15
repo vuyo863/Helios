@@ -1067,7 +1067,12 @@ export default function Dashboard() {
       // Bei Vergleichs-Modus: Nie Startpunkt erstellen (Linie läuft flüssig weiter)
       // Bei Closed Bots: Auch kein Startpunkt - nur EIN Punkt (End Date) mit dem Profit
       const isClosedBots = update.status === 'Closed Bots';
-      const skipStartPoint = isVergleichsModus || startOverlapsPrevEnd || isClosedBots;
+      
+      // WICHTIG: Wenn es das ERSTE gefilterte Update ist (kein vorheriger Endpunkt vorhanden),
+      // dann MUSS der Startpunkt immer erstellt werden, auch bei Vergleichs-Modus!
+      // Das stellt sicher, dass die komplette Linie angezeigt wird, auch wenn nur 1 Update gefiltert wurde
+      const isFirstFilteredUpdate = !hasPreviousEndPoint;
+      const skipStartPoint = isClosedBots || (isVergleichsModus && !isFirstFilteredUpdate) || startOverlapsPrevEnd;
       
       if (update.lastUpload && startTimestamp !== endTimestamp && !skipStartPoint) {
         // Nur bei Neu-Modus ohne Überlappung: Startpunkt bei 0
