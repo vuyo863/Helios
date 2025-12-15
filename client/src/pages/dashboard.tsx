@@ -235,6 +235,9 @@ export default function Dashboard() {
   // Durch Erhöhen des Keys wird der Chart komplett neu gerendert mit sauberer Animation
   const [chartAnimationKey, setChartAnimationKey] = useState(0);
   
+  // Separater Key NUR für Investitionsmenge/Gesamtinvestment-Wechsel wenn Gesamtkapital aktiv
+  const [investmentBaseKey, setInvestmentBaseKey] = useState(0);
+  
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
     if (selectedFromUpdate && selectedUntilUpdate) {
@@ -1731,7 +1734,7 @@ export default function Dashboard() {
                                     setProfitPercentDropdownOpen(false);
                                     // Trigger Animation nur wenn Gesamtkapital-Card aktiv ist
                                     if (activeMetricCards.includes('Gesamtkapital')) {
-                                      setChartAnimationKey(prev => prev + 1);
+                                      setInvestmentBaseKey(prev => prev + 1);
                                     }
                                   }}
                                   data-testid="option-gesamtinvestment"
@@ -1749,7 +1752,7 @@ export default function Dashboard() {
                                     setProfitPercentDropdownOpen(false);
                                     // Trigger Animation nur wenn Gesamtkapital-Card aktiv ist
                                     if (activeMetricCards.includes('Gesamtkapital')) {
-                                      setChartAnimationKey(prev => prev + 1);
+                                      setInvestmentBaseKey(prev => prev + 1);
                                     }
                                   }}
                                   data-testid="option-investitionsmenge"
@@ -1854,7 +1857,7 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
-                  key={chartAnimationKey}
+                  key={investmentBaseKey}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
