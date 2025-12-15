@@ -242,6 +242,10 @@ export default function Dashboard() {
   const [animatingMetrics, setAnimatingMetrics] = useState<Set<string>>(new Set());
   const animatingMetricsTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   
+  // Trackt welche Metriken gerade ENTFERNT werden (für Exit-Animation)
+  const [removingMetrics, setRemovingMetrics] = useState<Set<string>>(new Set());
+  const removingMetricsTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  
   useEffect(() => {
     setShouldAnimate(true);
     const timer = setTimeout(() => {
@@ -1485,21 +1489,42 @@ export default function Dashboard() {
     
     // Bei Multi-Bot-Auswahl (>1): Nur EINE Metrik-Card erlauben
     if (selectedChartBotTypes.length > 1) {
+      // Im Multi-Bot-Mode: Alte Metrik entfernen, neue hinzufügen
+      const oldMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : null;
       const newMetrics = activeMetricCards.includes(cardName) && activeMetricCards.length === 1
         ? [] 
         : [cardName];
+      
+      // Wenn alte Metrik entfernt wird, Exit-Animation starten
+      if (oldMetric && oldMetric !== cardName) {
+        // Clear existing timeout
+        const existingTimeout = removingMetricsTimeoutsRef.current.get(oldMetric);
+        if (existingTimeout) clearTimeout(existingTimeout);
+        
+        // Add to removing set
+        setRemovingMetrics(prev => new Set(Array.from(prev).concat(oldMetric)));
+        
+        // Nach Animation aus removing set entfernen
+        const timeout = setTimeout(() => {
+          setRemovingMetrics(prev => {
+            const next = new Set(prev);
+            next.delete(oldMetric);
+            return next;
+          });
+          removingMetricsTimeoutsRef.current.delete(oldMetric);
+        }, 600);
+        removingMetricsTimeoutsRef.current.set(oldMetric, timeout);
+      }
+      
       setActiveMetricCards(newMetrics);
       
       // Wenn neue Metrik hinzugefügt wird, tracke sie für Animation
       if (newMetrics.includes(cardName) && isAdding) {
-        // Clear existing timeout for this metric
         const existingTimeout = animatingMetricsTimeoutsRef.current.get(cardName);
         if (existingTimeout) clearTimeout(existingTimeout);
         
-        // Add to animating set
         setAnimatingMetrics(prev => new Set(Array.from(prev).concat(cardName)));
         
-        // Schedule removal after animation completes
         const timeout = setTimeout(() => {
           setAnimatingMetrics(prev => {
             const next = new Set(prev);
@@ -1507,7 +1532,7 @@ export default function Dashboard() {
             return next;
           });
           animatingMetricsTimeoutsRef.current.delete(cardName);
-        }, 900);
+        }, 600);
         animatingMetricsTimeoutsRef.current.set(cardName, timeout);
       }
     } else {
@@ -1515,14 +1540,11 @@ export default function Dashboard() {
       if (isAdding) {
         setActiveMetricCards(prev => [...prev, cardName]);
         
-        // Clear existing timeout for this metric
         const existingTimeout = animatingMetricsTimeoutsRef.current.get(cardName);
         if (existingTimeout) clearTimeout(existingTimeout);
         
-        // Add to animating set
         setAnimatingMetrics(prev => new Set(Array.from(prev).concat(cardName)));
         
-        // Schedule removal after animation completes
         const timeout = setTimeout(() => {
           setAnimatingMetrics(prev => {
             const next = new Set(prev);
@@ -1530,18 +1552,32 @@ export default function Dashboard() {
             return next;
           });
           animatingMetricsTimeoutsRef.current.delete(cardName);
-        }, 900);
+        }, 600);
         animatingMetricsTimeoutsRef.current.set(cardName, timeout);
       } else {
-        // Entfernen - keine Animation nötig, Linie verschwindet sofort
-        setActiveMetricCards(prev => prev.filter(name => name !== cardName));
+        // Entfernen mit Exit-Animation
+        // Clear existing timeout
+        const existingTimeout = removingMetricsTimeoutsRef.current.get(cardName);
+        if (existingTimeout) clearTimeout(existingTimeout);
+        
+        // Add to removing set (triggert fade-out)
+        setRemovingMetrics(prev => new Set(Array.from(prev).concat(cardName)));
+        
+        // Nach Animation komplett entfernen
+        const timeout = setTimeout(() => {
+          setActiveMetricCards(prev => prev.filter(name => name !== cardName));
+          setRemovingMetrics(prev => {
+            const next = new Set(prev);
+            next.delete(cardName);
+            return next;
+          });
+          removingMetricsTimeoutsRef.current.delete(cardName);
+        }, 600);
+        removingMetricsTimeoutsRef.current.set(cardName, timeout);
       }
     }
-    // Nur bei HINZUFÜGEN Animation triggern (für Skalenänderung)
-    // Beim Entfernen KEIN chartAnimationKey Update - das verursacht Bugs
-    if (isAdding) {
-      setChartAnimationKey(prev => prev + 1);
-    }
+    // Animation für Skalen-Anpassung triggern
+    setChartAnimationKey(prev => prev + 1);
   };
 
   const handleFromUpdateSelect = (update: any) => {
@@ -2204,7 +2240,7 @@ export default function Dashboard() {
                     ))
                   ) : (
                     // Single-Bot Modus: Lines für alle aktiven Metriken
-                    // Nur NEU hinzugefügte Metriken animieren (animatingMetrics Set)
+                    // Exit-Animation via strokeOpacity für Metriken in removingMetrics
                     activeMetricCards.map((metricName) => (
                       <Line 
                         key={metricName}
@@ -2213,10 +2249,19 @@ export default function Dashboard() {
                         name={metricName}
                         stroke={metricColors[metricName] || '#888888'}
                         strokeWidth={2}
-                        dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
+                        strokeOpacity={removingMetrics.has(metricName) ? 0 : 1}
+                        dot={{ 
+                          fill: metricColors[metricName] || '#888888', 
+                          r: 4,
+                          style: { 
+                            opacity: removingMetrics.has(metricName) ? 0 : 1,
+                            transition: 'opacity 0.5s ease-out'
+                          }
+                        }}
+                        style={{ transition: 'stroke-opacity 0.5s ease-out' }}
                         connectNulls
                         isAnimationActive={shouldAnimate || animatingMetrics.has(metricName)}
-                        animationDuration={1000}
+                        animationDuration={600}
                         animationBegin={0}
                         animationEasing="ease-out"
                       />
