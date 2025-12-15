@@ -2377,6 +2377,18 @@ export default function Dashboard() {
                   ? prev.filter(id => id !== botTypeId)
                   : [...prev, botTypeId]
               );
+              // Reset alle Chart-Einstellungen auf Default
+              setSelectedTimeRange('First-Last Update');
+              setChartSequence('days');
+              setShowGridProfit(false);
+              setShowTrendPnl(false);
+              setShowHighestValue(false);
+              setShowLowestValue(false);
+              setSelectedFromUpdate(null);
+              setSelectedUntilUpdate(null);
+              setChartApplied(false);
+              setAppliedChartSettings(null);
+              setUpdateSelectionMode('idle');
             }}
           />
           
