@@ -964,6 +964,8 @@ export default function Dashboard() {
       untilUpdate: selectedUntilUpdate,
     });
     setChartApplied(true);
+    // Automatisch "Gesamtprofit" Content-Karte aktivieren/hervorheben
+    setActiveMetricCards(['Gesamtprofit']);
   };
 
   const toggleMetricCard = (cardName: string) => {
@@ -1262,8 +1264,13 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="time"
-                    label={{ value: 'Time', position: 'insideBottom', offset: -10, style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' } }}
-                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tickLine={{ stroke: 'hsl(var(--border))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis 
                     dataKey="wert"
