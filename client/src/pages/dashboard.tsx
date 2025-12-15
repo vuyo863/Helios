@@ -1148,20 +1148,23 @@ export default function Dashboard() {
     const dataRange = maxVal - minVal;
     const minPadding = dataRange > 0 ? dataRange * 0.1 : maxVal * 0.1;
     
+    // IMMER Padding unten UND oben, damit Punkte nicht am Rand abgeschnitten werden
+    // Auch wenn Werte bei 0 starten, brauchen wir etwas Platz unter 0
+    const bottomPadding = minPadding * 0.5; // Halbes Padding unten für visuellen Abstand
+    
     if (hasGesamtkapitalActive) {
-      // Gesamtkapital aktiv: Zeige Bereich nahe dem Kapital
-      baseLower = Math.max(0, minVal - minPadding);
+      baseLower = Math.max(-bottomPadding, minVal - minPadding);
       baseUpper = maxVal + minPadding;
     } else {
       const constantMetrics = ['Gesamtkapital'];
       const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
       
       if (allConstant) {
-        baseLower = Math.max(0, minVal - minPadding);
+        baseLower = Math.max(-bottomPadding, minVal - minPadding);
         baseUpper = maxVal + minPadding;
       } else {
-        // Profit-Metriken: Bei 0 starten mit Padding oben
-        baseLower = 0;
+        // Profit-Metriken: Etwas unter 0 starten für visuellen Abstand
+        baseLower = -bottomPadding;
         baseUpper = maxVal + minPadding;
       }
     }
