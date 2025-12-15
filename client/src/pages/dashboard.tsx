@@ -249,6 +249,12 @@ export default function Dashboard() {
   const [dragStartPanY, setDragStartPanY] = useState(0);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   
+  // Tooltip Aktivierungsradius - nur anzeigen wenn Maus nah am Datenpunkt
+  // Speichert die letzte Mausposition relativ zum Chart für Distanzprüfung
+  const [tooltipActivePayload, setTooltipActivePayload] = useState<any[] | null>(null);
+  const [tooltipCoordinate, setTooltipCoordinate] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
+  
   // Chart Zoom & Pan Event-Handler
   const handleChartWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -285,6 +291,42 @@ export default function Dashboard() {
   const handleResetZoomPan = () => {
     setChartZoom(1);
     setChartPanY(0);
+  };
+  
+  // Handler für LineChart onMouseMove - prüft Distanz zum Datenpunkt
+  // Aktivierungsradius: 15 Pixel (sehr klein, nur bei direktem Hover)
+  const TOOLTIP_ACTIVATION_RADIUS = 15;
+  
+  const handleLineChartMouseMove = (state: any) => {
+    if (!state || !state.activePayload || state.activePayload.length === 0) {
+      setTooltipIsNearPoint(false);
+      setTooltipActivePayload(null);
+      setTooltipCoordinate(null);
+      return;
+    }
+    
+    // Speichere die Payload und Koordinate
+    setTooltipActivePayload(state.activePayload);
+    setTooltipCoordinate(state.activeCoordinate);
+    
+    // Prüfe ob die Maus nah genug am Punkt ist
+    // state.chartX/chartY = Mausposition, state.activeCoordinate = Punkt-Position
+    if (state.chartX !== undefined && state.chartY !== undefined && state.activeCoordinate) {
+      const dx = Math.abs(state.chartX - state.activeCoordinate.x);
+      const dy = Math.abs(state.chartY - state.activeCoordinate.y);
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Nur aktivieren wenn innerhalb des Radius
+      setTooltipIsNearPoint(distance <= TOOLTIP_ACTIVATION_RADIUS);
+    } else {
+      setTooltipIsNearPoint(false);
+    }
+  };
+  
+  const handleLineChartMouseLeave = () => {
+    setTooltipIsNearPoint(false);
+    setTooltipActivePayload(null);
+    setTooltipCoordinate(null);
   };
   
   // Handler für Update-Auswahl Icons
@@ -1962,6 +2004,8 @@ export default function Dashboard() {
                       ])
                   }
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
+                  onMouseMove={handleLineChartMouseMove}
+                  onMouseLeave={handleLineChartMouseLeave}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
@@ -2178,58 +2222,78 @@ export default function Dashboard() {
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--popover))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    labelStyle={{
-                      fontWeight: 'bold',
-                      marginBottom: '4px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    labelFormatter={(label, payload) => {
-                      if (payload && payload.length > 0 && payload[0].payload) {
-                        const dataPoint = payload[0].payload;
-                        const date = new Date(dataPoint.timestamp);
-                        const sequence = appliedChartSettings?.sequence || 'days';
-                        
-                        if (sequence === 'hours') {
-                          return date.toLocaleString('de-DE', { 
-                            day: '2-digit', month: '2-digit', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit'
-                          });
-                        } else if (sequence === 'days') {
-                          return date.toLocaleString('de-DE', { 
-                            weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit'
-                          });
-                        } else {
-                          return date.toLocaleString('de-DE', { 
-                            day: '2-digit', month: '2-digit', year: 'numeric'
-                          });
-                        }
+                    active={tooltipIsNearPoint}
+                    content={(props) => {
+                      // Nur anzeigen wenn Maus nah genug am Datenpunkt (15px Radius)
+                      if (!tooltipIsNearPoint || !props.active || !props.payload || props.payload.length === 0) {
+                        return null;
                       }
-                      return label;
-                    }}
-                    formatter={(value: number, name: string, props: any) => {
-                      // Wenn Gesamtkapital aktiv: Zeige die echten Werte für alle Profit-Metriken
-                      let displayValue = value;
-                      if (hasGesamtkapitalActive && props?.payload) {
-                        if (name === 'Gesamtprofit' && props.payload._rawGesamtprofit !== undefined) {
-                          displayValue = props.payload._rawGesamtprofit;
-                        } else if (name === 'Gesamtprofit %' && props.payload._rawGesamtprofitPercent !== undefined) {
-                          displayValue = props.payload._rawGesamtprofitPercent;
-                        } else if (name === 'Ø Profit/Tag' && props.payload._rawAvgDailyProfit !== undefined) {
-                          displayValue = props.payload._rawAvgDailyProfit;
-                        } else if (name === 'Real Profit/Tag' && props.payload._rawRealDailyProfit !== undefined) {
-                          displayValue = props.payload._rawRealDailyProfit;
-                        }
+                      
+                      const dataPoint = props.payload[0]?.payload;
+                      if (!dataPoint) return null;
+                      
+                      const date = new Date(dataPoint.timestamp);
+                      const sequence = appliedChartSettings?.sequence || 'days';
+                      
+                      let dateLabel = '';
+                      if (sequence === 'hours') {
+                        dateLabel = date.toLocaleString('de-DE', { 
+                          day: '2-digit', month: '2-digit', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        });
+                      } else if (sequence === 'days') {
+                        dateLabel = date.toLocaleString('de-DE', { 
+                          weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        });
+                      } else {
+                        dateLabel = date.toLocaleString('de-DE', { 
+                          day: '2-digit', month: '2-digit', year: 'numeric'
+                        });
                       }
-                      const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
-                      return [displayValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix, name];
+                      
+                      return (
+                        <div 
+                          style={{ 
+                            backgroundColor: 'hsl(var(--popover))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            color: 'hsl(var(--foreground))',
+                            padding: '8px 12px'
+                          }}
+                        >
+                          <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                          {props.payload.map((entry: any, index: number) => {
+                            let displayValue = entry.value;
+                            const name = entry.name;
+                            
+                            // Wenn Gesamtkapital aktiv: Zeige die echten Werte
+                            if (hasGesamtkapitalActive && entry.payload) {
+                              if (name === 'Gesamtprofit' && entry.payload._rawGesamtprofit !== undefined) {
+                                displayValue = entry.payload._rawGesamtprofit;
+                              } else if (name === 'Gesamtprofit %' && entry.payload._rawGesamtprofitPercent !== undefined) {
+                                displayValue = entry.payload._rawGesamtprofitPercent;
+                              } else if (name === 'Ø Profit/Tag' && entry.payload._rawAvgDailyProfit !== undefined) {
+                                displayValue = entry.payload._rawAvgDailyProfit;
+                              } else if (name === 'Real Profit/Tag' && entry.payload._rawRealDailyProfit !== undefined) {
+                                displayValue = entry.payload._rawRealDailyProfit;
+                              }
+                            }
+                            
+                            const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
+                            const formattedValue = typeof displayValue === 'number' 
+                              ? displayValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
+                              : displayValue;
+                            
+                            return (
+                              <p key={index} style={{ color: entry.color, margin: '2px 0' }}>
+                                {name}: {formattedValue}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      );
                     }}
                   />
                   {/* Dynamisch Lines rendern - Multi-Bot-Mode oder Single-Bot mit Metriken */}
