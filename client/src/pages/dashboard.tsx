@@ -2294,6 +2294,16 @@ export default function Dashboard() {
               </div>
               
               {/* Chart Container with Zoom & Pan Events */}
+              {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
+              {((isMultiBotChartMode && multiBotChartData.data.length === 0) || 
+                (!isMultiBotChartMode && transformedChartData.length === 0)) ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg font-medium">No Metrics Available</p>
+                    <p className="text-sm mt-1">Wähle einen anderen Zeitraum oder Bot-Type</p>
+                  </div>
+                </div>
+              ) : (
               <div
                 ref={chartContainerRef}
                 onMouseDown={handleChartMouseDown}
@@ -3044,6 +3054,7 @@ export default function Dashboard() {
                 </LineChart>
               </ResponsiveContainer>
               </div>
+              )}
             </Card>
           </div>
           
