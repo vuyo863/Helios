@@ -22,6 +22,8 @@ interface TrendPriceSettings {
   threshold: string;
   notifyOnIncrease: boolean;
   notifyOnDecrease: boolean;
+  increaseFrequency: 'einmalig' | 'wiederholend';
+  decreaseFrequency: 'einmalig' | 'wiederholend';
   customMessage: string;
 }
 
@@ -195,6 +197,8 @@ export default function Notifications() {
           threshold: '',
           notifyOnIncrease: false,
           notifyOnDecrease: false,
+          increaseFrequency: 'einmalig',
+          decreaseFrequency: 'einmalig',
           customMessage: ''
         }
       }));
@@ -417,6 +421,8 @@ export default function Notifications() {
                 threshold: '',
                 notifyOnIncrease: false,
                 notifyOnDecrease: false,
+                increaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
+                decreaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
                 customMessage: ''
               };
               const isExpanded = expandedDropdowns.includes(trendPriceId);
@@ -487,37 +493,73 @@ export default function Notifications() {
 
                         <div className="space-y-3">
                           <Label>Benachrichtigungen bei:</Label>
-                          <div className="flex items-center space-x-2 p-3 rounded-lg border">
-                            <Checkbox
-                              id={`increase-${trendPriceId}`}
-                              checked={settings.notifyOnIncrease}
-                              onCheckedChange={(checked) =>
-                                updateSetting(trendPriceId, 'notifyOnIncrease', checked)
-                              }
-                              disabled={!isEditing}
-                            />
-                            <Label
-                              htmlFor={`increase-${trendPriceId}`}
-                              className={cn("cursor-pointer", !isEditing && "opacity-70")}
-                            >
-                              Preiserhöhung über Schwellenwert
-                            </Label>
+                          
+                          {/* Preiserhöhung über Schwellenwert */}
+                          <div className="space-y-2 p-3 rounded-lg border">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`increase-${trendPriceId}`}
+                                checked={settings.notifyOnIncrease}
+                                onCheckedChange={(checked) =>
+                                  updateSetting(trendPriceId, 'notifyOnIncrease', checked)
+                                }
+                                disabled={!isEditing}
+                              />
+                              <Label
+                                htmlFor={`increase-${trendPriceId}`}
+                                className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
+                              >
+                                Preiserhöhung über Schwellenwert
+                              </Label>
+                            </div>
+                            {settings.notifyOnIncrease && (
+                              <div className="ml-6 flex items-center gap-2">
+                                <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                <select
+                                  className="text-sm border rounded px-2 py-1 bg-background"
+                                  disabled={!isEditing}
+                                  value={settings.increaseFrequency}
+                                  onChange={(e) => updateSetting(trendPriceId, 'increaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                >
+                                  <option value="einmalig">Einmalig</option>
+                                  <option value="wiederholend">Wiederholend</option>
+                                </select>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center space-x-2 p-3 rounded-lg border">
-                            <Checkbox
-                              id={`decrease-${trendPriceId}`}
-                              checked={settings.notifyOnDecrease}
-                              onCheckedChange={(checked) =>
-                                updateSetting(trendPriceId, 'notifyOnDecrease', checked)
-                              }
-                              disabled={!isEditing}
-                            />
-                            <Label
-                              htmlFor={`decrease-${trendPriceId}`}
-                              className={cn("cursor-pointer", !isEditing && "opacity-70")}
-                            >
-                              Preissenkung unter Schwellenwert
-                            </Label>
+
+                          {/* Preissenkung unter Schwellenwert */}
+                          <div className="space-y-2 p-3 rounded-lg border">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`decrease-${trendPriceId}`}
+                                checked={settings.notifyOnDecrease}
+                                onCheckedChange={(checked) =>
+                                  updateSetting(trendPriceId, 'notifyOnDecrease', checked)
+                                }
+                                disabled={!isEditing}
+                              />
+                              <Label
+                                htmlFor={`decrease-${trendPriceId}`}
+                                className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
+                              >
+                                Preissenkung unter Schwellenwert
+                              </Label>
+                            </div>
+                            {settings.notifyOnDecrease && (
+                              <div className="ml-6 flex items-center gap-2">
+                                <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                <select
+                                  className="text-sm border rounded px-2 py-1 bg-background"
+                                  disabled={!isEditing}
+                                  value={settings.decreaseFrequency}
+                                  onChange={(e) => updateSetting(trendPriceId, 'decreaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                >
+                                  <option value="einmalig">Einmalig</option>
+                                  <option value="wiederholend">Wiederholend</option>
+                                </select>
+                              </div>
+                            )}
                           </div>
                         </div>
 
