@@ -1,17 +1,19 @@
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrendPrice {
   id: string;
   name: string;
   price?: string;
+  lastUpdate?: Date;
+  priceChange24h?: number;
 }
 
 interface TrendPriceSettings {
@@ -24,19 +26,85 @@ interface TrendPriceSettings {
 
 export default function Notifications() {
   // Verfügbare Trading Pairs für Suche
-  const [availableTradingPairs] = useState<TrendPrice[]>([
-    { id: '1', name: 'BTC/USDT', price: '45,234.50' },
-    { id: '2', name: 'ETH/USDT', price: '2,345.67' },
-    { id: '3', name: 'SOL/USDT', price: '98.45' },
-    { id: '4', name: 'BNB/USDT', price: '312.89' },
-    { id: '5', name: 'XRP/USDT', price: '0.5234' },
-    { id: '6', name: 'ADA/USDT', price: '0.4567' },
-    { id: '7', name: 'DOGE/USDT', price: '0.0823' },
-    { id: '8', name: 'MATIC/USDT', price: '0.8912' },
+  const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([
+    { id: '1', name: 'BTC/USDT', price: '45,234.50', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '2', name: 'ETH/USDT', price: '2,345.67', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '3', name: 'SOL/USDT', price: '98.45', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '4', name: 'BNB/USDT', price: '312.89', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '5', name: 'XRP/USDT', price: '0.5234', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '6', name: 'ADA/USDT', price: '0.4567', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '7', name: 'DOGE/USDT', price: '0.0823', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '8', name: 'MATIC/USDT', price: '0.8912', lastUpdate: new Date(), priceChange24h: 0 },
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [isLiveUpdating, setIsLiveUpdating] = useState(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Live Price Update System - Aktualisiert alle 2 Sekunden
+  useEffect(() => {
+    if (!isLiveUpdating) return;
+
+    const fetchLivePrices = async () => {
+      try {
+        // Nur Watchlist-Pairs aktualisieren für bessere Performance
+        const pairsToUpdate = watchlist.length > 0 
+          ? availableTradingPairs.filter(p => watchlist.includes(p.id))
+          : availableTradingPairs;
+
+        const updatedPairs = await Promise.all(
+          pairsToUpdate.map(async (pair) => {
+            try {
+              // Binance API verwenden (öffentliche API, keine Authentifizierung nötig)
+              const symbol = pair.name.replace('/', '').replace('-', '');
+              const response = await fetch(
+                `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`
+              );
+              
+              if (response.ok) {
+                const data = await response.json();
+                return {
+                  ...pair,
+                  price: parseFloat(data.lastPrice).toFixed(pair.name.includes('DOGE') || pair.name.includes('XRP') || pair.name.includes('ADA') ? 4 : 2),
+                  lastUpdate: new Date(),
+                  priceChange24h: parseFloat(data.priceChangePercent)
+                };
+              }
+            } catch (error) {
+              console.warn(`Preis-Update für ${pair.name} fehlgeschlagen:`, error);
+            }
+            return pair;
+          })
+        );
+
+        setAvailableTradingPairs(prev => {
+          const updated = [...prev];
+          updatedPairs.forEach(updatedPair => {
+            const index = updated.findIndex(p => p.id === updatedPair.id);
+            if (index !== -1) {
+              updated[index] = updatedPair;
+            }
+          });
+          return updated;
+        });
+      } catch (error) {
+        console.error('Live-Preis-Update fehlgeschlagen:', error);
+      }
+    };
+
+    // Sofort beim Start aktualisieren
+    fetchLivePrices();
+
+    // Dann alle 2 Sekunden
+    intervalRef.current = setInterval(fetchLivePrices, 2000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isLiveUpdating, watchlist]);
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
@@ -104,9 +172,27 @@ export default function Notifications() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <Bell className="w-8 h-8 text-primary" />
-          <h1 className="text-2xl font-bold" data-testid="heading-notifications">Notifications</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <Bell className="w-8 h-8 text-primary" />
+            <h1 className="text-2xl font-bold" data-testid="heading-notifications">Notifications</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className={cn(
+              "w-5 h-5",
+              isLiveUpdating ? "text-green-500 animate-pulse" : "text-muted-foreground"
+            )} />
+            <span className="text-sm text-muted-foreground">
+              {isLiveUpdating ? "Live Updates aktiv" : "Updates pausiert"}
+            </span>
+            <Button
+              variant={isLiveUpdating ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsLiveUpdating(!isLiveUpdating)}
+            >
+              {isLiveUpdating ? "Pause" : "Start"}
+            </Button>
+          </div>
         </div>
 
         {/* Trendpreis Suche & Watchlist Content Card */}
@@ -150,9 +236,19 @@ export default function Notifications() {
                             onClick={() => addToWatchlist(pair.id)}
                             data-testid={`suggestion-${pair.name}`}
                           >
-                            <div>
+                            <div className="flex-1">
                               <p className="font-medium">{pair.name}</p>
-                              <p className="text-sm text-muted-foreground">{pair.price} USDT</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold">{pair.price} USDT</p>
+                                {pair.priceChange24h !== undefined && pair.priceChange24h !== 0 && (
+                                  <span className={cn(
+                                    "text-xs font-medium",
+                                    pair.priceChange24h > 0 ? "text-green-500" : "text-red-500"
+                                  )}>
+                                    {pair.priceChange24h > 0 ? "+" : ""}{pair.priceChange24h.toFixed(2)}%
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <Button variant="ghost" size="sm">
                               Hinzufügen
@@ -194,9 +290,24 @@ export default function Notifications() {
                             className="flex items-center justify-between p-3 hover-elevate"
                             data-testid={`watchlist-item-${pair?.name}`}
                           >
-                            <div>
+                            <div className="flex-1">
                               <p className="font-medium">{pair?.name}</p>
-                              <p className="text-sm text-muted-foreground">{pair?.price} USDT</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold">{pair?.price} USDT</p>
+                                {pair?.priceChange24h !== undefined && pair.priceChange24h !== 0 && (
+                                  <span className={cn(
+                                    "text-xs font-medium",
+                                    pair.priceChange24h > 0 ? "text-green-500" : "text-red-500"
+                                  )}>
+                                    {pair.priceChange24h > 0 ? "+" : ""}{pair.priceChange24h.toFixed(2)}%
+                                  </span>
+                                )}
+                                {pair?.lastUpdate && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(pair.lastUpdate).toLocaleTimeString('de-DE')}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <Button
                               variant="ghost"
