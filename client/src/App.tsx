@@ -10,6 +10,7 @@ import Upload from "@/pages/upload";
 import Reports from "@/pages/reports";
 import BotTypesPage from "@/pages/bot-types";
 import BotTypeAnalyzer from "@/pages/bot-type-analyzer";
+import Notifications from "@/pages/notifications";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/upload" component={Upload} />
       <Route path="/bot-types" component={BotTypesPage} />
       <Route path="/future" component={BotTypeAnalyzer} />
+      <Route path="/notifications" component={Notifications} />
       <Route path="/reports" component={Reports} />
       <Route component={NotFound} />
     </Switch>

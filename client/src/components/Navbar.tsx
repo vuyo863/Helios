@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { BarChart3, Upload, FileText, Layers, TrendingUp } from "lucide-react";
+import { BarChart3, Upload, FileText, Layers, TrendingUp, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Navbar() {
@@ -10,6 +10,7 @@ export default function Navbar() {
     { path: '/upload', label: 'AI Analyse', icon: Upload },
     { path: '/bot-types', label: 'Bot Types', icon: Layers },
     { path: '/future', label: 'Future', icon: TrendingUp },
+    { path: '/notifications', label: 'Notifications', icon: Bell },
     { path: '/reports', label: 'Berichte', icon: FileText },
   ];
 
