@@ -896,32 +896,23 @@ export default function Dashboard() {
     return dataPoints;
   }, [chartApplied, appliedChartSettings, sortedUpdates, profitPercentBase]);
 
-  // Prüfe ob SPEZIALFALL aktiv ist:
-  // 1. Nur EIN Update (= 2 Datenpunkte: Start + Ende)
-  // 2. Gesamtkapital ist ausgewählt
-  // Dann: Gesamtprofit und Gesamtprofit % werden ab Gesamtkapital-Wert angezeigt
-  const isSingleUpdateWithCapital = useMemo(() => {
-    if (!chartData || chartData.length === 0) return false;
-    
-    // Zähle eindeutige Updates (nicht Datenpunkte) - ein Update hat Start + Ende
-    const uniqueVersions = new Set(chartData.map(d => d.version));
-    const isSingleUpdate = uniqueVersions.size === 1;
-    
-    // Ist Gesamtkapital aktiv?
-    const hasGesamtkapital = activeMetricCards.includes('Gesamtkapital');
-    
-    return isSingleUpdate && hasGesamtkapital;
-  }, [chartData, activeMetricCards]);
+  // Prüfe ob Gesamtkapital aktiv ist
+  // Wenn ja: Alle Profit-Metriken starten auf Gesamtkapital-Höhe (bei JEDEM Update)
+  const hasGesamtkapitalActive = useMemo(() => {
+    return activeMetricCards.includes('Gesamtkapital');
+  }, [activeMetricCards]);
 
-  // Transformierte Chart-Daten für Spezialfall
-  // Wenn Bedingungen erfüllt: Alle Profit-Metriken werden um Gesamtkapital offsettet
+  // Transformierte Chart-Daten
+  // Wenn Gesamtkapital aktiv: Alle Profit-Metriken werden um Gesamtkapital offsettet
+  // Das gilt für ALLE Updates, nicht nur für einen einzelnen
   const transformedChartData = useMemo(() => {
     if (!chartData || chartData.length === 0) return chartData;
     
-    // Wenn Spezialfall nicht aktiv, normale Daten zurückgeben
-    if (!isSingleUpdateWithCapital) return chartData;
+    // Wenn Gesamtkapital nicht aktiv, normale Daten zurückgeben
+    if (!hasGesamtkapitalActive) return chartData;
     
     // Transformiere die Daten: ALLE Profit-Werte um Gesamtkapital erhöhen
+    // Bei jedem Update-Startpunkt und Endpunkt wird der Profit-Wert + Gesamtkapital angezeigt
     return chartData.map(point => {
       const gesamtkapital = point['Gesamtkapital'] || 0;
       
@@ -942,7 +933,7 @@ export default function Dashboard() {
         '_rawRealDailyProfit': point['Real Profit/Tag'],
       };
     });
-  }, [chartData, isSingleUpdateWithCapital]);
+  }, [chartData, hasGesamtkapitalActive]);
 
   // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
   // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
@@ -1028,11 +1019,11 @@ export default function Dashboard() {
     const minVal = Math.min(...allValues);
     const maxVal = Math.max(...allValues);
     
-    // SPEZIALFALL: Einzelnes Update mit Gesamtkapital + Profit-Metriken
+    // Wenn Gesamtkapital aktiv ist + Profit-Metriken
     // Die Profit-Werte sind bereits auf Gesamtkapital gestapelt
     // -> Y-Achse soll NICHT bei 0 starten, sondern den Bereich nahe dem Kapital zoomen
     // So ist die Profit-Steigerung deutlich sichtbar!
-    if (isSingleUpdateWithCapital) {
+    if (hasGesamtkapitalActive) {
       // Berechne sinnvolle Grenzen:
       // - Unten: Etwas unter dem Gesamtkapital (aber nicht unter 0)
       // - Oben: Über dem gestapelten Profit
@@ -1060,7 +1051,7 @@ export default function Dashboard() {
     
     // Für Profit-Metriken: Bei 0 starten
     return [0, 'auto'];
-  }, [transformedChartData, activeMetricCards, isSingleUpdateWithCapital]);
+  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive]);
 
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
@@ -2124,9 +2115,9 @@ export default function Dashboard() {
                       return label;
                     }}
                     formatter={(value: number, name: string, props: any) => {
-                      // Im Spezialfall: Zeige die echten Werte für alle Profit-Metriken
+                      // Wenn Gesamtkapital aktiv: Zeige die echten Werte für alle Profit-Metriken
                       let displayValue = value;
-                      if (isSingleUpdateWithCapital && props?.payload) {
+                      if (hasGesamtkapitalActive && props?.payload) {
                         if (name === 'Gesamtprofit' && props.payload._rawGesamtprofit !== undefined) {
                           displayValue = props.payload._rawGesamtprofit;
                         } else if (name === 'Gesamtprofit %' && props.payload._rawGesamtprofitPercent !== undefined) {
