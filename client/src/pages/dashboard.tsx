@@ -2413,6 +2413,12 @@ export default function Dashboard() {
                               }
                             }
                             
+                            // Titel anpassen: Wenn Investitionsmenge ausgewählt, zeige "Investitionsmenge" statt "Gesamtkapital"
+                            let displayName = name;
+                            if (name === 'Gesamtkapital' && profitPercentBase === 'investitionsmenge') {
+                              displayName = 'Investitionsmenge';
+                            }
+                            
                             const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
                             const formattedValue = typeof displayValue === 'number' 
                               ? displayValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
@@ -2420,7 +2426,7 @@ export default function Dashboard() {
                             
                             return (
                               <p key={index} style={{ color: entry.color, margin: '2px 0' }}>
-                                {name}: {formattedValue}
+                                {displayName}: {formattedValue}
                               </p>
                             );
                           })}
