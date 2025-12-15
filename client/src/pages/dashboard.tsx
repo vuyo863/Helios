@@ -1154,8 +1154,10 @@ export default function Dashboard() {
         return ts === currentPoint.timestamp;
       });
       
-      if (currentUpdateIndex >= 0 && currentUpdateIndex < filteredUpdates.length - 1) {
-        const nextUpdate = filteredUpdates[currentUpdateIndex + 1];
+      // WICHTIG: filteredUpdates ist in ABSTEIGENDER Reihenfolge (neueste zuerst)
+      // Das NÄCHSTE Update in chronologischer Reihenfolge ist also bei index - 1
+      if (currentUpdateIndex > 0) {
+        const nextUpdate = filteredUpdates[currentUpdateIndex - 1];
         // Prüfe ob das nächste Update per-Section Vergleich-Werte hat
         // Erkennbar an *_absolute Feldern die sich von den Hauptfeldern unterscheiden
         const nextHasAbsoluteFields = nextUpdate.overallGridProfitUsdtAbsolute !== null && nextUpdate.overallGridProfitUsdtAbsolute !== undefined;
