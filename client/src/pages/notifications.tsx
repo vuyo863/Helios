@@ -169,6 +169,11 @@ export default function Notifications() {
     localStorage.setItem('notifications-watchlist', JSON.stringify(watchlist));
   }, [watchlist]);
 
+  // Save threshold settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
+  }, [trendPriceSettings]);
+
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
     if (allBinancePairs.length === 0) return;
@@ -195,6 +200,89 @@ export default function Notifications() {
     };
   }, [watchlist, allBinancePairs]); // Update when watchlist or pairs change
 
+  // Monitor price changes and trigger threshold notifications
+  useEffect(() => {
+    // Check all trading pairs with thresholds
+    availableTradingPairs.forEach((pair) => {
+      const settings = trendPriceSettings[pair.id];
+      if (!settings || !settings.thresholds || settings.thresholds.length === 0) return;
+      
+      // Only check if we have a valid price
+      if (!pair.price || pair.price === 'Loading...') return;
+      
+      const currentPrice = parseFloat(pair.price.replace(/\./g, '').replace(',', '.'));
+      if (isNaN(currentPrice)) return;
+
+      settings.thresholds.forEach((threshold) => {
+        // Skip if threshold value is empty
+        if (!threshold.threshold || threshold.threshold.trim() === '') return;
+        
+        const thresholdValue = parseFloat(threshold.threshold);
+        if (isNaN(thresholdValue)) return;
+
+        // Create unique key for this threshold trigger
+        const triggerKey = `${pair.id}-${threshold.id}-${thresholdValue}`;
+        
+        // Check if this threshold was already triggered
+        if (triggeredThresholds.has(triggerKey)) return;
+
+        // Check for price increase above threshold
+        if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
+          setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
+          
+          // Show in-app notification
+          const message = threshold.note 
+            ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
+            : `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT)`;
+          
+          toast({
+            title: "Schwellenwert erreicht!",
+            description: message,
+            duration: 7000,
+          });
+
+          // If it's "wiederholend", allow re-triggering after a cooldown
+          if (threshold.increaseFrequency === 'wiederholend') {
+            setTimeout(() => {
+              setTriggeredThresholds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(triggerKey);
+                return newSet;
+              });
+            }, 60000); // 1 minute cooldown for repeating notifications
+          }
+        }
+
+        // Check for price decrease below threshold
+        if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
+          setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
+          
+          // Show in-app notification
+          const message = threshold.note 
+            ? `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
+            : `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT)`;
+          
+          toast({
+            title: "Schwellenwert unterschritten!",
+            description: message,
+            duration: 7000,
+          });
+
+          // If it's "wiederholend", allow re-triggering after a cooldown
+          if (threshold.decreaseFrequency === 'wiederholend') {
+            setTimeout(() => {
+              setTriggeredThresholds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(triggerKey);
+                return newSet;
+              });
+            }, 60000); // 1 minute cooldown for repeating notifications
+          }
+        }
+      });
+    });
+  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, toast]);
+
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
     // This effect is now largely superseded by the priceUpdateIntervalRef logic above.
@@ -214,11 +302,16 @@ export default function Notifications() {
   }, [isLiveUpdating, watchlist]); // Dependencies potentially relevant if this effect were active
 
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
-  const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>({});
+  const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
+    // Load saved thresholds from localStorage on mount
+    const saved = localStorage.getItem('notifications-threshold-settings');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
+  const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
   
   // Alarmierungsstufen Konfiguration
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
@@ -281,14 +374,19 @@ export default function Notifications() {
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
       setWatchlist(prev => [...prev, id]);
-      // Initialize settings ohne Mock-Schwellenwerte
-      setTrendPriceSettings(prev => ({
-        ...prev,
-        [id]: {
-          trendPriceId: id,
-          thresholds: []
+      // Initialize settings only if not already existing
+      setTrendPriceSettings(prev => {
+        if (prev[id]) {
+          return prev; // Keep existing settings
         }
-      }));
+        return {
+          ...prev,
+          [id]: {
+            trendPriceId: id,
+            thresholds: []
+          }
+        };
+      });
       setSearchQuery('');
     }
   };
@@ -708,13 +806,18 @@ export default function Notifications() {
             )}>
               {watchlist.map((trendPriceId) => {
                 const settings = trendPriceSettings[trendPriceId];
+                
                 // Nur anzeigen, wenn gespeicherte Schwellenwerte existieren
-                if (!settings || settings.thresholds.length === 0) {
+                if (!settings || !settings.thresholds || settings.thresholds.length === 0) {
                   return null;
                 }
                 
-                // Filter nur gespeicherte Schwellenwerte (mit Wert)
-                const savedThresholds = settings.thresholds.filter(t => t.threshold && t.threshold.trim() !== '');
+                // Filter nur gespeicherte Schwellenwerte (mit Wert und mindestens einer Benachrichtigungsoption)
+                const savedThresholds = settings.thresholds.filter(t => 
+                  t.threshold && 
+                  t.threshold.trim() !== '' && 
+                  (t.notifyOnIncrease || t.notifyOnDecrease)
+                );
                 
                 // Wenn keine gespeicherten Schwellenwerte, nichts anzeigen
                 if (savedThresholds.length === 0) {
@@ -890,10 +993,29 @@ export default function Notifications() {
                                                 </Button>
                                                 <Button
                                                   onClick={() => {
+                                                    // Validate threshold
+                                                    if (!threshold.threshold || threshold.threshold.trim() === '') {
+                                                      toast({
+                                                        title: "Fehler",
+                                                        description: "Bitte geben Sie einen Schwellenwert ein.",
+                                                        variant: "destructive"
+                                                      });
+                                                      return;
+                                                    }
+                                                    
+                                                    if (!threshold.notifyOnIncrease && !threshold.notifyOnDecrease) {
+                                                      toast({
+                                                        title: "Fehler",
+                                                        description: "Bitte wählen Sie mindestens eine Benachrichtigungsoption.",
+                                                        variant: "destructive"
+                                                      });
+                                                      return;
+                                                    }
+                                                    
                                                     setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
                                                     toast({
                                                       title: "Gespeichert",
-                                                      description: "Schwellenwert wurde aktualisiert.",
+                                                      description: "Schwellenwert wurde erfolgreich gespeichert.",
                                                     });
                                                   }}
                                                 >
