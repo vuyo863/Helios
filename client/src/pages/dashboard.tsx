@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical, RotateCcw, ZoomIn } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -1919,7 +1919,39 @@ export default function Dashboard() {
                     </>
                   )}
                 </div>
+                
+                {/* Zoom/Pan Info & Reset Button */}
+                {(chartZoom > 1 || chartPanY !== 0) && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <ZoomIn className="h-3 w-3" />
+                      {chartZoom.toFixed(1)}x
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={handleResetZoomPan}
+                      data-testid="button-reset-zoom-pan"
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Reset
+                    </Button>
+                  </div>
+                )}
               </div>
+              
+              {/* Chart Container with Zoom & Pan Events */}
+              <div
+                ref={chartContainerRef}
+                onWheel={handleChartWheel}
+                onMouseDown={handleChartMouseDown}
+                onMouseMove={handleChartMouseMove}
+                onMouseUp={handleChartMouseUp}
+                onMouseLeave={handleChartMouseLeave}
+                className={cn("select-none", isDragging && "cursor-grabbing")}
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              >
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
                   key={investmentBaseKey}
@@ -2240,6 +2272,7 @@ export default function Dashboard() {
                   )}
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             </Card>
           </div>
           
