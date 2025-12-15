@@ -40,6 +40,7 @@ export default function ProfitLineChart({ data, title }: ProfitLineChartProps) {
             stroke="hsl(var(--chart-2))" 
             strokeWidth={2}
             dot={{ fill: 'hsl(var(--chart-2))', r: 4 }}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>

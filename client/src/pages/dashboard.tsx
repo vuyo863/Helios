@@ -2117,6 +2117,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: getBotTypeColor(index), r: 4 }}
                         connectNulls
+                        isAnimationActive={false}
                       />
                     ))
                   ) : (
@@ -2131,6 +2132,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
                         connectNulls
+                        isAnimationActive={false}
                       />
                     ))
                   )}

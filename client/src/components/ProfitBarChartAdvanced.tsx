@@ -119,6 +119,7 @@ export default function ProfitBarChartAdvanced({ entries, title }: ProfitBarChar
               name={metric.label}
               fill={metric.color}
               radius={[4, 4, 0, 0]}
+              isAnimationActive={false}
             />
           ))}
         </BarChart>
