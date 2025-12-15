@@ -1085,9 +1085,7 @@ export default function Dashboard() {
       // In diesem Fall keinen separaten Startpunkt erstellen, um Überlappung zu vermeiden
       const startOverlapsPrevEnd = hasPreviousEndPoint && Math.abs(startTimestamp - prevEndTimestamp) < 60000; // 1 Minute Toleranz
       // Bei Vergleichs-Modus: Nie Startpunkt erstellen (Linie läuft flüssig weiter)
-      // Bei Closed Bots: Auch kein Startpunkt - nur EIN Punkt (End Date) mit dem Profit
-      const isClosedBots = update.status === 'Closed Bots';
-      const skipStartPoint = isVergleichsModus || startOverlapsPrevEnd || isClosedBots;
+      const skipStartPoint = isVergleichsModus || startOverlapsPrevEnd;
       
       if (update.lastUpload && startTimestamp !== endTimestamp && !skipStartPoint) {
         // Nur bei Neu-Modus ohne Überlappung: Startpunkt bei 0
@@ -1107,8 +1105,7 @@ export default function Dashboard() {
       }
       
       // Berechne Runtime in Millisekunden (End - Start)
-      // Bei Closed Bots: keine Runtime (nur ein Punkt mit End Date)
-      const runtimeMs = isClosedBots ? undefined : endTimestamp - startTimestamp;
+      const runtimeMs = endTimestamp - startTimestamp;
       
       // Trend P&L (nur bei Update Metrics verfügbar)
       const trendPnl = update.status !== 'Closed Bots' 
