@@ -262,6 +262,12 @@ export default function Dashboard() {
   // Chart Zoom & Pan Event-Handler
   // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
   // WICHTIG: Nativer Event-Listener mit passive: false, damit preventDefault() funktioniert
+  // Ref für isDragging um in Event-Listener aktuellen Wert zu haben
+  const isDraggingRef = useRef(false);
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+  
   useEffect(() => {
     const container = chartContainerRef.current;
     if (!container) return;
@@ -272,7 +278,19 @@ export default function Dashboard() {
       e.stopPropagation();
       
       // Nicht zoomen während des Dragging (verhindert Konflikte mit Trackpad-Gesten)
-      if (isDragging) return;
+      if (isDraggingRef.current) return;
+      
+      // Nur zoomen wenn ctrlKey gedrückt (Pinch-Geste) ODER reines Scrollrad
+      // Bei Touchpad-Drag: deltaY ist oft sehr klein und ctrlKey ist false
+      // Bei Pinch-to-Zoom: ctrlKey ist true
+      // Bei Mausrad: größere deltaY Werte
+      const isPinchGesture = e.ctrlKey;
+      const isMouseWheel = Math.abs(e.deltaY) >= 10 && !e.ctrlKey;
+      
+      if (!isPinchGesture && !isMouseWheel) {
+        // Kleine Bewegungen ohne Ctrl ignorieren (wahrscheinlich Touchpad-Scroll während Drag)
+        return;
+      }
       
       const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
       
@@ -287,7 +305,7 @@ export default function Dashboard() {
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
-  }, [isDragging]);
+  }, []);
   
   const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Nur linke Maustaste für Pan
@@ -1193,10 +1211,15 @@ export default function Dashboard() {
     // Pan-Offset
     const panOffset = (chartPanY / 300) * baseRange;
     
-    const zoomedLower = center - zoomedRange / 2 + panOffset;
-    const zoomedUpper = center + zoomedRange / 2 + panOffset;
+    let zoomedLower = center - zoomedRange / 2 + panOffset;
+    let zoomedUpper = center + zoomedRange / 2 + panOffset;
     
-    return [Math.max(0, zoomedLower), zoomedUpper];
+    // Extra Padding unten beim Zoomen (10% der sichtbaren Range)
+    // Damit der untere Punkt nicht am Rand klebt
+    const zoomPadding = zoomedRange * 0.1;
+    zoomedLower = zoomedLower - zoomPadding;
+    
+    return [zoomedLower, zoomedUpper];
   }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY]);
 
   // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
