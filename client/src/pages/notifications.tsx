@@ -164,16 +164,6 @@ export default function Notifications() {
     }
   };
 
-  // Save watchlist to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('notifications-watchlist', JSON.stringify(watchlist));
-  }, [watchlist]);
-
-  // Save threshold settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
-  }, [trendPriceSettings]);
-
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
     if (allBinancePairs.length === 0) return;
@@ -312,6 +302,16 @@ export default function Notifications() {
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
+  
+  // Save watchlist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('notifications-watchlist', JSON.stringify(watchlist));
+  }, [watchlist]);
+
+  // Save threshold settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
+  }, [trendPriceSettings]);
   
   // Alarmierungsstufen Konfiguration
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
