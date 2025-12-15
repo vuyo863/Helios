@@ -1203,11 +1203,32 @@ export default function Dashboard() {
     return activeMetricCards.includes('Gesamtkapital');
   }, [activeMetricCards]);
 
-  // Transformierte Chart-Daten - KEINE Transformation mehr
-  // Die Differenz-Werte bei Vergleich sollen unverändert bleiben (können negativ sein)
+  // Transformierte Chart-Daten für visuelle Darstellung
+  // Wenn Gesamtkapital/Investitionsmenge aktiv ist: Profit-Werte starten auf Investment-Höhe
+  // WICHTIG: Nur visuelle Transformation für Chart - ändert KEINE Berechnungen oder Modi!
   const transformedChartData = useMemo(() => {
-    return chartData;
-  }, [chartData]);
+    if (!hasGesamtkapitalActive || !chartData || chartData.length === 0) {
+      // Kein Offset nötig - Daten unverändert durchreichen
+      return chartData;
+    }
+    
+    // Wenn Gesamtkapital aktiv: Profit-Metriken auf Investment-Level offsetten
+    // So starten alle Linien auf der gleichen Höhe wie das Investment
+    return chartData.map(point => {
+      const investmentBase = point['Gesamtkapital'];
+      
+      return {
+        ...point,
+        // Profit-Werte werden zum Investment addiert (visueller Offset)
+        'Gesamtprofit': point['Gesamtprofit'] + investmentBase,
+        'Ø Profit/Tag': point['Ø Profit/Tag'] + investmentBase,
+        'Real Profit/Tag': point['Real Profit/Tag'] + investmentBase,
+        // Gesamtkapital und Prozent bleiben unverändert
+        'Gesamtkapital': investmentBase,
+        'Gesamtprofit %': point['Gesamtprofit %'],
+      };
+    });
+  }, [chartData, hasGesamtkapitalActive]);
 
   // Berechne Highest und Lowest Value für jede aktive Metrik
   // Diese werden als Marker im Chart angezeigt wenn die entsprechenden Toggles aktiv sind
