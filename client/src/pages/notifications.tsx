@@ -239,27 +239,8 @@ export default function Notifications() {
     sehr_gefährlich: false
   });
   
-  // Aktive Alarmierungen - Mit Mock-Daten zum Testen
-  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([
-    {
-      id: 'mock-alarm-1',
-      trendPriceName: 'BTC/USDT',
-      threshold: '50000',
-      alarmLevel: 'achtung',
-      triggeredAt: new Date(Date.now() - 1000 * 60 * 15), // 15 Minuten her
-      message: 'Preis über Schwellenwert gestiegen',
-      note: 'Wichtiger Widerstandslevel erreicht'
-    },
-    {
-      id: 'mock-alarm-2',
-      trendPriceName: 'ETH/USDT',
-      threshold: '3000',
-      alarmLevel: 'gefährlich',
-      triggeredAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 Stunden her
-      message: 'Preis unter Schwellenwert gefallen',
-      note: 'Kritische Support-Zone durchbrochen'
-    }
-  ]);
+  // Aktive Alarmierungen
+  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([]);
 
   // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
   const filteredSuggestions = allBinancePairs
@@ -467,19 +448,22 @@ export default function Notifications() {
           </div>
         </div>
 
-        {/* Aktive Alarmierungen - Kompakt */}
-        {activeAlarms.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Bell className="w-5 h-5 text-destructive animate-pulse" />
-                Aktive Alarmierungen ({activeAlarms.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        {/* Aktive Alarmierungen - Immer sichtbar */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              Aktive Alarmierungen ({activeAlarms.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {activeAlarms.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground text-sm">
+                Keine aktiven Alarmierungen
+              </div>
+            ) : (
               <div className={cn(
                 "space-y-2",
-                activeAlarms.length > 3 && "max-h-[300px] overflow-y-auto pr-2"
+                activeAlarms.length > 2 && "max-h-[200px] overflow-y-auto pr-2"
               )}>
                 {activeAlarms.map((alarm) => (
                   <div
@@ -538,9 +522,9 @@ export default function Notifications() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
 
         {/* Trendpreis Suche & Watchlist Content Card */}
         <Card className="mb-8">
