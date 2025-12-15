@@ -238,6 +238,55 @@ export default function Dashboard() {
   // Separater Key NUR für Investitionsmenge/Gesamtinvestment-Wechsel wenn Gesamtkapital aktiv
   const [investmentBaseKey, setInvestmentBaseKey] = useState(0);
   
+  // Chart Zoom & Pan State
+  // zoomLevel: 1 = 100%, 2 = 200% (doppelt so detailliert), etc.
+  const [chartZoom, setChartZoom] = useState(1);
+  // panOffset: Verschiebung auf der Y-Achse (in Chart-Einheiten)
+  const [chartPanY, setChartPanY] = useState(0);
+  // Drag-State für Pan
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [dragStartPanY, setDragStartPanY] = useState(0);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Chart Zoom & Pan Event-Handler
+  const handleChartWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // Zoom: Scroll nach oben = reinzoomen (größerer Zoom), nach unten = rauszoomen
+    const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+    setChartZoom(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+  };
+  
+  const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Nur linke Maustaste für Pan
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    setDragStartY(e.clientY);
+    setDragStartPanY(chartPanY);
+  };
+  
+  const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    // Pan: Mausbewegung in Y-Offset umrechnen
+    const deltaY = e.clientY - dragStartY;
+    // Je größer der Zoom, desto empfindlicher die Pan-Bewegung
+    const sensitivity = 2 / chartZoom;
+    setChartPanY(dragStartPanY + deltaY * sensitivity);
+  };
+  
+  const handleChartMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  const handleChartMouseLeave = () => {
+    setIsDragging(false);
+  };
+  
+  const handleResetZoomPan = () => {
+    setChartZoom(1);
+    setChartPanY(0);
+  };
+  
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
     if (selectedFromUpdate && selectedUntilUpdate) {
@@ -993,7 +1042,7 @@ export default function Dashboard() {
     return ticks;
   }, [chartData, appliedChartSettings?.sequence]);
 
-  // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken
+  // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // Für Gesamtkapital: Domain nahe am tatsächlichen Wert (nicht bei 0 starten)
   // Für Profit-Metriken: Domain bei 0 starten (Wachstum zeigen)
   const yAxisDomain = useMemo((): [number | string, number | string] => {
@@ -1019,6 +1068,9 @@ export default function Dashboard() {
     const minVal = Math.min(...allValues);
     const maxVal = Math.max(...allValues);
     
+    let baseLower: number;
+    let baseUpper: number;
+    
     // Wenn Gesamtkapital aktiv ist + Profit-Metriken
     // Die Profit-Werte sind bereits auf Gesamtkapital gestapelt
     // -> Y-Achse soll NICHT bei 0 starten, sondern den Bereich nahe dem Kapital zoomen
@@ -1031,27 +1083,43 @@ export default function Dashboard() {
       // Mindest-Padding: 20% des Bereichs oder 5% des Maximalwerts
       const padding = Math.max(range * 0.3, maxVal * 0.02);
       
-      const lowerBound = Math.max(0, minVal - padding);
-      const upperBound = maxVal + padding;
+      baseLower = Math.max(0, minVal - padding);
+      baseUpper = maxVal + padding;
+    } else {
+      // Wenn ALLE aktiven Metriken "konstante" Typen sind (nur Gesamtkapital)
+      // dann soll die Y-Achse NICHT bei 0 starten
+      const constantMetrics = ['Gesamtkapital'];
+      const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
       
-      return [lowerBound, upperBound];
+      if (allConstant) {
+        // Domain nahe am Min/Max mit etwas Padding
+        const range = maxVal - minVal;
+        const padding = range > 0 ? range * 0.1 : maxVal * 0.05;
+        baseLower = Math.max(0, minVal - padding);
+        baseUpper = maxVal + padding;
+      } else {
+        // Für Profit-Metriken: Bei 0 starten
+        baseLower = 0;
+        baseUpper = maxVal * 1.1; // 10% Padding oben
+      }
     }
     
-    // Wenn ALLE aktiven Metriken "konstante" Typen sind (nur Gesamtkapital)
-    // dann soll die Y-Achse NICHT bei 0 starten
-    const constantMetrics = ['Gesamtkapital'];
-    const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
+    // Zoom & Pan anwenden
+    // chartZoom: 1 = 100%, 2 = 200% (doppelt so detailliert = halbe Range)
+    // chartPanY: Verschiebung in Pixel, umgerechnet auf Chart-Einheiten
+    const baseRange = baseUpper - baseLower;
+    const zoomedRange = baseRange / chartZoom;
+    const center = (baseLower + baseUpper) / 2;
     
-    if (allConstant) {
-      // Domain nahe am Min/Max mit etwas Padding
-      const range = maxVal - minVal;
-      const padding = range > 0 ? range * 0.1 : maxVal * 0.05;
-      return [Math.max(0, minVal - padding), maxVal + padding];
-    }
+    // Pan-Offset: chartPanY in Pixel, umrechnen auf Chart-Einheiten
+    // Negative Werte = nach oben panen (höhere Werte sehen)
+    const panOffset = (chartPanY / 300) * baseRange; // 300px = Chart-Höhe
     
-    // Für Profit-Metriken: Bei 0 starten
-    return [0, 'auto'];
-  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive]);
+    const zoomedLower = center - zoomedRange / 2 + panOffset;
+    const zoomedUpper = center + zoomedRange / 2 + panOffset;
+    
+    return [Math.max(0, zoomedLower), zoomedUpper];
+  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoom, chartPanY]);
 
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
