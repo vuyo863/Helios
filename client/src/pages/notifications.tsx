@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrendPrice {
@@ -27,6 +28,26 @@ interface ThresholdConfig {
   increaseFrequency: 'einmalig' | 'wiederholend';
   decreaseFrequency: 'einmalig' | 'wiederholend';
   alarmLevel: AlarmLevel;
+}
+
+interface AlarmLevelConfig {
+  level: AlarmLevel;
+  channels: {
+    push: boolean;
+    email: boolean;
+    sms: boolean;
+    webhook: boolean;
+  };
+  requiresApproval: boolean;
+}
+
+interface ActiveAlarm {
+  id: string;
+  trendPriceName: string;
+  threshold: string;
+  alarmLevel: AlarmLevel;
+  triggeredAt: Date;
+  message: string;
 }
 
 interface TrendPriceSettings {
@@ -184,6 +205,40 @@ export default function Notifications() {
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  
+  // Alarmierungsstufen Konfiguration
+  const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
+    harmlos: {
+      level: 'harmlos',
+      channels: { push: true, email: false, sms: false, webhook: false },
+      requiresApproval: false
+    },
+    achtung: {
+      level: 'achtung',
+      channels: { push: true, email: true, sms: false, webhook: false },
+      requiresApproval: false
+    },
+    gefährlich: {
+      level: 'gefährlich',
+      channels: { push: true, email: true, sms: false, webhook: true },
+      requiresApproval: true
+    },
+    sehr_gefährlich: {
+      level: 'sehr_gefährlich',
+      channels: { push: true, email: true, sms: true, webhook: true },
+      requiresApproval: true
+    }
+  });
+  
+  const [alarmLevelEditMode, setAlarmLevelEditMode] = useState<Record<AlarmLevel, boolean>>({
+    harmlos: false,
+    achtung: false,
+    gefährlich: false,
+    sehr_gefährlich: false
+  });
+  
+  // Aktive Alarmierungen
+  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([]);
 
   // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
   const filteredSuggestions = allBinancePairs
@@ -318,6 +373,37 @@ export default function Notifications() {
     return getTrendPrice(id)?.name || id;
   };
 
+  const updateAlarmLevelConfig = (level: AlarmLevel, field: keyof AlarmLevelConfig['channels'] | 'requiresApproval', value: boolean) => {
+    setAlarmLevelConfigs(prev => ({
+      ...prev,
+      [level]: {
+        ...prev[level],
+        ...(field === 'requiresApproval' 
+          ? { requiresApproval: value }
+          : { channels: { ...prev[level].channels, [field]: value } }
+        )
+      }
+    }));
+  };
+
+  const toggleAlarmLevelEdit = (level: AlarmLevel) => {
+    setAlarmLevelEditMode(prev => ({
+      ...prev,
+      [level]: !prev[level]
+    }));
+  };
+
+  const deleteAlarmLevel = (level: AlarmLevel) => {
+    if (confirm(`Möchten Sie die Alarmierungsstufe "${getAlarmLevelLabel(level)}" wirklich löschen?`)) {
+      // In production, this would remove the level from the config
+      console.log(`Alarmierungsstufe ${level} gelöscht`);
+    }
+  };
+
+  const approveAlarm = (alarmId: string) => {
+    setActiveAlarms(prev => prev.filter(alarm => alarm.id !== alarmId));
+  };;
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -344,6 +430,67 @@ export default function Notifications() {
             </Button>
           </div>
         </div>
+
+        {/* Aktive Alarmierungen */}
+        {activeAlarms.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-6 h-6 text-destructive animate-pulse" />
+                Aktive Alarmierungen ({activeAlarms.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {activeAlarms.map((alarm) => (
+                  <div
+                    key={alarm.id}
+                    className="flex items-center justify-between p-4 rounded-lg border"
+                    style={{ 
+                      borderColor: getAlarmLevelColor(alarm.alarmLevel),
+                      backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}10`
+                    }}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: getAlarmLevelColor(alarm.alarmLevel) }}
+                        />
+                        <h4 className="font-semibold">{alarm.trendPriceName}</h4>
+                        <span 
+                          className="text-xs px-2 py-1 rounded"
+                          style={{ 
+                            backgroundColor: getAlarmLevelColor(alarm.alarmLevel),
+                            color: 'white'
+                          }}
+                        >
+                          {getAlarmLevelLabel(alarm.alarmLevel)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Schwellenwert: ${alarm.threshold} | {alarm.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {alarm.triggeredAt.toLocaleString('de-DE')}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => approveAlarm(alarm.id)}
+                      className="ml-4"
+                      style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Approve
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Trendpreis Suche & Watchlist Content Card */}
         <Card className="mb-8">
@@ -722,54 +869,127 @@ export default function Notifications() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Harmlos */}
-              <div className="p-4 border rounded-lg" style={{ borderColor: '#3B82F6' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
-                  <h4 className="font-semibold">Harmlos</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Info-Benachrichtigung ohne besondere Dringlichkeit.
-                </p>
-              </div>
+              {(Object.keys(alarmLevelConfigs) as AlarmLevel[]).map((level) => {
+                const config = alarmLevelConfigs[level];
+                const isEditing = alarmLevelEditMode[level];
+                const color = getAlarmLevelColor(level);
 
-              {/* Achtung */}
-              <div className="p-4 border rounded-lg" style={{ borderColor: '#EAB308' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#EAB308' }}></div>
-                  <h4 className="font-semibold">Achtung</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Erhöhte Aufmerksamkeit erforderlich.
-                </p>
-              </div>
+                return (
+                  <div key={level} className="p-4 border rounded-lg" style={{ borderColor: color }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded" style={{ backgroundColor: color }}></div>
+                        <h4 className="font-semibold">{getAlarmLevelLabel(level)}</h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleAlarmLevelEdit(level)}
+                          className="h-8 w-8"
+                        >
+                          {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteAlarmLevel(level)}
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
 
-              {/* Gefährlich */}
-              <div className="p-4 border rounded-lg" style={{ borderColor: '#F97316' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#F97316' }}></div>
-                  <h4 className="font-semibold">Gefährlich</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Wichtige Warnung - Handlung empfohlen.
-                </p>
-              </div>
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Benachrichtigungskanäle</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${level}-push`} className="text-sm cursor-pointer">Push-Benachrichtigung</Label>
+                              <Switch
+                                id={`${level}-push`}
+                                checked={config.channels.push}
+                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'push', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${level}-email`} className="text-sm cursor-pointer">E-Mail</Label>
+                              <Switch
+                                id={`${level}-email`}
+                                checked={config.channels.email}
+                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'email', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${level}-sms`} className="text-sm cursor-pointer">SMS</Label>
+                              <Switch
+                                id={`${level}-sms`}
+                                checked={config.channels.sms}
+                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'sms', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${level}-webhook`} className="text-sm cursor-pointer">Webhook</Label>
+                              <Switch
+                                id={`${level}-webhook`}
+                                checked={config.channels.webhook}
+                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webhook', checked)}
+                              />
+                            </div>
+                          </div>
+                        </div>
 
-              {/* Sehr Gefährlich */}
-              <div className="p-4 border rounded-lg" style={{ borderColor: '#EF4444' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#EF4444' }}></div>
-                  <h4 className="font-semibold">Sehr Gefährlich</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Kritischer Alarm - Sofortiges Handeln erforderlich.
-                </p>
-              </div>
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label htmlFor={`${level}-approval`} className="text-sm font-medium cursor-pointer">
+                                Approval erforderlich
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                Alarm muss manuell bestätigt werden
+                              </p>
+                            </div>
+                            <Switch
+                              id={`${level}-approval`}
+                              checked={config.requiresApproval}
+                              onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'requiresApproval', checked)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-sm">
+                          <span className="font-medium">Aktive Kanäle: </span>
+                          <span className="text-muted-foreground">
+                            {Object.entries(config.channels)
+                              .filter(([_, active]) => active)
+                              .map(([channel]) => {
+                                const channelNames: Record<string, string> = {
+                                  push: 'Push',
+                                  email: 'E-Mail',
+                                  sms: 'SMS',
+                                  webhook: 'Webhook'
+                                };
+                                return channelNames[channel];
+                              })
+                              .join(', ') || 'Keine'}
+                          </span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">Approval: </span>
+                          <span className="text-muted-foreground">
+                            {config.requiresApproval ? 'Erforderlich' : 'Nicht erforderlich'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-
-            <p className="text-sm text-muted-foreground mt-4">
-              Die Konfiguration der Benachrichtigungsmechanismen für jede Stufe wird in einem separaten Update implementiert.
-            </p>
           </CardContent>
         </Card>
       </div>
