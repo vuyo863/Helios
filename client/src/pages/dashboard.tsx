@@ -2944,9 +2944,9 @@ export default function Dashboard() {
                     ))
                   )}
                   {/* Highest Value Marker - UNTER dem Punkt, Pfeil nach oben mit H */}
-                  {/* Bumper-System: Marker weichen Graphen und anderen Markern aus */}
+                  {/* Bumper-System: Minimal spacing, weicht Graphen aus, nie auf X-Achse */}
                   {showHighestValue && !isMultiBotChartMode && (() => {
-                    // Sammle alle Highest-Marker mit ihren Positionen
+                    // Sammle alle Highest-Marker
                     const highestMarkers = activeMetricCards
                       .map((metricName, idx) => {
                         const highest = extremeValues.highest[metricName];
@@ -2955,48 +2955,33 @@ export default function Dashboard() {
                       })
                       .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
                     
-                    // Finde alle Y-Werte bei diesem Timestamp für Kollisionserkennung
-                    const getOtherValuesAtTimestamp = (timestamp: number, excludeMetric: string) => {
-                      const point = transformedChartData.find(p => p.timestamp === timestamp);
-                      if (!point) return [];
-                      return activeMetricCards
-                        .filter(m => m !== excludeMetric)
-                        .map(m => point[m as keyof typeof point] as number)
-                        .filter(v => typeof v === 'number');
-                    };
+                    // Finde den minimalen Y-Wert im Chart für X-Achsen-Erkennung
+                    const allYValues = transformedChartData.flatMap(p => 
+                      activeMetricCards.map(m => p[m as keyof typeof p] as number).filter(v => typeof v === 'number')
+                    );
+                    const minYValue = Math.min(...allYValues);
+                    const yRange = Math.max(...allYValues) - minYValue;
                     
-                    // Bumper-Logik: Berechne sicheren Offset für jeden Marker
-                    // H-Marker gehen nach unten, müssen aber über der X-Achse bleiben
-                    const minPadding = 20; // Mindest-Abstand in Pixel
-                    const markerHeight = 18; // Höhe eines Markers
+                    // Minimal spacing - so nah wie möglich aber getrennt
+                    const minPadding = 8; // Minimal-Abstand in Pixel
+                    const markerSpacing = 14; // Abstand zwischen gestapelten Markern
                     
-                    // Sortiere nach Y-Wert (höchste zuerst) für konsistentes Stapeln
+                    // Sortiere nach Y-Wert (höchste zuerst)
                     const sortedMarkers = [...highestMarkers].sort((a, b) => b.value - a.value);
                     
                     const processedMarkers = sortedMarkers.map((marker, i) => {
-                      // Basis-Offset
                       let offset = minPadding;
                       
-                      // Prüfe ob andere Marker auf gleichem Timestamp sind
-                      const sameTimestampMarkers = sortedMarkers.slice(0, i).filter(
+                      // Stapeln wenn andere H-Marker auf gleichem Timestamp
+                      const sameTimestampBefore = sortedMarkers.slice(0, i).filter(
                         m => Math.abs(m.timestamp - marker.timestamp) < 3600000
-                      );
+                      ).length;
+                      offset += sameTimestampBefore * markerSpacing;
                       
-                      // Stapeln wenn andere Marker da sind
-                      offset += sameTimestampMarkers.length * markerHeight;
+                      // Prüfe ob Marker zu nah an X-Achse wäre (untere 15% des Charts)
+                      const isNearXAxis = (marker.value - minYValue) < (yRange * 0.15);
                       
-                      // Prüfe Kollision mit anderen Graph-Linien
-                      const otherValues = getOtherValuesAtTimestamp(marker.timestamp, marker.metricName);
-                      otherValues.forEach(otherVal => {
-                        // Wenn eine andere Linie nah am Marker ist, weiter nach unten pushen
-                        const valueDiff = marker.value - otherVal;
-                        if (valueDiff > 0 && valueDiff < 50) {
-                          // Andere Linie ist knapp unter dem Marker-Punkt
-                          offset += markerHeight;
-                        }
-                      });
-                      
-                      return { ...marker, offset };
+                      return { ...marker, offset, flipToTop: isNearXAxis };
                     });
                     
                     return processedMarkers.map((marker) => (
@@ -3007,7 +2992,7 @@ export default function Dashboard() {
                         r={0}
                         label={{
                           value: '↑H',
-                          position: 'bottom',
+                          position: marker.flipToTop ? 'top' : 'bottom',
                           fill: marker.color,
                           fontSize: 12,
                           fontWeight: 'bold',
@@ -3017,9 +3002,9 @@ export default function Dashboard() {
                     ));
                   })()}
                   {/* Lowest Value Marker - ÜBER dem Punkt, Pfeil nach unten mit L */}
-                  {/* Bumper-System: Marker weichen Graphen und anderen Markern aus */}
+                  {/* Bumper-System: Minimal spacing, gestapelt wenn überlappend */}
                   {showLowestValue && !isMultiBotChartMode && (() => {
-                    // Sammle alle Lowest-Marker mit ihren Positionen
+                    // Sammle alle Lowest-Marker
                     const lowestMarkers = activeMetricCards
                       .map((metricName, idx) => {
                         const lowest = extremeValues.lowest[metricName];
@@ -3028,46 +3013,29 @@ export default function Dashboard() {
                       })
                       .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
                     
-                    // Finde alle Y-Werte bei diesem Timestamp für Kollisionserkennung
-                    const getOtherValuesAtTimestamp = (timestamp: number, excludeMetric: string) => {
-                      const point = transformedChartData.find(p => p.timestamp === timestamp);
-                      if (!point) return [];
-                      return activeMetricCards
-                        .filter(m => m !== excludeMetric)
-                        .map(m => point[m as keyof typeof point] as number)
-                        .filter(v => typeof v === 'number');
-                    };
+                    // Minimal spacing
+                    const minPadding = 8;
+                    const markerSpacing = 14;
                     
-                    // Bumper-Logik: Berechne sicheren Offset für jeden Marker
-                    // L-Marker gehen nach oben, weg von der X-Achse
-                    const minPadding = 20; // Mindest-Abstand in Pixel
-                    const markerHeight = 18; // Höhe eines Markers
-                    
-                    // Sortiere nach Y-Wert (niedrigste zuerst) für konsistentes Stapeln
-                    const sortedMarkers = [...lowestMarkers].sort((a, b) => a.value - b.value);
+                    // Sortiere nach Y-Wert (niedrigste zuerst) UND dann nach Timestamp
+                    const sortedMarkers = [...lowestMarkers].sort((a, b) => {
+                      // Erst nach Timestamp gruppieren
+                      const timeDiff = a.timestamp - b.timestamp;
+                      if (Math.abs(timeDiff) > 3600000) return timeDiff;
+                      // Dann nach Y-Wert (niedrigste zuerst)
+                      return a.value - b.value;
+                    });
                     
                     const processedMarkers = sortedMarkers.map((marker, i) => {
-                      // Basis-Offset
                       let offset = minPadding;
                       
-                      // Prüfe ob andere Marker auf gleichem Timestamp sind
-                      const sameTimestampMarkers = sortedMarkers.slice(0, i).filter(
+                      // Zähle alle L-Marker die vor diesem kommen und nah am gleichen Timestamp sind
+                      const sameTimestampBefore = sortedMarkers.slice(0, i).filter(
                         m => Math.abs(m.timestamp - marker.timestamp) < 3600000
-                      );
+                      ).length;
                       
-                      // Stapeln wenn andere Marker da sind
-                      offset += sameTimestampMarkers.length * markerHeight;
-                      
-                      // Prüfe Kollision mit anderen Graph-Linien
-                      const otherValues = getOtherValuesAtTimestamp(marker.timestamp, marker.metricName);
-                      otherValues.forEach(otherVal => {
-                        // Wenn eine andere Linie nah am Marker ist, weiter nach oben pushen
-                        const valueDiff = otherVal - marker.value;
-                        if (valueDiff > 0 && valueDiff < 50) {
-                          // Andere Linie ist knapp über dem Marker-Punkt
-                          offset += markerHeight;
-                        }
-                      });
+                      // Stapeln: Jeder weitere Marker geht weiter nach oben
+                      offset += sameTimestampBefore * markerSpacing;
                       
                       return { ...marker, offset };
                     });
