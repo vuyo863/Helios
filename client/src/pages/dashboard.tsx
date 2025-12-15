@@ -1157,6 +1157,42 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
+  // Berechne totalBaseInvestment (Investitionsmenge) - Summe der "investment" Felder
+  const totalBaseInvestment = useMemo(() => {
+    if (selectedBotName === "Gesamt") {
+      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+        return 0;
+      }
+      
+      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+      let sum = 0;
+      
+      activeBotTypes.forEach(botType => {
+        // Summe aller investment Werte (sowohl Update Metrics als auch Closed Bots)
+        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+        
+        updatesForType.forEach(update => {
+          sum += parseFloat(update.investment || '0') || 0;
+        });
+      });
+      
+      return sum;
+    } else {
+      if (!selectedBotTypeData || !allBotTypeUpdates) {
+        return 0;
+      }
+      
+      const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
+      
+      return updatesForType.reduce((s, u) => s + (parseFloat(u.investment || '0') || 0), 0);
+    }
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
+  
+  // displayedInvestment: Wechselt zwischen Gesamtinvestment und Investitionsmenge basierend auf Dropdown
+  const displayedInvestment = useMemo(() => {
+    return profitPercentBase === 'gesamtinvestment' ? totalInvestment : totalBaseInvestment;
+  }, [profitPercentBase, totalInvestment, totalBaseInvestment]);
+  
   // Berechne totalProfit - Dieselbe Logik wie Bot-Types-Seite:
   // - Update Metrics: overallGridProfitUsdt (Grid Profit)
   // - Closed Bots: profit (Gesamt Profit)
@@ -1656,8 +1692,8 @@ export default function Dashboard() {
               {(isCardEditMode ? tempCardOrder : cardOrder).map((cardId) => {
                 const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string }> = {
                   'Gesamtkapital': {
-                    label: 'Gesamtkapital',
-                    value: `${totalInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital (GI)' : 'Gesamtkapital (IM)',
+                    value: `${displayedInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
                     icon: Wallet,
                     iconColor: 'bg-blue-100 text-blue-600',
                   },
