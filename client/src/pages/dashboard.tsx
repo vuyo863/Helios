@@ -240,14 +240,11 @@ export default function Dashboard() {
   
   // Separate Key NUR für Investitions-Basis-Wechsel (Gesamtinvestment ↔ Investitionsmenge)
   // Diese Key erzwingt komplettes Neu-Rendern des Charts
-  const [investmentBaseKey, setInvestmentBaseKey] = useState(0);
+  // Nutzt profitPercentBase direkt als Key-Teil statt separatem State
+  // Das vermeidet den Flicker durch doppeltes Rendern
+  const investmentBaseKey = profitPercentBase;
   
-  // Investitions-Basis-Wechsel: Chart komplett neu laden
-  useEffect(() => {
-    setInvestmentBaseKey(prev => prev + 1);
-  }, [profitPercentBase]);
-  
-  // Animation aktivieren bei anderen Änderungen (NICHT die Key ändern!)
+  // Animation aktivieren bei Änderungen
   // Das erhält die geschmeidige Animation beim Metrik-Karten-Wechsel
   useEffect(() => {
     // Trigger neue Animation bei Änderungen
