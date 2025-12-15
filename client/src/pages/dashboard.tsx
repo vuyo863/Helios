@@ -1360,9 +1360,11 @@ export default function Dashboard() {
                   <XAxis 
                     dataKey="time"
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                    tickLine={{ stroke: 'hsl(var(--border))' }}
-                    axisLine={{ stroke: 'hsl(var(--border))' }}
-                    interval={0}
+                    tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                    axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
+                    interval="preserveStartEnd"
+                    tickCount={8}
+                    minTickGap={40}
                     angle={-45}
                     textAnchor="end"
                     height={60}
@@ -1370,6 +1372,8 @@ export default function Dashboard() {
                   <YAxis 
                     domain={['auto', 'auto']}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                    axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                     tickFormatter={(value) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
@@ -1378,7 +1382,37 @@ export default function Dashboard() {
                       backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '6px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    labelStyle={{
+                      fontWeight: 'bold',
+                      marginBottom: '4px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload.length > 0 && payload[0].payload) {
+                        const dataPoint = payload[0].payload;
+                        const date = new Date(dataPoint.timestamp);
+                        const sequence = appliedChartSettings?.sequence || 'days';
+                        
+                        if (sequence === 'hours') {
+                          return date.toLocaleString('de-DE', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          });
+                        } else if (sequence === 'days') {
+                          return date.toLocaleString('de-DE', { 
+                            weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          });
+                        } else {
+                          return date.toLocaleString('de-DE', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric'
+                          });
+                        }
+                      }
+                      return label;
                     }}
                     formatter={(value: number, name: string) => {
                       const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
