@@ -267,7 +267,7 @@ export default function Notifications() {
     sehr_gefährlich: false
   });
   
-  // Aktive Alarmierungen
+  // Aktive Alarmierungen - keine Mock-Daten mehr
   const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([]);
 
   // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
@@ -281,21 +281,12 @@ export default function Notifications() {
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
       setWatchlist(prev => [...prev, id]);
-      // Initialize settings for new trend price with one threshold
+      // Initialize settings ohne Mock-Schwellenwerte
       setTrendPriceSettings(prev => ({
         ...prev,
         [id]: {
           trendPriceId: id,
-          thresholds: [{
-            id: crypto.randomUUID(),
-            threshold: '',
-            notifyOnIncrease: false,
-            notifyOnDecrease: false,
-            increaseFrequency: 'einmalig',
-            decreaseFrequency: 'einmalig',
-            alarmLevel: 'harmlos',
-            note: ''
-          }]
+          thresholds: []
         }
       }));
       setSearchQuery('');
@@ -324,22 +315,12 @@ export default function Notifications() {
   };
 
   const addThreshold = (trendPriceId: string) => {
-    // Prüfe ob der Edit-Modus aktiv ist
-    if (editMode[trendPriceId]) {
-      toast({
-        title: "Bitte speichern Sie zuerst",
-        description: "Speichern Sie die aktuellen Änderungen, bevor Sie einen neuen Schwellenwert hinzufügen.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setTrendPriceSettings(prev => ({
       ...prev,
       [trendPriceId]: {
         ...prev[trendPriceId],
         thresholds: [
-          ...prev[trendPriceId].thresholds,
+          ...(prev[trendPriceId]?.thresholds || []),
           {
             id: crypto.randomUUID(),
             threshold: '',
@@ -353,34 +334,28 @@ export default function Notifications() {
         ]
       }
     }));
-    
-    // Aktiviere automatisch den Edit-Modus für den neuen Schwellenwert
-    setEditMode(prev => ({
-      ...prev,
-      [trendPriceId]: true
-    }));
   };
 
   const removeThreshold = (trendPriceId: string, thresholdId: string) => {
     const currentSettings = trendPriceSettings[trendPriceId];
     
-    // Verhindere das Löschen, wenn nur noch ein Schwellenwert vorhanden ist
-    if (currentSettings.thresholds.length <= 1) {
-      toast({
-        title: "Mindestens ein Schwellenwert erforderlich",
-        description: "Sie müssen mindestens einen Schwellenwert behalten.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!currentSettings) return;
 
+    // Lösche den Schwellenwert
+    const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
+    
     setTrendPriceSettings(prev => ({
       ...prev,
       [trendPriceId]: {
         ...prev[trendPriceId],
-        thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== thresholdId)
+        thresholds: updatedThresholds
       }
     }));
+    
+    toast({
+      title: "Schwellenwert gelöscht",
+      description: "Der Schwellenwert wurde erfolgreich entfernt.",
+    });
   };
 
   const updateThreshold = (trendPriceId: string, thresholdId: string, field: keyof ThresholdConfig, value: any) => {
@@ -732,21 +707,19 @@ export default function Notifications() {
               watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
             )}>
               {watchlist.map((trendPriceId) => {
-                const settings = trendPriceSettings[trendPriceId] || {
-                  trendPriceId,
-                  thresholds: [{
-                    id: crypto.randomUUID(),
-                    threshold: '',
-                    notifyOnIncrease: false,
-                    notifyOnDecrease: false,
-                    increaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
-                    decreaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
-                    alarmLevel: 'harmlos' as AlarmLevel,
-                    note: ''
-                  }]
-                };
-                const isExpanded = expandedDropdowns.includes(trendPriceId);
-                const isEditing = editMode[trendPriceId];
+                const settings = trendPriceSettings[trendPriceId];
+                // Nur anzeigen, wenn gespeicherte Schwellenwerte existieren
+                if (!settings || settings.thresholds.length === 0) {
+                  return null;
+                }
+                
+                // Filter nur gespeicherte Schwellenwerte (mit Wert)
+                const savedThresholds = settings.thresholds.filter(t => t.threshold && t.threshold.trim() !== '');
+                
+                // Wenn keine gespeicherten Schwellenwerte, nichts anzeigen
+                if (savedThresholds.length === 0) {
+                  return null;
+                }
 
                 return (
                   <Card key={trendPriceId} className="overflow-hidden">
@@ -754,7 +727,7 @@ export default function Notifications() {
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-lg">{getTrendPriceName(trendPriceId)}</CardTitle>
                         <span className="text-sm text-muted-foreground">
-                          {settings.thresholds.length} Schwellenwert{settings.thresholds.length !== 1 ? 'e' : ''}
+                          {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -774,10 +747,10 @@ export default function Notifications() {
                             </DialogHeader>
                             <ScrollArea className={cn(
                               "w-full",
-                              settings.thresholds.length > 4 ? "h-[500px]" : ""
+                              savedThresholds.length > 4 ? "h-[500px]" : ""
                             )}>
                               <div className="space-y-3 pr-4">
-                                {settings.thresholds.map((threshold, index) => (
+                                {savedThresholds.map((threshold, index) => (
                                   <Card key={threshold.id} className="p-4">
                                     <div className="flex items-start justify-between mb-3">
                                       <h4 className="font-semibold">Schwellenwert {index + 1}</h4>
@@ -982,57 +955,48 @@ export default function Notifications() {
                         </Dialog>
 
                         {/* Create New Threshold - Pencil Icon */}
-                        <Dialog 
-                          open={editMode[trendPriceId]} 
-                          onOpenChange={(open) => setEditMode(prev => ({ ...prev, [trendPriceId]: open }))}
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            // Initialisiere Settings falls nicht vorhanden
+                            if (!trendPriceSettings[trendPriceId]) {
+                              setTrendPriceSettings(prev => ({
+                                ...prev,
+                                [trendPriceId]: {
+                                  trendPriceId,
+                                  thresholds: []
+                                }
+                              }));
+                            }
+                            
+                            // Erstelle neuen Schwellenwert
+                            const newThreshold: ThresholdConfig = {
+                              id: crypto.randomUUID(),
+                              threshold: '',
+                              notifyOnIncrease: false,
+                              notifyOnDecrease: false,
+                              increaseFrequency: 'einmalig',
+                              decreaseFrequency: 'einmalig',
+                              alarmLevel: 'harmlos',
+                              note: ''
+                            };
+                            
+                            setTrendPriceSettings(prev => ({
+                              ...prev,
+                              [trendPriceId]: {
+                                ...prev[trendPriceId],
+                                thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
+                              }
+                            }));
+                            
+                            // Öffne Edit-Dialog für den neuen Schwellenwert
+                            setEditingThresholdId(newThreshold.id);
+                            setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
+                          }}
                         >
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Neuen Schwellenwert erstellen</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                              {/* New threshold form will be added here */}
-                              <div>
-                                <Label>Schwellenwert (USDT)</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="z.B. 50000"
-                                  onBlur={(e) => {
-                                    // Create new threshold on blur or via button
-                                    if (e.target.value) {
-                                      addThreshold(trendPriceId);
-                                    }
-                                  }}
-                                />
-                              </div>
-                              <div className="flex justify-end gap-2 pt-4 border-t">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setEditMode(prev => ({ ...prev, [trendPriceId]: false }))}
-                                >
-                                  Abbrechen
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    addThreshold(trendPriceId);
-                                    toast({
-                                      title: "Schwellenwert erstellt",
-                                      description: "Neuer Schwellenwert wurde hinzugefügt.",
-                                    });
-                                  }}
-                                >
-                                  Erstellen
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                       </div>
                     </CardHeader>
 
