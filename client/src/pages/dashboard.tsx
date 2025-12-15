@@ -2955,16 +2955,27 @@ export default function Dashboard() {
                       })
                       .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
                     
-                    // Finde den minimalen Y-Wert im Chart für X-Achsen-Erkennung
+                    // Finde alle Y-Werte im Chart
                     const allYValues = transformedChartData.flatMap(p => 
                       activeMetricCards.map(m => p[m as keyof typeof p] as number).filter(v => typeof v === 'number')
                     );
                     const minYValue = Math.min(...allYValues);
-                    const yRange = Math.max(...allYValues) - minYValue;
+                    const maxYValue = Math.max(...allYValues);
+                    const yRange = maxYValue - minYValue;
                     
-                    // Minimal spacing - so nah wie möglich aber getrennt
-                    const minPadding = 8; // Minimal-Abstand in Pixel
-                    const markerSpacing = 14; // Abstand zwischen gestapelten Markern
+                    // Finde alle Y-Werte bei einem Timestamp
+                    const getOtherValuesAtTimestamp = (timestamp: number, excludeMetric: string) => {
+                      const point = transformedChartData.find(p => p.timestamp === timestamp);
+                      if (!point) return [];
+                      return activeMetricCards
+                        .filter(m => m !== excludeMetric)
+                        .map(m => point[m as keyof typeof point] as number)
+                        .filter(v => typeof v === 'number');
+                    };
+                    
+                    // Minimal spacing
+                    const minPadding = 5; // Sehr nah am Punkt
+                    const markerSpacing = 14;
                     
                     // Sortiere nach Y-Wert (höchste zuerst)
                     const sortedMarkers = [...highestMarkers].sort((a, b) => b.value - a.value);
@@ -2978,10 +2989,20 @@ export default function Dashboard() {
                       ).length;
                       offset += sameTimestampBefore * markerSpacing;
                       
-                      // Prüfe ob Marker zu nah an X-Achse wäre (untere 15% des Charts)
+                      // Prüfe ob Marker nah an X-Achse wäre (untere 15%)
                       const isNearXAxis = (marker.value - minYValue) < (yRange * 0.15);
                       
-                      return { ...marker, offset, flipToTop: isNearXAxis };
+                      // Prüfe ob andere Graph-Linien unter dem Punkt sind (würden H-Marker berühren)
+                      const otherValues = getOtherValuesAtTimestamp(marker.timestamp, marker.metricName);
+                      const hasLineBelow = otherValues.some(v => {
+                        const diff = marker.value - v;
+                        return diff > 0 && diff < (yRange * 0.08); // Linie ist knapp darunter
+                      });
+                      
+                      // Flippe nach oben wenn nah an X-Achse ODER Linie darunter
+                      const flipToTop = isNearXAxis || hasLineBelow;
+                      
+                      return { ...marker, offset, flipToTop };
                     });
                     
                     return processedMarkers.map((marker) => (
@@ -3002,7 +3023,7 @@ export default function Dashboard() {
                     ));
                   })()}
                   {/* Lowest Value Marker - ÜBER dem Punkt, Pfeil nach unten mit L */}
-                  {/* Bumper-System: Minimal spacing, gestapelt wenn überlappend */}
+                  {/* Bumper-System: Minimal spacing, gestapelt, weicht H-Markern aus */}
                   {showLowestValue && !isMultiBotChartMode && (() => {
                     // Sammle alle Lowest-Marker
                     const lowestMarkers = activeMetricCards
@@ -3013,29 +3034,41 @@ export default function Dashboard() {
                       })
                       .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
                     
+                    // Prüfe ob an diesem Timestamp auch ein H-Marker ist (für Kollisionsvermeidung)
+                    const hasHMarkerAtTimestamp = (timestamp: number) => {
+                      if (!showHighestValue) return false;
+                      return activeMetricCards.some(m => {
+                        const h = extremeValues.highest[m];
+                        return h && Math.abs(h.timestamp - timestamp) < 3600000;
+                      });
+                    };
+                    
                     // Minimal spacing
-                    const minPadding = 8;
+                    const minPadding = 5;
                     const markerSpacing = 14;
                     
-                    // Sortiere nach Y-Wert (niedrigste zuerst) UND dann nach Timestamp
+                    // Sortiere nach Timestamp, dann nach Y-Wert
                     const sortedMarkers = [...lowestMarkers].sort((a, b) => {
-                      // Erst nach Timestamp gruppieren
                       const timeDiff = a.timestamp - b.timestamp;
                       if (Math.abs(timeDiff) > 3600000) return timeDiff;
-                      // Dann nach Y-Wert (niedrigste zuerst)
                       return a.value - b.value;
                     });
                     
                     const processedMarkers = sortedMarkers.map((marker, i) => {
                       let offset = minPadding;
                       
-                      // Zähle alle L-Marker die vor diesem kommen und nah am gleichen Timestamp sind
+                      // Zähle L-Marker vor diesem auf gleichem Timestamp
                       const sameTimestampBefore = sortedMarkers.slice(0, i).filter(
                         m => Math.abs(m.timestamp - marker.timestamp) < 3600000
                       ).length;
                       
-                      // Stapeln: Jeder weitere Marker geht weiter nach oben
+                      // Stapeln
                       offset += sameTimestampBefore * markerSpacing;
+                      
+                      // Extra Offset wenn H-Marker am gleichen Timestamp (Kollisionsvermeidung)
+                      if (hasHMarkerAtTimestamp(marker.timestamp)) {
+                        offset += markerSpacing;
+                      }
                       
                       return { ...marker, offset };
                     });
