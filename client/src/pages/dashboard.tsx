@@ -952,12 +952,15 @@ export default function Dashboard() {
     // Generiere Chart-Daten mit ZWEI Punkten pro Update: Start und Ende
     // Das zeigt den ganzen Zeitraum des Updates an (FROM bis UNTIL)
     // Jeder Punkt enthält ALLE Metrik-Werte
+    // Bei Vergleichs-Modus: Werte kumulieren (vom vorherigen Endpunkt weiterlaufen)
     const dataPoints: Array<{
       time: string;
       timestamp: number;
       version: number;
       status: string;
       isStartPoint?: boolean;
+      isAlsoEndPoint?: boolean; // Wenn dieser Punkt sowohl Start als auch End ist (gleicher Zeitstempel)
+      calculationMode?: string; // 'Neu' oder 'Vergleich'
       // Runtime in Millisekunden (nur bei Endpunkten)
       runtimeMs?: number;
       // Trend P&L (nur bei Update Metrics)
@@ -968,7 +971,20 @@ export default function Dashboard() {
       'Gesamtprofit %': number;
       'Ø Profit/Tag': number;
       'Real Profit/Tag': number;
+      // Für Tooltip: Zeige auch vorherigen Endpunkt-Wert wenn dieser Punkt beides ist
+      _prevEndValues?: {
+        'Gesamtprofit': number;
+        'Gesamtprofit %': number;
+        'Ø Profit/Tag': number;
+        'Real Profit/Tag': number;
+      };
     }> = [];
+    
+    // Laufende Summe für kumulierte Werte bei Vergleichs-Modus
+    let cumulativeProfit = 0;
+    let cumulativeProfitPercent = 0;
+    let cumulativeAvgDaily = 0;
+    let cumulativeRealDaily = 0;
     
     filteredUpdates.forEach((update, index) => {
       // Endpunkt: thisUpload (Ende des Updates)
@@ -984,6 +1000,9 @@ export default function Dashboard() {
         }
       }
       const startDate = new Date(startTimestamp);
+      
+      // Prüfe ob dieses Update im Vergleichs-Modus ist
+      const isVergleichsModus = update.calculationMode === 'Vergleich';
       
       // Berechne alle Metriken für dieses Update
       // Gesamtkapital = totalInvestment ODER investment (baseInvestment) je nach Auswahl
@@ -1011,21 +1030,52 @@ export default function Dashboard() {
       const runtimeDays = runtimeHours / 24;
       const realDailyProfit = runtimeDays > 0 ? gesamtprofit / runtimeDays : 0;
       
+      // Speichere vorherige Endwerte vor dem Update
+      const prevEndValues = {
+        'Gesamtprofit': cumulativeProfit,
+        'Gesamtprofit %': cumulativeProfitPercent,
+        'Ø Profit/Tag': cumulativeAvgDaily,
+        'Real Profit/Tag': cumulativeRealDaily,
+      };
+      
+      // Bei Vergleichs-Modus: Werte auf kumulative Summe aufaddieren
+      // Bei Neu-Modus (Startmetrik): Kumulative Werte auf aktuelle Werte setzen
+      if (isVergleichsModus && index > 0) {
+        // Vergleichs-Modus: Werte sind Differenzen, addiere zum kumulativen Wert
+        cumulativeProfit += gesamtprofit;
+        cumulativeProfitPercent += gesamtprofitPercent;
+        cumulativeAvgDaily += avgDailyProfit;
+        cumulativeRealDaily += realDailyProfit;
+      } else {
+        // Neu-Modus oder erstes Update: Setze kumulative Werte auf aktuelle Werte
+        cumulativeProfit = gesamtprofit;
+        cumulativeProfitPercent = gesamtprofitPercent;
+        cumulativeAvgDaily = avgDailyProfit;
+        cumulativeRealDaily = realDailyProfit;
+      }
+      
       // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
       if (update.lastUpload && startTimestamp !== endTimestamp) {
+        // Bei Vergleichs-Modus: Startpunkt beim vorherigen Endwert starten (nicht bei 0)
+        const startProfit = isVergleichsModus && index > 0 ? prevEndValues['Gesamtprofit'] : 0;
+        const startProfitPercent = isVergleichsModus && index > 0 ? prevEndValues['Gesamtprofit %'] : 0;
+        const startAvgDaily = isVergleichsModus && index > 0 ? prevEndValues['Ø Profit/Tag'] : 0;
+        const startRealDaily = isVergleichsModus && index > 0 ? prevEndValues['Real Profit/Tag'] : 0;
+        
         dataPoints.push({
           time: formatTimeLabel(startDate),
           timestamp: startTimestamp,
           version: update.version || index + 1,
           status: update.status,
           isStartPoint: true,
+          calculationMode: update.calculationMode || 'Neu',
           // Gesamtkapital bleibt konstant (kein Anstieg von 0)
-          // Profit-Metriken starten bei 0 und steigen zum Endwert
+          // Bei Vergleichs-Modus: Startpunkt = vorheriger Endpunkt
           'Gesamtkapital': gesamtkapital,
-          'Gesamtprofit': 0,
-          'Gesamtprofit %': 0,
-          'Ø Profit/Tag': 0,
-          'Real Profit/Tag': 0,
+          'Gesamtprofit': startProfit,
+          'Gesamtprofit %': startProfitPercent,
+          'Ø Profit/Tag': startAvgDaily,
+          'Real Profit/Tag': startRealDaily,
         });
       }
       
@@ -1037,20 +1087,23 @@ export default function Dashboard() {
         ? parseFloat(update.overallTrendPnlUsdt || '0') || 0
         : undefined;
       
-      // Endpunkt mit allen Metrik-Werten
+      // Endpunkt mit allen Metrik-Werten (kumuliert bei Vergleichs-Modus)
       dataPoints.push({
         time: formatTimeLabel(endDate),
         timestamp: endTimestamp,
         version: update.version || index + 1,
         status: update.status,
         isStartPoint: false,
+        calculationMode: update.calculationMode || 'Neu',
         runtimeMs: runtimeMs,
         trendPnl: trendPnl,
         'Gesamtkapital': gesamtkapital,
-        'Gesamtprofit': gesamtprofit,
-        'Gesamtprofit %': gesamtprofitPercent,
-        'Ø Profit/Tag': avgDailyProfit,
-        'Real Profit/Tag': realDailyProfit,
+        'Gesamtprofit': cumulativeProfit,
+        'Gesamtprofit %': cumulativeProfitPercent,
+        'Ø Profit/Tag': cumulativeAvgDaily,
+        'Real Profit/Tag': cumulativeRealDaily,
+        // Speichere vorherige Werte für Tooltip bei Vergleichs-Modus
+        _prevEndValues: isVergleichsModus && index > 0 ? prevEndValues : undefined,
       });
     });
     
@@ -1245,31 +1298,36 @@ export default function Dashboard() {
     let baseLower: number;
     let baseUpper: number;
     
-    // Berechne Basis-Domain mit ausreichend Padding (10% auf jeder Seite)
+    // Berechne Basis-Domain mit ausreichend Padding (15% auf jeder Seite für mehr Puffer)
     const dataRange = maxVal - minVal;
-    const padding = dataRange > 0 ? dataRange * 0.1 : Math.abs(maxVal) * 0.1 || 1;
+    const padding = dataRange > 0 ? dataRange * 0.15 : Math.abs(maxVal) * 0.15 || 1;
     
     // IMMER Padding unten UND oben, damit Punkte nicht am Rand abgeschnitten werden
-    // Bei negativen Werten: Padding UNTER dem Minimum hinzufügen (nicht begrenzen!)
+    // Mindestens 10% des maxVal als unteres Padding, damit der Chart nicht "verpackt" aussieht
+    const minBottomPadding = Math.abs(maxVal) * 0.1;
+    
     if (minVal < 0) {
       // Negative Werte vorhanden: Padding nach unten UND nach oben
-      baseLower = minVal - padding;
+      baseLower = minVal - Math.max(padding, minBottomPadding);
       baseUpper = maxVal + padding;
     } else if (hasGesamtkapitalActive) {
-      // Keine negativen Werte, Gesamtkapital aktiv
-      baseLower = Math.max(0, minVal - padding);
+      // Gesamtkapital aktiv: Immer etwas Puffer unten lassen (nicht bei 0 abschneiden)
+      // Wenn Werte nahe beieinander, mehr Puffer nach unten für bessere Visualisierung
+      const bottomPadding = Math.max(padding, minBottomPadding);
+      baseLower = Math.max(-bottomPadding * 0.5, minVal - bottomPadding);
       baseUpper = maxVal + padding;
     } else {
       const constantMetrics = ['Gesamtkapital'];
       const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
       
       if (allConstant) {
-        baseLower = Math.max(0, minVal - padding);
+        const bottomPadding = Math.max(padding, minBottomPadding);
+        baseLower = Math.max(-bottomPadding * 0.5, minVal - bottomPadding);
         baseUpper = maxVal + padding;
       } else {
         // Profit-Metriken ohne negative Werte: bei 0 oder leicht darunter starten
-        const bottomPadding = padding * 0.5;
-        baseLower = -bottomPadding;
+        const bottomPadding = Math.max(padding, minBottomPadding);
+        baseLower = -bottomPadding * 0.5;
         baseUpper = maxVal + padding;
       }
     }
