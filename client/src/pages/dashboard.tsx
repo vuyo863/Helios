@@ -199,6 +199,7 @@ export default function Dashboard() {
   const [showHighestValue, setShowHighestValue] = useState(false);
   const [showLowestValue, setShowLowestValue] = useState(false);
   const [chartSequence, setChartSequence] = useState<'hours' | 'days' | 'weeks' | 'months'>('days');
+  const [sequencePopoverOpen, setSequencePopoverOpen] = useState(false);
   
   // Chart state - wird bei Apply aktiviert
   const [chartApplied, setChartApplied] = useState(false);
@@ -2028,7 +2029,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Sequence</span>
-                <Popover>
+                <Popover open={sequencePopoverOpen} onOpenChange={setSequencePopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-2" data-testid="select-chart-sequence">
                       {chartSequence === 'hours' ? 'Hours' : chartSequence === 'days' ? 'Days' : chartSequence === 'weeks' ? 'Weeks' : 'Months'}
@@ -2048,7 +2049,10 @@ export default function Dashboard() {
                           variant={chartSequence === option.value ? "default" : "ghost"}
                           size="sm"
                           className="w-full justify-start"
-                          onClick={() => setChartSequence(option.value as 'hours' | 'days' | 'weeks' | 'months')}
+                          onClick={() => {
+                            setChartSequence(option.value as 'hours' | 'days' | 'weeks' | 'months');
+                            setSequencePopoverOpen(false);
+                          }}
                           data-testid={`sequence-option-${option.value}`}
                         >
                           {option.label}
