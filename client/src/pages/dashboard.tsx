@@ -235,6 +235,34 @@ export default function Dashboard() {
   const [crosshairX, setCrosshairX] = useState<number | null>(null);
   const [crosshairY, setCrosshairY] = useState<number | null>(null);
   
+  // Chart Animation State - Animation nur bei echten Änderungen, nicht bei Auto-Refresh
+  const [chartAnimationActive, setChartAnimationActive] = useState(true);
+  const [chartAnimationKey, setChartAnimationKey] = useState(0);
+  
+  // Animation-Key ändert sich bei relevanten Settings-Änderungen
+  useEffect(() => {
+    // Trigger neue Animation bei Änderungen
+    setChartAnimationActive(true);
+    setChartAnimationKey(prev => prev + 1);
+    
+    // Nach 1.5s Animation deaktivieren (Auto-Refresh soll nicht animieren)
+    const timer = setTimeout(() => {
+      setChartAnimationActive(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [
+    selectedBotName,
+    chartApplied,
+    appliedChartSettings?.timeRange,
+    appliedChartSettings?.sequence,
+    appliedChartSettings?.fromUpdate?.id,
+    appliedChartSettings?.untilUpdate?.id,
+    activeMetricCards.join(','),
+    selectedChartBotTypes.join(','),
+    profitPercentBase
+  ]);
+  
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
     if (selectedFromUpdate && selectedUntilUpdate) {
@@ -2117,7 +2145,8 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: getBotTypeColor(index), r: 4 }}
                         connectNulls
-                        isAnimationActive={false}
+                        isAnimationActive={chartAnimationActive}
+                        animationDuration={800}
                       />
                     ))
                   ) : (
@@ -2132,7 +2161,8 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
                         connectNulls
-                        isAnimationActive={false}
+                        isAnimationActive={chartAnimationActive}
+                        animationDuration={800}
                       />
                     ))
                   )}
