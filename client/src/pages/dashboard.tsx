@@ -1729,8 +1729,10 @@ export default function Dashboard() {
                                     e.stopPropagation();
                                     setProfitPercentBase('gesamtinvestment');
                                     setProfitPercentDropdownOpen(false);
-                                    // Trigger Animation bei Basis-Wechsel
-                                    setChartAnimationKey(prev => prev + 1);
+                                    // Trigger Animation nur wenn Gesamtkapital-Card aktiv ist
+                                    if (activeMetricCards.includes('Gesamtkapital')) {
+                                      setChartAnimationKey(prev => prev + 1);
+                                    }
                                   }}
                                   data-testid="option-gesamtinvestment"
                                 >
@@ -1745,8 +1747,10 @@ export default function Dashboard() {
                                     e.stopPropagation();
                                     setProfitPercentBase('investitionsmenge');
                                     setProfitPercentDropdownOpen(false);
-                                    // Trigger Animation bei Basis-Wechsel
-                                    setChartAnimationKey(prev => prev + 1);
+                                    // Trigger Animation nur wenn Gesamtkapital-Card aktiv ist
+                                    if (activeMetricCards.includes('Gesamtkapital')) {
+                                      setChartAnimationKey(prev => prev + 1);
+                                    }
                                   }}
                                   data-testid="option-investitionsmenge"
                                 >
