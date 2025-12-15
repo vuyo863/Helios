@@ -1239,9 +1239,10 @@ export default function Dashboard() {
         'Gesamtprofit': point['Gesamtprofit'] + investmentBase,
         'Ø Profit/Tag': point['Ø Profit/Tag'] + investmentBase,
         'Real Profit/Tag': point['Real Profit/Tag'] + investmentBase,
-        // Gesamtkapital und Prozent bleiben unverändert
+        // Gesamtkapital bleibt unverändert
         'Gesamtkapital': investmentBase,
-        'Gesamtprofit %': point['Gesamtprofit %'],
+        // Prozent-Linie auch auf Investment-Level offsetten (für visuelle Konsistenz)
+        'Gesamtprofit %': point['Gesamtprofit %'] + investmentBase,
       };
     });
   }, [chartData, hasGesamtkapitalActive]);
