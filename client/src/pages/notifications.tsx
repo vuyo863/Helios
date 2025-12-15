@@ -40,6 +40,10 @@ interface AlarmLevelConfig {
     webhook: boolean;
   };
   requiresApproval: boolean;
+  repeatCount: number | 'infinite'; // Anzahl Wiederholungen oder 'infinite'
+  sequenceHours: number;
+  sequenceMinutes: number;
+  sequenceSeconds: number;
 }
 
 interface ActiveAlarm {
@@ -213,22 +217,38 @@ export default function Notifications() {
     harmlos: {
       level: 'harmlos',
       channels: { push: true, email: false, sms: false, webhook: false },
-      requiresApproval: false
+      requiresApproval: false,
+      repeatCount: 1,
+      sequenceHours: 0,
+      sequenceMinutes: 0,
+      sequenceSeconds: 0
     },
     achtung: {
       level: 'achtung',
       channels: { push: true, email: true, sms: false, webhook: false },
-      requiresApproval: false
+      requiresApproval: false,
+      repeatCount: 1,
+      sequenceHours: 0,
+      sequenceMinutes: 0,
+      sequenceSeconds: 0
     },
     gefährlich: {
       level: 'gefährlich',
       channels: { push: true, email: true, sms: false, webhook: true },
-      requiresApproval: true
+      requiresApproval: true,
+      repeatCount: 3,
+      sequenceHours: 0,
+      sequenceMinutes: 5,
+      sequenceSeconds: 0
     },
     sehr_gefährlich: {
       level: 'sehr_gefährlich',
       channels: { push: true, email: true, sms: true, webhook: true },
-      requiresApproval: true
+      requiresApproval: true,
+      repeatCount: 'infinite',
+      sequenceHours: 0,
+      sequenceMinutes: 1,
+      sequenceSeconds: 0
     }
   });
   
@@ -377,14 +397,16 @@ export default function Notifications() {
     return getTrendPrice(id)?.name || id;
   };
 
-  const updateAlarmLevelConfig = (level: AlarmLevel, field: keyof AlarmLevelConfig['channels'] | 'requiresApproval', value: boolean) => {
+  const updateAlarmLevelConfig = (level: AlarmLevel, field: keyof AlarmLevelConfig['channels'] | 'requiresApproval' | 'repeatCount' | 'sequenceHours' | 'sequenceMinutes' | 'sequenceSeconds', value: boolean | number | 'infinite') => {
     setAlarmLevelConfigs(prev => ({
       ...prev,
       [level]: {
         ...prev[level],
         ...(field === 'requiresApproval' 
-          ? { requiresApproval: value }
-          : { channels: { ...prev[level].channels, [field]: value } }
+          ? { requiresApproval: value as boolean }
+          : field === 'repeatCount' || field === 'sequenceHours' || field === 'sequenceMinutes' || field === 'sequenceSeconds'
+          ? { [field]: value }
+          : { channels: { ...prev[level].channels, [field]: value as boolean } }
         )
       }
     }));
@@ -993,7 +1015,7 @@ export default function Notifications() {
                         </div>
 
                         <div className="pt-2 border-t">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-3">
                             <div>
                               <Label htmlFor={`${level}-approval`} className="text-sm font-medium cursor-pointer">
                                 Approval erforderlich
@@ -1007,6 +1029,100 @@ export default function Notifications() {
                               checked={config.requiresApproval}
                               onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'requiresApproval', checked)}
                             />
+                          </div>
+
+                          {/* Wiederholung */}
+                          <div className="space-y-2 mb-3">
+                            <Label className="text-sm font-medium">Wiederholung</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={config.repeatCount === 'infinite' ? '' : config.repeatCount}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  if (!isNaN(val) && val > 0) {
+                                    updateAlarmLevelConfig(level, 'repeatCount', val);
+                                  }
+                                }}
+                                placeholder="Anzahl"
+                                className="w-24"
+                                disabled={config.repeatCount === 'infinite'}
+                              />
+                              <Button
+                                variant={config.repeatCount === 'infinite' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => {
+                                  if (config.repeatCount === 'infinite') {
+                                    updateAlarmLevelConfig(level, 'repeatCount', 1);
+                                  } else {
+                                    updateAlarmLevelConfig(level, 'repeatCount', 'infinite');
+                                  }
+                                }}
+                              >
+                                ∞ Unendlich
+                              </Button>
+                              <span className="text-xs text-muted-foreground">
+                                {config.repeatCount === 'infinite' ? 'Bis Approval' : `${config.repeatCount}x`}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Sequenz (Pause zwischen Wiederholungen) */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Sequenz (Pause zwischen Wiederholungen)</Label>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <Label htmlFor={`${level}-hours`} className="text-xs text-muted-foreground">Stunden</Label>
+                                <Input
+                                  id={`${level}-hours`}
+                                  type="number"
+                                  min="0"
+                                  value={config.sequenceHours}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 0) {
+                                      updateAlarmLevelConfig(level, 'sequenceHours', val);
+                                    }
+                                  }}
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`${level}-minutes`} className="text-xs text-muted-foreground">Minuten</Label>
+                                <Input
+                                  id={`${level}-minutes`}
+                                  type="number"
+                                  min="0"
+                                  max="59"
+                                  value={config.sequenceMinutes}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 0 && val <= 59) {
+                                      updateAlarmLevelConfig(level, 'sequenceMinutes', val);
+                                    }
+                                  }}
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`${level}-seconds`} className="text-xs text-muted-foreground">Sekunden</Label>
+                                <Input
+                                  id={`${level}-seconds`}
+                                  type="number"
+                                  min="0"
+                                  max="59"
+                                  value={config.sequenceSeconds}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 0 && val <= 59) {
+                                      updateAlarmLevelConfig(level, 'sequenceSeconds', val);
+                                    }
+                                  }}
+                                  className="text-sm"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1035,6 +1151,22 @@ export default function Notifications() {
                             {config.requiresApproval ? 'Erforderlich' : 'Nicht erforderlich'}
                           </span>
                         </div>
+                        {config.requiresApproval && (
+                          <>
+                            <div className="text-sm">
+                              <span className="font-medium">Wiederholung: </span>
+                              <span className="text-muted-foreground">
+                                {config.repeatCount === 'infinite' ? '∞ (Bis Approval)' : `${config.repeatCount}x`}
+                              </span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-medium">Sequenz: </span>
+                              <span className="text-muted-foreground">
+                                {config.sequenceHours}h {config.sequenceMinutes}m {config.sequenceSeconds}s
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
