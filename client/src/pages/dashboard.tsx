@@ -1076,7 +1076,18 @@ export default function Dashboard() {
     const startTime = Math.min(...timestamps);
     const endTime = Math.max(...timestamps);
     
-    const sequence = appliedChartSettings?.sequence || 'days';
+    const baseSequence = appliedChartSettings?.sequence || 'days';
+    
+    // ZOOM-basierte automatische Sequence-Anpassung für Ticks
+    // Bei hohem Zoom automatisch feinere Ticks generieren
+    let effectiveSequence = baseSequence;
+    if (chartZoomX >= 6) {
+      effectiveSequence = 'hours';
+    } else if (chartZoomX >= 3 && baseSequence !== 'hours') {
+      effectiveSequence = 'hours';
+    }
+    
+    const sequence = effectiveSequence;
     
     // Tick-Intervall je nach Sequence
     // WICHTIG: Wochen und Monate haben auch TÄGLICHE Ticks!
@@ -1115,7 +1126,7 @@ export default function Dashboard() {
     }
     
     return ticks;
-  }, [chartData, appliedChartSettings?.sequence]);
+  }, [chartData, appliedChartSettings?.sequence, chartZoomX]);
 
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
@@ -2105,7 +2116,20 @@ export default function Dashboard() {
                       }
                       
                       const date = new Date(payload.value);
-                      const sequence = appliedChartSettings?.sequence || 'days';
+                      const baseSequence = appliedChartSettings?.sequence || 'days';
+                      
+                      // ZOOM-basierte automatische Sequence-Anpassung
+                      // Bei hohem Zoom automatisch detailliertere Labels zeigen
+                      let effectiveSequence = baseSequence;
+                      if (chartZoomX >= 6) {
+                        // Sehr hoher Zoom: Immer Stunden anzeigen
+                        effectiveSequence = 'hours';
+                      } else if (chartZoomX >= 3 && baseSequence !== 'hours') {
+                        // Mittlerer Zoom: Wenn auf Tage, zeige Stunden
+                        effectiveSequence = 'hours';
+                      }
+                      
+                      const sequence = effectiveSequence;
                       
                       // Helper: ISO Kalenderwoche berechnen
                       const getISOWeek = (d: Date): number => {
@@ -2116,12 +2140,20 @@ export default function Dashboard() {
                         return 1 + Math.round(((dt.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
                       };
                       
-                      // DYNAMISCHE Intervall-Berechnung basierend auf Zeitraum-Länge
+                      // DYNAMISCHE Intervall-Berechnung basierend auf sichtbarem Zeitraum (mit Zoom)
+                      // Nutze die aktuelle Domain statt die Gesamtdaten
+                      const [domainStart, domainEnd] = xAxisDomain;
+                      const visibleStartTime = typeof domainStart === 'number' ? domainStart : 0;
+                      const visibleEndTime = typeof domainEnd === 'number' ? domainEnd : 0;
+                      const visibleHours = (visibleEndTime - visibleStartTime) / (1000 * 60 * 60);
+                      const visibleDays = visibleHours / 24;
+                      
+                      // Fallback auf Gesamtdaten wenn Domain nicht verfügbar
                       const timestamps = xAxisTicks.filter(t => t > 0);
                       const startTime = timestamps.length > 0 ? Math.min(...timestamps) : 0;
                       const endTime = timestamps.length > 0 ? Math.max(...timestamps) : 0;
-                      const totalHours = (endTime - startTime) / (1000 * 60 * 60);
-                      const totalDays = totalHours / 24;
+                      const totalHours = visibleHours > 0 ? visibleHours : (endTime - startTime) / (1000 * 60 * 60);
+                      const totalDays = visibleDays > 0 ? visibleDays : totalHours / 24;
                       const totalWeeks = totalDays / 7;
                       const totalMonths = totalDays / 30;
                       
@@ -2299,7 +2331,12 @@ export default function Dashboard() {
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     tickSize={8}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                    tickFormatter={(value) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    tickCount={Math.min(15, Math.max(5, Math.floor(chartZoomY * 3)))}
+                    tickFormatter={(value) => {
+                      // Bei höherem Zoom mehr Dezimalstellen anzeigen
+                      const decimals = chartZoomY >= 5 ? 4 : chartZoomY >= 3 ? 3 : 2;
+                      return value.toLocaleString('de-DE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                    }}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   <Tooltip 
