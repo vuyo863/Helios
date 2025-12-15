@@ -2736,7 +2736,8 @@ export default function Dashboard() {
                       }
                       
                       // Bei Vergleichs-Modus mit _prevEndValues: Zwei Info-Boxen
-                      if (hasPrevEndValues) {
+                      // ABER NUR bei STARTPUNKTEN - bei ENDPUNKTEN zeigen wir nur die Standard-Box
+                      if (hasPrevEndValues && dataPoint.isStartPoint === true) {
                         // Sammle die Werte für vorheriges Ende und aktuellen Start
                         const prevEndBoxValues: { name: string; value: number; color: string }[] = [];
                         const currentStartBoxValues: { name: string; value: number; color: string }[] = [];
