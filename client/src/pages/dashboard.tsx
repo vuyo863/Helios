@@ -207,6 +207,10 @@ export default function Dashboard() {
     sequence: 'hours' | 'days' | 'weeks' | 'months';
     fromUpdate: any | null;
     untilUpdate: any | null;
+    // Für "Letzten" Zeitraum-Filter
+    customDays?: string;
+    customHours?: string;
+    customMinutes?: string;
   } | null>(null);
   
   // From/Until update selection
@@ -528,6 +532,33 @@ export default function Dashboard() {
     'Real Profit/Tag': '#ca8a04',    // Gelb/Gold
   };
 
+  // Helper: Berechne Millisekunden für "Letzten"-Zeitraum
+  const parseTimeRangeToMs = (timeRange: string, customDays?: string, customHours?: string, customMinutes?: string): number | null => {
+    const MS_PER_MINUTE = 60 * 1000;
+    const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+    const MS_PER_DAY = 24 * MS_PER_HOUR;
+    
+    switch (timeRange) {
+      case '1h':
+        return 1 * MS_PER_HOUR;
+      case '24h':
+        return 24 * MS_PER_HOUR;
+      case '7 Days':
+        return 7 * MS_PER_DAY;
+      case '30 Days':
+        return 30 * MS_PER_DAY;
+      case 'Custom':
+        const days = parseInt(customDays || '0') || 0;
+        const hours = parseInt(customHours || '0') || 0;
+        const minutes = parseInt(customMinutes || '0') || 0;
+        return (days * MS_PER_DAY) + (hours * MS_PER_HOUR) + (minutes * MS_PER_MINUTE);
+      case 'First-Last Update':
+        return null; // Alle Updates anzeigen
+      default:
+        return null;
+    }
+  };
+
   // Chart-Daten basierend auf appliedChartSettings generieren
   // Unterstützt mehrere Metriken gleichzeitig
   // Für jeden Update werden ZWEI Punkte erstellt: Start (lastUpload) und Ende (thisUpload)
@@ -539,6 +570,7 @@ export default function Dashboard() {
     // Filtere Updates basierend auf den angewendeten Einstellungen
     let filteredUpdates = [...sortedUpdates];
     
+    // Priorität 1: From/Until manuell ausgewählt
     if (appliedChartSettings.fromUpdate && appliedChartSettings.untilUpdate) {
       const fromTimestamp = getUpdateTimestamp(appliedChartSettings.fromUpdate);
       const untilTimestamp = getUpdateTimestamp(appliedChartSettings.untilUpdate);
@@ -547,7 +579,27 @@ export default function Dashboard() {
         const updateTimestamp = getUpdateTimestamp(update);
         return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
       });
+    } 
+    // Priorität 2: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom)
+    else if (appliedChartSettings.timeRange !== 'First-Last Update') {
+      const rangeMs = parseTimeRangeToMs(
+        appliedChartSettings.timeRange,
+        appliedChartSettings.customDays,
+        appliedChartSettings.customHours,
+        appliedChartSettings.customMinutes
+      );
+      
+      if (rangeMs !== null && rangeMs > 0) {
+        const now = Date.now();
+        const cutoffTimestamp = now - rangeMs;
+        
+        filteredUpdates = sortedUpdates.filter(update => {
+          const updateTimestamp = getUpdateTimestamp(update);
+          return updateTimestamp >= cutoffTimestamp;
+        });
+      }
     }
+    // Priorität 3: First-Last Update = Alle Updates anzeigen (default)
     
     // Sortiere nach Datum (älteste zuerst)
     filteredUpdates.sort((a, b) => {
@@ -1001,6 +1053,10 @@ export default function Dashboard() {
       sequence: chartSequence,
       fromUpdate: selectedFromUpdate,
       untilUpdate: selectedUntilUpdate,
+      // Custom-Werte für "Custom" Zeitraum
+      customDays: customDays,
+      customHours: customHours,
+      customMinutes: customMinutes,
     });
     setChartApplied(true);
     // Automatisch "Gesamtprofit" Content-Karte aktivieren/hervorheben
