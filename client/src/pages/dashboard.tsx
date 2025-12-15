@@ -980,6 +980,16 @@ export default function Dashboard() {
         'Ø Profit/Tag': number;
         'Real Profit/Tag': number;
       };
+      // Für Tooltip: Zeige an, dass dieser Endpunkt auch der Startpunkt des nächsten Updates ist
+      _isAlsoStartOfNext?: boolean;
+      _nextStartInfo?: {
+        nextUpdateVersion: number;
+        'Gesamtkapital': number;
+        'Gesamtprofit': number;
+        'Gesamtprofit %': number;
+        'Ø Profit/Tag': number;
+        'Real Profit/Tag': number;
+      };
     }> = [];
     
     // Laufende Summe für kumulierte Werte bei Vergleichs-Modus
@@ -1124,6 +1134,41 @@ export default function Dashboard() {
     
     // Sortiere alle Punkte nach Zeitstempel
     dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Zweiter Durchlauf: Markiere Endpunkte, die auch Startpunkte für das nächste Update sind
+    // Dies ist der Fall bei Vergleichs-Modus, wo kein separater Startpunkt erstellt wird
+    for (let i = 0; i < dataPoints.length; i++) {
+      const currentPoint = dataPoints[i];
+      
+      // Nur Endpunkte prüfen
+      if (currentPoint.isStartPoint !== false) continue;
+      
+      // Finde das nächste Update in den ursprünglichen Updates (nach diesem Endpunkt)
+      const currentUpdateIndex = filteredUpdates.findIndex(u => {
+        const ts = getUpdateTimestamp(u);
+        return ts === currentPoint.timestamp;
+      });
+      
+      if (currentUpdateIndex >= 0 && currentUpdateIndex < filteredUpdates.length - 1) {
+        const nextUpdate = filteredUpdates[currentUpdateIndex + 1];
+        const isNextVergleich = nextUpdate.calculationMode === 'Vergleich';
+        
+        if (isNextVergleich) {
+          // Dieser Endpunkt ist AUCH der Startpunkt für das nächste Update
+          // Speichere die Startwerte für das nächste Update (sind die Endwerte von diesem)
+          currentPoint._isAlsoStartOfNext = true;
+          currentPoint._nextStartInfo = {
+            nextUpdateVersion: nextUpdate.version || currentUpdateIndex + 2,
+            // Die Start-Werte des nächsten Updates = Die End-Werte dieses Updates
+            'Gesamtkapital': currentPoint['Gesamtkapital'],
+            'Gesamtprofit': currentPoint['Gesamtprofit'],
+            'Gesamtprofit %': currentPoint['Gesamtprofit %'],
+            'Ø Profit/Tag': currentPoint['Ø Profit/Tag'],
+            'Real Profit/Tag': currentPoint['Real Profit/Tag'],
+          };
+        }
+      }
+    }
     
     return dataPoints;
   }, [chartApplied, appliedChartSettings, sortedUpdates, profitPercentBase]);
@@ -2544,6 +2589,9 @@ export default function Dashboard() {
                       
                       // Prüfe ob dieser Punkt auch der Endpunkt eines vorherigen Updates ist (Vergleichs-Modus)
                       const hasPrevEndValues = dataPoint._prevEndValues && Object.keys(dataPoint._prevEndValues).length > 0;
+                      
+                      // Prüfe ob dieser Endpunkt AUCH der Startpunkt des nächsten Updates ist (Vergleichs-Modus)
+                      const isAlsoStartOfNext = dataPoint._isAlsoStartOfNext === true && dataPoint._nextStartInfo;
                       
                       // Helper: Formatiere einen Metrik-Wert
                       const formatMetricValue = (name: string, value: number) => {
