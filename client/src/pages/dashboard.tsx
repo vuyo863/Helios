@@ -1059,13 +1059,10 @@ export default function Dashboard() {
       }
       
       // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
-      if (update.lastUpload && startTimestamp !== endTimestamp) {
-        // Bei Vergleichs-Modus: Startpunkt beim vorherigen Endwert starten (nicht bei 0)
-        const startProfit = isVergleichsModus && index > 0 ? prevEndValues['Gesamtprofit'] : 0;
-        const startProfitPercent = isVergleichsModus && index > 0 ? prevEndValues['Gesamtprofit %'] : 0;
-        const startAvgDaily = isVergleichsModus && index > 0 ? prevEndValues['Ø Profit/Tag'] : 0;
-        const startRealDaily = isVergleichsModus && index > 0 ? prevEndValues['Real Profit/Tag'] : 0;
-        
+      // ABER: Bei Vergleichs-Modus KEINEN separaten Startpunkt erstellen!
+      // Die Linie soll flüssig vom vorherigen Endpunkt zum neuen Endpunkt laufen
+      if (update.lastUpload && startTimestamp !== endTimestamp && !(isVergleichsModus && index > 0)) {
+        // Nur bei Neu-Modus: Startpunkt bei 0
         dataPoints.push({
           time: formatTimeLabel(startDate),
           timestamp: startTimestamp,
@@ -1073,15 +1070,11 @@ export default function Dashboard() {
           status: update.status,
           isStartPoint: true,
           calculationMode: update.calculationMode || 'Neu',
-          // Gesamtkapital bleibt konstant (kein Anstieg von 0)
-          // Bei Vergleichs-Modus: Startpunkt = vorheriger Endpunkt
           'Gesamtkapital': gesamtkapital,
-          'Gesamtprofit': startProfit,
-          'Gesamtprofit %': startProfitPercent,
-          'Ø Profit/Tag': startAvgDaily,
-          'Real Profit/Tag': startRealDaily,
-          // Bei Vergleichs-Modus: Speichere auch hier die vorherigen Werte für Tooltip mit 2 Boxen
-          _prevEndValues: isVergleichsModus && index > 0 ? prevEndValues : undefined,
+          'Gesamtprofit': 0,
+          'Gesamtprofit %': 0,
+          'Ø Profit/Tag': 0,
+          'Real Profit/Tag': 0,
         });
       }
       
