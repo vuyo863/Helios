@@ -1068,21 +1068,13 @@ export default function Dashboard() {
         'Real Profit/Tag': cumulativeRealDaily,
       };
       
-      // Bei Vergleichs-Modus: Werte auf kumulative Summe aufaddieren
-      // Bei Neu-Modus (Startmetrik): Kumulative Werte auf aktuelle Werte setzen
-      if (isVergleichsModus && index > 0) {
-        // Vergleichs-Modus: Werte sind Differenzen, addiere zum kumulativen Wert
-        cumulativeProfit += gesamtprofit;
-        cumulativeProfitPercent += gesamtprofitPercent;
-        cumulativeAvgDaily += avgDailyProfit;
-        cumulativeRealDaily += realDailyProfit;
-      } else {
-        // Neu-Modus oder erstes Update: Setze kumulative Werte auf aktuelle Werte
-        cumulativeProfit = gesamtprofit;
-        cumulativeProfitPercent = gesamtprofitPercent;
-        cumulativeAvgDaily = avgDailyProfit;
-        cumulativeRealDaily = realDailyProfit;
-      }
+      // WICHTIG: Immer den RAW-Wert verwenden, KEINE Kumulierung!
+      // Bei Vergleichs-Modus ist overallGridProfitUsdt bereits die DIFFERENZ
+      // Diese soll direkt im Chart angezeigt werden (kann negativ sein)
+      cumulativeProfit = gesamtprofit;
+      cumulativeProfitPercent = gesamtprofitPercent;
+      cumulativeAvgDaily = avgDailyProfit;
+      cumulativeRealDaily = realDailyProfit;
       
       // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
       // ABER: Bei Vergleichs-Modus KEINEN separaten Startpunkt erstellen!
@@ -1093,7 +1085,9 @@ export default function Dashboard() {
       // In diesem Fall keinen separaten Startpunkt erstellen, um Überlappung zu vermeiden
       const startOverlapsPrevEnd = hasPreviousEndPoint && Math.abs(startTimestamp - prevEndTimestamp) < 60000; // 1 Minute Toleranz
       // Bei Vergleichs-Modus: Nie Startpunkt erstellen (Linie läuft flüssig weiter)
-      const skipStartPoint = isVergleichsModus || startOverlapsPrevEnd;
+      // Bei Closed Bots: Auch kein Startpunkt - nur EIN Punkt (End Date) mit dem Profit
+      const isClosedBots = update.status === 'Closed Bots';
+      const skipStartPoint = isVergleichsModus || startOverlapsPrevEnd || isClosedBots;
       
       if (update.lastUpload && startTimestamp !== endTimestamp && !skipStartPoint) {
         // Nur bei Neu-Modus ohne Überlappung: Startpunkt bei 0
@@ -1113,7 +1107,8 @@ export default function Dashboard() {
       }
       
       // Berechne Runtime in Millisekunden (End - Start)
-      const runtimeMs = endTimestamp - startTimestamp;
+      // Bei Closed Bots: keine Runtime (nur ein Punkt mit End Date)
+      const runtimeMs = isClosedBots ? undefined : endTimestamp - startTimestamp;
       
       // Trend P&L (nur bei Update Metrics verfügbar)
       const trendPnl = update.status !== 'Closed Bots' 
