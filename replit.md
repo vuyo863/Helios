@@ -237,3 +237,21 @@ Preferred communication style: Simple, everyday language.
 - `test-closed-bots-calculations.js`: 10 passing tests
 - 5 date calculation tests (End Date - Runtime = Start Date)
 - 5 percent switching tests (Gesamtinvestment vs Investitionsmenge)
+
+## Recent Updates (December 15, 2025)
+
+**Dashboard Gesamtkapital/Investitionsmenge Dropdown:**
+- Dropdown moved from "Gesamtprofit %" card to "Gesamtkapital" card
+- Options: "Gesamtinvestment" (default) and "Investitionsmenge"
+- Card label switches: "Gesamtkapital" vs "Investitionsmenge"
+- displayedInvestment switches between totalInvestment and totalBaseInvestment
+
+**Gesamtprofit % Calculation (Simplified):**
+- Gesamtinvestment: (totalProfit / totalInvestment) × 100
+- Investitionsmenge: (totalProfit / totalBaseInvestment) × 100
+- Direct calculation instead of weighted averages - more reliable
+
+**Chart Animation Optimization:**
+- Animation only triggers on real changes (bot selection, time range, etc.)
+- After 1.5s, animation deactivates (auto-refresh doesn't animate)
+- Applied to: dashboard.tsx, ProfitLineChart.tsx, ProfitBarChartAdvanced.tsx
