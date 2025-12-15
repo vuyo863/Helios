@@ -800,11 +800,11 @@ export default function Dashboard() {
 
   // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
   // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
-  // Nur die Tick-Abstände ändern sich:
-  // - Stunden → viele Ticks (1h Intervall)
-  // - Tage → mittlere Anzahl (1d Intervall)
-  // - Wochen → wenige Ticks (1w Intervall)
-  // - Monate → sehr wenige Ticks (30d Intervall)
+  // Tick-Intervalle:
+  // - Stunden → Stunden-Ticks, Labels = Uhrzeit + ab und zu Datum
+  // - Tage → Tages-Ticks, Labels = Datum
+  // - Wochen → TAGES-Ticks (!), Labels = Datum + ab und zu KW
+  // - Monate → TAGES-Ticks (!), Labels = Datum + ab und zu Monat
   const xAxisTicks = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
     
@@ -817,20 +817,18 @@ export default function Dashboard() {
     
     const sequence = appliedChartSettings?.sequence || 'days';
     
-    // Tick-Intervall je nach Sequence (Granularität)
+    // Tick-Intervall je nach Sequence
+    // WICHTIG: Wochen und Monate haben auch TÄGLICHE Ticks!
+    // Nur die Beschriftung ändert sich
     let tickInterval: number;
     switch (sequence) {
       case 'hours':
         tickInterval = 60 * 60 * 1000;           // 1 Stunde
         break;
       case 'days':
+      case 'weeks':    // Tages-Ticks, aber KW-Labels am Montag
+      case 'months':   // Tages-Ticks, aber Monat-Labels am Monatsersten
         tickInterval = 24 * 60 * 60 * 1000;      // 1 Tag
-        break;
-      case 'weeks':
-        tickInterval = 7 * 24 * 60 * 60 * 1000;  // 1 Woche
-        break;
-      case 'months':
-        tickInterval = 30 * 24 * 60 * 60 * 1000; // ~1 Monat
         break;
       default:
         tickInterval = 24 * 60 * 60 * 1000;      // Default: 1 Tag
@@ -1573,36 +1571,54 @@ export default function Dashboard() {
                       const date = new Date(ts);
                       const sequence = appliedChartSettings?.sequence || 'days';
                       
+                      // Helper: ISO Kalenderwoche berechnen
+                      const getISOWeek = (d: Date): number => {
+                        const date = new Date(d.getTime());
+                        date.setHours(0, 0, 0, 0);
+                        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+                        const week1 = new Date(date.getFullYear(), 0, 4);
+                        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+                      };
+                      
                       if (sequence === 'hours') {
-                        // Bei Stunden-Ansicht:
-                        // - Bei Mitternacht (00:00): Datum zeigen
-                        // - Jeder 5. Tick: Datum zeigen
+                        // Stunden-Ansicht:
+                        // - Ticks = Stunden
+                        // - Bei Mitternacht (00:00) oder jedem 5. Tick: Datum zeigen
                         // - Sonst: nur Uhrzeit
                         const isMidnight = date.getHours() === 0 && date.getMinutes() === 0;
                         const isEvery5th = index % 5 === 0;
                         
                         if (isMidnight || isEvery5th) {
-                          // Datum anzeigen (DD.MM)
                           return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                         } else {
-                          // Nur Uhrzeit (HH:mm)
                           return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                         }
                       } else if (sequence === 'weeks') {
-                        // Kalenderwoche anzeigen (KW X)
-                        const getISOWeek = (d: Date): number => {
-                          const date = new Date(d.getTime());
-                          date.setHours(0, 0, 0, 0);
-                          date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-                          const week1 = new Date(date.getFullYear(), 0, 4);
-                          return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-                        };
-                        return `KW ${getISOWeek(date)}`;
+                        // Wochen-Ansicht:
+                        // - Ticks = TAGE (!)
+                        // - Am Montag (Wochenanfang): KW anzeigen
+                        // - Sonst: Datum (DD.MM)
+                        const isMonday = date.getDay() === 1;
+                        
+                        if (isMonday) {
+                          return `KW ${getISOWeek(date)}`;
+                        } else {
+                          return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        }
                       } else if (sequence === 'months') {
-                        // Monat + Jahr (MMM YY)
-                        return date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+                        // Monate-Ansicht:
+                        // - Ticks = TAGE (!)
+                        // - Am 1. des Monats: Monat anzeigen
+                        // - Sonst: Datum (DD.MM)
+                        const isFirstOfMonth = date.getDate() === 1;
+                        
+                        if (isFirstOfMonth) {
+                          return date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+                        } else {
+                          return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        }
                       } else {
-                        // Tage: DD.MM
+                        // Tage-Ansicht: DD.MM
                         return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                       }
                     }}
