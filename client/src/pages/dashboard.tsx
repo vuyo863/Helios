@@ -238,12 +238,6 @@ export default function Dashboard() {
   // Chart Animation State - Animation nur bei echten Änderungen, nicht bei Auto-Refresh
   const [chartAnimationActive, setChartAnimationActive] = useState(true);
   
-  // Separate Key NUR für Investitions-Basis-Wechsel (Gesamtinvestment ↔ Investitionsmenge)
-  // Diese Key erzwingt komplettes Neu-Rendern des Charts
-  // Nutzt profitPercentBase direkt als Key-Teil statt separatem State
-  // Das vermeidet den Flicker durch doppeltes Rendern
-  const investmentBaseKey = profitPercentBase;
-  
   // Animation aktivieren bei Änderungen
   // Das erhält die geschmeidige Animation beim Metrik-Karten-Wechsel
   useEffect(() => {
@@ -1858,9 +1852,8 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={300} key={`chart-container-${investmentBaseKey}`}>
-                <LineChart 
-                  key={`line-chart-${investmentBaseKey}`}
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
