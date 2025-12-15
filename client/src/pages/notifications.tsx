@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrendPrice {
@@ -17,14 +17,21 @@ interface TrendPrice {
   lastUpdate?: Date;
 }
 
-interface TrendPriceSettings {
-  trendPriceId: string;
+type AlarmLevel = 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich';
+
+interface ThresholdConfig {
+  id: string;
   threshold: string;
   notifyOnIncrease: boolean;
   notifyOnDecrease: boolean;
   increaseFrequency: 'einmalig' | 'wiederholend';
   decreaseFrequency: 'einmalig' | 'wiederholend';
-  customMessage: string;
+  alarmLevel: AlarmLevel;
+}
+
+interface TrendPriceSettings {
+  trendPriceId: string;
+  thresholds: ThresholdConfig[];
 }
 
 export default function Notifications() {
@@ -189,17 +196,20 @@ export default function Notifications() {
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
       setWatchlist(prev => [...prev, id]);
-      // Initialize settings for new trend price
+      // Initialize settings for new trend price with one threshold
       setTrendPriceSettings(prev => ({
         ...prev,
         [id]: {
           trendPriceId: id,
-          threshold: '',
-          notifyOnIncrease: false,
-          notifyOnDecrease: false,
-          increaseFrequency: 'einmalig',
-          decreaseFrequency: 'einmalig',
-          customMessage: ''
+          thresholds: [{
+            id: crypto.randomUUID(),
+            threshold: '',
+            notifyOnIncrease: false,
+            notifyOnDecrease: false,
+            increaseFrequency: 'einmalig',
+            decreaseFrequency: 'einmalig',
+            alarmLevel: 'harmlos'
+          }]
         }
       }));
       setSearchQuery('');
@@ -209,22 +219,85 @@ export default function Notifications() {
   const removeFromWatchlist = (id: string) => {
     setWatchlist(prev => prev.filter(tpId => tpId !== id));
     setExpandedDropdowns(prev => prev.filter(tpId => tpId !== id));
+    setTrendPriceSettings(prev => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
   };
 
   const toggleDropdown = (id: string) => {
-    setExpandedDropdowns(prev =>
-      prev.includes(id) ? prev.filter(tpId => tpId !== id) : [...prev, id]
-    );
+    setExpandedDropdowns(prev => {
+      // Nur ein Dropdown offen zur selben Zeit
+      if (prev.includes(id)) {
+        return []; // Schließe das aktuelle
+      } else {
+        return [id]; // Öffne nur das neue
+      }
+    });
   };
 
-  const updateSetting = (trendPriceId: string, field: keyof TrendPriceSettings, value: any) => {
+  const addThreshold = (trendPriceId: string) => {
     setTrendPriceSettings(prev => ({
       ...prev,
       [trendPriceId]: {
         ...prev[trendPriceId],
-        [field]: value
+        thresholds: [
+          ...prev[trendPriceId].thresholds,
+          {
+            id: crypto.randomUUID(),
+            threshold: '',
+            notifyOnIncrease: false,
+            notifyOnDecrease: false,
+            increaseFrequency: 'einmalig',
+            decreaseFrequency: 'einmalig',
+            alarmLevel: 'harmlos'
+          }
+        ]
       }
     }));
+  };
+
+  const removeThreshold = (trendPriceId: string, thresholdId: string) => {
+    setTrendPriceSettings(prev => ({
+      ...prev,
+      [trendPriceId]: {
+        ...prev[trendPriceId],
+        thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== thresholdId)
+      }
+    }));
+  };
+
+  const updateThreshold = (trendPriceId: string, thresholdId: string, field: keyof ThresholdConfig, value: any) => {
+    setTrendPriceSettings(prev => ({
+      ...prev,
+      [trendPriceId]: {
+        ...prev[trendPriceId],
+        thresholds: prev[trendPriceId].thresholds.map(t =>
+          t.id === thresholdId ? { ...t, [field]: value } : t
+        )
+      }
+    }));
+  };
+
+  const getAlarmLevelColor = (level: AlarmLevel): string => {
+    switch (level) {
+      case 'harmlos': return '#3B82F6'; // Blau
+      case 'achtung': return '#EAB308'; // Gelb
+      case 'gefährlich': return '#F97316'; // Orange
+      case 'sehr_gefährlich': return '#EF4444'; // Rot
+      default: return '#3B82F6';
+    }
+  };
+
+  const getAlarmLevelLabel = (level: AlarmLevel): string => {
+    switch (level) {
+      case 'harmlos': return 'Harmlos';
+      case 'achtung': return 'Achtung';
+      case 'gefährlich': return 'Gefährlich';
+      case 'sehr_gefährlich': return 'Sehr Gefährlich';
+      default: return 'Harmlos';
+    }
   };
 
   const toggleEditMode = (trendPriceId: string) => {
@@ -415,187 +488,290 @@ export default function Notifications() {
               </div>
             </Card>
           ) : (
-            watchlist.map((trendPriceId) => {
-              const settings = trendPriceSettings[trendPriceId] || {
-                trendPriceId,
-                threshold: '',
-                notifyOnIncrease: false,
-                notifyOnDecrease: false,
-                increaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
-                decreaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
-                customMessage: ''
-              };
-              const isExpanded = expandedDropdowns.includes(trendPriceId);
-              const isEditing = editMode[trendPriceId];
+            <div className={cn(
+              "space-y-4",
+              watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
+            )}>
+              {watchlist.map((trendPriceId) => {
+                const settings = trendPriceSettings[trendPriceId] || {
+                  trendPriceId,
+                  thresholds: [{
+                    id: crypto.randomUUID(),
+                    threshold: '',
+                    notifyOnIncrease: false,
+                    notifyOnDecrease: false,
+                    increaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
+                    decreaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
+                    alarmLevel: 'harmlos' as AlarmLevel
+                  }]
+                };
+                const isExpanded = expandedDropdowns.includes(trendPriceId);
+                const isEditing = editMode[trendPriceId];
 
-              return (
-                <Card key={trendPriceId} className="overflow-hidden">
-                  <CardHeader
-                    className="cursor-pointer hover-elevate flex flex-row items-center justify-between"
-                    onClick={() => toggleDropdown(trendPriceId)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <CardTitle className="text-lg">{getTrendPriceName(trendPriceId)}</CardTitle>
-                      {settings.threshold && (
+                return (
+                  <Card key={trendPriceId} className="overflow-hidden">
+                    <CardHeader
+                      className="cursor-pointer hover-elevate flex flex-row items-center justify-between"
+                      onClick={() => toggleDropdown(trendPriceId)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CardTitle className="text-lg">{getTrendPriceName(trendPriceId)}</CardTitle>
                         <span className="text-sm text-muted-foreground">
-                          Schwelle: {settings.threshold} USDT
+                          {settings.thresholds.length} Schwellenwert{settings.thresholds.length !== 1 ? 'e' : ''}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!isExpanded && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleEditMode(trendPriceId);
-                          }}
-                        >
-                          {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                        </Button>
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </div>
-                  </CardHeader>
-
-                  {isExpanded && (
-                    <CardContent className="space-y-6 pt-0">
-                      <div className="flex items-center justify-between pb-4 border-b">
-                        <h3 className="font-semibold">Einstellungen</h3>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleEditMode(trendPriceId)}
-                        >
-                          {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                        </Button>
                       </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor={`threshold-${trendPriceId}`}>Schwellenwert (USDT)</Label>
-                          <Input
-                            id={`threshold-${trendPriceId}`}
-                            type="number"
-                            step="0.01"
-                            placeholder="z.B. 50000"
-                            value={settings.threshold}
-                            onChange={(e) => updateSetting(trendPriceId, 'threshold', e.target.value)}
-                            disabled={!isEditing}
-                            className={cn(!isEditing && "opacity-70")}
-                          />
-                        </div>
-
-                        <div className="space-y-3">
-                          <Label>Benachrichtigungen bei:</Label>
-                          
-                          {/* Preiserhöhung über Schwellenwert */}
-                          <div className="space-y-2 p-3 rounded-lg border">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`increase-${trendPriceId}`}
-                                checked={settings.notifyOnIncrease}
-                                onCheckedChange={(checked) =>
-                                  updateSetting(trendPriceId, 'notifyOnIncrease', checked)
-                                }
-                                disabled={!isEditing}
-                              />
-                              <Label
-                                htmlFor={`increase-${trendPriceId}`}
-                                className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
-                              >
-                                Preiserhöhung über Schwellenwert
-                              </Label>
-                            </div>
-                            {settings.notifyOnIncrease && (
-                              <div className="ml-6 flex items-center gap-2">
-                                <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
-                                <select
-                                  className="text-sm border rounded px-2 py-1 bg-background"
-                                  disabled={!isEditing}
-                                  value={settings.increaseFrequency}
-                                  onChange={(e) => updateSetting(trendPriceId, 'increaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
-                                >
-                                  <option value="einmalig">Einmalig</option>
-                                  <option value="wiederholend">Wiederholend</option>
-                                </select>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Preissenkung unter Schwellenwert */}
-                          <div className="space-y-2 p-3 rounded-lg border">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`decrease-${trendPriceId}`}
-                                checked={settings.notifyOnDecrease}
-                                onCheckedChange={(checked) =>
-                                  updateSetting(trendPriceId, 'notifyOnDecrease', checked)
-                                }
-                                disabled={!isEditing}
-                              />
-                              <Label
-                                htmlFor={`decrease-${trendPriceId}`}
-                                className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
-                              >
-                                Preissenkung unter Schwellenwert
-                              </Label>
-                            </div>
-                            {settings.notifyOnDecrease && (
-                              <div className="ml-6 flex items-center gap-2">
-                                <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
-                                <select
-                                  className="text-sm border rounded px-2 py-1 bg-background"
-                                  disabled={!isEditing}
-                                  value={settings.decreaseFrequency}
-                                  onChange={(e) => updateSetting(trendPriceId, 'decreaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
-                                >
-                                  <option value="einmalig">Einmalig</option>
-                                  <option value="wiederholend">Wiederholend</option>
-                                </select>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor={`message-${trendPriceId}`}>Benutzerdefinierte Nachricht (Optional)</Label>
-                          <Input
-                            id={`message-${trendPriceId}`}
-                            placeholder="z.B. BTC erreicht wichtige Marke"
-                            value={settings.customMessage}
-                            onChange={(e) => updateSetting(trendPriceId, 'customMessage', e.target.value)}
-                            disabled={!isEditing}
-                            className={cn(!isEditing && "opacity-70")}
-                          />
-                        </div>
-                      </div>
-
-                      {isEditing && (
-                        <div className="flex justify-end gap-2 pt-4 border-t">
+                      <div className="flex items-center gap-2">
+                        {!isExpanded && (
                           <Button
-                            variant="outline"
-                            onClick={() => toggleEditMode(trendPriceId)}
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleEditMode(trendPriceId);
+                            }}
                           >
-                            Abbrechen
+                            {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
                           </Button>
-                          <Button onClick={() => toggleEditMode(trendPriceId)}>
-                            Speichern
-                          </Button>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5" />
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    {isExpanded && (
+                      <CardContent className="space-y-6 pt-0">
+                        <div className="flex items-center justify-between pb-4 border-b">
+                          <h3 className="font-semibold">Schwellenwerte</h3>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleEditMode(trendPriceId)}
+                            >
+                              {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })
+
+                        <div className="space-y-4">
+                          {settings.thresholds.map((threshold, index) => (
+                            <div key={threshold.id} className="p-4 border rounded-lg space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Schwellenwert {index + 1}</h4>
+                                {settings.thresholds.length > 1 && isEditing && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeThreshold(trendPriceId, threshold.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+
+                              <div>
+                                <Label htmlFor={`threshold-${threshold.id}`}>Schwellenwert (USDT)</Label>
+                                <Input
+                                  id={`threshold-${threshold.id}`}
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="z.B. 50000"
+                                  value={threshold.threshold}
+                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'threshold', e.target.value)}
+                                  disabled={!isEditing}
+                                  className={cn(!isEditing && "opacity-70")}
+                                />
+                              </div>
+
+                              <div className="space-y-3">
+                                <Label>Benachrichtigungen bei:</Label>
+                                
+                                {/* Preiserhöhung über Schwellenwert */}
+                                <div className="space-y-2 p-3 rounded-lg border">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`increase-${threshold.id}`}
+                                      checked={threshold.notifyOnIncrease}
+                                      onCheckedChange={(checked) =>
+                                        updateThreshold(trendPriceId, threshold.id, 'notifyOnIncrease', checked)
+                                      }
+                                      disabled={!isEditing}
+                                    />
+                                    <Label
+                                      htmlFor={`increase-${threshold.id}`}
+                                      className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
+                                    >
+                                      Preiserhöhung über Schwellenwert
+                                    </Label>
+                                  </div>
+                                  {threshold.notifyOnIncrease && (
+                                    <div className="ml-6 flex items-center gap-2">
+                                      <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                      <select
+                                        className="text-sm border rounded px-2 py-1 bg-background"
+                                        disabled={!isEditing}
+                                        value={threshold.increaseFrequency}
+                                        onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'increaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                      >
+                                        <option value="einmalig">Einmalig</option>
+                                        <option value="wiederholend">Wiederholend</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Preissenkung unter Schwellenwert */}
+                                <div className="space-y-2 p-3 rounded-lg border">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`decrease-${threshold.id}`}
+                                      checked={threshold.notifyOnDecrease}
+                                      onCheckedChange={(checked) =>
+                                        updateThreshold(trendPriceId, threshold.id, 'notifyOnDecrease', checked)
+                                      }
+                                      disabled={!isEditing}
+                                    />
+                                    <Label
+                                      htmlFor={`decrease-${threshold.id}`}
+                                      className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
+                                    >
+                                      Preissenkung unter Schwellenwert
+                                    </Label>
+                                  </div>
+                                  {threshold.notifyOnDecrease && (
+                                    <div className="ml-6 flex items-center gap-2">
+                                      <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                      <select
+                                        className="text-sm border rounded px-2 py-1 bg-background"
+                                        disabled={!isEditing}
+                                        value={threshold.decreaseFrequency}
+                                        onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'decreaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                      >
+                                        <option value="einmalig">Einmalig</option>
+                                        <option value="wiederholend">Wiederholend</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label htmlFor={`alarm-${threshold.id}`}>Alarmierungsstufe</Label>
+                                <select
+                                  id={`alarm-${threshold.id}`}
+                                  className="w-full text-sm border rounded px-3 py-2 bg-background"
+                                  disabled={!isEditing}
+                                  value={threshold.alarmLevel}
+                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'alarmLevel', e.target.value as AlarmLevel)}
+                                  style={{
+                                    borderColor: getAlarmLevelColor(threshold.alarmLevel),
+                                    color: getAlarmLevelColor(threshold.alarmLevel)
+                                  }}
+                                >
+                                  <option value="harmlos">Harmlos</option>
+                                  <option value="achtung">Achtung</option>
+                                  <option value="gefährlich">Gefährlich</option>
+                                  <option value="sehr_gefährlich">Sehr Gefährlich</option>
+                                </select>
+                              </div>
+                            </div>
+                          ))}
+
+                          {isEditing && (
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => addThreshold(trendPriceId)}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Weiteren Schwellenwert hinzufügen
+                            </Button>
+                          )}
+                        </div>
+
+                        {isEditing && (
+                          <div className="flex justify-end gap-2 pt-4 border-t">
+                            <Button
+                              variant="outline"
+                              onClick={() => toggleEditMode(trendPriceId)}
+                            >
+                              Abbrechen
+                            </Button>
+                            <Button onClick={() => toggleEditMode(trendPriceId)}>
+                              Speichern
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
+
+        {/* Alarmierungsstufen konfigurieren Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Alarmierungsstufen konfigurieren</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Harmlos */}
+              <div className="p-4 border rounded-lg" style={{ borderColor: '#3B82F6' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
+                  <h4 className="font-semibold">Harmlos</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Info-Benachrichtigung ohne besondere Dringlichkeit.
+                </p>
+              </div>
+
+              {/* Achtung */}
+              <div className="p-4 border rounded-lg" style={{ borderColor: '#EAB308' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#EAB308' }}></div>
+                  <h4 className="font-semibold">Achtung</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Erhöhte Aufmerksamkeit erforderlich.
+                </p>
+              </div>
+
+              {/* Gefährlich */}
+              <div className="p-4 border rounded-lg" style={{ borderColor: '#F97316' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#F97316' }}></div>
+                  <h4 className="font-semibold">Gefährlich</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Wichtige Warnung - Handlung empfohlen.
+                </p>
+              </div>
+
+              {/* Sehr Gefährlich */}
+              <div className="p-4 border rounded-lg" style={{ borderColor: '#EF4444' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#EF4444' }}></div>
+                  <h4 className="font-semibold">Sehr Gefährlich</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Kritischer Alarm - Sofortiges Handeln erforderlich.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground mt-4">
+              Die Konfiguration der Benachrichtigungsmechanismen für jede Stufe wird in einem separaten Update implementiert.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
