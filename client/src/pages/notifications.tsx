@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,11 @@ import { cn } from "@/lib/utils";
 interface TrendPrice {
   id: string;
   name: string;
+  symbol: string; // For API calls (e.g., BTCUSDT)
   price?: string;
+  priceChange24h?: string;
+  priceChangePercent24h?: string;
   lastUpdate?: Date;
-  priceChange24h?: number;
 }
 
 interface TrendPriceSettings {
@@ -27,90 +28,109 @@ interface TrendPriceSettings {
 export default function Notifications() {
   // Verfügbare Trading Pairs für Suche
   const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([
-    { id: '1', name: 'BTC/USDT', price: '45,234.50', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '2', name: 'ETH/USDT', price: '2,345.67', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '3', name: 'SOL/USDT', price: '98.45', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '4', name: 'BNB/USDT', price: '312.89', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '5', name: 'XRP/USDT', price: '0.5234', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '6', name: 'ADA/USDT', price: '0.4567', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '7', name: 'DOGE/USDT', price: '0.0823', lastUpdate: new Date(), priceChange24h: 0 },
-    { id: '8', name: 'MATIC/USDT', price: '0.8912', lastUpdate: new Date(), priceChange24h: 0 },
+    { id: '1', name: 'BTC/USDT', symbol: 'BTCUSDT', price: 'Loading...' },
+    { id: '2', name: 'ETH/USDT', symbol: 'ETHUSDT', price: 'Loading...' },
+    { id: '3', name: 'SOL/USDT', symbol: 'SOLUSDT', price: 'Loading...' },
+    { id: '4', name: 'BNB/USDT', symbol: 'BNBUSDT', price: 'Loading...' },
+    { id: '5', name: 'XRP/USDT', symbol: 'XRPUSDT', price: 'Loading...' },
+    { id: '6', name: 'ADA/USDT', symbol: 'ADAUSDT', price: 'Loading...' },
+    { id: '7', name: 'DOGE/USDT', symbol: 'DOGEUSDT', price: 'Loading...' },
+    { id: '8', name: 'MATIC/USDT', symbol: 'MATICUSDT', price: 'Loading...' },
+    { id: '9', name: 'ICP/USDT', symbol: 'ICPUSDT', price: 'Loading...' },
+    { id: '10', name: 'DOT/USDT', symbol: 'DOTUSDT', price: 'Loading...' },
+    { id: '11', name: 'AVAX/USDT', symbol: 'AVAXUSDT', price: 'Loading...' },
+    { id: '12', name: 'LINK/USDT', symbol: 'LINKUSDT', price: 'Loading...' },
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
+  const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
 
-  // Live Price Update System - Aktualisiert alle 2 Sekunden
-  useEffect(() => {
-    if (!isLiveUpdating) return;
+  // Funktion zum Abrufen der aktuellen Preise von Binance API
+  const fetchPrices = async (symbols: string[]) => {
+    if (symbols.length === 0) return;
 
-    const fetchLivePrices = async () => {
-      try {
-        // Nur Watchlist-Pairs aktualisieren für bessere Performance
-        const pairsToUpdate = watchlist.length > 0 
-          ? availableTradingPairs.filter(p => watchlist.includes(p.id))
-          : availableTradingPairs;
+    try {
+      // Binance Public API - 24hr Ticker Price Change Statistics
+      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
+      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`);
 
-        const updatedPairs = await Promise.all(
-          pairsToUpdate.map(async (pair) => {
-            try {
-              // Binance API verwenden (öffentliche API, keine Authentifizierung nötig)
-              const symbol = pair.name.replace('/', '').replace('-', '');
-              const response = await fetch(
-                `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`
-              );
-              
-              if (response.ok) {
-                const data = await response.json();
-                return {
-                  ...pair,
-                  price: parseFloat(data.lastPrice).toFixed(pair.name.includes('DOGE') || pair.name.includes('XRP') || pair.name.includes('ADA') ? 4 : 2),
-                  lastUpdate: new Date(),
-                  priceChange24h: parseFloat(data.priceChangePercent)
-                };
-              }
-            } catch (error) {
-              console.warn(`Preis-Update für ${pair.name} fehlgeschlagen:`, error);
-            }
-            return pair;
-          })
-        );
-
-        setAvailableTradingPairs(prev => {
-          const updated = [...prev];
-          updatedPairs.forEach(updatedPair => {
-            const index = updated.findIndex(p => p.id === updatedPair.id);
-            if (index !== -1) {
-              updated[index] = updatedPair;
-            }
-          });
-          return updated;
-        });
-      } catch (error) {
-        console.error('Live-Preis-Update fehlgeschlagen:', error);
+      if (!response.ok) {
+        console.error('Failed to fetch prices from Binance API');
+        return;
       }
-    };
 
-    // Sofort beim Start aktualisieren
-    fetchLivePrices();
+      const data = await response.json();
 
-    // Dann alle 2 Sekunden
-    intervalRef.current = setInterval(fetchLivePrices, 2000);
+      setAvailableTradingPairs(prev => {
+        const updated = [...prev];
+        data.forEach((ticker: any) => {
+          const index = updated.findIndex(p => p.symbol === ticker.symbol);
+          if (index !== -1) {
+            updated[index] = {
+              ...updated[index],
+              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }),
+              priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
+              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
+              lastUpdate: new Date(), // Update last update time
+            };
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+    }
+  };
+
+  // Initial fetch und regelmäßige Updates für alle Trading Pairs
+  useEffect(() => {
+    const allSymbols = availableTradingPairs.map(p => p.symbol);
+
+    // Initial fetch
+    fetchPrices(allSymbols);
+
+    // Update alle 2 Sekunden
+    priceUpdateIntervalRef.current = setInterval(() => {
+      fetchPrices(allSymbols);
+    }, 2000);
 
     return () => {
+      if (priceUpdateIntervalRef.current) {
+        clearInterval(priceUpdateIntervalRef.current);
+      }
+    };
+  }, []); // Run only once on mount
+
+  // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
+  useEffect(() => {
+    // This effect is now largely superseded by the priceUpdateIntervalRef logic above.
+    // It's kept here for potential future use or if specific logic related to isLiveUpdating state is needed.
+    // However, the core price fetching is handled by priceUpdateIntervalRef.
+    if (!isLiveUpdating) return;
+
+    // The interval logic is now in priceUpdateIntervalRef's useEffect.
+    // This block can be simplified or removed if not strictly needed for other state changes.
+
+    return () => {
+      // Cleanup for the old intervalRef if it were to be used.
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isLiveUpdating, watchlist]);
+  }, [isLiveUpdating, watchlist]); // Dependencies potentially relevant if this effect were active
+
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
 
   // Gefilterte Vorschläge basierend auf Suchanfrage
-  const filteredSuggestions = availableTradingPairs.filter(pair => 
+  const filteredSuggestions = availableTradingPairs.filter(pair =>
     pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
     !watchlist.includes(pair.id)
   );
@@ -161,13 +181,15 @@ export default function Notifications() {
     }));
   };
 
-  const getTrendPriceName = (id: string) => {
-    return availableTradingPairs.find(tp => tp.id === id)?.name || id;
-  };
-
   const getTrendPrice = (id: string) => {
     return availableTradingPairs.find(tp => tp.id === id);
   };
+
+  // Helper to get the name, falling back to ID if not found
+  const getTrendPriceName = (id: string) => {
+    return getTrendPrice(id)?.name || id;
+  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -238,14 +260,15 @@ export default function Notifications() {
                           >
                             <div className="flex-1">
                               <p className="font-medium">{pair.name}</p>
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold">{pair.price} USDT</p>
-                                {pair.priceChange24h !== undefined && pair.priceChange24h !== 0 && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-muted-foreground">${pair.price}</span>
+                                {pair.priceChangePercent24h && (
                                   <span className={cn(
                                     "text-xs font-medium",
-                                    pair.priceChange24h > 0 ? "text-green-500" : "text-red-500"
+                                    parseFloat(pair.priceChangePercent24h) >= 0 ? "text-green-500" : "text-red-500"
                                   )}>
-                                    {pair.priceChange24h > 0 ? "+" : ""}{pair.priceChange24h.toFixed(2)}%
+                                    {parseFloat(pair.priceChangePercent24h) >= 0 ? "+" : ""}
+                                    {pair.priceChangePercent24h}%
                                   </span>
                                 )}
                               </div>
@@ -272,7 +295,7 @@ export default function Notifications() {
                     Watchlist ({watchlist.length})
                   </Label>
                 </div>
-                
+
                 <div className="border rounded-lg min-h-[200px]">
                   {watchlist.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
@@ -292,19 +315,15 @@ export default function Notifications() {
                           >
                             <div className="flex-1">
                               <p className="font-medium">{pair?.name}</p>
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold">{pair?.price} USDT</p>
-                                {pair?.priceChange24h !== undefined && pair.priceChange24h !== 0 && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-muted-foreground">${pair?.price}</span>
+                                {pair?.priceChangePercent24h && (
                                   <span className={cn(
                                     "text-xs font-medium",
-                                    pair.priceChange24h > 0 ? "text-green-500" : "text-red-500"
+                                    parseFloat(pair.priceChangePercent24h) >= 0 ? "text-green-500" : "text-red-500"
                                   )}>
-                                    {pair.priceChange24h > 0 ? "+" : ""}{pair.priceChange24h.toFixed(2)}%
-                                  </span>
-                                )}
-                                {pair?.lastUpdate && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(pair.lastUpdate).toLocaleTimeString('de-DE')}
+                                    {parseFloat(pair.priceChangePercent24h) >= 0 ? "+" : ""}
+                                    {pair.priceChangePercent24h}% (24h)
                                   </span>
                                 )}
                               </div>
@@ -331,7 +350,7 @@ export default function Notifications() {
         {/* Benachrichtigungen Liste */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold">Benachrichtigungen konfigurieren</h2>
-          
+
           {watchlist.length === 0 ? (
             <Card className="p-8 text-center">
               <div className="flex flex-col items-center gap-4 text-muted-foreground">
@@ -354,7 +373,7 @@ export default function Notifications() {
 
               return (
                 <Card key={trendPriceId} className="overflow-hidden">
-                  <CardHeader 
+                  <CardHeader
                     className="cursor-pointer hover-elevate flex flex-row items-center justify-between"
                     onClick={() => toggleDropdown(trendPriceId)}
                   >
@@ -421,12 +440,12 @@ export default function Notifications() {
                             <Checkbox
                               id={`increase-${trendPriceId}`}
                               checked={settings.notifyOnIncrease}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked) =>
                                 updateSetting(trendPriceId, 'notifyOnIncrease', checked)
                               }
                               disabled={!isEditing}
                             />
-                            <Label 
+                            <Label
                               htmlFor={`increase-${trendPriceId}`}
                               className={cn("cursor-pointer", !isEditing && "opacity-70")}
                             >
@@ -437,12 +456,12 @@ export default function Notifications() {
                             <Checkbox
                               id={`decrease-${trendPriceId}`}
                               checked={settings.notifyOnDecrease}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked) =>
                                 updateSetting(trendPriceId, 'notifyOnDecrease', checked)
                               }
                               disabled={!isEditing}
                             />
-                            <Label 
+                            <Label
                               htmlFor={`decrease-${trendPriceId}`}
                               className={cn("cursor-pointer", !isEditing && "opacity-70")}
                             >
