@@ -237,13 +237,21 @@ export default function Dashboard() {
   
   // Chart Animation State - Animation nur bei echten Änderungen, nicht bei Auto-Refresh
   const [chartAnimationActive, setChartAnimationActive] = useState(true);
-  const [chartAnimationKey, setChartAnimationKey] = useState(0);
   
-  // Animation-Key ändert sich bei relevanten Settings-Änderungen
+  // Separate Key NUR für Investitions-Basis-Wechsel (Gesamtinvestment ↔ Investitionsmenge)
+  // Diese Key erzwingt komplettes Neu-Rendern des Charts
+  const [investmentBaseKey, setInvestmentBaseKey] = useState(0);
+  
+  // Investitions-Basis-Wechsel: Chart komplett neu laden
+  useEffect(() => {
+    setInvestmentBaseKey(prev => prev + 1);
+  }, [profitPercentBase]);
+  
+  // Animation aktivieren bei anderen Änderungen (NICHT die Key ändern!)
+  // Das erhält die geschmeidige Animation beim Metrik-Karten-Wechsel
   useEffect(() => {
     // Trigger neue Animation bei Änderungen
     setChartAnimationActive(true);
-    setChartAnimationKey(prev => prev + 1);
     
     // Nach 1.5s Animation deaktivieren (Auto-Refresh soll nicht animieren)
     const timer = setTimeout(() => {
@@ -1853,9 +1861,9 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={300} key={`chart-container-${chartAnimationKey}`}>
+              <ResponsiveContainer width="100%" height={300} key={`chart-container-${investmentBaseKey}`}>
                 <LineChart 
-                  key={`line-chart-${chartAnimationKey}`}
+                  key={`line-chart-${investmentBaseKey}`}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
