@@ -213,7 +213,6 @@ export default function Dashboard() {
   });
   const [activeMetricCards, setActiveMetricCards] = useState<string[]>(['Gesamtkapital', 'Gesamtprofit']);
   const [showGridProfit, setShowGridProfit] = useState(false);
-  const [showTrendPnl, setShowTrendPnl] = useState(false);
   const [showHighestValue, setShowHighestValue] = useState(false);
   const [showLowestValue, setShowLowestValue] = useState(false);
   // Dropdown-State für Gesamtprofit % - wählt zwischen Gesamtinvestment und Investitionsmenge
@@ -963,8 +962,6 @@ export default function Dashboard() {
       calculationMode?: string; // 'Neu' oder 'Vergleich'
       // Runtime in Millisekunden (nur bei Endpunkten)
       runtimeMs?: number;
-      // Trend P&L (nur bei Update Metrics)
-      trendPnl?: number;
       // Alle Metriken
       'Gesamtkapital': number;
       'Gesamtprofit': number;
@@ -1110,11 +1107,6 @@ export default function Dashboard() {
       // Bei Closed Bots: keine Runtime (nur ein Punkt mit End Date)
       const runtimeMs = isClosedBots ? undefined : endTimestamp - startTimestamp;
       
-      // Trend P&L (nur bei Update Metrics verfügbar)
-      const trendPnl = update.status !== 'Closed Bots' 
-        ? parseFloat(update.overallTrendPnlUsdt || '0') || 0
-        : undefined;
-      
       // Endpunkt mit allen Metrik-Werten (kumuliert bei Vergleichs-Modus)
       dataPoints.push({
         time: formatTimeLabel(endDate),
@@ -1124,7 +1116,6 @@ export default function Dashboard() {
         isStartPoint: false,
         calculationMode: update.calculationMode || 'Neu',
         runtimeMs: runtimeMs,
-        trendPnl: trendPnl,
         'Gesamtkapital': gesamtkapital,
         'Gesamtprofit': cumulativeProfit,
         'Gesamtprofit %': cumulativeProfitPercent,
@@ -2859,12 +2850,6 @@ export default function Dashboard() {
                               </p>
                             );
                           })}
-                          {/* Trend P&L anzeigen - nur bei Endpunkten und wenn Toggle aktiviert */}
-                          {showTrendPnl && dataPoint.isStartPoint === false && dataPoint.trendPnl !== undefined && (
-                            <p style={{ color: dataPoint.trendPnl >= 0 ? '#22c55e' : '#ef4444', margin: '2px 0' }}>
-                              Trend P&L: {dataPoint.trendPnl.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                            </p>
-                          )}
                           {/* Runtime anzeigen - nur bei Endpunkten (nicht Startpunkten) */}
                           {dataPoint.isStartPoint === false && dataPoint.runtimeMs !== undefined && dataPoint.runtimeMs > 0 && (
                             <p style={{ color: 'hsl(var(--muted-foreground))', margin: '4px 0 0 0', fontSize: '12px' }}>
@@ -3206,13 +3191,6 @@ export default function Dashboard() {
               <Separator />
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Trend P&L</span>
-                  <Switch
-                    checked={showTrendPnl}
-                    onCheckedChange={setShowTrendPnl}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-sm">Highest Value</span>
                   <Switch
                     checked={showHighestValue}
@@ -3314,7 +3292,6 @@ export default function Dashboard() {
               setSelectedTimeRange('First-Last Update');
               setChartSequence('days');
               setShowGridProfit(false);
-              setShowTrendPnl(false);
               setShowHighestValue(false);
               setShowLowestValue(false);
               setSelectedFromUpdate(null);
