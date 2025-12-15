@@ -521,6 +521,7 @@ export default function Dashboard() {
 
   // Chart-Daten basierend auf appliedChartSettings generieren
   // Default: Gesamtprofit anzeigen
+  // Für jeden Update werden ZWEI Punkte erstellt: Start (lastUpload) und Ende (thisUpload)
   const chartData = useMemo(() => {
     if (!chartApplied || !appliedChartSettings || !sortedUpdates || sortedUpdates.length === 0) {
       return [];
@@ -546,28 +547,47 @@ export default function Dashboard() {
       return timeA - timeB;
     });
     
-    // Generiere Chart-Daten mit Gesamtprofit (Default)
-    // Jeder Punkt = ein Update mit seinem Zeitstempel und Gesamtprofit
-    return filteredUpdates.map((update, index) => {
-      const timestamp = getUpdateTimestamp(update);
-      const date = new Date(timestamp);
-      
-      // Format je nach Sequence
-      let timeLabel = '';
+    // Helper Funktion für Zeitlabel-Formatierung
+    const formatTimeLabel = (date: Date) => {
       switch (appliedChartSettings.sequence) {
         case 'hours':
-          timeLabel = date.toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
-          break;
+          return date.toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
         case 'days':
-          timeLabel = date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
-          break;
+          return date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
         case 'weeks':
-          timeLabel = date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
-          break;
+          return date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
         case 'months':
-          timeLabel = date.toLocaleString('de-DE', { month: 'short', year: '2-digit' });
-          break;
+          return date.toLocaleString('de-DE', { month: 'short', year: '2-digit' });
+        default:
+          return date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
       }
+    };
+    
+    // Generiere Chart-Daten mit ZWEI Punkten pro Update: Start und Ende
+    // Das zeigt den ganzen Zeitraum des Updates an (FROM bis UNTIL)
+    const dataPoints: Array<{
+      time: string;
+      timestamp: number;
+      wert: number;
+      version: number;
+      status: string;
+      isStartPoint?: boolean;
+    }> = [];
+    
+    filteredUpdates.forEach((update, index) => {
+      // Endpunkt: thisUpload (Ende des Updates)
+      const endTimestamp = getUpdateTimestamp(update);
+      const endDate = new Date(endTimestamp);
+      
+      // Startpunkt: lastUpload (Anfang des Updates)
+      let startTimestamp = endTimestamp;
+      if (update.lastUpload) {
+        const parsed = parseGermanDate(update.lastUpload);
+        if (parsed) {
+          startTimestamp = parsed.getTime();
+        }
+      }
+      const startDate = new Date(startTimestamp);
       
       // Gesamtprofit: für Update Metrics = overallGridProfitUsdt, für Closed Bots = profit
       let gesamtprofit = 0;
@@ -577,14 +597,33 @@ export default function Dashboard() {
         gesamtprofit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
       }
       
-      return {
-        time: timeLabel,
-        timestamp: timestamp,
+      // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
+      if (update.lastUpload && startTimestamp !== endTimestamp) {
+        dataPoints.push({
+          time: formatTimeLabel(startDate),
+          timestamp: startTimestamp,
+          wert: 0, // Startpunkt beginnt bei 0
+          version: update.version || index + 1,
+          status: update.status,
+          isStartPoint: true
+        });
+      }
+      
+      // Endpunkt mit Gesamtprofit
+      dataPoints.push({
+        time: formatTimeLabel(endDate),
+        timestamp: endTimestamp,
         wert: gesamtprofit,
         version: update.version || index + 1,
-        status: update.status
-      };
+        status: update.status,
+        isStartPoint: false
+      });
     });
+    
+    // Sortiere alle Punkte nach Zeitstempel
+    dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+    
+    return dataPoints;
   }, [chartApplied, appliedChartSettings, sortedUpdates]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
