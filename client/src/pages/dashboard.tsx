@@ -1563,69 +1563,109 @@ export default function Dashboard() {
                     type="number"
                     domain={['dataMin', 'dataMax']}
                     ticks={xAxisTicks.length > 0 ? xAxisTicks : undefined}
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                    tickFormatter={(ts, index) => {
-                      if (!ts || ts === 0) return '-';
-                      const date = new Date(ts);
+                    height={70}
+                    tickSize={8}
+                    tick={(props: any) => {
+                      const { x, y, payload, index } = props;
+                      if (!payload || !payload.value || payload.value === 0) {
+                        return <text x={x} y={y} textAnchor="end" fill="hsl(var(--muted-foreground))" fontSize={11}>-</text>;
+                      }
+                      
+                      const date = new Date(payload.value);
                       const sequence = appliedChartSettings?.sequence || 'days';
                       
                       // Helper: ISO Kalenderwoche berechnen
                       const getISOWeek = (d: Date): number => {
-                        const date = new Date(d.getTime());
-                        date.setHours(0, 0, 0, 0);
-                        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-                        const week1 = new Date(date.getFullYear(), 0, 4);
-                        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+                        const dt = new Date(d.getTime());
+                        dt.setHours(0, 0, 0, 0);
+                        dt.setDate(dt.getDate() + 3 - (dt.getDay() + 6) % 7);
+                        const week1 = new Date(dt.getFullYear(), 0, 4);
+                        return 1 + Math.round(((dt.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
                       };
                       
+                      let label = '';
+                      let isMajor = false;
+                      
                       if (sequence === 'hours') {
-                        // Stunden-Ansicht:
-                        // - Ticks = Stunden
-                        // - Bei Mitternacht (00:00) oder jedem 5. Tick: Datum zeigen
-                        // - Sonst: nur Uhrzeit
                         const isMidnight = date.getHours() === 0 && date.getMinutes() === 0;
                         const isEvery5th = index % 5 === 0;
+                        isMajor = isMidnight || isEvery5th;
                         
-                        if (isMidnight || isEvery5th) {
-                          return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        if (isMajor) {
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                         } else {
-                          return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                          label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                         }
                       } else if (sequence === 'weeks') {
-                        // Wochen-Ansicht:
-                        // - Ticks = TAGE (!)
-                        // - Am Montag (Wochenanfang): KW anzeigen
-                        // - Sonst: Datum (DD.MM)
                         const isMonday = date.getDay() === 1;
+                        isMajor = isMonday;
                         
-                        if (isMonday) {
-                          return `KW ${getISOWeek(date)}`;
+                        if (isMajor) {
+                          label = `KW ${getISOWeek(date)}`;
                         } else {
-                          return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                         }
                       } else if (sequence === 'months') {
-                        // Monate-Ansicht:
-                        // - Ticks = TAGE (!)
-                        // - Am 1. des Monats: Monat anzeigen
-                        // - Sonst: Datum (DD.MM)
                         const isFirstOfMonth = date.getDate() === 1;
+                        isMajor = isFirstOfMonth;
                         
-                        if (isFirstOfMonth) {
-                          return date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+                        if (isMajor) {
+                          label = date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
                         } else {
-                          return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                         }
                       } else {
-                        // Tage-Ansicht: DD.MM
-                        return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                      }
+                      
+                      if (isMajor) {
+                        // Major tick: Blauer Ring, größere Schrift
+                        const textWidth = label.length * 6 + 8;
+                        const textHeight = 16;
+                        return (
+                          <g transform={`translate(${x},${y}) rotate(-45)`}>
+                            <rect
+                              x={-textWidth + 4}
+                              y={-textHeight / 2 - 1}
+                              width={textWidth}
+                              height={textHeight}
+                              rx={4}
+                              ry={4}
+                              fill="transparent"
+                              stroke="hsl(217, 91%, 60%)"
+                              strokeWidth={1.5}
+                            />
+                            <text
+                              x={0}
+                              y={4}
+                              textAnchor="end"
+                              fill="hsl(217, 91%, 60%)"
+                              fontSize={12}
+                              fontWeight={600}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      } else {
+                        // Minor tick: Normal
+                        return (
+                          <g transform={`translate(${x},${y}) rotate(-45)`}>
+                            <text
+                              x={0}
+                              y={4}
+                              textAnchor="end"
+                              fill="hsl(var(--muted-foreground))"
+                              fontSize={11}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
                       }
                     }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    tickSize={8}
                   />
                   <YAxis 
                     domain={yAxisDomain}
