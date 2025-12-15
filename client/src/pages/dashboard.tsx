@@ -260,18 +260,15 @@ export default function Dashboard() {
   const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
   
   // Chart Zoom & Pan Event-Handler
-  // Shift + Scroll = X-Achsen-Zoom (Zeit), Normal Scroll = Y-Achsen-Zoom (Werte)
+  // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
   const handleChartWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
     
-    if (e.shiftKey) {
-      // Shift gehalten: X-Achsen-Zoom (Zeit-Zoom)
-      setChartZoomX(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
-    } else {
-      // Normal: Y-Achsen-Zoom (Werte-Zoom)
-      setChartZoomY(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
-    }
+    // Zoom für beide Achsen gleichzeitig
+    setChartZoomY(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+    setChartZoomX(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
   };
   
   const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -2019,7 +2016,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <ZoomIn className="h-3 w-3" />
-                      Y:{chartZoomY.toFixed(1)}x X:{chartZoomX.toFixed(1)}x
+                      {chartZoomY.toFixed(1)}x
                     </span>
                     <Button
                       variant="ghost"
