@@ -1563,6 +1563,7 @@ export default function Dashboard() {
                     type="number"
                     domain={['dataMin', 'dataMax']}
                     ticks={xAxisTicks.length > 0 ? xAxisTicks : undefined}
+                    interval={0}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                     height={70}
