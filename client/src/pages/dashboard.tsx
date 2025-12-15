@@ -1161,10 +1161,10 @@ export default function Dashboard() {
         return ts === currentPoint.timestamp;
       });
       
-      // WICHTIG: filteredUpdates ist in ABSTEIGENDER Reihenfolge (neueste zuerst)
-      // Das NÄCHSTE Update in chronologischer Reihenfolge ist also bei index - 1
-      if (currentUpdateIndex > 0) {
-        const nextUpdate = filteredUpdates[currentUpdateIndex - 1];
+      // WICHTIG: filteredUpdates ist AUFSTEIGEND sortiert (älteste zuerst, Zeile 930-934)
+      // Das NÄCHSTE Update in chronologischer Reihenfolge ist also bei index + 1
+      if (currentUpdateIndex >= 0 && currentUpdateIndex < filteredUpdates.length - 1) {
+        const nextUpdate = filteredUpdates[currentUpdateIndex + 1];
         // Prüfe ob das nächste Update ein Vergleichs-Update ist
         // Primär: Prüfe *_absolute Felder (wenn vorhanden und unterschiedlich)
         // Fallback: Prüfe calculationMode === "Normal" (nicht Startmetrik)
