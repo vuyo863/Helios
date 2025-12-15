@@ -200,6 +200,15 @@ export default function Dashboard() {
   const [showLowestValue, setShowLowestValue] = useState(false);
   const [chartSequence, setChartSequence] = useState<'hours' | 'days' | 'weeks' | 'months'>('days');
   
+  // Chart state - wird bei Apply aktiviert
+  const [chartApplied, setChartApplied] = useState(false);
+  const [appliedChartSettings, setAppliedChartSettings] = useState<{
+    timeRange: string;
+    sequence: 'hours' | 'days' | 'weeks' | 'months';
+    fromUpdate: any | null;
+    untilUpdate: any | null;
+  } | null>(null);
+  
   // From/Until update selection
   const [fromUpdateDialogOpen, setFromUpdateDialogOpen] = useState(false);
   const [untilUpdateDialogOpen, setUntilUpdateDialogOpen] = useState(false);
@@ -509,6 +518,74 @@ export default function Dashboard() {
     
     return { total: filteredUpdates.length, updateMetrics, closedBots };
   }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange]);
+
+  // Chart-Daten basierend auf appliedChartSettings generieren
+  // Default: Gesamtprofit anzeigen
+  const chartData = useMemo(() => {
+    if (!chartApplied || !appliedChartSettings || !sortedUpdates || sortedUpdates.length === 0) {
+      return [];
+    }
+    
+    // Filtere Updates basierend auf den angewendeten Einstellungen
+    let filteredUpdates = [...sortedUpdates];
+    
+    if (appliedChartSettings.fromUpdate && appliedChartSettings.untilUpdate) {
+      const fromTimestamp = getUpdateTimestamp(appliedChartSettings.fromUpdate);
+      const untilTimestamp = getUpdateTimestamp(appliedChartSettings.untilUpdate);
+      
+      filteredUpdates = sortedUpdates.filter(update => {
+        const updateTimestamp = getUpdateTimestamp(update);
+        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
+      });
+    }
+    
+    // Sortiere nach Datum (älteste zuerst)
+    filteredUpdates.sort((a, b) => {
+      const timeA = getUpdateTimestamp(a);
+      const timeB = getUpdateTimestamp(b);
+      return timeA - timeB;
+    });
+    
+    // Generiere Chart-Daten mit Gesamtprofit (Default)
+    // Jeder Punkt = ein Update mit seinem Zeitstempel und Gesamtprofit
+    return filteredUpdates.map((update, index) => {
+      const timestamp = getUpdateTimestamp(update);
+      const date = new Date(timestamp);
+      
+      // Format je nach Sequence
+      let timeLabel = '';
+      switch (appliedChartSettings.sequence) {
+        case 'hours':
+          timeLabel = date.toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
+          break;
+        case 'days':
+          timeLabel = date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
+          break;
+        case 'weeks':
+          timeLabel = date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit' });
+          break;
+        case 'months':
+          timeLabel = date.toLocaleString('de-DE', { month: 'short', year: '2-digit' });
+          break;
+      }
+      
+      // Gesamtprofit: für Update Metrics = overallGridProfitUsdt, für Closed Bots = profit
+      let gesamtprofit = 0;
+      if (update.status === 'Closed Bots') {
+        gesamtprofit = parseFloat(update.profit || '0') || 0;
+      } else {
+        gesamtprofit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      }
+      
+      return {
+        time: timeLabel,
+        timestamp: timestamp,
+        wert: gesamtprofit,
+        version: update.version || index + 1,
+        status: update.status
+      };
+    });
+  }, [chartApplied, appliedChartSettings, sortedUpdates]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
@@ -840,18 +917,14 @@ export default function Dashboard() {
   };
 
   const handleApplySettings = () => {
-    console.log('Settings applied:', { 
-      selectedTimeRange, 
-      customDays, 
-      customHours, 
-      customMinutes, 
-      dateRange,
-      activeMetricCards,
-      showGridProfit,
-      showTrendPnl,
-      showHighestValue,
-      showLowestValue
+    // Speichere die aktuellen Einstellungen und aktiviere den Chart
+    setAppliedChartSettings({
+      timeRange: selectedTimeRange,
+      sequence: chartSequence,
+      fromUpdate: selectedFromUpdate,
+      untilUpdate: selectedUntilUpdate,
     });
+    setChartApplied(true);
   };
 
   const toggleMetricCard = (cardName: string) => {
@@ -1142,14 +1215,8 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart 
-                  data={[
-                    { time: '00:00', wert: 0 },
-                    { time: '04:00', wert: 0 },
-                    { time: '08:00', wert: 0 },
-                    { time: '12:00', wert: 0 },
-                    { time: '16:00', wert: 0 },
-                    { time: '20:00', wert: 0 },
-                    { time: '24:00', wert: 0 },
+                  data={chartData.length > 0 ? chartData : [
+                    { time: '-', wert: 0 },
                   ]}
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                 >
