@@ -55,7 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -960,6 +960,8 @@ export default function Dashboard() {
       isStartPoint?: boolean;
       // Runtime in Millisekunden (nur bei Endpunkten)
       runtimeMs?: number;
+      // Trend P&L (nur bei Update Metrics)
+      trendPnl?: number;
       // Alle Metriken
       'Gesamtkapital': number;
       'Gesamtprofit': number;
@@ -1030,6 +1032,11 @@ export default function Dashboard() {
       // Berechne Runtime in Millisekunden (End - Start)
       const runtimeMs = endTimestamp - startTimestamp;
       
+      // Trend P&L (nur bei Update Metrics verfügbar)
+      const trendPnl = update.status !== 'Closed Bots' 
+        ? parseFloat(update.overallTrendPnlUsdt || '0') || 0
+        : undefined;
+      
       // Endpunkt mit allen Metrik-Werten
       dataPoints.push({
         time: formatTimeLabel(endDate),
@@ -1038,6 +1045,7 @@ export default function Dashboard() {
         status: update.status,
         isStartPoint: false,
         runtimeMs: runtimeMs,
+        trendPnl: trendPnl,
         'Gesamtkapital': gesamtkapital,
         'Gesamtprofit': gesamtprofit,
         'Gesamtprofit %': gesamtprofitPercent,
@@ -1090,6 +1098,56 @@ export default function Dashboard() {
       };
     });
   }, [chartData, hasGesamtkapitalActive]);
+
+  // Berechne Highest und Lowest Value für jede aktive Metrik
+  // Diese werden als Marker im Chart angezeigt wenn die entsprechenden Toggles aktiv sind
+  const extremeValues = useMemo(() => {
+    if (!transformedChartData || transformedChartData.length === 0) {
+      return { highest: {}, lowest: {} } as { 
+        highest: Record<string, { timestamp: number; value: number }>; 
+        lowest: Record<string, { timestamp: number; value: number }>;
+      };
+    }
+    
+    // Nur Endpunkte betrachten (nicht Startpunkte)
+    const endPoints = transformedChartData.filter(p => p.isStartPoint === false);
+    if (endPoints.length === 0) {
+      return { highest: {}, lowest: {} } as { 
+        highest: Record<string, { timestamp: number; value: number }>; 
+        lowest: Record<string, { timestamp: number; value: number }>;
+      };
+    }
+    
+    const highest: Record<string, { timestamp: number; value: number }> = {};
+    const lowest: Record<string, { timestamp: number; value: number }> = {};
+    
+    // Für jede aktive Metrik den höchsten und niedrigsten Wert finden
+    activeMetricCards.forEach(metricName => {
+      let maxVal = -Infinity;
+      let minVal = Infinity;
+      let maxPoint: { timestamp: number; value: number } | null = null;
+      let minPoint: { timestamp: number; value: number } | null = null;
+      
+      endPoints.forEach(point => {
+        const value = point[metricName as keyof typeof point] as number;
+        if (typeof value === 'number') {
+          if (value > maxVal) {
+            maxVal = value;
+            maxPoint = { timestamp: point.timestamp, value };
+          }
+          if (value < minVal) {
+            minVal = value;
+            minPoint = { timestamp: point.timestamp, value };
+          }
+        }
+      });
+      
+      if (maxPoint) highest[metricName] = maxPoint;
+      if (minPoint) lowest[metricName] = minPoint;
+    });
+    
+    return { highest, lowest };
+  }, [transformedChartData, activeMetricCards]);
 
   // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
   // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
@@ -2453,6 +2511,12 @@ export default function Dashboard() {
                               </p>
                             );
                           })}
+                          {/* Trend P&L anzeigen - nur bei Endpunkten und wenn Toggle aktiviert */}
+                          {showTrendPnl && dataPoint.isStartPoint === false && dataPoint.trendPnl !== undefined && (
+                            <p style={{ color: dataPoint.trendPnl >= 0 ? '#22c55e' : '#ef4444', margin: '2px 0' }}>
+                              Trend P&L: {dataPoint.trendPnl.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                            </p>
+                          )}
                           {/* Runtime anzeigen - nur bei Endpunkten (nicht Startpunkten) */}
                           {dataPoint.isStartPoint === false && dataPoint.runtimeMs !== undefined && dataPoint.runtimeMs > 0 && (
                             <p style={{ color: 'hsl(var(--muted-foreground))', margin: '4px 0 0 0', fontSize: '12px' }}>
@@ -2501,6 +2565,50 @@ export default function Dashboard() {
                       />
                     ))
                   )}
+                  {/* Highest Value Marker - Pfeil von unten nach oben mit H */}
+                  {showHighestValue && !isMultiBotChartMode && activeMetricCards.map((metricName) => {
+                    const highest = extremeValues.highest[metricName];
+                    if (!highest) return null;
+                    const color = metricColors[metricName] || '#888888';
+                    return (
+                      <ReferenceDot
+                        key={`highest-${metricName}`}
+                        x={highest.timestamp}
+                        y={highest.value}
+                        r={0}
+                        label={{
+                          value: '↑H',
+                          position: 'top',
+                          fill: color,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          offset: 8,
+                        }}
+                      />
+                    );
+                  })}
+                  {/* Lowest Value Marker - Pfeil von oben nach unten mit L */}
+                  {showLowestValue && !isMultiBotChartMode && activeMetricCards.map((metricName) => {
+                    const lowest = extremeValues.lowest[metricName];
+                    if (!lowest) return null;
+                    const color = metricColors[metricName] || '#888888';
+                    return (
+                      <ReferenceDot
+                        key={`lowest-${metricName}`}
+                        x={lowest.timestamp}
+                        y={lowest.value}
+                        r={0}
+                        label={{
+                          value: '↓L',
+                          position: 'bottom',
+                          fill: color,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          offset: 8,
+                        }}
+                      />
+                    );
+                  })}
                 </LineChart>
               </ResponsiveContainer>
               </div>
@@ -2633,13 +2741,6 @@ export default function Dashboard() {
               
               <Separator />
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Grid Profit</span>
-                  <Switch
-                    checked={showGridProfit}
-                    onCheckedChange={setShowGridProfit}
-                  />
-                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Trend P&L</span>
                   <Switch
