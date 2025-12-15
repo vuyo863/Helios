@@ -1063,8 +1063,14 @@ export default function Dashboard() {
       // Die Linie soll flüssig vom vorherigen Endpunkt zum neuen Endpunkt laufen
       // Prüfung mit prevEndTimestamp statt index > 0, weil Filter das erste Update verändern können
       const hasPreviousEndPoint = prevEndTimestamp !== 0;
-      if (update.lastUpload && startTimestamp !== endTimestamp && !(isVergleichsModus && hasPreviousEndPoint)) {
-        // Nur bei Neu-Modus: Startpunkt bei 0
+      // Prüfe ob der Startpunkt auf dem gleichen oder sehr nahen Timestamp wie der vorherige Endpunkt liegt
+      // In diesem Fall keinen separaten Startpunkt erstellen, um Überlappung zu vermeiden
+      const startOverlapsPrevEnd = hasPreviousEndPoint && Math.abs(startTimestamp - prevEndTimestamp) < 60000; // 1 Minute Toleranz
+      // Bei Vergleichs-Modus: Nie Startpunkt erstellen (Linie läuft flüssig weiter)
+      const skipStartPoint = isVergleichsModus || startOverlapsPrevEnd;
+      
+      if (update.lastUpload && startTimestamp !== endTimestamp && !skipStartPoint) {
+        // Nur bei Neu-Modus ohne Überlappung: Startpunkt bei 0
         dataPoints.push({
           time: formatTimeLabel(startDate),
           timestamp: startTimestamp,
