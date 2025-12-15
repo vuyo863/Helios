@@ -798,7 +798,9 @@ export default function Dashboard() {
     });
   }, [chartData, isSingleUpdateWithCapital]);
 
-  // Berechne X-Achsen-Ticks für regelmäßige Tages-Intervalle
+  // Berechne X-Achsen-Ticks basierend auf Sequence
+  // Sequence bestimmt die EINHEIT/FORMAT der Ticks, aber max ~8-12 sichtbare Labels
+  // um nicht überladen auszusehen
   const xAxisTicks = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
     
@@ -807,35 +809,51 @@ export default function Dashboard() {
     
     const minTs = Math.min(...timestamps);
     const maxTs = Math.max(...timestamps);
+    const rangeMs = maxTs - minTs;
     
     const sequence = appliedChartSettings?.sequence || 'days';
-    let intervalMs: number;
     
-    switch (sequence) {
-      case 'hours':
-        intervalMs = 60 * 60 * 1000; // 1 Stunde
-        break;
-      case 'days':
-        intervalMs = 24 * 60 * 60 * 1000; // 1 Tag
-        break;
-      case 'weeks':
-        intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 Woche
-        break;
-      case 'months':
-        intervalMs = 30 * 24 * 60 * 60 * 1000; // ~1 Monat
-        break;
-      default:
-        intervalMs = 24 * 60 * 60 * 1000;
+    // Basis-Intervall je nach Sequence
+    const baseIntervalMs: Record<string, number> = {
+      'hours': 60 * 60 * 1000,           // 1 Stunde
+      'days': 24 * 60 * 60 * 1000,       // 1 Tag
+      'weeks': 7 * 24 * 60 * 60 * 1000,  // 1 Woche
+      'months': 30 * 24 * 60 * 60 * 1000 // ~1 Monat
+    };
+    
+    let intervalMs = baseIntervalMs[sequence] || baseIntervalMs['days'];
+    
+    // Berechne wie viele Ticks es geben würde
+    const potentialTickCount = Math.ceil(rangeMs / intervalMs);
+    
+    // Wenn zu viele Ticks, erhöhe das Intervall um übersichtlich zu bleiben
+    // Ziel: max ~10 Ticks auf der X-Achse
+    const maxTicks = 10;
+    if (potentialTickCount > maxTicks) {
+      // Berechne größeres Intervall als Vielfaches des Basis-Intervalls
+      const multiplier = Math.ceil(potentialTickCount / maxTicks);
+      intervalMs = intervalMs * multiplier;
     }
     
     const ticks: number[] = [];
-    // Starte bei Mitternacht des ersten Tages
+    // Starte bei sinnvollem Startpunkt basierend auf Sequence
     const startDate = new Date(minTs);
-    startDate.setHours(0, 0, 0, 0);
+    if (sequence === 'hours') {
+      startDate.setMinutes(0, 0, 0);
+    } else {
+      startDate.setHours(0, 0, 0, 0);
+    }
     let currentTs = startDate.getTime();
     
+    // Stelle sicher dass wir vor dem ersten Datenpunkt starten
+    while (currentTs > minTs) {
+      currentTs -= intervalMs;
+    }
+    
     while (currentTs <= maxTs + intervalMs) {
-      ticks.push(currentTs);
+      if (currentTs >= minTs - intervalMs) {
+        ticks.push(currentTs);
+      }
       currentTs += intervalMs;
     }
     
