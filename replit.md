@@ -251,7 +251,11 @@ Preferred communication style: Simple, everyday language.
 - Investitionsmenge: (totalProfit / totalBaseInvestment) × 100
 - Direct calculation instead of weighted averages - more reliable
 
-**Chart Animation Optimization:**
-- Animation only triggers on real changes (bot selection, time range, etc.)
-- After 1.5s, animation deactivates (auto-refresh doesn't animate)
-- Applied to: dashboard.tsx, ProfitLineChart.tsx, ProfitBarChartAdvanced.tsx
+**Chart Animation - Simplified & Unified (December 15, 2025):**
+- REMOVED complex states: animatingMetrics, removingMetrics, shouldAnimate
+- KEPT only chartAnimationKey for triggering re-renders
+- All Lines ALWAYS animate with isAnimationActive={true}
+- Animation duration increased to 1200ms for smoother transitions
+- When metrics added/removed: Chart re-renders completely with fresh animation
+- No more jumping back to default values
+- Unified animation for all lines simultaneously
