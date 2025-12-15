@@ -1061,7 +1061,9 @@ export default function Dashboard() {
       // Nur Startpunkt hinzufügen wenn lastUpload vorhanden und unterschiedlich vom Endpunkt
       // ABER: Bei Vergleichs-Modus KEINEN separaten Startpunkt erstellen!
       // Die Linie soll flüssig vom vorherigen Endpunkt zum neuen Endpunkt laufen
-      if (update.lastUpload && startTimestamp !== endTimestamp && !(isVergleichsModus && index > 0)) {
+      // Prüfung mit prevEndTimestamp statt index > 0, weil Filter das erste Update verändern können
+      const hasPreviousEndPoint = prevEndTimestamp !== 0;
+      if (update.lastUpload && startTimestamp !== endTimestamp && !(isVergleichsModus && hasPreviousEndPoint)) {
         // Nur bei Neu-Modus: Startpunkt bei 0
         dataPoints.push({
           time: formatTimeLabel(startDate),
