@@ -482,6 +482,34 @@ export default function Dashboard() {
     });
   }, [sortedUpdates, selectedFromUpdate]);
 
+  // Berechne die Anzahl der angezeigten Updates basierend auf Auswahl
+  // - First-Last Update: Alle Updates anzeigen
+  // - From/Until manuell ausgewählt: Updates zwischen From und Until
+  const displayedUpdatesCount = useMemo(() => {
+    if (!sortedUpdates || sortedUpdates.length === 0) return { total: 0, updateMetrics: 0, closedBots: 0 };
+    
+    let filteredUpdates = sortedUpdates;
+    
+    // Wenn From und Until ausgewählt sind, filtere entsprechend
+    if (selectedFromUpdate && selectedUntilUpdate) {
+      const fromTimestamp = getUpdateTimestamp(selectedFromUpdate);
+      const untilTimestamp = getUpdateTimestamp(selectedUntilUpdate);
+      
+      filteredUpdates = sortedUpdates.filter(update => {
+        const updateTimestamp = getUpdateTimestamp(update);
+        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
+      });
+    } else if (selectedTimeRange === 'First-Last Update') {
+      // First-Last Update: Alle Updates anzeigen
+      filteredUpdates = sortedUpdates;
+    }
+    
+    const updateMetrics = filteredUpdates.filter(u => u.status === 'Update Metrics').length;
+    const closedBots = filteredUpdates.filter(u => u.status === 'Closed Bots').length;
+    
+    return { total: filteredUpdates.length, updateMetrics, closedBots };
+  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange]);
+
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
   const totalInvestment = useMemo(() => {
@@ -1351,6 +1379,17 @@ export default function Dashboard() {
                     </div>
                   </PopoverContent>
                 </Popover>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Anzahl Metriks</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium bg-muted px-2 py-1 rounded" data-testid="text-update-count">
+                    {displayedUpdatesCount.total}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({displayedUpdatesCount.updateMetrics} Update, {displayedUpdatesCount.closedBots} Closed)
+                  </span>
+                </div>
               </div>
                 </div>
                 <div className="mt-4 flex justify-end">
