@@ -1018,12 +1018,19 @@ export default function Dashboard() {
       const startDate = new Date(startTimestamp);
       
       // Prüfe ob dieses Update im Vergleichs-Modus ist
-      // Ein Update ist im Vergleichs-Modus wenn es *_absolute Felder hat die sich von den Hauptfeldern unterscheiden
-      // Das bedeutet, die Hauptfelder enthalten Delta-Werte und die *_absolute Felder die Absolut-Werte
+      // Primär: Prüfe *_absolute Felder (wenn vorhanden und unterschiedlich)
+      // Fallback: Prüfe calculationMode === "Normal" (nicht Startmetrik)
       const hasAbsoluteFields = update.overallGridProfitUsdtAbsolute !== null && update.overallGridProfitUsdtAbsolute !== undefined;
-      const mainValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-      const absoluteValue = parseFloat(update.overallGridProfitUsdtAbsolute || '0') || 0;
-      const isVergleichsModus = hasAbsoluteFields && Math.abs(mainValue - absoluteValue) > 0.01;
+      let isVergleichsModus = false;
+      
+      if (hasAbsoluteFields) {
+        const mainValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+        const absoluteValue = parseFloat(update.overallGridProfitUsdtAbsolute || '0') || 0;
+        isVergleichsModus = Math.abs(mainValue - absoluteValue) > 0.01;
+      } else {
+        // Fallback: calculationMode "Normal" bedeutet es ist ein Update nach Startmetrik
+        isVergleichsModus = update.calculationMode === 'Normal';
+      }
       
       // Berechne alle Metriken für dieses Update
       // Gesamtkapital = totalInvestment ODER investment (baseInvestment) je nach Auswahl
@@ -1158,12 +1165,22 @@ export default function Dashboard() {
       // Das NÄCHSTE Update in chronologischer Reihenfolge ist also bei index - 1
       if (currentUpdateIndex > 0) {
         const nextUpdate = filteredUpdates[currentUpdateIndex - 1];
-        // Prüfe ob das nächste Update per-Section Vergleich-Werte hat
-        // Erkennbar an *_absolute Feldern die sich von den Hauptfeldern unterscheiden
+        // Prüfe ob das nächste Update ein Vergleichs-Update ist
+        // Primär: Prüfe *_absolute Felder (wenn vorhanden und unterschiedlich)
+        // Fallback: Prüfe calculationMode === "Normal" (nicht Startmetrik)
         const nextHasAbsoluteFields = nextUpdate.overallGridProfitUsdtAbsolute !== null && nextUpdate.overallGridProfitUsdtAbsolute !== undefined;
-        const nextMainValue = parseFloat(nextUpdate.overallGridProfitUsdt || '0') || 0;
-        const nextAbsoluteValue = parseFloat(nextUpdate.overallGridProfitUsdtAbsolute || '0') || 0;
-        const isNextVergleich = nextHasAbsoluteFields && Math.abs(nextMainValue - nextAbsoluteValue) > 0.01;
+        let isNextVergleich = false;
+        
+        if (nextHasAbsoluteFields) {
+          // Primäre Erkennung: absolute Felder vorhanden
+          const nextMainValue = parseFloat(nextUpdate.overallGridProfitUsdt || '0') || 0;
+          const nextAbsoluteValue = parseFloat(nextUpdate.overallGridProfitUsdtAbsolute || '0') || 0;
+          isNextVergleich = Math.abs(nextMainValue - nextAbsoluteValue) > 0.01;
+        } else {
+          // Fallback: calculationMode "Normal" bedeutet es ist ein Update nach Startmetrik
+          // (nicht perfekt, aber die einzige verfügbare Information)
+          isNextVergleich = nextUpdate.calculationMode === 'Normal';
+        }
         
         if (isNextVergleich) {
           // Dieser Endpunkt ist AUCH der Startpunkt für das nächste Update

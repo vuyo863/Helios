@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -214,6 +216,9 @@ export default function Notifications() {
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
+  const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
   
   // Alarmierungsstufen Konfiguration
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
@@ -745,10 +750,7 @@ export default function Notifications() {
 
                 return (
                   <Card key={trendPriceId} className="overflow-hidden">
-                    <CardHeader
-                      className="cursor-pointer hover-elevate flex flex-row items-center justify-between"
-                      onClick={() => toggleDropdown(trendPriceId)}
-                    >
+                    <CardHeader className="flex flex-row items-center justify-between">
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-lg">{getTrendPriceName(trendPriceId)}</CardTitle>
                         <span className="text-sm text-muted-foreground">
@@ -756,27 +758,285 @@ export default function Notifications() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {!isExpanded && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleEditMode(trendPriceId);
-                            }}
-                          >
-                            {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                          </Button>
-                        )}
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
+                        {/* View Dialog - Eye Icon */}
+                        <Dialog 
+                          open={viewDialogOpen[trendPriceId]} 
+                          onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
+                        >
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Schwellenwerte für {getTrendPriceName(trendPriceId)}</DialogTitle>
+                            </DialogHeader>
+                            <ScrollArea className={cn(
+                              "w-full",
+                              settings.thresholds.length > 4 ? "h-[500px]" : ""
+                            )}>
+                              <div className="space-y-3 pr-4">
+                                {settings.thresholds.map((threshold, index) => (
+                                  <Card key={threshold.id} className="p-4">
+                                    <div className="flex items-start justify-between mb-3">
+                                      <h4 className="font-semibold">Schwellenwert {index + 1}</h4>
+                                      <div className="flex items-center gap-2">
+                                        <Dialog
+                                          open={editDialogOpen[threshold.id]}
+                                          onOpenChange={(open) => {
+                                            setEditDialogOpen(prev => ({ ...prev, [threshold.id]: open }));
+                                            if (open) {
+                                              setEditingThresholdId(threshold.id);
+                                            } else {
+                                              setEditingThresholdId(null);
+                                            }
+                                          }}
+                                        >
+                                          <DialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                              <Pencil className="w-4 h-4" />
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="max-w-2xl">
+                                            <DialogHeader>
+                                              <DialogTitle>Schwellenwert {index + 1} bearbeiten</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                                              <div>
+                                                <Label htmlFor={`edit-threshold-${threshold.id}`}>Schwellenwert (USDT)</Label>
+                                                <Input
+                                                  id={`edit-threshold-${threshold.id}`}
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder="z.B. 50000"
+                                                  value={threshold.threshold}
+                                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'threshold', e.target.value)}
+                                                />
+                                              </div>
+
+                                              <div className="space-y-3">
+                                                <Label>Benachrichtigungen bei:</Label>
+                                                
+                                                <div className="space-y-2 p-3 rounded-lg border">
+                                                  <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`edit-increase-${threshold.id}`}
+                                                      checked={threshold.notifyOnIncrease}
+                                                      onCheckedChange={(checked) =>
+                                                        updateThreshold(trendPriceId, threshold.id, 'notifyOnIncrease', checked)
+                                                      }
+                                                    />
+                                                    <Label htmlFor={`edit-increase-${threshold.id}`} className="cursor-pointer flex-1">
+                                                      Preiserhöhung über Schwellenwert
+                                                    </Label>
+                                                  </div>
+                                                  {threshold.notifyOnIncrease && (
+                                                    <div className="ml-6 flex items-center gap-2">
+                                                      <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                                      <select
+                                                        className="text-sm border rounded px-2 py-1 bg-background"
+                                                        value={threshold.increaseFrequency}
+                                                        onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'increaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                                      >
+                                                        <option value="einmalig">Einmalig</option>
+                                                        <option value="wiederholend">Wiederholend</option>
+                                                      </select>
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                                <div className="space-y-2 p-3 rounded-lg border">
+                                                  <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`edit-decrease-${threshold.id}`}
+                                                      checked={threshold.notifyOnDecrease}
+                                                      onCheckedChange={(checked) =>
+                                                        updateThreshold(trendPriceId, threshold.id, 'notifyOnDecrease', checked)
+                                                      }
+                                                    />
+                                                    <Label htmlFor={`edit-decrease-${threshold.id}`} className="cursor-pointer flex-1">
+                                                      Preissenkung unter Schwellenwert
+                                                    </Label>
+                                                  </div>
+                                                  {threshold.notifyOnDecrease && (
+                                                    <div className="ml-6 flex items-center gap-2">
+                                                      <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                                      <select
+                                                        className="text-sm border rounded px-2 py-1 bg-background"
+                                                        value={threshold.decreaseFrequency}
+                                                        onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'decreaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                                      >
+                                                        <option value="einmalig">Einmalig</option>
+                                                        <option value="wiederholend">Wiederholend</option>
+                                                      </select>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+
+                                              <div>
+                                                <Label htmlFor={`edit-alarm-${threshold.id}`}>Alarmierungsstufe</Label>
+                                                <select
+                                                  id={`edit-alarm-${threshold.id}`}
+                                                  className="w-full text-sm border rounded px-3 py-2 bg-background"
+                                                  value={threshold.alarmLevel}
+                                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'alarmLevel', e.target.value as AlarmLevel)}
+                                                  style={{
+                                                    borderColor: getAlarmLevelColor(threshold.alarmLevel),
+                                                    color: getAlarmLevelColor(threshold.alarmLevel)
+                                                  }}
+                                                >
+                                                  <option value="harmlos">Harmlos</option>
+                                                  <option value="achtung">Achtung</option>
+                                                  <option value="gefährlich">Gefährlich</option>
+                                                  <option value="sehr_gefährlich">Sehr Gefährlich</option>
+                                                </select>
+                                              </div>
+
+                                              <div>
+                                                <Label htmlFor={`edit-note-${threshold.id}`}>Notiz (optional)</Label>
+                                                <Input
+                                                  id={`edit-note-${threshold.id}`}
+                                                  type="text"
+                                                  placeholder="z.B. Wichtiger Widerstandslevel"
+                                                  value={threshold.note}
+                                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'note', e.target.value)}
+                                                  style={{
+                                                    borderColor: getAlarmLevelColor(threshold.alarmLevel)
+                                                  }}
+                                                />
+                                              </div>
+
+                                              <div className="flex justify-end gap-2 pt-4 border-t">
+                                                <Button
+                                                  variant="outline"
+                                                  onClick={() => setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }))}
+                                                >
+                                                  Abbrechen
+                                                </Button>
+                                                <Button
+                                                  onClick={() => {
+                                                    setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
+                                                    toast({
+                                                      title: "Gespeichert",
+                                                      description: "Schwellenwert wurde aktualisiert.",
+                                                    });
+                                                  }}
+                                                >
+                                                  Speichern
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </DialogContent>
+                                        </Dialog>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive"
+                                          onClick={() => removeThreshold(trendPriceId, threshold.id)}
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-2 text-sm">
+                                      <div>
+                                        <span className="font-medium">Schwellenwert: </span>
+                                        <span className="text-muted-foreground">${threshold.threshold || 'Nicht gesetzt'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Benachrichtigung: </span>
+                                        <span className="text-muted-foreground">
+                                          {threshold.notifyOnIncrease && `Erhöhung (${threshold.increaseFrequency})`}
+                                          {threshold.notifyOnIncrease && threshold.notifyOnDecrease && ', '}
+                                          {threshold.notifyOnDecrease && `Senkung (${threshold.decreaseFrequency})`}
+                                          {!threshold.notifyOnIncrease && !threshold.notifyOnDecrease && 'Keine'}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Alarmierungsstufe: </span>
+                                        <span 
+                                          className="text-xs px-2 py-1 rounded font-medium"
+                                          style={{ 
+                                            backgroundColor: getAlarmLevelColor(threshold.alarmLevel),
+                                            color: 'white'
+                                          }}
+                                        >
+                                          {getAlarmLevelLabel(threshold.alarmLevel)}
+                                        </span>
+                                      </div>
+                                      {threshold.note && (
+                                        <div>
+                                          <span className="font-medium">Notiz: </span>
+                                          <span className="text-muted-foreground">{threshold.note}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Card>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Create New Threshold - Pencil Icon */}
+                        <Dialog 
+                          open={editMode[trendPriceId]} 
+                          onOpenChange={(open) => setEditMode(prev => ({ ...prev, [trendPriceId]: open }))}
+                        >
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Neuen Schwellenwert erstellen</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                              {/* New threshold form will be added here */}
+                              <div>
+                                <Label>Schwellenwert (USDT)</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="z.B. 50000"
+                                  onBlur={(e) => {
+                                    // Create new threshold on blur or via button
+                                    if (e.target.value) {
+                                      addThreshold(trendPriceId);
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <div className="flex justify-end gap-2 pt-4 border-t">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setEditMode(prev => ({ ...prev, [trendPriceId]: false }))}
+                                >
+                                  Abbrechen
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    addThreshold(trendPriceId);
+                                    toast({
+                                      title: "Schwellenwert erstellt",
+                                      description: "Neuer Schwellenwert wurde hinzugefügt.",
+                                    });
+                                  }}
+                                >
+                                  Erstellen
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </CardHeader>
 
-                    {isExpanded && (
+                    {false && (
                       <CardContent className="space-y-6 pt-0">
                         <div className="flex items-center justify-between pb-4 border-b">
                           <h3 className="font-semibold">Schwellenwerte</h3>
