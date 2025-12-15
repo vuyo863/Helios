@@ -269,3 +269,15 @@ Preferred communication style: Simple, everyday language.
   - Real Profit/Tag
 - Tooltips zeigen weiterhin die echten (nicht-offsetted) Werte an
 - Ermöglicht visuell besseren Vergleich aller Metriken mit dem Kapital
+
+**Chart Zoom & Pan - Y + X Achsen (December 15, 2025):**
+- **Y-Achsen-Zoom**: Mausrad scrollen = Werte-Zoom (1x-10x)
+- **X-Achsen-Zoom**: Shift + Mausrad = Zeit-Zoom (1x-10x)
+- **Pan**: Maus gedrückt halten und ziehen = Y und X gleichzeitig verschieben
+- **Reset-Button**: Zeigt aktuelle Zoom-Level an (Y:1.0x X:1.0x), setzt beide Achsen zurück
+- State-Variablen: chartZoomY, chartZoomX, chartPanY, chartPanX
+- xAxisDomain useMemo berechnet dynamisch den sichtbaren Zeitbereich
+
+**Tooltip-Aktivierungsradius (December 15, 2025):**
+- Tooltip wird nur angezeigt wenn Maus innerhalb von 15 Pixel eines Datenpunkts ist
+- Verhindert störende Tooltips beim Navigieren über den Chart

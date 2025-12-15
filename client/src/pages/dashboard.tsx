@@ -240,13 +240,17 @@ export default function Dashboard() {
   
   // Chart Zoom & Pan State
   // zoomLevel: 1 = 100%, 2 = 200% (doppelt so detailliert), etc.
-  const [chartZoom, setChartZoom] = useState(1);
-  // panOffset: Verschiebung auf der Y-Achse (in Chart-Einheiten)
+  const [chartZoomY, setChartZoomY] = useState(1);
+  const [chartZoomX, setChartZoomX] = useState(1);
+  // panOffset: Verschiebung auf der Y/X-Achse (in Chart-Einheiten)
   const [chartPanY, setChartPanY] = useState(0);
+  const [chartPanX, setChartPanX] = useState(0);
   // Drag-State für Pan
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartY, setDragStartY] = useState(0);
+  const [dragStartX, setDragStartX] = useState(0);
   const [dragStartPanY, setDragStartPanY] = useState(0);
+  const [dragStartPanX, setDragStartPanX] = useState(0);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   
   // Tooltip Aktivierungsradius - nur anzeigen wenn Maus nah am Datenpunkt
@@ -256,11 +260,18 @@ export default function Dashboard() {
   const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
   
   // Chart Zoom & Pan Event-Handler
+  // Shift + Scroll = X-Achsen-Zoom (Zeit), Normal Scroll = Y-Achsen-Zoom (Werte)
   const handleChartWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // Zoom: Scroll nach oben = reinzoomen (größerer Zoom), nach unten = rauszoomen
     const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
-    setChartZoom(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+    
+    if (e.shiftKey) {
+      // Shift gehalten: X-Achsen-Zoom (Zeit-Zoom)
+      setChartZoomX(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+    } else {
+      // Normal: Y-Achsen-Zoom (Werte-Zoom)
+      setChartZoomY(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+    }
   };
   
   const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -268,16 +279,21 @@ export default function Dashboard() {
     if (e.button !== 0) return;
     setIsDragging(true);
     setDragStartY(e.clientY);
+    setDragStartX(e.clientX);
     setDragStartPanY(chartPanY);
+    setDragStartPanX(chartPanX);
   };
   
   const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return;
-    // Pan: Mausbewegung in Y-Offset umrechnen
+    // Pan: Mausbewegung in Y/X-Offset umrechnen
     const deltaY = e.clientY - dragStartY;
+    const deltaX = e.clientX - dragStartX;
     // Je größer der Zoom, desto empfindlicher die Pan-Bewegung
-    const sensitivity = 2 / chartZoom;
-    setChartPanY(dragStartPanY + deltaY * sensitivity);
+    const sensitivityY = 2 / chartZoomY;
+    const sensitivityX = 2 / chartZoomX;
+    setChartPanY(dragStartPanY + deltaY * sensitivityY);
+    setChartPanX(dragStartPanX + deltaX * sensitivityX);
   };
   
   const handleChartMouseUp = () => {
@@ -289,8 +305,10 @@ export default function Dashboard() {
   };
   
   const handleResetZoomPan = () => {
-    setChartZoom(1);
+    setChartZoomY(1);
+    setChartZoomX(1);
     setChartPanY(0);
+    setChartPanX(0);
   };
   
   // Handler für LineChart onMouseMove - prüft Distanz zum Datenpunkt
@@ -1147,10 +1165,10 @@ export default function Dashboard() {
     }
     
     // Zoom & Pan anwenden
-    // chartZoom: 1 = 100%, 2 = 200% (doppelt so detailliert = halbe Range)
+    // chartZoomY: 1 = 100%, 2 = 200% (doppelt so detailliert = halbe Range)
     // chartPanY: Verschiebung in Pixel, umgerechnet auf Chart-Einheiten
     const baseRange = baseUpper - baseLower;
-    const zoomedRange = baseRange / chartZoom;
+    const zoomedRange = baseRange / chartZoomY;
     const center = (baseLower + baseUpper) / 2;
     
     // Pan-Offset: chartPanY in Pixel, umrechnen auf Chart-Einheiten
@@ -1161,7 +1179,41 @@ export default function Dashboard() {
     const zoomedUpper = center + zoomedRange / 2 + panOffset;
     
     return [Math.max(0, zoomedLower), zoomedUpper];
-  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoom, chartPanY]);
+  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY]);
+
+  // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
+  const xAxisDomain = useMemo((): [number | string, number | string] => {
+    // Hole Start- und Endzeit aus den Daten
+    const dataToUse = transformedChartData;
+    if (!dataToUse || dataToUse.length === 0) {
+      return ['dataMin', 'dataMax'];
+    }
+    
+    const timestamps = dataToUse.map(d => d.timestamp).filter(t => t > 0);
+    if (timestamps.length === 0) return ['dataMin', 'dataMax'];
+    
+    const minTime = Math.min(...timestamps);
+    const maxTime = Math.max(...timestamps);
+    
+    // Basis-Range
+    const baseRange = maxTime - minTime;
+    if (baseRange === 0) return ['dataMin', 'dataMax'];
+    
+    // Zoom anwenden (zoomedRange = kleinerer Bereich bei höherem Zoom)
+    const zoomedRange = baseRange / chartZoomX;
+    const center = (minTime + maxTime) / 2;
+    
+    // Pan-Offset: chartPanX in Pixel, umrechnen auf Zeit-Einheiten
+    // Positive Werte = nach rechts panen (spätere Zeit sehen)
+    // Negative Werte = nach links panen (frühere Zeit sehen)
+    const chartWidth = 600; // Ungefähre Chart-Breite in Pixel
+    const panOffset = -(chartPanX / chartWidth) * baseRange;
+    
+    const zoomedStart = center - zoomedRange / 2 + panOffset;
+    const zoomedEnd = center + zoomedRange / 2 + panOffset;
+    
+    return [zoomedStart, zoomedEnd];
+  }, [transformedChartData, chartZoomX, chartPanX]);
 
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
@@ -1963,11 +2015,11 @@ export default function Dashboard() {
                 </div>
                 
                 {/* Zoom/Pan Info & Reset Button */}
-                {(chartZoom > 1 || chartPanY !== 0) && (
+                {(chartZoomY > 1 || chartZoomX > 1 || chartPanY !== 0 || chartPanX !== 0) && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <ZoomIn className="h-3 w-3" />
-                      {chartZoom.toFixed(1)}x
+                      Y:{chartZoomY.toFixed(1)}x X:{chartZoomX.toFixed(1)}x
                     </span>
                     <Button
                       variant="ghost"
@@ -2011,7 +2063,7 @@ export default function Dashboard() {
                   <XAxis 
                     dataKey="timestamp"
                     type="number"
-                    domain={['dataMin', 'dataMax']}
+                    domain={xAxisDomain}
                     ticks={xAxisTicks.length > 0 ? xAxisTicks : undefined}
                     interval={0}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
