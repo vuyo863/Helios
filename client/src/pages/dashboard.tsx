@@ -2944,63 +2944,135 @@ export default function Dashboard() {
                     ))
                   )}
                   {/* Highest Value Marker - unter dem Punkt mit ↑H */}
-                  {/* Regel: Berührt nichts (keine Graphen, keine anderen Marker), aber so nah wie möglich */}
-                  {showHighestValue && !isMultiBotChartMode && activeMetricCards.map((metricName, idx) => {
-                    const highest = extremeValues.highest[metricName];
-                    if (!highest) return null;
-                    const color = metricColors[metricName] || '#888888';
+                  {/* Dynamisch: Weicht Graphen und anderen Markern aus, minimal spacing */}
+                  {showHighestValue && !isMultiBotChartMode && (() => {
+                    // Sammle alle H-Marker
+                    const markers = activeMetricCards
+                      .map(m => ({ metric: m, data: extremeValues.highest[m], color: metricColors[m] || '#888' }))
+                      .filter(m => m.data) as { metric: string; data: { timestamp: number; value: number }; color: string }[];
                     
-                    // Basis-Offset (nah am Punkt)
-                    const baseOffset = 10;
-                    // Stapel-Offset basierend auf Index (jede Metrik bekommt eigene Position)
-                    const stackOffset = idx * 16;
+                    // Berechne Y-Range für relative Abstände
+                    const allY = transformedChartData.flatMap(p => 
+                      activeMetricCards.map(m => p[m as keyof typeof p]).filter(v => typeof v === 'number') as number[]
+                    );
+                    const minY = Math.min(...allY);
+                    const maxY = Math.max(...allY);
+                    const yRange = maxY - minY || 1;
                     
-                    return (
+                    // Minimaler Abstand (ca. 2 Rasterlinien = 3% des Y-Bereichs)
+                    const minGap = yRange * 0.03;
+                    
+                    // Finde alle Y-Werte bei einem Timestamp (für Kollisionserkennung)
+                    const getYValuesAt = (ts: number) => {
+                      const point = transformedChartData.find(p => Math.abs(p.timestamp - ts) < 60000);
+                      if (!point) return [];
+                      return activeMetricCards
+                        .map(m => point[m as keyof typeof point])
+                        .filter(v => typeof v === 'number') as number[];
+                    };
+                    
+                    // Berechne Offset für jeden Marker
+                    const resolved = markers.map((marker, i) => {
+                      const { timestamp, value } = marker.data;
+                      let offset = 8; // Basis-Offset in Pixel
+                      
+                      // Prüfe ob Graph-Linien unter diesem Punkt sind
+                      const yVals = getYValuesAt(timestamp);
+                      const linesBelow = yVals.filter(y => y < value && (value - y) < minGap * 3);
+                      
+                      // Wenn Linien knapp darunter sind → flippe nach oben
+                      const flipToTop = linesBelow.length > 0 || (value - minY) < minGap * 2;
+                      
+                      // Stapeln wenn mehrere H-Marker nah beieinander
+                      const prevSameArea = markers.slice(0, i).filter(m => 
+                        Math.abs(m.data.timestamp - timestamp) < 3600000 &&
+                        Math.abs(m.data.value - value) < minGap * 4
+                      ).length;
+                      offset += prevSameArea * 12;
+                      
+                      return { ...marker, offset, flipToTop };
+                    });
+                    
+                    return resolved.map(m => (
                       <ReferenceDot
-                        key={`highest-${metricName}`}
-                        x={highest.timestamp}
-                        y={highest.value}
+                        key={`highest-${m.metric}`}
+                        x={m.data.timestamp}
+                        y={m.data.value}
                         r={0}
                         label={{
                           value: '↑H',
-                          position: 'bottom',
-                          fill: color,
+                          position: m.flipToTop ? 'top' : 'bottom',
+                          fill: m.color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: baseOffset + stackOffset,
+                          offset: m.offset,
                         }}
                       />
-                    );
-                  })}
+                    ));
+                  })()}
                   {/* Lowest Value Marker - über dem Punkt mit ↓L */}
-                  {/* Regel: Berührt nichts (keine Graphen, keine anderen Marker), aber so nah wie möglich */}
-                  {showLowestValue && !isMultiBotChartMode && activeMetricCards.map((metricName, idx) => {
-                    const lowest = extremeValues.lowest[metricName];
-                    if (!lowest) return null;
-                    const color = metricColors[metricName] || '#888888';
+                  {/* Dynamisch: Weicht Graphen und anderen Markern aus, minimal spacing */}
+                  {showLowestValue && !isMultiBotChartMode && (() => {
+                    // Sammle alle L-Marker
+                    const markers = activeMetricCards
+                      .map(m => ({ metric: m, data: extremeValues.lowest[m], color: metricColors[m] || '#888' }))
+                      .filter(m => m.data) as { metric: string; data: { timestamp: number; value: number }; color: string }[];
                     
-                    // Basis-Offset (nah am Punkt)
-                    const baseOffset = 10;
-                    // Stapel-Offset basierend auf Index (jede Metrik bekommt eigene Position)
-                    const stackOffset = idx * 16;
+                    // Berechne Y-Range
+                    const allY = transformedChartData.flatMap(p => 
+                      activeMetricCards.map(m => p[m as keyof typeof p]).filter(v => typeof v === 'number') as number[]
+                    );
+                    const yRange = (Math.max(...allY) - Math.min(...allY)) || 1;
+                    const minGap = yRange * 0.03;
                     
-                    return (
+                    // Finde alle Y-Werte bei einem Timestamp
+                    const getYValuesAt = (ts: number) => {
+                      const point = transformedChartData.find(p => Math.abs(p.timestamp - ts) < 60000);
+                      if (!point) return [];
+                      return activeMetricCards
+                        .map(m => point[m as keyof typeof point])
+                        .filter(v => typeof v === 'number') as number[];
+                    };
+                    
+                    // Berechne Offset für jeden Marker
+                    const resolved = markers.map((marker, i) => {
+                      const { timestamp, value } = marker.data;
+                      let offset = 8;
+                      
+                      // Prüfe ob Graph-Linien über diesem Punkt sind
+                      const yVals = getYValuesAt(timestamp);
+                      const linesAbove = yVals.filter(y => y > value && (y - value) < minGap * 3);
+                      
+                      // Mehr Offset wenn Linien knapp darüber
+                      offset += linesAbove.length * 10;
+                      
+                      // Stapeln wenn mehrere L-Marker nah beieinander
+                      const prevSameArea = markers.slice(0, i).filter(m => 
+                        Math.abs(m.data.timestamp - timestamp) < 3600000 &&
+                        Math.abs(m.data.value - value) < minGap * 4
+                      ).length;
+                      offset += prevSameArea * 12;
+                      
+                      return { ...marker, offset };
+                    });
+                    
+                    return resolved.map(m => (
                       <ReferenceDot
-                        key={`lowest-${metricName}`}
-                        x={lowest.timestamp}
-                        y={lowest.value}
+                        key={`lowest-${m.metric}`}
+                        x={m.data.timestamp}
+                        y={m.data.value}
                         r={0}
                         label={{
                           value: '↓L',
                           position: 'top',
-                          fill: color,
+                          fill: m.color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: baseOffset + stackOffset,
+                          offset: m.offset,
                         }}
                       />
-                    );
-                  })}
+                    ));
+                  })()}
                 </LineChart>
               </ResponsiveContainer>
               </div>
