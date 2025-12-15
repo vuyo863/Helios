@@ -1182,51 +1182,61 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
-  // Berechne Investitionsmenge (Summe aller baseInvestment Werte) für Prozentberechnung
-  const totalBaseInvestment = useMemo(() => {
+  // Berechne Profit-Prozent mit gewichteter Durchschnittslogik für Investitionsmenge
+  const totalProfitPercent = useMemo(() => {
+    if (profitPercentBase === 'gesamtinvestment') {
+      // Berechne Prozent basierend auf Gesamtinvestment (totalInvestment)
+      return totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+    }
+    
+    // Investitionsmenge: Gewichteter Durchschnitt der profitPercent_investitionsmenge Werte
+    // Formel: Σ(baseInvestment_i × percent_i) / Σ(baseInvestment_i)
     if (selectedBotName === "Gesamt") {
       if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0) {
         return 0;
       }
       
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
-      let sum = 0;
+      let weightedSum = 0;
+      let totalBase = 0;
       
       activeBotTypes.forEach(botType => {
         const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
-        const latestUpdate = updatesForType.sort((a, b) => 
-          new Date(b.createdAt as Date).getTime() - new Date(a.createdAt as Date).getTime()
-        )[0];
         
-        if (latestUpdate) {
-          sum += parseFloat(latestUpdate.baseInvestment || '0') || 0;
-        }
+        updatesForType.forEach(update => {
+          const baseInv = parseFloat(update.baseInvestment || '0') || 0;
+          const percent = parseFloat(update.profitPercent_investitionsmenge || '0') || 0;
+          
+          if (baseInv > 0) {
+            weightedSum += baseInv * percent;
+            totalBase += baseInv;
+          }
+        });
       });
       
-      return sum;
+      return totalBase > 0 ? weightedSum / totalBase : 0;
     } else {
       if (!selectedBotTypeData || !allBotTypeUpdates) {
         return 0;
       }
       
       const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
-      const latestUpdate = updatesForType.sort((a, b) => 
-        new Date(b.createdAt as Date).getTime() - new Date(a.createdAt as Date).getTime()
-      )[0];
+      let weightedSum = 0;
+      let totalBase = 0;
       
-      return latestUpdate ? parseFloat(latestUpdate.baseInvestment || '0') || 0 : 0;
+      updatesForType.forEach(update => {
+        const baseInv = parseFloat(update.baseInvestment || '0') || 0;
+        const percent = parseFloat(update.profitPercent_investitionsmenge || '0') || 0;
+        
+        if (baseInv > 0) {
+          weightedSum += baseInv * percent;
+          totalBase += baseInv;
+        }
+      });
+      
+      return totalBase > 0 ? weightedSum / totalBase : 0;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
-
-  const totalProfitPercent = useMemo(() => {
-    if (profitPercentBase === 'investitionsmenge') {
-      // Berechne Prozent basierend auf Investitionsmenge (baseInvestment)
-      return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
-    } else {
-      // Berechne Prozent basierend auf Gesamtinvestment (totalInvestment)
-      return totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
-    }
-  }, [totalInvestment, totalProfit, totalBaseInvestment, profitPercentBase]);
+  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData, totalInvestment, totalProfit, profitPercentBase]);
 
   // Ø Profit/Tag: Summe der "24h Ø Profit" von allen aktiven Bot-Types
   // Berechnung wie auf Bot-Types-Seite: weighted average (totalProfit / totalHours * 24)
