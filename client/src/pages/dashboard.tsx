@@ -2061,7 +2061,15 @@ export default function Dashboard() {
                     dataKey="timestamp"
                     type="number"
                     domain={xAxisDomain}
-                    ticks={xAxisTicks.length > 0 ? xAxisTicks : undefined}
+                    allowDataOverflow={true}
+                    ticks={xAxisTicks.length > 0 ? xAxisTicks.filter(t => {
+                      // Nur Ticks innerhalb der gezoomten Domain anzeigen
+                      const [domainStart, domainEnd] = xAxisDomain;
+                      if (typeof domainStart === 'number' && typeof domainEnd === 'number') {
+                        return t >= domainStart && t <= domainEnd;
+                      }
+                      return true;
+                    }) : undefined}
                     interval={0}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
@@ -2263,6 +2271,7 @@ export default function Dashboard() {
                   />
                   <YAxis 
                     domain={yAxisDomain}
+                    allowDataOverflow={true}
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     tickSize={8}
