@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface TrendPrice {
   id: string;
@@ -62,6 +63,8 @@ interface TrendPriceSettings {
 }
 
 export default function Notifications() {
+  const { toast } = useToast();
+  
   // Verfügbare Trading Pairs für Suche - werden dynamisch von Binance geladen
   const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([]);
   const [allBinancePairs, setAllBinancePairs] = useState<TrendPrice[]>([]);
@@ -316,6 +319,16 @@ export default function Notifications() {
   };
 
   const addThreshold = (trendPriceId: string) => {
+    // Prüfe ob der Edit-Modus aktiv ist
+    if (editMode[trendPriceId]) {
+      toast({
+        title: "Bitte speichern Sie zuerst",
+        description: "Speichern Sie die aktuellen Änderungen, bevor Sie einen neuen Schwellenwert hinzufügen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setTrendPriceSettings(prev => ({
       ...prev,
       [trendPriceId]: {
@@ -335,9 +348,27 @@ export default function Notifications() {
         ]
       }
     }));
+    
+    // Aktiviere automatisch den Edit-Modus für den neuen Schwellenwert
+    setEditMode(prev => ({
+      ...prev,
+      [trendPriceId]: true
+    }));
   };
 
   const removeThreshold = (trendPriceId: string, thresholdId: string) => {
+    const currentSettings = trendPriceSettings[trendPriceId];
+    
+    // Verhindere das Löschen, wenn nur noch ein Schwellenwert vorhanden ist
+    if (currentSettings.thresholds.length <= 1) {
+      toast({
+        title: "Mindestens ein Schwellenwert erforderlich",
+        description: "Sie müssen mindestens einen Schwellenwert behalten.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setTrendPriceSettings(prev => ({
       ...prev,
       [trendPriceId]: {
