@@ -1478,13 +1478,71 @@ export default function Dashboard() {
     return [zoomedStart, zoomedEnd];
   }, [transformedChartData, chartZoomX, chartPanX]);
 
+  // ===== ZEITFILTER FÜR STATCARDS =====
+  // Diese gefilterten Updates werden in allen StatCard-Berechnungen verwendet
+  // damit die Cards nur die Werte der gefilterten Updates anzeigen
+  const timeFilteredBotTypeUpdates = useMemo(() => {
+    if (!allBotTypeUpdates || allBotTypeUpdates.length === 0) {
+      return [];
+    }
+    
+    // Wenn keine appliedChartSettings vorhanden, alle Updates zurückgeben
+    if (!appliedChartSettings) {
+      return allBotTypeUpdates;
+    }
+    
+    // Helper: Hole Timestamp für ein Update
+    const getTs = (update: any): number => {
+      // Bei Closed Bots: endDate, sonst thisUpload
+      const dateStr = update.endDate || update.thisUpload;
+      if (!dateStr) return 0;
+      const parsed = parseGermanDate(dateStr);
+      return parsed ? parsed.getTime() : 0;
+    };
+    
+    let filtered = [...allBotTypeUpdates];
+    
+    // Priorität 1: From/Until manuell ausgewählt
+    if (appliedChartSettings.fromUpdate && appliedChartSettings.untilUpdate) {
+      const fromTs = getTs(appliedChartSettings.fromUpdate);
+      const untilTs = getTs(appliedChartSettings.untilUpdate);
+      
+      filtered = filtered.filter(update => {
+        const ts = getTs(update);
+        return ts >= fromTs && ts <= untilTs;
+      });
+    }
+    // Priorität 2: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom)
+    else if (appliedChartSettings.timeRange !== 'First-Last Update') {
+      const rangeMs = parseTimeRangeToMs(
+        appliedChartSettings.timeRange,
+        appliedChartSettings.customDays,
+        appliedChartSettings.customHours,
+        appliedChartSettings.customMinutes
+      );
+      
+      if (rangeMs !== null && rangeMs > 0) {
+        const now = Date.now();
+        const cutoffTimestamp = now - rangeMs;
+        
+        filtered = filtered.filter(update => {
+          const ts = getTs(update);
+          return ts >= cutoffTimestamp;
+        });
+      }
+    }
+    // Priorität 3: First-Last Update = Alle Updates (kein Filter)
+    
+    return filtered;
+  }, [allBotTypeUpdates, appliedChartSettings]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
   const totalInvestment = useMemo(() => {
+    // Verwende timeFilteredBotTypeUpdates statt allBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
       // Prüfe ob alle benötigten Daten vorhanden sind
-      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+      if (!availableBotTypes || timeFilteredBotTypeUpdates.length === 0) {
         // Falls Daten fehlen, nutze Entries als Fallback
         return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
       }
@@ -1496,7 +1554,7 @@ export default function Dashboard() {
       
       activeBotTypes.forEach(botType => {
         // Nur Updates mit Status "Update Metrics" verwenden (wie auf Bot-Types-Seite)
-        const updateMetricsOnly = allBotTypeUpdates.filter(
+        const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
           update => update.botTypeId === botType.id && update.status === "Update Metrics"
         );
         
@@ -1512,12 +1570,12 @@ export default function Dashboard() {
       return sum;
     } else {
       // Für spezifischen Bot-Type: Verwende Updates wie auf Bot-Types-Seite
-      if (!selectedBotTypeData || !allBotTypeUpdates) {
+      if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
         return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
       }
       
       // Nur Updates mit Status "Update Metrics" für diesen Bot-Type
-      const updateMetricsOnly = allBotTypeUpdates.filter(
+      const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
         update => update.botTypeId === selectedBotTypeData.id && update.status === "Update Metrics"
       );
       
@@ -1530,14 +1588,15 @@ export default function Dashboard() {
       
       return 0;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
+  }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
   // Berechne totalBaseInvestment (Investitionsmenge-Ø) - GLEICHE LOGIK wie Gesamtinvestment-Ø
   // Pro Bot-Type: Durchschnitt aller "investment" Werte von "Update Metrics" Updates
   // Dann alle Bot-Type-Durchschnitte summieren
   const totalBaseInvestment = useMemo(() => {
+    // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
-      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+      if (!availableBotTypes || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
@@ -1546,7 +1605,7 @@ export default function Dashboard() {
       
       activeBotTypes.forEach(botType => {
         // Nur Updates mit Status "Update Metrics" verwenden (wie bei Gesamtinvestment-Ø)
-        const updateMetricsOnly = allBotTypeUpdates.filter(
+        const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
           update => update.botTypeId === botType.id && update.status === "Update Metrics"
         );
         
@@ -1561,12 +1620,12 @@ export default function Dashboard() {
       
       return sum;
     } else {
-      if (!selectedBotTypeData || !allBotTypeUpdates) {
+      if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
       // Nur Updates mit Status "Update Metrics" für diesen Bot-Type
-      const updateMetricsOnly = allBotTypeUpdates.filter(
+      const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
         update => update.botTypeId === selectedBotTypeData.id && update.status === "Update Metrics"
       );
       
@@ -1579,7 +1638,7 @@ export default function Dashboard() {
       
       return 0;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
+  }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, selectedBotTypeData]);
   
   // displayedInvestment: Wechselt zwischen Gesamtinvestment und Investitionsmenge basierend auf Dropdown
   const displayedInvestment = useMemo(() => {
@@ -1590,9 +1649,10 @@ export default function Dashboard() {
   // - Update Metrics: overallGridProfitUsdt (Grid Profit)
   // - Closed Bots: profit (Gesamt Profit)
   const totalProfit = useMemo(() => {
+    // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
       // Prüfe ob alle benötigten Daten vorhanden sind
-      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+      if (!availableBotTypes || timeFilteredBotTypeUpdates.length === 0) {
         // Falls Daten fehlen, nutze Entries als Fallback
         return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
       }
@@ -1602,7 +1662,7 @@ export default function Dashboard() {
       let sum = 0;
       
       activeBotTypes.forEach(botType => {
-        const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === botType.id);
+        const updatesForType = timeFilteredBotTypeUpdates.filter(update => update.botTypeId === botType.id);
         
         // Gesamt Profit: Alle Updates, aber unterschiedliche Felder je nach Status
         // - Update Metrics: overallGridProfitUsdt (Grid Profit)
@@ -1621,12 +1681,12 @@ export default function Dashboard() {
       return sum;
     } else {
       // Für spezifischen Bot-Type: Verwende Updates wie auf Bot-Types-Seite
-      if (!selectedBotTypeData || !allBotTypeUpdates) {
+      if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
         return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.profit), 0);
       }
       
       // Alle Updates für diesen Bot-Type
-      const updatesForType = allBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
+      const updatesForType = timeFilteredBotTypeUpdates.filter(update => update.botTypeId === selectedBotTypeData.id);
       
       // Gesamt Profit: Alle Updates, aber unterschiedliche Felder je nach Status
       return updatesForType.reduce((s, update) => {
@@ -1637,7 +1697,7 @@ export default function Dashboard() {
         }
       }, 0);
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
+  }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
   // Berechne Profit-Prozent
   // Gesamtinvestment: totalProfit / totalInvestment * 100
@@ -1655,8 +1715,9 @@ export default function Dashboard() {
   // Ø Profit/Tag: Summe der "24h Ø Profit" von allen aktiven Bot-Types
   // Berechnung wie auf Bot-Types-Seite: weighted average (totalProfit / totalHours * 24)
   const avgDailyProfit = useMemo(() => {
+    // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
-      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+      if (!availableBotTypes || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
@@ -1664,7 +1725,7 @@ export default function Dashboard() {
       let totalAvg24h = 0;
       
       activeBotTypes.forEach(botType => {
-        const updateMetricsOnly = allBotTypeUpdates.filter(
+        const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
           update => update.botTypeId === botType.id && update.status === 'Update Metrics'
         );
         
@@ -1690,11 +1751,11 @@ export default function Dashboard() {
       return totalAvg24h;
     } else {
       // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
-      if (!selectedBotTypeData || !allBotTypeUpdates) {
+      if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
-      const updateMetricsOnly = allBotTypeUpdates.filter(
+      const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
         update => update.botTypeId === selectedBotTypeData.id && update.status === 'Update Metrics'
       );
       
@@ -1717,15 +1778,16 @@ export default function Dashboard() {
       
       return 0;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
+  }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, selectedBotTypeData]);
 
   // Real Profit/Tag: Summe der "Real 24h Profit" von allen aktiven Bot-Types
   // Berechnung wie auf Bot-Types-Seite:
   // - Wenn Runtime < 24h: Nimm den gesamten Grid Profit
   // - Wenn Runtime >= 24h: Nimm den avgGridProfitDay
   const real24hProfit = useMemo(() => {
+    // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
-      if (!availableBotTypes || !allBotTypeUpdates || availableBotTypes.length === 0 || allBotTypeUpdates.length === 0) {
+      if (!availableBotTypes || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
@@ -1733,7 +1795,7 @@ export default function Dashboard() {
       let totalReal24h = 0;
       
       activeBotTypes.forEach(botType => {
-        const updateMetricsOnly = allBotTypeUpdates.filter(
+        const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
           update => update.botTypeId === botType.id && update.status === 'Update Metrics'
         );
         
@@ -1755,11 +1817,11 @@ export default function Dashboard() {
       return totalReal24h;
     } else {
       // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
-      if (!selectedBotTypeData || !allBotTypeUpdates) {
+      if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
-      const updateMetricsOnly = allBotTypeUpdates.filter(
+      const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
         update => update.botTypeId === selectedBotTypeData.id && update.status === 'Update Metrics'
       );
       
@@ -1780,7 +1842,7 @@ export default function Dashboard() {
       
       return totalReal24h;
     }
-  }, [selectedBotName, availableBotTypes, allBotTypeUpdates, selectedBotTypeData]);
+  }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, selectedBotTypeData]);
 
   const lineChartData = useMemo(() => 
     filteredEntriesForStats
