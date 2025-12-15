@@ -1118,10 +1118,8 @@ export default function Dashboard() {
   }, [chartData, appliedChartSettings?.sequence]);
 
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
-  // Für Gesamtkapital: Domain nahe am tatsächlichen Wert (nicht bei 0 starten)
-  // Für Profit-Metriken: Domain bei 0 starten (Wachstum zeigen)
+  // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   const yAxisDomain = useMemo((): [number | string, number | string] => {
-    // Verwende transformierte Daten für korrekte Domain-Berechnung
     const dataToUse = transformedChartData;
     if (!dataToUse || dataToUse.length === 0 || activeMetricCards.length === 0) {
       return ['auto', 'auto'];
@@ -1146,49 +1144,40 @@ export default function Dashboard() {
     let baseLower: number;
     let baseUpper: number;
     
-    // Wenn Gesamtkapital aktiv ist + Profit-Metriken
-    // Die Profit-Werte sind bereits auf Gesamtkapital gestapelt
-    // -> Y-Achse soll NICHT bei 0 starten, sondern den Bereich nahe dem Kapital zoomen
-    // So ist die Profit-Steigerung deutlich sichtbar!
+    // Berechne Basis-Domain mit ausreichend Padding (10% auf jeder Seite)
+    const dataRange = maxVal - minVal;
+    const minPadding = dataRange > 0 ? dataRange * 0.1 : maxVal * 0.1;
+    
     if (hasGesamtkapitalActive) {
-      // Berechne sinnvolle Grenzen:
-      // - Unten: Etwas unter dem Gesamtkapital (aber nicht unter 0)
-      // - Oben: Über dem gestapelten Profit
-      const range = maxVal - minVal;
-      // Mindest-Padding: 20% des Bereichs oder 5% des Maximalwerts
-      const padding = Math.max(range * 0.3, maxVal * 0.02);
-      
-      baseLower = Math.max(0, minVal - padding);
-      baseUpper = maxVal + padding;
+      // Gesamtkapital aktiv: Zeige Bereich nahe dem Kapital
+      baseLower = Math.max(0, minVal - minPadding);
+      baseUpper = maxVal + minPadding;
     } else {
-      // Wenn ALLE aktiven Metriken "konstante" Typen sind (nur Gesamtkapital)
-      // dann soll die Y-Achse NICHT bei 0 starten
       const constantMetrics = ['Gesamtkapital'];
       const allConstant = activeMetricCards.every(m => constantMetrics.includes(m));
       
       if (allConstant) {
-        // Domain nahe am Min/Max mit etwas Padding
-        const range = maxVal - minVal;
-        const padding = range > 0 ? range * 0.1 : maxVal * 0.05;
-        baseLower = Math.max(0, minVal - padding);
-        baseUpper = maxVal + padding;
+        baseLower = Math.max(0, minVal - minPadding);
+        baseUpper = maxVal + minPadding;
       } else {
-        // Für Profit-Metriken: Bei 0 starten
+        // Profit-Metriken: Bei 0 starten mit Padding oben
         baseLower = 0;
-        baseUpper = maxVal * 1.1; // 10% Padding oben
+        baseUpper = maxVal + minPadding;
       }
     }
     
+    // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
+    if (chartZoomY === 1 && chartPanY === 0) {
+      return [baseLower, baseUpper];
+    }
+    
     // Zoom & Pan anwenden
-    // chartZoomY: 1 = 100%, 2 = 200% (doppelt so detailliert = halbe Range)
-    // chartPanY: Verschiebung in Pixel, umgerechnet auf Chart-Einheiten
     const baseRange = baseUpper - baseLower;
     const zoomedRange = baseRange / chartZoomY;
     const center = (baseLower + baseUpper) / 2;
     
-    // Pan-Offset: chartPanY in Pixel, umrechnen auf Chart-Einheiten
-    // Negative Werte = nach oben panen (höhere Werte sehen)
-    const panOffset = (chartPanY / 300) * baseRange; // 300px = Chart-Höhe
+    // Pan-Offset
+    const panOffset = (chartPanY / 300) * baseRange;
     
     const zoomedLower = center - zoomedRange / 2 + panOffset;
     const zoomedUpper = center + zoomedRange / 2 + panOffset;
@@ -1197,6 +1186,7 @@ export default function Dashboard() {
   }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY]);
 
   // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
+  // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   const xAxisDomain = useMemo((): [number | string, number | string] => {
     // Hole Start- und Endzeit aus den Daten
     const dataToUse = transformedChartData;
@@ -1210,18 +1200,31 @@ export default function Dashboard() {
     const minTime = Math.min(...timestamps);
     const maxTime = Math.max(...timestamps);
     
-    // Basis-Range
-    const baseRange = maxTime - minTime;
-    if (baseRange === 0) return ['dataMin', 'dataMax'];
+    // Basis-Range mit Padding (5% auf jeder Seite)
+    const dataRange = maxTime - minTime;
+    if (dataRange === 0) {
+      // Einzelner Punkt: 1 Tag Padding auf jeder Seite
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      return [minTime - oneDayMs, maxTime + oneDayMs];
+    }
+    
+    // 5% Padding auf jeder Seite damit Punkte nicht abgeschnitten werden
+    const padding = dataRange * 0.05;
+    const baseMin = minTime - padding;
+    const baseMax = maxTime + padding;
+    const baseRange = baseMax - baseMin;
+    
+    // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
+    if (chartZoomX === 1 && chartPanX === 0) {
+      return [baseMin, baseMax];
+    }
     
     // Zoom anwenden (zoomedRange = kleinerer Bereich bei höherem Zoom)
     const zoomedRange = baseRange / chartZoomX;
-    const center = (minTime + maxTime) / 2;
+    const center = (baseMin + baseMax) / 2;
     
     // Pan-Offset: chartPanX in Pixel, umrechnen auf Zeit-Einheiten
-    // Positive Werte = nach rechts panen (spätere Zeit sehen)
-    // Negative Werte = nach links panen (frühere Zeit sehen)
-    const chartWidth = 600; // Ungefähre Chart-Breite in Pixel
+    const chartWidth = 600;
     const panOffset = -(chartPanX / chartWidth) * baseRange;
     
     const zoomedStart = center - zoomedRange / 2 + panOffset;
