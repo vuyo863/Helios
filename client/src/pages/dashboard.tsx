@@ -238,12 +238,28 @@ export default function Dashboard() {
   // Verhindert Re-Animation bei Hover/Scroll
   const [shouldAnimate, setShouldAnimate] = useState(true);
   
+  // Transitioning State: Blendet Chart kurz aus beim Metrik-Wechsel
+  // Verhindert den "alten Linien bleiben sichtbar" Bug
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
   useEffect(() => {
-    setShouldAnimate(true);
-    const timer = setTimeout(() => {
+    // Erst kurz ausblenden (10ms), dann Animation starten
+    setIsTransitioning(true);
+    setShouldAnimate(false);
+    
+    const showTimer = setTimeout(() => {
+      setIsTransitioning(false);
+      setShouldAnimate(true);
+    }, 10); // Kurze Pause zum "Reset" des Charts
+    
+    const animEndTimer = setTimeout(() => {
       setShouldAnimate(false);
-    }, 900); // Animation dauert 800ms, +100ms Puffer
-    return () => clearTimeout(timer);
+    }, 910); // 10ms delay + 800ms Animation + 100ms Puffer
+    
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(animEndTimer);
+    };
   }, [chartAnimationKey]);
   
   // Handler für Update-Auswahl Icons
@@ -2135,7 +2151,8 @@ export default function Dashboard() {
                     }}
                   />
                   {/* Dynamisch Lines rendern - Multi-Bot-Mode oder Single-Bot mit Metriken */}
-                  {isMultiBotChartMode ? (
+                  {/* Während Transition: Keine Linien rendern (verhindert "alte Linie bleibt sichtbar" Bug) */}
+                  {!isTransitioning && (isMultiBotChartMode ? (
                     // Multi-Bot-Type Modus: Eine Linie pro Bot-Type (zeigt Gesamtprofit)
                     multiBotChartData.botTypeNames.map((botTypeName, index) => (
                       <Line 
@@ -2167,7 +2184,7 @@ export default function Dashboard() {
                         animationDuration={800}
                       />
                     ))
-                  )}
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </Card>
