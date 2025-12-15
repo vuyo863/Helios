@@ -683,22 +683,15 @@ export default function Dashboard() {
     }
   };
 
-  // Berechne die Anzahl der angezeigten Updates basierend auf Auswahl
-  // NUR wenn Apply geklickt wurde ODER From/Until manuell ausgewählt
+  // Berechne die Anzahl der angezeigten Updates basierend auf AKTUELLER Auswahl
+  // Reagiert sofort auf Zeitraum-Änderung (vor Apply)
   const displayedUpdatesCount = useMemo(() => {
-    // Nur berechnen wenn Apply geklickt wurde ODER From/Until manuell ausgewählt
-    const hasManualSelection = selectedFromUpdate && selectedUntilUpdate;
-    
-    if (!hasManualSelection && !chartApplied) {
-      // Noch nichts ausgewählt/angewendet - zeige 0
-      return { total: 0, updateMetrics: 0, closedBots: 0 };
-    }
-    
     if (!sortedUpdates || sortedUpdates.length === 0) return { total: 0, updateMetrics: 0, closedBots: 0 };
     
     let filteredUpdates = sortedUpdates;
+    const hasManualSelection = selectedFromUpdate && selectedUntilUpdate;
     
-    // Wenn From und Until manuell ausgewählt sind, filtere entsprechend
+    // Priorität 1: Wenn From und Until manuell ausgewählt sind
     if (hasManualSelection) {
       const fromTimestamp = getUpdateTimestamp(selectedFromUpdate);
       const untilTimestamp = getUpdateTimestamp(selectedUntilUpdate);
@@ -707,43 +700,33 @@ export default function Dashboard() {
         const updateTimestamp = getUpdateTimestamp(update);
         return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
       });
-    } else if (chartApplied && appliedChartSettings) {
-      // Wenn Apply geklickt wurde, nutze die angewendeten Einstellungen
-      if (appliedChartSettings.fromUpdate && appliedChartSettings.untilUpdate) {
-        const fromTimestamp = getUpdateTimestamp(appliedChartSettings.fromUpdate);
-        const untilTimestamp = getUpdateTimestamp(appliedChartSettings.untilUpdate);
+    } 
+    // Priorität 2: Aktueller selectedTimeRange (reagiert sofort auf Dropdown-Auswahl)
+    else if (selectedTimeRange !== 'First-Last Update') {
+      const rangeMs = parseTimeRangeToMs(
+        selectedTimeRange,
+        customDays,
+        customHours,
+        customMinutes
+      );
+      
+      if (rangeMs !== null && rangeMs > 0) {
+        const now = Date.now();
+        const cutoffTimestamp = now - rangeMs;
         
         filteredUpdates = sortedUpdates.filter(update => {
           const updateTimestamp = getUpdateTimestamp(update);
-          return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
+          return updateTimestamp >= cutoffTimestamp;
         });
-      } else if (appliedChartSettings.timeRange !== 'First-Last Update') {
-        // "Letzten"-Zeitraum Filter
-        const rangeMs = parseTimeRangeToMs(
-          appliedChartSettings.timeRange,
-          appliedChartSettings.customDays,
-          appliedChartSettings.customHours,
-          appliedChartSettings.customMinutes
-        );
-        
-        if (rangeMs !== null && rangeMs > 0) {
-          const now = Date.now();
-          const cutoffTimestamp = now - rangeMs;
-          
-          filteredUpdates = sortedUpdates.filter(update => {
-            const updateTimestamp = getUpdateTimestamp(update);
-            return updateTimestamp >= cutoffTimestamp;
-          });
-        }
       }
-      // First-Last Update = alle Updates (default)
     }
+    // Priorität 3: First-Last Update = alle Updates anzeigen
     
     const updateMetrics = filteredUpdates.filter(u => u.status === 'Update Metrics').length;
     const closedBots = filteredUpdates.filter(u => u.status === 'Closed Bots').length;
     
     return { total: filteredUpdates.length, updateMetrics, closedBots };
-  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, chartApplied, appliedChartSettings]);
+  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange, customDays, customHours, customMinutes]);
 
   // Farben für die verschiedenen Metriken (passend zu den Card-Farben)
   const metricColors: Record<string, string> = {
