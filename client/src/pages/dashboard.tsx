@@ -2944,6 +2944,7 @@ export default function Dashboard() {
                     ))
                   )}
                   {/* Highest Value Marker - UNTER dem Punkt, Pfeil nach oben mit H */}
+                  {/* Bumper-System: Marker weichen Graphen und anderen Markern aus */}
                   {showHighestValue && !isMultiBotChartMode && (() => {
                     // Sammle alle Highest-Marker mit ihren Positionen
                     const highestMarkers = activeMetricCards
@@ -2954,15 +2955,48 @@ export default function Dashboard() {
                       })
                       .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
                     
-                    // Gruppiere Marker die nah beieinander sind (gleicher Timestamp oder sehr nah)
-                    // Und berechne Stapel-Offset für jeden
-                    const processedMarkers = highestMarkers.map((marker, i) => {
-                      // Zähle wie viele Marker vor diesem auf gleichem/ähnlichem Timestamp sind
-                      const samePositionIndex = highestMarkers
-                        .slice(0, i)
-                        .filter(m => Math.abs(m.timestamp - marker.timestamp) < 3600000) // 1 Stunde Toleranz
-                        .length;
-                      return { ...marker, stackOffset: samePositionIndex };
+                    // Finde alle Y-Werte bei diesem Timestamp für Kollisionserkennung
+                    const getOtherValuesAtTimestamp = (timestamp: number, excludeMetric: string) => {
+                      const point = transformedChartData.find(p => p.timestamp === timestamp);
+                      if (!point) return [];
+                      return activeMetricCards
+                        .filter(m => m !== excludeMetric)
+                        .map(m => point[m as keyof typeof point] as number)
+                        .filter(v => typeof v === 'number');
+                    };
+                    
+                    // Bumper-Logik: Berechne sicheren Offset für jeden Marker
+                    // H-Marker gehen nach unten, müssen aber über der X-Achse bleiben
+                    const minPadding = 20; // Mindest-Abstand in Pixel
+                    const markerHeight = 18; // Höhe eines Markers
+                    
+                    // Sortiere nach Y-Wert (höchste zuerst) für konsistentes Stapeln
+                    const sortedMarkers = [...highestMarkers].sort((a, b) => b.value - a.value);
+                    
+                    const processedMarkers = sortedMarkers.map((marker, i) => {
+                      // Basis-Offset
+                      let offset = minPadding;
+                      
+                      // Prüfe ob andere Marker auf gleichem Timestamp sind
+                      const sameTimestampMarkers = sortedMarkers.slice(0, i).filter(
+                        m => Math.abs(m.timestamp - marker.timestamp) < 3600000
+                      );
+                      
+                      // Stapeln wenn andere Marker da sind
+                      offset += sameTimestampMarkers.length * markerHeight;
+                      
+                      // Prüfe Kollision mit anderen Graph-Linien
+                      const otherValues = getOtherValuesAtTimestamp(marker.timestamp, marker.metricName);
+                      otherValues.forEach(otherVal => {
+                        // Wenn eine andere Linie nah am Marker ist, weiter nach unten pushen
+                        const valueDiff = marker.value - otherVal;
+                        if (valueDiff > 0 && valueDiff < 50) {
+                          // Andere Linie ist knapp unter dem Marker-Punkt
+                          offset += markerHeight;
+                        }
+                      });
+                      
+                      return { ...marker, offset };
                     });
                     
                     return processedMarkers.map((marker) => (
@@ -2977,12 +3011,13 @@ export default function Dashboard() {
                           fill: marker.color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: 8 + (marker.stackOffset * 18), // Stapeln mit 18px Abstand
+                          offset: marker.offset,
                         }}
                       />
                     ));
                   })()}
                   {/* Lowest Value Marker - ÜBER dem Punkt, Pfeil nach unten mit L */}
+                  {/* Bumper-System: Marker weichen Graphen und anderen Markern aus */}
                   {showLowestValue && !isMultiBotChartMode && (() => {
                     // Sammle alle Lowest-Marker mit ihren Positionen
                     const lowestMarkers = activeMetricCards
@@ -2993,15 +3028,48 @@ export default function Dashboard() {
                       })
                       .filter(Boolean) as { metricName: string; timestamp: number; value: number; color: string; idx: number }[];
                     
-                    // Gruppiere Marker die nah beieinander sind (gleicher Timestamp oder sehr nah)
-                    // Und berechne Stapel-Offset für jeden
-                    const processedMarkers = lowestMarkers.map((marker, i) => {
-                      // Zähle wie viele Marker vor diesem auf gleichem/ähnlichem Timestamp sind
-                      const samePositionIndex = lowestMarkers
-                        .slice(0, i)
-                        .filter(m => Math.abs(m.timestamp - marker.timestamp) < 3600000) // 1 Stunde Toleranz
-                        .length;
-                      return { ...marker, stackOffset: samePositionIndex };
+                    // Finde alle Y-Werte bei diesem Timestamp für Kollisionserkennung
+                    const getOtherValuesAtTimestamp = (timestamp: number, excludeMetric: string) => {
+                      const point = transformedChartData.find(p => p.timestamp === timestamp);
+                      if (!point) return [];
+                      return activeMetricCards
+                        .filter(m => m !== excludeMetric)
+                        .map(m => point[m as keyof typeof point] as number)
+                        .filter(v => typeof v === 'number');
+                    };
+                    
+                    // Bumper-Logik: Berechne sicheren Offset für jeden Marker
+                    // L-Marker gehen nach oben, weg von der X-Achse
+                    const minPadding = 20; // Mindest-Abstand in Pixel
+                    const markerHeight = 18; // Höhe eines Markers
+                    
+                    // Sortiere nach Y-Wert (niedrigste zuerst) für konsistentes Stapeln
+                    const sortedMarkers = [...lowestMarkers].sort((a, b) => a.value - b.value);
+                    
+                    const processedMarkers = sortedMarkers.map((marker, i) => {
+                      // Basis-Offset
+                      let offset = minPadding;
+                      
+                      // Prüfe ob andere Marker auf gleichem Timestamp sind
+                      const sameTimestampMarkers = sortedMarkers.slice(0, i).filter(
+                        m => Math.abs(m.timestamp - marker.timestamp) < 3600000
+                      );
+                      
+                      // Stapeln wenn andere Marker da sind
+                      offset += sameTimestampMarkers.length * markerHeight;
+                      
+                      // Prüfe Kollision mit anderen Graph-Linien
+                      const otherValues = getOtherValuesAtTimestamp(marker.timestamp, marker.metricName);
+                      otherValues.forEach(otherVal => {
+                        // Wenn eine andere Linie nah am Marker ist, weiter nach oben pushen
+                        const valueDiff = otherVal - marker.value;
+                        if (valueDiff > 0 && valueDiff < 50) {
+                          // Andere Linie ist knapp über dem Marker-Punkt
+                          offset += markerHeight;
+                        }
+                      });
+                      
+                      return { ...marker, offset };
                     });
                     
                     return processedMarkers.map((marker) => (
@@ -3016,7 +3084,7 @@ export default function Dashboard() {
                           fill: marker.color,
                           fontSize: 12,
                           fontWeight: 'bold',
-                          offset: 8 + (marker.stackOffset * 18), // Stapeln mit 18px Abstand
+                          offset: marker.offset,
                         }}
                       />
                     ));
