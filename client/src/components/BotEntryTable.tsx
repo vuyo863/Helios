@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { BotType, BotTypeUpdate } from "@shared/schema";
 import { format, parse, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowUp, ArrowDown, X } from "lucide-react";
+import { ArrowUp, ArrowDown, X, LineChart } from "lucide-react";
 
 // Helper function to parse runtime string like "1d 14h 28m" to hours
 function parseRuntimeToHours(runtime: string | null | undefined): number {
@@ -199,6 +199,9 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                     <SortIcon column="metricStarted" />
                   </div>
                 </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-muted border-b w-[60px] text-center" data-testid="header-chart">
+                  <span>Chart</span>
+                </TableHead>
                 <TableHead className="sticky top-0 z-10 bg-muted border-b w-[50px]" data-testid="header-actions">
                 </TableHead>
               </TableRow>
@@ -206,7 +209,7 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
             <TableBody>
               {botTypeData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8" data-testid="text-no-entries">
                     Keine Einträge vorhanden
                   </TableCell>
                 </TableRow>
@@ -254,6 +257,9 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                           }
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center" data-testid={`cell-chart-${botType.id}`}>
+                      <LineChart className="h-4 w-4 text-muted-foreground mx-auto" />
                     </TableCell>
                     <TableCell data-testid={`cell-actions-${botType.id}`}>
                       <Button
