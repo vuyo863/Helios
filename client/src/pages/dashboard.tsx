@@ -1080,6 +1080,8 @@ export default function Dashboard() {
           'Gesamtprofit %': startProfitPercent,
           'Ø Profit/Tag': startAvgDaily,
           'Real Profit/Tag': startRealDaily,
+          // Bei Vergleichs-Modus: Speichere auch hier die vorherigen Werte für Tooltip mit 2 Boxen
+          _prevEndValues: isVergleichsModus && index > 0 ? prevEndValues : undefined,
         });
       }
       
