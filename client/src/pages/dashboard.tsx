@@ -756,6 +756,48 @@ export default function Dashboard() {
     return dataPoints;
   }, [chartApplied, appliedChartSettings, sortedUpdates]);
 
+  // Prüfe ob SPEZIALFALL aktiv ist:
+  // 1. Nur EIN Update (= 2 Datenpunkte: Start + Ende)
+  // 2. Gesamtkapital ist ausgewählt
+  // Dann: Gesamtprofit und Gesamtprofit % werden ab Gesamtkapital-Wert angezeigt
+  const isSingleUpdateWithCapital = useMemo(() => {
+    if (!chartData || chartData.length === 0) return false;
+    
+    // Zähle eindeutige Updates (nicht Datenpunkte) - ein Update hat Start + Ende
+    const uniqueVersions = new Set(chartData.map(d => d.version));
+    const isSingleUpdate = uniqueVersions.size === 1;
+    
+    // Ist Gesamtkapital aktiv?
+    const hasGesamtkapital = activeMetricCards.includes('Gesamtkapital');
+    
+    return isSingleUpdate && hasGesamtkapital;
+  }, [chartData, activeMetricCards]);
+
+  // Transformierte Chart-Daten für Spezialfall
+  // Wenn Bedingungen erfüllt: Gesamtprofit und Gesamtprofit % werden um Gesamtkapital offsettet
+  const transformedChartData = useMemo(() => {
+    if (!chartData || chartData.length === 0) return chartData;
+    
+    // Wenn Spezialfall nicht aktiv, normale Daten zurückgeben
+    if (!isSingleUpdateWithCapital) return chartData;
+    
+    // Transformiere die Daten: Profit-Werte um Gesamtkapital erhöhen
+    return chartData.map(point => {
+      const gesamtkapital = point['Gesamtkapital'] || 0;
+      
+      return {
+        ...point,
+        // Gesamtprofit startet ab Gesamtkapital
+        'Gesamtprofit': point['Gesamtprofit'] + gesamtkapital,
+        // Gesamtprofit % startet auch ab Gesamtkapital (für visuelle Konsistenz)
+        'Gesamtprofit %': point['Gesamtprofit %'] + gesamtkapital,
+        // Speichere Originalwerte für Tooltips
+        '_rawGesamtprofit': point['Gesamtprofit'],
+        '_rawGesamtprofitPercent': point['Gesamtprofit %'],
+      };
+    });
+  }, [chartData, isSingleUpdateWithCapital]);
+
   // Berechne X-Achsen-Ticks für regelmäßige Tages-Intervalle
   const xAxisTicks = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
@@ -804,14 +846,16 @@ export default function Dashboard() {
   // Für Gesamtkapital: Domain nahe am tatsächlichen Wert (nicht bei 0 starten)
   // Für Profit-Metriken: Domain bei 0 starten (Wachstum zeigen)
   const yAxisDomain = useMemo((): [number | string, number | string] => {
-    if (!chartData || chartData.length === 0 || activeMetricCards.length === 0) {
+    // Verwende transformierte Daten für korrekte Domain-Berechnung
+    const dataToUse = transformedChartData;
+    if (!dataToUse || dataToUse.length === 0 || activeMetricCards.length === 0) {
       return ['auto', 'auto'];
     }
     
     // Sammle alle Werte der aktiven Metriken
     const allValues: number[] = [];
     activeMetricCards.forEach(metric => {
-      chartData.forEach(point => {
+      dataToUse.forEach(point => {
         const val = point[metric as keyof typeof point] as number;
         if (typeof val === 'number' && !isNaN(val)) {
           allValues.push(val);
@@ -838,7 +882,7 @@ export default function Dashboard() {
     
     // Für Profit-Metriken: Bei 0 starten
     return [0, 'auto'];
-  }, [chartData, activeMetricCards]);
+  }, [transformedChartData, activeMetricCards]);
 
   // Crosshair Handler für Hover-Interaktion
   const handleChartMouseMove = (e: any) => {
@@ -1492,7 +1536,7 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart 
-                  data={chartData.length > 0 ? chartData : [
+                  data={transformedChartData.length > 0 ? transformedChartData : [
                     { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
                   ]}
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
@@ -1579,9 +1623,18 @@ export default function Dashboard() {
                       }
                       return label;
                     }}
-                    formatter={(value: number, name: string) => {
+                    formatter={(value: number, name: string, props: any) => {
+                      // Im Spezialfall: Zeige die echten Werte für Gesamtprofit und Gesamtprofit %
+                      let displayValue = value;
+                      if (isSingleUpdateWithCapital && props?.payload) {
+                        if (name === 'Gesamtprofit' && props.payload._rawGesamtprofit !== undefined) {
+                          displayValue = props.payload._rawGesamtprofit;
+                        } else if (name === 'Gesamtprofit %' && props.payload._rawGesamtprofitPercent !== undefined) {
+                          displayValue = props.payload._rawGesamtprofitPercent;
+                        }
+                      }
                       const suffix = name === 'Gesamtprofit %' ? '%' : ' USDT';
-                      return [value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix, name];
+                      return [displayValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix, name];
                     }}
                   />
                   {/* Dynamisch Lines für alle aktiven Metriken rendern */}
