@@ -80,6 +80,23 @@ function parseRuntimeToHours(runtime: string | null | undefined): number {
   return totalHours;
 }
 
+// Helper function to format runtime from milliseconds to "Xd Xh Xm" format
+function formatRuntimeFromMs(ms: number): string {
+  if (ms <= 0) return '0m';
+  
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+  
+  return parts.join(' ');
+}
+
 // Helper function to parse German date format (dd.MM.yyyy HH:mm:ss or dd.MM.yyyy HH:mm)
 function parseGermanDate(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null;
@@ -941,6 +958,8 @@ export default function Dashboard() {
       version: number;
       status: string;
       isStartPoint?: boolean;
+      // Runtime in Millisekunden (nur bei Endpunkten)
+      runtimeMs?: number;
       // Alle Metriken
       'Gesamtkapital': number;
       'Gesamtprofit': number;
@@ -1008,6 +1027,9 @@ export default function Dashboard() {
         });
       }
       
+      // Berechne Runtime in Millisekunden (End - Start)
+      const runtimeMs = endTimestamp - startTimestamp;
+      
       // Endpunkt mit allen Metrik-Werten
       dataPoints.push({
         time: formatTimeLabel(endDate),
@@ -1015,6 +1037,7 @@ export default function Dashboard() {
         version: update.version || index + 1,
         status: update.status,
         isStartPoint: false,
+        runtimeMs: runtimeMs,
         'Gesamtkapital': gesamtkapital,
         'Gesamtprofit': gesamtprofit,
         'Gesamtprofit %': gesamtprofitPercent,
@@ -2430,6 +2453,12 @@ export default function Dashboard() {
                               </p>
                             );
                           })}
+                          {/* Runtime anzeigen - nur bei Endpunkten (nicht Startpunkten) */}
+                          {dataPoint.isStartPoint === false && dataPoint.runtimeMs !== undefined && dataPoint.runtimeMs > 0 && (
+                            <p style={{ color: 'hsl(var(--muted-foreground))', margin: '4px 0 0 0', fontSize: '12px' }}>
+                              Runtime: {formatRuntimeFromMs(dataPoint.runtimeMs)}
+                            </p>
+                          )}
                         </div>
                       );
                     }}
