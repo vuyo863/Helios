@@ -1853,8 +1853,9 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`chart-container-${chartAnimationKey}`}>
                 <LineChart 
+                  key={`line-chart-${chartAnimationKey}`}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
