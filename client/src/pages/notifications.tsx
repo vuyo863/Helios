@@ -28,6 +28,7 @@ interface ThresholdConfig {
   increaseFrequency: 'einmalig' | 'wiederholend';
   decreaseFrequency: 'einmalig' | 'wiederholend';
   alarmLevel: AlarmLevel;
+  note: string;
 }
 
 interface AlarmLevelConfig {
@@ -48,6 +49,7 @@ interface ActiveAlarm {
   alarmLevel: AlarmLevel;
   triggeredAt: Date;
   message: string;
+  note: string;
 }
 
 interface TrendPriceSettings {
@@ -263,7 +265,8 @@ export default function Notifications() {
             notifyOnDecrease: false,
             increaseFrequency: 'einmalig',
             decreaseFrequency: 'einmalig',
-            alarmLevel: 'harmlos'
+            alarmLevel: 'harmlos',
+            note: ''
           }]
         }
       }));
@@ -306,7 +309,8 @@ export default function Notifications() {
             notifyOnDecrease: false,
             increaseFrequency: 'einmalig',
             decreaseFrequency: 'einmalig',
-            alarmLevel: 'harmlos'
+            alarmLevel: 'harmlos',
+            note: ''
           }
         ]
       }
@@ -471,6 +475,18 @@ export default function Notifications() {
                       <p className="text-sm text-muted-foreground">
                         Schwellenwert: ${alarm.threshold} | {alarm.message}
                       </p>
+                      {alarm.note && (
+                        <div 
+                          className="text-sm mt-2 p-2 rounded border-l-4"
+                          style={{ 
+                            borderLeftColor: getAlarmLevelColor(alarm.alarmLevel),
+                            backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}15`
+                          }}
+                        >
+                          <span className="font-medium">Notiz: </span>
+                          {alarm.note}
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {alarm.triggeredAt.toLocaleString('de-DE')}
                       </p>
@@ -649,7 +665,8 @@ export default function Notifications() {
                     notifyOnDecrease: false,
                     increaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
                     decreaseFrequency: 'einmalig' as 'einmalig' | 'wiederholend',
-                    alarmLevel: 'harmlos' as AlarmLevel
+                    alarmLevel: 'harmlos' as AlarmLevel,
+                    note: ''
                   }]
                 };
                 const isExpanded = expandedDropdowns.includes(trendPriceId);
@@ -824,6 +841,22 @@ export default function Notifications() {
                                   <option value="gefährlich">Gefährlich</option>
                                   <option value="sehr_gefährlich">Sehr Gefährlich</option>
                                 </select>
+                              </div>
+
+                              <div>
+                                <Label htmlFor={`note-${threshold.id}`}>Notiz (optional)</Label>
+                                <Input
+                                  id={`note-${threshold.id}`}
+                                  type="text"
+                                  placeholder="z.B. Wichtiger Widerstandslevel"
+                                  value={threshold.note}
+                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'note', e.target.value)}
+                                  disabled={!isEditing}
+                                  className={cn(!isEditing && "opacity-70")}
+                                  style={{
+                                    borderColor: getAlarmLevelColor(threshold.alarmLevel)
+                                  }}
+                                />
                               </div>
                             </div>
                           ))}
