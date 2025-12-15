@@ -235,32 +235,9 @@ export default function Dashboard() {
   const [crosshairX, setCrosshairX] = useState<number | null>(null);
   const [crosshairY, setCrosshairY] = useState<number | null>(null);
   
-  // Chart Animation State - Animation nur bei echten Änderungen, nicht bei Auto-Refresh
-  const [chartAnimationActive, setChartAnimationActive] = useState(true);
-  
-  // Animation aktivieren bei Änderungen
-  // Das erhält die geschmeidige Animation beim Metrik-Karten-Wechsel
-  useEffect(() => {
-    // Trigger neue Animation bei Änderungen
-    setChartAnimationActive(true);
-    
-    // Nach 1.5s Animation deaktivieren (Auto-Refresh soll nicht animieren)
-    const timer = setTimeout(() => {
-      setChartAnimationActive(false);
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, [
-    selectedBotName,
-    chartApplied,
-    appliedChartSettings?.timeRange,
-    appliedChartSettings?.sequence,
-    appliedChartSettings?.fromUpdate?.id,
-    appliedChartSettings?.untilUpdate?.id,
-    activeMetricCards.join(','),
-    selectedChartBotTypes.join(','),
-    profitPercentBase
-  ]);
+  // Chart Animation State - Animation immer aktiv für flüssige Übergänge
+  // Recharts animiert automatisch bei Datenänderungen
+  const chartAnimationActive = true;
   
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
