@@ -291,17 +291,18 @@ export default function Notifications() {
     };
   }, [isLiveUpdating, watchlist]); // Dependencies potentially relevant if this effect were active
 
-  const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
-    // Load saved thresholds from localStorage on mount
-    const saved = localStorage.getItem('notifications-threshold-settings');
-    return saved ? JSON.parse(saved) : {};
-  });
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
+  
+  const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
+    // Load saved thresholds from localStorage on mount
+    const saved = localStorage.getItem('notifications-threshold-settings');
+    return saved ? JSON.parse(saved) : {};
+  });
   
   // Save watchlist to localStorage whenever it changes
   useEffect(() => {
