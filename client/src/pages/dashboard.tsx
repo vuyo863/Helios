@@ -2634,9 +2634,9 @@ export default function Dashboard() {
                         const currentStartDateLabel = dateLabel;
                         
                         return (
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
                             {renderInfoBox('Vorheriges Update (Ende)', prevEndDateLabel, true, prevEndBoxValues)}
-                            {renderInfoBox('Aktuelles Update (Start)', currentStartDateLabel, false, currentStartBoxValues)}
+                            {renderInfoBox('Aktuelles Update (Start)', currentStartDateLabel, true, currentStartBoxValues)}
                           </div>
                         );
                       }
