@@ -1,0 +1,174 @@
+🎯 Ziel
+
+Du willst, dass die Achse:
+
+immer den gewählten Zeitraum vollständig abdeckt,
+
+aber nicht zu viele Labels anzeigt,
+
+und bei unterschiedlichen Zoom-Levels intuitiv lesbar bleibt,
+
+egal ob du z. B. 1 Tag, 3 Wochen oder 1 Jahr betrachtest.
+
+📐 Grundprinzip
+
+💡 Die Anzahl der X-Axis-Labels soll abhängig sein von:
+
+der Länge des Zeitraums, und
+
+der gewählten Einheit (Stunden, Tage, Wochen, Monate)
+
+Die Achse entscheidet also dynamisch, wann ein Label gezeigt wird, statt feste Regeln zu benutzen.
+
+🧠 Rechnung / Formel
+Schritt 1 — Zeitraum berechnen
+
+Du berechnest zuerst:
+
+totalHours = (endTime - startTime) / (1000 * 60 * 60)
+totalDays  = totalHours / 24
+totalWeeks = totalDays / 7
+totalMonths ≈ totalDays / 30
+totalYears  ≈ totalDays / 365
+
+📊 Adaptive Interval Formel
+➤ 1. Stunden-Ansicht
+
+Wenn viewMode === "hours":
+
+if totalHours <= 48:
+  tickIntervalHours = 1
+elif totalHours <= 168:        // bis 1 Woche
+  tickIntervalHours = 2
+elif totalHours <= 336:        // bis 2 Wochen
+  tickIntervalHours = 4
+elif totalHours <= 720:        // bis 1 Monat
+  tickIntervalHours = 6
+else
+  tickIntervalHours = Math.ceil(totalHours / 100)  // grob
+
+
+🔹 Label-Regel:
+
+Immer bei 00:00 eines Tages → Datum (z. B. „26.11“),
+
+sonst jede tickIntervalHours → Uhrzeit.
+
+➤ 2. Tages-Ansicht
+
+Wenn viewMode === "days":
+
+if totalDays <= 7:
+  tickIntervalDays = 1
+elif totalDays <= 30:
+  tickIntervalDays = 2
+elif totalDays <= 90:
+  tickIntervalDays = 7
+else
+  tickIntervalDays = Math.ceil(totalDays / 25)
+
+
+🔹 Label-Regel:
+
+Jeder tickIntervalDays-Tag → Datum anzeigen
+
+➤ 3. Wochen-Ansicht
+
+Wenn viewMode === "weeks":
+
+if totalWeeks <= 4:
+  tickIntervalWeeks = 1
+elif totalWeeks <= 12:
+  tickIntervalWeeks = 2
+else
+  tickIntervalWeeks = Math.ceil(totalWeeks / 10)
+
+
+🔹 Label-Regel:
+
+Jede tickIntervalWeeks → „KW xx“ oder „Monat-Jahr“
+
+➤ 4. Monate & Jahre (falls du willst)
+
+Analog:
+
+if totalMonths <= 6:
+  tickIntervalMonths = 1
+else
+  tickIntervalMonths = Math.ceil(totalMonths / 6)
+
+
+und
+
+if totalYears <= 3:
+  tickIntervalYears = 1
+else
+  tickIntervalYears = Math.ceil(totalYears / 3)
+
+
+Dann Labels:
+
+Monatssicht → „Nov 2025“
+
+Jahressicht → „2025“
+
+🛠 Tick-Formatter-Logik
+
+So sieht die praktische Umsetzung in einer formatTick-Funktion aus:
+
+function formatTick(timestamp, index, ticks, viewMode) {
+  const d = new Date(timestamp);
+
+  if (viewMode === "hours") {
+    const hour = d.getHours();
+    if (hour === 0 || index % tickIntervalHours === 0) {
+      return hour === 0
+        ? d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })
+        : d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    }
+    return "";
+  }
+
+  if (viewMode === "days") {
+    if (index % tickIntervalDays === 0) {
+      return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+    }
+    return "";
+  }
+
+  if (viewMode === "weeks") {
+    if (index % tickIntervalWeeks === 0 || d.getDay() === 1) {
+      return "KW " + getISOWeek(d);
+    }
+    return "";
+  }
+}
+
+🔍 Beispiel Visualisierung
+🟡 Zeitraum 2 Tage + Stunden-Ansicht
+
+Ticks: jede Stunde
+Labels: jede 1–2 Stunden + Tageswechsel
+
+| 01:00 | 03:00 | 05:00 | 07:00 | 09:00 | 26.11 | …
+
+🟢 Zeitraum 3 Wochen + Stunden-Ansicht
+
+Ticks: jede Stunde
+Labels: jede 3–4 Stunden + Tageswechsel
+
+| 00:00 | 04:00 | 08:00 | 12:00 | KW 48 | …
+
+🔵 Zeitraum 1 Monat + Tages-Ansicht
+
+Ticks: jeder Tag
+Labels: jeder zweite Tag
+
+| 15.11 | 17.11 | 19.11 | 21.11 | 23.11 | 25.11 |
+
+🧠 Fazit für Sie, Sir
+
+✅ Die Achse bleibt immer vollständig für den Zeitraum
+✅ Die Labels passen sich intelligent der Länge an
+✅ Bei Stunden sieht man ab und zu Date-Markierungen
+✅ Bei Wochen & Monaten wird die Achse nicht zu überladen

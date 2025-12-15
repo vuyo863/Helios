@@ -1586,83 +1586,123 @@ export default function Dashboard() {
                         return 1 + Math.round(((dt.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
                       };
                       
+                      // DYNAMISCHE Intervall-Berechnung basierend auf Zeitraum-Länge
+                      const timestamps = xAxisTicks.filter(t => t > 0);
+                      const startTime = timestamps.length > 0 ? Math.min(...timestamps) : 0;
+                      const endTime = timestamps.length > 0 ? Math.max(...timestamps) : 0;
+                      const totalHours = (endTime - startTime) / (1000 * 60 * 60);
+                      const totalDays = totalHours / 24;
+                      const totalWeeks = totalDays / 7;
+                      const totalMonths = totalDays / 30;
+                      
                       let label = '';
-                      let isMajor = false;  // Major = größere Einheit (Datum/KW/Monat) mit blauer Umrandung
-                      let showLabel = false; // Ob überhaupt ein Label angezeigt wird
+                      let isMajor = false;  // Major = größere Einheit mit blauer Umrandung
+                      let showLabel = false;
                       
                       if (sequence === 'hours') {
-                        // Stunden-Ansicht:
-                        // - Ticks = jede Stunde
-                        // - Label nur bei: Mitternacht (Datum) ODER jede 4. Stunde (Uhrzeit)
-                        // - Alle anderen: kein Label
+                        // ADAPTIVE Stunden-Intervalle basierend auf Zeitraum
+                        let tickIntervalHours: number;
+                        if (totalHours <= 48) {
+                          tickIntervalHours = 1;
+                        } else if (totalHours <= 168) { // bis 1 Woche
+                          tickIntervalHours = 2;
+                        } else if (totalHours <= 336) { // bis 2 Wochen
+                          tickIntervalHours = 4;
+                        } else if (totalHours <= 720) { // bis 1 Monat
+                          tickIntervalHours = 6;
+                        } else {
+                          tickIntervalHours = Math.ceil(totalHours / 100);
+                        }
+                        
                         const hour = date.getHours();
                         const isMidnight = hour === 0 && date.getMinutes() === 0;
-                        const isEvery4thHour = index % 4 === 0;
+                        const isIntervalHour = index % tickIntervalHours === 0;
                         
                         if (isMidnight) {
-                          // Mitternacht = Tag anzeigen mit blauer Umrandung
+                          // Mitternacht = Datum mit blauer Umrandung
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           isMajor = true;
                           showLabel = true;
-                        } else if (isEvery4thHour) {
-                          // Jede 4. Stunde = Uhrzeit anzeigen (ohne Umrandung)
+                        } else if (isIntervalHour) {
+                          // Intervall-Stunde = Uhrzeit
                           label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                          isMajor = false;
                           showLabel = true;
                         }
-                        // Sonst: kein Label (showLabel bleibt false)
                         
                       } else if (sequence === 'days') {
-                        // Tage-Ansicht:
-                        // - Ticks = jeden Tag
-                        // - Label nur jeder 2. Tag
-                        const isEvery2ndDay = index % 2 === 0;
+                        // ADAPTIVE Tages-Intervalle basierend auf Zeitraum
+                        let tickIntervalDays: number;
+                        if (totalDays <= 7) {
+                          tickIntervalDays = 1;
+                        } else if (totalDays <= 30) {
+                          tickIntervalDays = 2;
+                        } else if (totalDays <= 90) {
+                          tickIntervalDays = 7;
+                        } else {
+                          tickIntervalDays = Math.ceil(totalDays / 25);
+                        }
                         
-                        if (isEvery2ndDay) {
+                        if (index % tickIntervalDays === 0) {
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           showLabel = true;
                         }
                         
                       } else if (sequence === 'weeks') {
-                        // Wochen-Ansicht:
-                        // - Ticks = jeden Tag
-                        // - Label nur: Montag (KW mit Umrandung) ODER jeder 3. Tag (Datum)
-                        const isMonday = date.getDay() === 1;
-                        const isEvery3rdDay = index % 3 === 0;
+                        // ADAPTIVE Wochen-Intervalle basierend auf Zeitraum
+                        let tickIntervalWeeks: number;
+                        if (totalWeeks <= 4) {
+                          tickIntervalWeeks = 1;
+                        } else if (totalWeeks <= 12) {
+                          tickIntervalWeeks = 2;
+                        } else {
+                          tickIntervalWeeks = Math.ceil(totalWeeks / 10);
+                        }
                         
-                        if (isMonday) {
+                        const isMonday = date.getDay() === 1;
+                        // Bei Wochen: Jeden Montag im Intervall zeigen
+                        const weekIndex = Math.floor(index / 7);
+                        const isIntervalWeek = weekIndex % tickIntervalWeeks === 0;
+                        
+                        if (isMonday && isIntervalWeek) {
                           label = `KW ${getISOWeek(date)}`;
                           isMajor = true;
                           showLabel = true;
-                        } else if (isEvery3rdDay) {
+                        } else if (index % (tickIntervalWeeks * 2) === 0 && !isMonday) {
+                          // Zwischendurch auch mal Datum zeigen
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           showLabel = true;
                         }
                         
                       } else if (sequence === 'months') {
-                        // Monate-Ansicht:
-                        // - Ticks = jeden Tag
-                        // - Label nur: 1. des Monats (Monat mit Umrandung) ODER jeder 5. Tag (Datum)
+                        // ADAPTIVE Monats-Intervalle basierend auf Zeitraum
+                        let tickIntervalMonths: number;
+                        if (totalMonths <= 6) {
+                          tickIntervalMonths = 1;
+                        } else {
+                          tickIntervalMonths = Math.ceil(totalMonths / 6);
+                        }
+                        
                         const isFirstOfMonth = date.getDate() === 1;
-                        const isEvery5thDay = index % 5 === 0;
+                        // Jeden X. Tag im Monat zeigen
+                        const dayIntervalInMonth = Math.max(5, Math.ceil(totalDays / 20));
                         
                         if (isFirstOfMonth) {
                           label = date.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
                           isMajor = true;
                           showLabel = true;
-                        } else if (isEvery5thDay) {
+                        } else if (index % dayIntervalInMonth === 0) {
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           showLabel = true;
                         }
                       }
                       
-                      // Kein Label? Leeres Element zurückgeben
+                      // Kein Label? Leeres Element
                       if (!showLabel) {
                         return <g />;
                       }
                       
                       if (isMajor) {
-                        // Major tick: Blauer Ring, größere Schrift (Datum/KW/Monat)
+                        // Major tick: Blauer Ring, größere Schrift
                         const textWidth = label.length * 6 + 10;
                         const textHeight = 18;
                         return (
@@ -1691,7 +1731,7 @@ export default function Dashboard() {
                           </g>
                         );
                       } else {
-                        // Minor tick: Normal (Uhrzeit/Datum ohne Umrandung)
+                        // Minor tick: Normal
                         return (
                           <g transform={`translate(${x},${y}) rotate(-45)`}>
                             <text
