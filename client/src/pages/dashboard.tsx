@@ -261,15 +261,33 @@ export default function Dashboard() {
   
   // Chart Zoom & Pan Event-Handler
   // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
-  const handleChartWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+  // WICHTIG: Nativer Event-Listener mit passive: false, damit preventDefault() funktioniert
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
     
-    // Zoom für beide Achsen gleichzeitig
-    setChartZoomY(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
-    setChartZoomX(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
-  };
+    const handleWheel = (e: WheelEvent) => {
+      // IMMER verhindern dass die Page scrollt, solange Maus im Chart ist
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Nicht zoomen während des Dragging (verhindert Konflikte mit Trackpad-Gesten)
+      if (isDragging) return;
+      
+      const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+      
+      // Zoom für beide Achsen gleichzeitig
+      setChartZoomY(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+      setChartZoomX(prev => Math.max(1, Math.min(10, prev + zoomDelta)));
+    };
+    
+    // passive: false ist WICHTIG damit preventDefault() funktioniert
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [isDragging]);
   
   const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Nur linke Maustaste für Pan
@@ -2035,7 +2053,6 @@ export default function Dashboard() {
               {/* Chart Container with Zoom & Pan Events */}
               <div
                 ref={chartContainerRef}
-                onWheel={handleChartWheel}
                 onMouseDown={handleChartMouseDown}
                 onMouseMove={handleChartMouseMove}
                 onMouseUp={handleChartMouseUp}
