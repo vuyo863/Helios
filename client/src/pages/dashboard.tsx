@@ -231,15 +231,20 @@ export default function Dashboard() {
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
   
-  // Crosshair State für Hover-Interaktion - useRef statt useState um Re-Renders zu vermeiden
-  const crosshairXRef = useRef<number | null>(null);
-  const crosshairYRef = useRef<number | null>(null);
-  // State nur für das Forcieren eines Re-Renders der ReferenceLines
-  const [crosshairUpdate, setCrosshairUpdate] = useState(0);
-  
   // Chart Animation Key - wird nur bei echten User-Aktionen erhöht
-  // Verhindert Re-Animation bei Hover/Scroll
   const [chartAnimationKey, setChartAnimationKey] = useState(0);
+  
+  // Animation nur aktiv für kurze Zeit nach chartAnimationKey Änderung
+  // Verhindert Re-Animation bei Hover/Scroll
+  const [shouldAnimate, setShouldAnimate] = useState(true);
+  
+  useEffect(() => {
+    setShouldAnimate(true);
+    const timer = setTimeout(() => {
+      setShouldAnimate(false);
+    }, 900); // Animation dauert 800ms, +100ms Puffer
+    return () => clearTimeout(timer);
+  }, [chartAnimationKey]);
   
   // Handler für Update-Auswahl Icons
   const handleConfirmUpdateSelection = () => {
@@ -1059,26 +1064,6 @@ export default function Dashboard() {
     return [0, 'auto'];
   }, [transformedChartData, activeMetricCards, isSingleUpdateWithCapital]);
 
-  // Crosshair Handler für Hover-Interaktion - nutzt Refs um Re-Renders zu vermeiden
-  const handleChartMouseMove = (e: any) => {
-    if (e && e.activePayload && e.activePayload.length > 0) {
-      const payload = e.activePayload[0].payload;
-      crosshairXRef.current = payload.timestamp;
-      // Y-Wert der ersten aktiven Metrik
-      const activeMetric = activeMetricCards[0];
-      if (activeMetric && payload[activeMetric] !== undefined) {
-        crosshairYRef.current = payload[activeMetric];
-      }
-      // Force update für ReferenceLines
-      setCrosshairUpdate(prev => prev + 1);
-    }
-  };
-
-  const handleChartMouseLeave = () => {
-    crosshairXRef.current = null;
-    crosshairYRef.current = null;
-    setCrosshairUpdate(prev => prev + 1);
-  };
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
@@ -1876,7 +1861,6 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
-                  key={`chart-${chartAnimationKey}`}
                   data={isMultiBotChartMode 
                     ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                     : (transformedChartData.length > 0 ? transformedChartData : [
@@ -1884,8 +1868,6 @@ export default function Dashboard() {
                       ])
                   }
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
-                  onMouseMove={handleChartMouseMove}
-                  onMouseLeave={handleChartMouseLeave}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
@@ -2101,14 +2083,6 @@ export default function Dashboard() {
                     tickFormatter={(value) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
-                  {/* Crosshair - vertikale Linie */}
-                  {crosshairXRef.current !== null && (
-                    <ReferenceLine x={crosshairXRef.current} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
-                  )}
-                  {/* Crosshair - horizontale Linie */}
-                  {crosshairYRef.current !== null && (
-                    <ReferenceLine y={crosshairYRef.current} stroke="hsl(var(--primary))" strokeWidth={1} strokeOpacity={0.7} />
-                  )}
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--popover))',
@@ -2173,7 +2147,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: getBotTypeColor(index), r: 4 }}
                         connectNulls
-                        isAnimationActive={true}
+                        isAnimationActive={shouldAnimate}
                         animationDuration={800}
                       />
                     ))
@@ -2189,7 +2163,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
                         connectNulls
-                        isAnimationActive={true}
+                        isAnimationActive={shouldAnimate}
                         animationDuration={800}
                       />
                     ))
