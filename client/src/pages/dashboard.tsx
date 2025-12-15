@@ -199,6 +199,8 @@ export default function Dashboard() {
   const [showTrendPnl, setShowTrendPnl] = useState(false);
   const [showHighestValue, setShowHighestValue] = useState(false);
   const [showLowestValue, setShowLowestValue] = useState(false);
+  const [showInvestmentAmount, setShowInvestmentAmount] = useState(false);
+  const [showInvestmentProfitPercent, setShowInvestmentProfitPercent] = useState(false);
   const [chartSequence, setChartSequence] = useState<'hours' | 'days' | 'weeks' | 'months'>('days');
   const [sequencePopoverOpen, setSequencePopoverOpen] = useState(false);
   
@@ -2179,6 +2181,22 @@ export default function Dashboard() {
                   <Switch
                     checked={showLowestValue}
                     onCheckedChange={setShowLowestValue}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Investmentmenge</span>
+                  <Switch
+                    checked={showInvestmentAmount}
+                    onCheckedChange={setShowInvestmentAmount}
+                    data-testid="switch-investment-amount"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Investment Profit %</span>
+                  <Switch
+                    checked={showInvestmentProfitPercent}
+                    onCheckedChange={setShowInvestmentProfitPercent}
+                    data-testid="switch-investment-profit-percent"
                   />
                 </div>
               </div>
