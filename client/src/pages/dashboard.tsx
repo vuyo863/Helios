@@ -572,6 +572,135 @@ export default function Dashboard() {
     'Real Profit/Tag': '#ca8a04',    // Gelb/Gold
   };
 
+  // Farben für Multi-Bot-Type Chart (verschiedene Farben pro Bot-Type)
+  const BOT_TYPE_COLORS = [
+    '#2563eb', // Blau
+    '#16a34a', // Grün
+    '#9333ea', // Lila
+    '#ea580c', // Orange
+    '#ca8a04', // Gelb/Gold
+    '#dc2626', // Rot
+    '#0891b2', // Cyan
+    '#7c3aed', // Violett
+    '#059669', // Emerald
+    '#d946ef', // Fuchsia
+  ];
+
+  // Hole Farbe für Bot-Type basierend auf Index
+  const getBotTypeColor = (index: number): string => {
+    return BOT_TYPE_COLORS[index % BOT_TYPE_COLORS.length];
+  };
+
+  // Multi-Bot-Type Chart Modus aktiv?
+  // Nur aktiv wenn Bot-Types ausgewählt UND Chart-Settings angewendet wurden
+  const isMultiBotChartMode = selectedChartBotTypes.length > 0 && chartApplied;
+
+  // Chart-Daten für Multi-Bot-Type Modus
+  // Zeigt Gesamtprofit für jeden ausgewählten Bot-Type als separate Linie
+  // Respektiert dieselben Filter wie der Single-Bot Modus (Zeitraum, From/Until)
+  const multiBotChartData = useMemo(() => {
+    if (!isMultiBotChartMode || allBotTypeUpdates.length === 0 || !appliedChartSettings) {
+      return { data: [], botTypeNames: [] as string[] };
+    }
+
+    // Normalisiere IDs zu Strings für konsistente Vergleiche
+    const selectedIds = selectedChartBotTypes.map(id => String(id));
+
+    // Finde die Namen der ausgewählten Bot-Types
+    const selectedBotTypesInfo = availableBotTypes.filter(bt => 
+      selectedIds.includes(String(bt.id))
+    );
+    const botTypeNames = selectedBotTypesInfo.map(bt => bt.name);
+
+    // Filtere Updates für die ausgewählten Bot-Types
+    let relevantUpdates = allBotTypeUpdates.filter(update => 
+      selectedIds.includes(String(update.botTypeId))
+    );
+
+    if (relevantUpdates.length === 0) {
+      return { data: [], botTypeNames };
+    }
+
+    // WICHTIG: Wende dieselben Filter an wie im Single-Bot Modus
+    // Priorität 1: From/Until manuell ausgewählt
+    if (appliedChartSettings.fromUpdate && appliedChartSettings.untilUpdate) {
+      const fromTimestamp = getUpdateTimestamp(appliedChartSettings.fromUpdate);
+      const untilTimestamp = getUpdateTimestamp(appliedChartSettings.untilUpdate);
+      
+      relevantUpdates = relevantUpdates.filter(update => {
+        const updateTimestamp = getUpdateTimestamp(update);
+        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
+      });
+    } 
+    // Priorität 2: "Letzten"-Zeitraum Filter
+    else if (appliedChartSettings.timeRange !== 'First-Last Update') {
+      const rangeMs = parseTimeRangeToMs(
+        appliedChartSettings.timeRange,
+        appliedChartSettings.customDays,
+        appliedChartSettings.customHours,
+        appliedChartSettings.customMinutes
+      );
+      
+      if (rangeMs !== null && rangeMs > 0) {
+        const now = Date.now();
+        const cutoffTimestamp = now - rangeMs;
+        
+        relevantUpdates = relevantUpdates.filter(update => {
+          const updateTimestamp = getUpdateTimestamp(update);
+          return updateTimestamp >= cutoffTimestamp;
+        });
+      }
+    }
+    // Priorität 3: First-Last Update = Alle Updates (keine zusätzliche Filterung)
+
+    if (relevantUpdates.length === 0) {
+      return { data: [], botTypeNames };
+    }
+
+    // Sortiere nach Zeitstempel
+    relevantUpdates.sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+
+    // Generiere Chart-Daten: Ein Datenpunkt pro Update
+    // WICHTIG: Keine kumulative Summierung - overallGridProfitUsdt ist bereits der Gesamtwert
+    const dataPoints: Array<Record<string, any>> = [];
+
+    relevantUpdates.forEach(update => {
+      const timestamp = getUpdateTimestamp(update);
+      const botType = selectedBotTypesInfo.find(bt => String(bt.id) === String(update.botTypeId));
+      if (!botType) return;
+
+      // Finde oder erstelle Datenpunkt für diesen Zeitstempel
+      let point = dataPoints.find(p => p.timestamp === timestamp);
+      if (!point) {
+        point = {
+          time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+          timestamp,
+        };
+        // Initialisiere alle Bot-Types mit null (wird zu 0 wenn kein Wert)
+        selectedBotTypesInfo.forEach(bt => {
+          point![bt.name] = null;
+        });
+        dataPoints.push(point);
+      }
+
+      // Profit für diesen Bot-Type an diesem Zeitpunkt
+      // overallGridProfitUsdt ist bereits der aktuelle Gesamtwert, nicht Delta
+      let profit = 0;
+      if (update.status === 'Closed Bots') {
+        profit = parseFloat(update.profit || '0') || 0;
+      } else {
+        profit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      }
+
+      point[botType.name] = profit;
+    });
+
+    // Sortiere Datenpunkte nach Zeitstempel
+    dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+
+    return { data: dataPoints, botTypeNames };
+  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, chartApplied]);
+
   // Helper: Berechne Millisekunden für "Letzten"-Zeitraum
   const parseTimeRangeToMs = (timeRange: string, customDays?: string, customHours?: string, customMinutes?: string): number | null => {
     const MS_PER_MINUTE = 60 * 1000;
@@ -1283,11 +1412,21 @@ export default function Dashboard() {
   };
 
   const toggleMetricCard = (cardName: string) => {
-    setActiveMetricCards(prev => 
-      prev.includes(cardName) 
-        ? prev.filter(name => name !== cardName)
-        : [...prev, cardName]
-    );
+    // Bei Multi-Bot-Auswahl (>1): Nur EINE Metrik-Card erlauben
+    if (selectedChartBotTypes.length > 1) {
+      setActiveMetricCards(prev => 
+        prev.includes(cardName) && prev.length === 1
+          ? [] // Deselektieren wenn schon ausgewählt und einzige
+          : [cardName] // Sonst: Ersetze Auswahl mit neuer Card
+      );
+    } else {
+      // Single-Bot oder kein Multi-Bot: Normales Toggle-Verhalten
+      setActiveMetricCards(prev => 
+        prev.includes(cardName) 
+          ? prev.filter(name => name !== cardName)
+          : [...prev, cardName]
+      );
+    }
   };
 
   const handleFromUpdateSelect = (update: any) => {
@@ -1570,9 +1709,12 @@ export default function Dashboard() {
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart 
-                  data={transformedChartData.length > 0 ? transformedChartData : [
-                    { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
-                  ]}
+                  data={isMultiBotChartMode 
+                    ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
+                    : (transformedChartData.length > 0 ? transformedChartData : [
+                        { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
+                      ])
+                  }
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleChartMouseMove}
                   onMouseLeave={handleChartMouseLeave}
@@ -1850,19 +1992,36 @@ export default function Dashboard() {
                       return [displayValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix, name];
                     }}
                   />
-                  {/* Dynamisch Lines für alle aktiven Metriken rendern */}
-                  {activeMetricCards.map((metricName) => (
-                    <Line 
-                      key={metricName}
-                      type="monotone" 
-                      dataKey={metricName}
-                      name={metricName}
-                      stroke={metricColors[metricName] || '#888888'}
-                      strokeWidth={2}
-                      dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
-                      connectNulls
-                    />
-                  ))}
+                  {/* Dynamisch Lines rendern - Multi-Bot-Mode oder Single-Bot mit Metriken */}
+                  {isMultiBotChartMode ? (
+                    // Multi-Bot-Type Modus: Eine Linie pro Bot-Type (zeigt Gesamtprofit)
+                    multiBotChartData.botTypeNames.map((botTypeName, index) => (
+                      <Line 
+                        key={botTypeName}
+                        type="monotone" 
+                        dataKey={botTypeName}
+                        name={botTypeName}
+                        stroke={getBotTypeColor(index)}
+                        strokeWidth={2}
+                        dot={{ fill: getBotTypeColor(index), r: 4 }}
+                        connectNulls
+                      />
+                    ))
+                  ) : (
+                    // Single-Bot Modus: Lines für alle aktiven Metriken
+                    activeMetricCards.map((metricName) => (
+                      <Line 
+                        key={metricName}
+                        type="monotone" 
+                        dataKey={metricName}
+                        name={metricName}
+                        stroke={metricColors[metricName] || '#888888'}
+                        strokeWidth={2}
+                        dot={{ fill: metricColors[metricName] || '#888888', r: 4 }}
+                        connectNulls
+                      />
+                    ))
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </Card>
