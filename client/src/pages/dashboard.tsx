@@ -2690,44 +2690,76 @@ export default function Dashboard() {
                       
                       // Bei Endpunkt der AUCH Startpunkt des nächsten Vergleichs ist: Zwei Info-Boxen
                       if (isAlsoStartOfNext) {
-                        // Sammle die End-Werte (aktuelle Werte dieses Endpunkts)
-                        const endBoxValues: { name: string; value: number; color: string }[] = [];
-                        // Die Start-Werte für das nächste Update (sind identisch mit End-Werten)
-                        const startBoxValues: { name: string; value: number; color: string }[] = [];
+                        // END Box: Werte direkt aus dataPoint holen (mit _raw* für transformierte Werte)
+                        const endGesamtprofit = hasGesamtkapitalActive && dataPoint._rawGesamtprofit !== undefined
+                          ? dataPoint._rawGesamtprofit
+                          : dataPoint['Gesamtprofit'];
+                        const endGesamtkapital = dataPoint['Gesamtkapital'];
                         
-                        props.payload.forEach((entry: any) => {
-                          const name = entry.name;
-                          let currentValue = entry.value;
-                          
-                          // Wenn Gesamtkapital aktiv: Zeige die echten Werte
-                          if (hasGesamtkapitalActive && entry.payload) {
-                            if (name === 'Gesamtprofit' && entry.payload._rawGesamtprofit !== undefined) {
-                              currentValue = entry.payload._rawGesamtprofit;
-                            } else if (name === 'Gesamtprofit %' && entry.payload._rawGesamtprofitPercent !== undefined) {
-                              currentValue = entry.payload._rawGesamtprofitPercent;
-                            } else if (name === 'Ø Profit/Tag' && entry.payload._rawAvgDailyProfit !== undefined) {
-                              currentValue = entry.payload._rawAvgDailyProfit;
-                            } else if (name === 'Real Profit/Tag' && entry.payload._rawRealDailyProfit !== undefined) {
-                              currentValue = entry.payload._rawRealDailyProfit;
-                            }
-                          }
-                          
-                          // End-Werte = aktuelle Werte
-                          endBoxValues.push({ name, value: currentValue, color: entry.color });
-                          
-                          // Start-Werte für nächstes Update (aus _nextStartInfo wenn verfügbar, sonst identisch)
-                          const startValue = dataPoint._nextStartInfo?.[name as keyof typeof dataPoint._nextStartInfo];
-                          if (typeof startValue === 'number') {
-                            startBoxValues.push({ name, value: startValue, color: entry.color });
-                          } else {
-                            startBoxValues.push({ name, value: currentValue, color: entry.color });
-                          }
-                        });
+                        // START Box: Werte aus _nextStartInfo (sind dieselben wie END, aber ohne Runtime)
+                        const startInfo = dataPoint._nextStartInfo;
+                        const startGesamtprofit = startInfo?.['Gesamtprofit'] ?? endGesamtprofit;
+                        const startGesamtkapital = startInfo?.['Gesamtkapital'] ?? endGesamtkapital;
+                        
+                        // Runtime formatieren (nur für END Box)
+                        const runtimeMs = dataPoint.runtimeMs || 0;
+                        const formatRuntime = (ms: number) => {
+                          if (!ms || ms <= 0) return null;
+                          const totalHours = Math.floor(ms / (1000 * 60 * 60));
+                          const days = Math.floor(totalHours / 24);
+                          const hours = totalHours % 24;
+                          const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+                          if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+                          if (hours > 0) return `${hours}h ${minutes}m`;
+                          return `${minutes}m`;
+                        };
+                        const runtimeStr = formatRuntime(runtimeMs);
+                        
+                        // Label für Investitionsmenge/Gesamtkapital
+                        const investLabel = profitPercentBase === 'investitionsmenge' ? 'Investitionsmenge' : 'Gesamtkapital';
                         
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {renderInfoBox('End', dateLabel, true, endBoxValues)}
-                            {renderInfoBox('Start', dateLabel, false, startBoxValues)}
+                            {/* END RUNTIME Box (rot) */}
+                            <div style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '2px solid #ef4444',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}>
+                              <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                              <p style={{ color: '#16a34a', margin: '2px 0' }}>
+                                Gesamtprofit: {endGesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              <p style={{ color: '#2563eb', margin: '2px 0' }}>
+                                {investLabel}: {endGesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              {runtimeStr && (
+                                <p style={{ color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
+                                  Runtime: {runtimeStr}
+                                </p>
+                              )}
+                            </div>
+                            {/* START TIME Box (grün) */}
+                            <div style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '2px solid #22c55e',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}>
+                              <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                              <p style={{ color: '#16a34a', margin: '2px 0' }}>
+                                Gesamtprofit: {startGesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              <p style={{ color: '#2563eb', margin: '2px 0' }}>
+                                {investLabel}: {startGesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              {/* KEINE Runtime bei START */}
+                            </div>
                           </div>
                         );
                       }
