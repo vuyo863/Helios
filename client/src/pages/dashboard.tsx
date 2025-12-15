@@ -798,63 +798,61 @@ export default function Dashboard() {
     });
   }, [chartData, isSingleUpdateWithCapital]);
 
-  // Berechne X-Achsen-Ticks basierend auf Sequence
-  // Sequence bestimmt die EINHEIT/FORMAT der Ticks, aber max ~8-12 sichtbare Labels
-  // um nicht überladen auszusehen
+  // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
+  // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
+  // Nur die Tick-Abstände ändern sich:
+  // - Stunden → viele Ticks (1h Intervall)
+  // - Tage → mittlere Anzahl (1d Intervall)
+  // - Wochen → wenige Ticks (1w Intervall)
+  // - Monate → sehr wenige Ticks (30d Intervall)
   const xAxisTicks = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
     
     const timestamps = chartData.map(d => d.timestamp).filter(t => t > 0);
     if (timestamps.length === 0) return [];
     
-    const minTs = Math.min(...timestamps);
-    const maxTs = Math.max(...timestamps);
-    const rangeMs = maxTs - minTs;
+    // Zeitraum ist FIX (startTime bis endTime)
+    const startTime = Math.min(...timestamps);
+    const endTime = Math.max(...timestamps);
     
     const sequence = appliedChartSettings?.sequence || 'days';
     
-    // Basis-Intervall je nach Sequence
-    const baseIntervalMs: Record<string, number> = {
-      'hours': 60 * 60 * 1000,           // 1 Stunde
-      'days': 24 * 60 * 60 * 1000,       // 1 Tag
-      'weeks': 7 * 24 * 60 * 60 * 1000,  // 1 Woche
-      'months': 30 * 24 * 60 * 60 * 1000 // ~1 Monat
-    };
-    
-    let intervalMs = baseIntervalMs[sequence] || baseIntervalMs['days'];
-    
-    // Berechne wie viele Ticks es geben würde
-    const potentialTickCount = Math.ceil(rangeMs / intervalMs);
-    
-    // Wenn zu viele Ticks, erhöhe das Intervall um übersichtlich zu bleiben
-    // Ziel: max ~10 Ticks auf der X-Achse
-    const maxTicks = 10;
-    if (potentialTickCount > maxTicks) {
-      // Berechne größeres Intervall als Vielfaches des Basis-Intervalls
-      const multiplier = Math.ceil(potentialTickCount / maxTicks);
-      intervalMs = intervalMs * multiplier;
+    // Tick-Intervall je nach Sequence (Granularität)
+    let tickInterval: number;
+    switch (sequence) {
+      case 'hours':
+        tickInterval = 60 * 60 * 1000;           // 1 Stunde
+        break;
+      case 'days':
+        tickInterval = 24 * 60 * 60 * 1000;      // 1 Tag
+        break;
+      case 'weeks':
+        tickInterval = 7 * 24 * 60 * 60 * 1000;  // 1 Woche
+        break;
+      case 'months':
+        tickInterval = 30 * 24 * 60 * 60 * 1000; // ~1 Monat
+        break;
+      default:
+        tickInterval = 24 * 60 * 60 * 1000;      // Default: 1 Tag
     }
     
+    // Generiere Ticks vom Startpunkt bis Endpunkt mit dem gewählten Intervall
     const ticks: number[] = [];
-    // Starte bei sinnvollem Startpunkt basierend auf Sequence
-    const startDate = new Date(minTs);
+    
+    // Starte bei sinnvollem Startpunkt (runde auf volle Stunde/Tag)
+    const startDate = new Date(startTime);
     if (sequence === 'hours') {
       startDate.setMinutes(0, 0, 0);
     } else {
       startDate.setHours(0, 0, 0, 0);
     }
+    
     let currentTs = startDate.getTime();
     
-    // Stelle sicher dass wir vor dem ersten Datenpunkt starten
-    while (currentTs > minTs) {
-      currentTs -= intervalMs;
-    }
-    
-    while (currentTs <= maxTs + intervalMs) {
-      if (currentTs >= minTs - intervalMs) {
-        ticks.push(currentTs);
-      }
-      currentTs += intervalMs;
+    // Generiere Ticks über den gesamten fixen Zeitraum
+    while (currentTs <= endTime + tickInterval) {
+      ticks.push(currentTs);
+      currentTs += tickInterval;
     }
     
     return ticks;
