@@ -194,7 +194,7 @@ export default function Dashboard() {
     from: undefined,
     to: undefined,
   });
-  const [activeMetricCards, setActiveMetricCards] = useState<string[]>([]);
+  const [activeMetricCards, setActiveMetricCards] = useState<string[]>(['Gesamtkapital', 'Gesamtprofit']);
   const [showGridProfit, setShowGridProfit] = useState(false);
   const [showTrendPnl, setShowTrendPnl] = useState(false);
   const [showHighestValue, setShowHighestValue] = useState(false);
