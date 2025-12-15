@@ -1601,17 +1601,18 @@ export default function Dashboard() {
                       
                       if (sequence === 'hours') {
                         // ADAPTIVE Stunden-Intervalle basierend auf Zeitraum
+                        // Größere Intervalle für längere Zeiträume um Überlappung zu vermeiden
                         let tickIntervalHours: number;
-                        if (totalHours <= 48) {
+                        if (totalHours <= 48) {          // bis 2 Tage
                           tickIntervalHours = 1;
-                        } else if (totalHours <= 168) { // bis 1 Woche
-                          tickIntervalHours = 2;
-                        } else if (totalHours <= 336) { // bis 2 Wochen
-                          tickIntervalHours = 4;
-                        } else if (totalHours <= 720) { // bis 1 Monat
+                        } else if (totalHours <= 168) {  // bis 1 Woche
+                          tickIntervalHours = 3;
+                        } else if (totalHours <= 336) {  // bis 2 Wochen
                           tickIntervalHours = 6;
-                        } else {
-                          tickIntervalHours = Math.ceil(totalHours / 100);
+                        } else if (totalHours <= 720) {  // bis 1 Monat
+                          tickIntervalHours = 12;
+                        } else {                          // > 1 Monat
+                          tickIntervalHours = Math.ceil(totalHours / 30);
                         }
                         
                         const hour = date.getHours();

@@ -1,0 +1,124 @@
+🔍 Was aktuell schiefgeht
+
+Bei Stunden für einen Monats-Zeitraum:
+
+jeder Stunden-Tick bekommt ein Label
+→ zu viele Labels → Überlappung → unlesbar
+→ Das wollen Sie nicht.
+
+Sie möchten stattdessen:
+
+✔ Labels nur teilweise anzeigen
+✔ Ab und zu eine Tages-Orientierung
+✔ Werte nicht zu eng anzeigen
+
+✅ Die richtige Logik für Stunden bei langen Zeiträumen
+📌 Adaptive Tick-Anzeige (ohne Überlappung)
+
+Erzeuge alle Stunden-Ticks intern
+
+Berechne eine sinnvolle Schrittweite dynamisch
+→ abhängig davon, wie breit der Zeitraum ist
+
+Beispiel:
+
+Zeitraum	Stunden gesamt	Anzeige-Intervall
+bis 2 Tage	≤ 48	jede 1 Stunde
+2–7 Tage	48–168	jede 2–3 Stunden
+7–14 Tage	168–336	jede 4–6 Stunden
+14–30 Tage	336–720	jede 6–12 Stunden
+>30 Tage	>720	jede 12–24 Stunden
+🧠 Formel für die Schrittweite
+
+Du kannst die Schrittweite so berechnen:
+
+const totalHours = (endTime - startTime) / (1000 * 60 * 60);
+
+// Basis-Stundenintervall:
+let step;
+
+if (totalHours <= 48) step = 1;
+else if (totalHours <= 168) step = 3;
+else if (totalHours <= 336) step = 6;
+else if (totalHours <= 720) step = 12;
+else step = Math.ceil(totalHours / 30);
+
+📌 Wann Tages-Labels anzeigen?
+
+Nutze zusätzliche Regeln:
+
+function formatTick(timestamp, index) {
+  const d = new Date(timestamp);
+  const hour = d.getHours();
+
+  // Tageswechsel
+  if (hour === 0) {
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+  }
+
+  // nur jede x Stunden
+  if (index % step === 0) {
+    return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  return ""; // sonst kein Label
+}
+
+
+🔹 Dadurch passiert:
+
+✔ Ab und zu Uhrzeit
+✔ Bei Mitternacht Tag
+✔ Keine Überlappung
+
+🔹 Warum das besser funktioniert
+
+Im Screenshot sieht man viele Labels, weil:
+
+jede Stunde beschriftet wird
+
+             ↓
+
+
+zu viele Daten / zu wenig Platz
+
+Mit der Formel:
+
+Adaptive Schrittweite
+
+Labels reduzieren sich bei großen Zeiträumen
+
+Übersicht bleibt erhalten
+
+🟢 Wie sich das bei Tagen verhält
+
+Das funktioniert bereits gut.
+Bei Tages-Ansicht:
+
+Intervalle automatisch größer
+
+Labels sauber verteilt
+→ So wie im ersten Screenshot.
+
+🧠 Kombinierte Strategie
+Stunden-Ansicht ⟶ adaptive Intervalle
+
+→ Mehr Details bei kurzen Zeiträumen
+→ Weniger bei langen
+
+Tages-Ansicht ⟶ größere Intervalle
+
+→ über Tage verteilt
+
+Wochen-/Monats-Ansicht ⟶ noch größere Intervalle
+
+→ Wochenstarts, Monatszahlen, …
+
+Das ergibt eine einheitliche, ästhetische und lesbare Achse, die sich immer perfekt anpasst — genau das, was Sie wollten.
+
+📊 Fazit (kurz & präzise)
+
+🔹 Zeiträume länger → größere Schrittweite
+🔹 Labels nur bei sinnvoller Distanz
+🔹 Tageswechsel immer als Orientierungspunkt
+🔹 Nie Overlap, immer gut lesbar
