@@ -857,8 +857,10 @@ export default function Dashboard() {
       const startDate = new Date(startTimestamp);
       
       // Berechne alle Metriken für dieses Update
-      // Gesamtkapital = totalInvestment
-      const gesamtkapital = parseFloat(update.totalInvestment || '0') || 0;
+      // Gesamtkapital = totalInvestment ODER investment (baseInvestment) je nach Auswahl
+      const gesamtkapital = profitPercentBase === 'investitionsmenge'
+        ? parseFloat(update.investment || '0') || 0
+        : parseFloat(update.totalInvestment || '0') || 0;
       
       // Gesamtprofit: für Update Metrics = overallGridProfitUsdt, für Closed Bots = profit
       let gesamtprofit = 0;
@@ -869,15 +871,8 @@ export default function Dashboard() {
       }
       
       // Gesamtprofit % = basierend auf gewählter Basis (Gesamtinvestment oder Investitionsmenge)
-      let gesamtprofitPercent = 0;
-      if (profitPercentBase === 'investitionsmenge' && update.profitPercent_investitionsmenge) {
-        gesamtprofitPercent = parseFloat(update.profitPercent_investitionsmenge) || 0;
-      } else if (profitPercentBase === 'gesamtinvestment' && update.profitPercent_gesamtinvestment) {
-        gesamtprofitPercent = parseFloat(update.profitPercent_gesamtinvestment) || 0;
-      } else {
-        // Fallback: Berechne aus Gesamtprofit / Gesamtkapital
-        gesamtprofitPercent = gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
-      }
+      // Direkte Berechnung: Gesamtprofit / gewählte Investitionsbasis * 100
+      const gesamtprofitPercent = gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
       
       // Ø Profit/Tag = avgGridProfitDay
       const avgDailyProfit = parseFloat(update.avgGridProfitDay || '0') || 0;
