@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate } from "@shared/schema";
+import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate, type GraphSettings, type InsertGraphSettings } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -28,6 +28,15 @@ export interface IStorage {
   createBotTypeUpdate(update: InsertBotTypeUpdate): Promise<BotTypeUpdate>;
   deleteBotTypeUpdate(id: string): Promise<boolean>;
   updateBotTypeUpdateNotes(updateId: string, notes: string): Promise<BotTypeUpdate | undefined>;
+  
+  // Graph Settings
+  getAllGraphSettings(): Promise<GraphSettings[]>;
+  getGraphSettings(id: string): Promise<GraphSettings | undefined>;
+  getDefaultGraphSettings(): Promise<GraphSettings | undefined>;
+  createGraphSettings(settings: InsertGraphSettings): Promise<GraphSettings>;
+  updateGraphSettings(id: string, settings: Partial<InsertGraphSettings>): Promise<GraphSettings | undefined>;
+  deleteGraphSettings(id: string): Promise<boolean>;
+  setDefaultGraphSettings(id: string): Promise<GraphSettings | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -465,6 +474,35 @@ export class MemStorage implements IStorage {
   }
   
   async updateBotTypeUpdateNotes(updateId: string, notes: string): Promise<BotTypeUpdate | undefined> {
+    return undefined;
+  }
+  
+  // Graph Settings Methods - Stub implementation (will use Drizzle directly)
+  async getAllGraphSettings(): Promise<GraphSettings[]> {
+    return [];
+  }
+  
+  async getGraphSettings(id: string): Promise<GraphSettings | undefined> {
+    return undefined;
+  }
+  
+  async getDefaultGraphSettings(): Promise<GraphSettings | undefined> {
+    return undefined;
+  }
+  
+  async createGraphSettings(settings: InsertGraphSettings): Promise<GraphSettings> {
+    throw new Error("Use Drizzle directly for graph settings");
+  }
+  
+  async updateGraphSettings(id: string, settings: Partial<InsertGraphSettings>): Promise<GraphSettings | undefined> {
+    return undefined;
+  }
+  
+  async deleteGraphSettings(id: string): Promise<boolean> {
+    return false;
+  }
+  
+  async setDefaultGraphSettings(id: string): Promise<GraphSettings | undefined> {
     return undefined;
   }
 }

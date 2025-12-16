@@ -6,6 +6,7 @@ import {
   botTypes, 
   botEntries, 
   botTypeUpdates,
+  graphSettings,
   type User, 
   type InsertUser, 
   type BotEntry, 
@@ -13,7 +14,9 @@ import {
   type BotType, 
   type InsertBotType,
   type BotTypeUpdate,
-  type InsertBotTypeUpdate
+  type InsertBotTypeUpdate,
+  type GraphSettings,
+  type InsertGraphSettings
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -161,6 +164,67 @@ export class DbStorage implements IStorage {
       .update(botTypeUpdates)
       .set({ notes })
       .where(eq(botTypeUpdates.id, updateId))
+      .returning();
+    return result[0];
+  }
+
+  // Graph Settings Methods
+  async getAllGraphSettings(): Promise<GraphSettings[]> {
+    return await db
+      .select()
+      .from(graphSettings)
+      .orderBy(desc(graphSettings.createdAt));
+  }
+  
+  async getGraphSettings(id: string): Promise<GraphSettings | undefined> {
+    const result = await db.select().from(graphSettings).where(eq(graphSettings.id, id));
+    return result[0];
+  }
+  
+  async getDefaultGraphSettings(): Promise<GraphSettings | undefined> {
+    const result = await db
+      .select()
+      .from(graphSettings)
+      .where(eq(graphSettings.isDefault, true))
+      .limit(1);
+    return result[0];
+  }
+  
+  async createGraphSettings(settings: InsertGraphSettings): Promise<GraphSettings> {
+    // Wenn isDefault true ist, setze alle anderen auf false
+    if (settings.isDefault) {
+      await db.update(graphSettings).set({ isDefault: false });
+    }
+    const result = await db.insert(graphSettings).values(settings).returning();
+    return result[0];
+  }
+  
+  async updateGraphSettings(id: string, settings: Partial<InsertGraphSettings>): Promise<GraphSettings | undefined> {
+    // Wenn isDefault auf true gesetzt wird, setze alle anderen auf false
+    if (settings.isDefault) {
+      await db.update(graphSettings).set({ isDefault: false });
+    }
+    const result = await db
+      .update(graphSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(graphSettings.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  async deleteGraphSettings(id: string): Promise<boolean> {
+    const result = await db.delete(graphSettings).where(eq(graphSettings.id, id)).returning();
+    return result.length > 0;
+  }
+  
+  async setDefaultGraphSettings(id: string): Promise<GraphSettings | undefined> {
+    // Setze alle auf false
+    await db.update(graphSettings).set({ isDefault: false });
+    // Setze das angegebene auf true
+    const result = await db
+      .update(graphSettings)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(eq(graphSettings.id, id))
       .returning();
     return result[0];
   }

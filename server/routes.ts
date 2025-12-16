@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, botTypes } from "@shared/schema";
+import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, insertGraphSettingsSchema, botTypes, graphSettings } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -1666,6 +1666,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete entry" });
+    }
+  });
+
+  // ===== GRAPH SETTINGS API =====
+  // GET alle Graph Settings
+  app.get("/api/graph-settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllGraphSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch graph settings" });
+    }
+  });
+
+  // GET Default Graph Settings
+  app.get("/api/graph-settings/default", async (req, res) => {
+    try {
+      const settings = await storage.getDefaultGraphSettings();
+      res.json(settings || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch default graph settings" });
+    }
+  });
+
+  // GET einzelne Graph Settings by ID
+  app.get("/api/graph-settings/:id", async (req, res) => {
+    try {
+      const settings = await storage.getGraphSettings(req.params.id);
+      if (!settings) {
+        return res.status(404).json({ error: "Graph settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch graph settings" });
+    }
+  });
+
+  // POST neue Graph Settings erstellen
+  app.post("/api/graph-settings", async (req, res) => {
+    try {
+      const validatedData = insertGraphSettingsSchema.parse(req.body);
+      const settings = await storage.createGraphSettings(validatedData);
+      res.status(201).json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create graph settings" });
+    }
+  });
+
+  // PUT Graph Settings aktualisieren
+  app.put("/api/graph-settings/:id", async (req, res) => {
+    try {
+      const updateSchema = insertGraphSettingsSchema.partial();
+      const validatedData = updateSchema.parse(req.body);
+      const settings = await storage.updateGraphSettings(req.params.id, validatedData);
+      if (!settings) {
+        return res.status(404).json({ error: "Graph settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update graph settings" });
+    }
+  });
+
+  // DELETE Graph Settings löschen
+  app.delete("/api/graph-settings/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteGraphSettings(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Graph settings not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete graph settings" });
+    }
+  });
+
+  // POST Default Graph Settings setzen
+  app.post("/api/graph-settings/:id/set-default", async (req, res) => {
+    try {
+      const settings = await storage.setDefaultGraphSettings(req.params.id);
+      if (!settings) {
+        return res.status(404).json({ error: "Graph settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to set default graph settings" });
     }
   });
 

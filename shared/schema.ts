@@ -196,3 +196,44 @@ export const insertBotTypeUpdateSchema = createInsertSchema(botTypeUpdates).omit
 
 export type InsertBotTypeUpdate = z.infer<typeof insertBotTypeUpdateSchema>;
 export type BotTypeUpdate = typeof botTypeUpdates.$inferSelect;
+
+// ===== GRAPH SETTINGS =====
+// Speichert die kompletten Graph-Einstellungen (Zeitraum, Sequenz, Custom-Werte, Kalender)
+// Eine Zeile pro gespeicherte Einstellung (kann mehrere Presets geben)
+export const graphSettings = pgTable("graph_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(), // Name des Presets (z.B. "Standard", "Letzte 7 Tage")
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  
+  // Zeitraum-Einstellungen
+  timeRange: text("time_range"), // "First-Last Update", "1h", "24h", "7 Days", "30 Days", "Custom"
+  sequence: text("sequence"), // "hours", "days", "weeks", "months"
+  
+  // Custom D/H/M Felder (wenn Custom mit manueller Eingabe)
+  customDays: text("custom_days"),
+  customHours: text("custom_hours"),
+  customMinutes: text("custom_minutes"),
+  
+  // Kalender-Daten (wenn Custom mit Kalender-Auswahl)
+  customFromDate: text("custom_from_date"), // ISO String
+  customToDate: text("custom_to_date"), // ISO String
+  
+  // Optional: Welche Bot-Types ausgewählt sind (JSON Array von IDs)
+  selectedBotTypes: text("selected_bot_types"), // JSON Array
+  
+  // Optional: Welche Metrik-Cards aktiv sind (JSON Array)
+  activeMetricCards: text("active_metric_cards"), // JSON Array
+  
+  // Ist dies das aktive/Standard-Preset?
+  isDefault: boolean("is_default").default(false),
+});
+
+export const insertGraphSettingsSchema = createInsertSchema(graphSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertGraphSettings = z.infer<typeof insertGraphSettingsSchema>;
+export type GraphSettings = typeof graphSettings.$inferSelect;
