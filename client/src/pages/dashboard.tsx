@@ -3202,10 +3202,10 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Right Column - Two Cards stacked */}
-          <div className="flex flex-col flex-shrink-0 gap-4">
-            {/* Upper Card - Presets/Actions (aligned with Update Verlauf top) */}
-            <Card className="p-4 w-[296px]" style={{ height: '140px' }}>
+          {/* Right Column - Two Cards stacked, self-end to align with Update Verlauf bottom */}
+          <div className="flex flex-col flex-shrink-0 self-end">
+            {/* Upper Card - Presets/Actions */}
+            <Card className="p-4 w-[296px] mb-4" style={{ height: '140px' }}>
               <h4 className="text-sm font-semibold mb-3">Presets</h4>
               <div className="space-y-2">
                 {/* Placeholder for future content */}
@@ -3213,7 +3213,7 @@ export default function Dashboard() {
               </div>
             </Card>
             
-            {/* Settings Container - Graph-Einstellungen (Golden State - 300px height) */}
+            {/* Settings Container - Graph-Einstellungen (Golden State - 300px height, aligned with chart) */}
             <div className="flex ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ height: '300px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
