@@ -3202,8 +3202,8 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Settings Container - Right side, aligned with chart top */}
-          <div className="flex flex-shrink-0 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ marginTop: '148px' }}>
+          {/* Settings Container - Right side, aligned with chart top and bottom of Update Verlauf Card */}
+          <div className="flex flex-shrink-0 self-stretch ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ marginTop: '140px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
               className={cn(
@@ -3373,10 +3373,6 @@ export default function Dashboard() {
                 </div>
               </div>
               <Separator />
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Charttyp</span>
-                <Button variant="outline" size="sm">Linie</Button>
-              </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Sequence</span>
                 <Popover open={sequencePopoverOpen} onOpenChange={setSequencePopoverOpen}>
