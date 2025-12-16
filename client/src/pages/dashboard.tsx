@@ -3202,10 +3202,10 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Right Column - Two Cards stacked, self-end to align with Update Verlauf bottom */}
-          <div className="flex flex-col flex-shrink-0 self-end">
-            {/* Upper Card - Presets/Actions */}
-            <Card className="p-4 w-[296px] mb-4" style={{ height: '140px' }}>
+          {/* Right Column - Two Cards stacked, stretches to match left column height */}
+          <div className="flex flex-col flex-shrink-0">
+            {/* Upper Card - Presets/Actions (fills space above Graph-Einstellungen) */}
+            <Card className="p-4 w-[296px] mb-4 flex-1">
               <h4 className="text-sm font-semibold mb-3">Presets</h4>
               <div className="space-y-2">
                 {/* Placeholder for future content */}
