@@ -2411,7 +2411,7 @@ export default function Dashboard() {
               <div 
                 className="relative h-20 border rounded-sm"
                 style={{ 
-                  marginLeft: '72px', 
+                  marginLeft: '80px', 
                   marginRight: '30px',
                   marginBottom: '16px',
                   background: `
