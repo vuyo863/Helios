@@ -2436,7 +2436,7 @@ export default function Dashboard() {
                         { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
                       ])
                   }
-                  margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
+                  margin={{ top: 50, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleLineChartMouseMove}
                   onMouseLeave={handleLineChartMouseLeave}
                 >
