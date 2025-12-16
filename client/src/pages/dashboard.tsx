@@ -228,10 +228,13 @@ export default function Dashboard() {
     sequence: 'hours' | 'days' | 'weeks' | 'months';
     fromUpdate: any | null;
     untilUpdate: any | null;
-    // Für "Letzten" Zeitraum-Filter
+    // Für "Letzten" Zeitraum-Filter (D/H/M Felder)
     customDays?: string;
     customHours?: string;
     customMinutes?: string;
+    // Für Kalender-Auswahl (von-bis Datum)
+    customFromDate?: Date;
+    customToDate?: Date;
   } | null>(null);
   
   // From/Until update selection
@@ -797,7 +800,19 @@ export default function Dashboard() {
         return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
       });
     } 
-    // Priorität 2: "Letzten"-Zeitraum Filter
+    // Priorität 2: Custom mit Kalender-Auswahl
+    else if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+      const fromTimestamp = appliedChartSettings.customFromDate.getTime();
+      const toDate = new Date(appliedChartSettings.customToDate);
+      toDate.setHours(23, 59, 59, 999);
+      const untilTimestamp = toDate.getTime();
+      
+      relevantUpdates = relevantUpdates.filter(update => {
+        const updateTimestamp = getUpdateTimestamp(update);
+        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
+      });
+    }
+    // Priorität 3: "Letzten"-Zeitraum Filter
     else if (appliedChartSettings.timeRange !== 'First-Last Update') {
       const rangeMs = parseTimeRangeToMs(
         appliedChartSettings.timeRange,
@@ -816,7 +831,7 @@ export default function Dashboard() {
         });
       }
     }
-    // Priorität 3: First-Last Update = Alle Updates (keine zusätzliche Filterung)
+    // Priorität 4: First-Last Update = Alle Updates (keine zusätzliche Filterung)
 
     if (relevantUpdates.length === 0) {
       return { data: [], botTypeNames };
@@ -887,7 +902,20 @@ export default function Dashboard() {
         return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
       });
     } 
-    // Priorität 2: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom)
+    // Priorität 2: Custom mit Kalender-Auswahl (von-bis Datum)
+    else if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+      const fromTimestamp = appliedChartSettings.customFromDate.getTime();
+      // Bis Ende des Tages (23:59:59.999)
+      const toDate = new Date(appliedChartSettings.customToDate);
+      toDate.setHours(23, 59, 59, 999);
+      const untilTimestamp = toDate.getTime();
+      
+      filteredUpdates = sortedUpdates.filter(update => {
+        const updateTimestamp = getUpdateTimestamp(update);
+        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
+      });
+    }
+    // Priorität 3: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom mit D/H/M)
     else if (appliedChartSettings.timeRange !== 'First-Last Update') {
       const rangeMs = parseTimeRangeToMs(
         appliedChartSettings.timeRange,
@@ -906,7 +934,7 @@ export default function Dashboard() {
         });
       }
     }
-    // Priorität 3: First-Last Update = Alle Updates anzeigen (default)
+    // Priorität 4: First-Last Update = Alle Updates anzeigen (default)
     
     // Sortiere nach Datum (älteste zuerst)
     filteredUpdates.sort((a, b) => {
@@ -1512,7 +1540,19 @@ export default function Dashboard() {
         return ts >= fromTs && ts <= untilTs;
       });
     }
-    // Priorität 2: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom)
+    // Priorität 2: Custom mit Kalender-Auswahl
+    else if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+      const fromTs = appliedChartSettings.customFromDate.getTime();
+      const toDate = new Date(appliedChartSettings.customToDate);
+      toDate.setHours(23, 59, 59, 999);
+      const untilTs = toDate.getTime();
+      
+      filtered = filtered.filter(update => {
+        const ts = getTs(update);
+        return ts >= fromTs && ts <= untilTs;
+      });
+    }
+    // Priorität 3: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom mit D/H/M)
     else if (appliedChartSettings.timeRange !== 'First-Last Update') {
       const rangeMs = parseTimeRangeToMs(
         appliedChartSettings.timeRange,
@@ -1531,7 +1571,7 @@ export default function Dashboard() {
         });
       }
     }
-    // Priorität 3: First-Last Update = Alle Updates (kein Filter)
+    // Priorität 4: First-Last Update = Alle Updates (kein Filter)
     
     return filtered;
   }, [allBotTypeUpdates, appliedChartSettings]);
@@ -1925,30 +1965,31 @@ export default function Dashboard() {
     }
     
     setDateRange(range);
+    // Wenn beide Daten ausgewählt sind, Kalender schließen
+    // Felder werden NICHT gefüllt - Kalender und Felder sind separate Optionen
     if (range.from && range.to) {
-      const diffMs = range.to.getTime() - range.from.getTime();
-      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      
-      setCustomDays(days.toString());
-      setCustomHours(hours.toString());
-      setCustomMinutes(minutes.toString());
       setCalendarOpen(false);
     }
   };
 
   const handleApplySettings = () => {
     // Speichere die aktuellen Einstellungen und aktiviere den Chart
+    // Bei Custom: Prüfe ob Kalender oder D/H/M Felder verwendet werden
+    // Kalender hat Vorrang wenn beide Daten gesetzt sind
+    const useCalendar = dateRange.from && dateRange.to;
+    
     setAppliedChartSettings({
       timeRange: selectedTimeRange,
       sequence: chartSequence,
       fromUpdate: selectedFromUpdate,
       untilUpdate: selectedUntilUpdate,
-      // Custom-Werte für "Custom" Zeitraum
-      customDays: customDays,
-      customHours: customHours,
-      customMinutes: customMinutes,
+      // D/H/M Felder (nur wenn KEIN Kalender verwendet wird)
+      customDays: useCalendar ? '' : customDays,
+      customHours: useCalendar ? '' : customHours,
+      customMinutes: useCalendar ? '' : customMinutes,
+      // Kalender-Daten (nur wenn Kalender verwendet wird)
+      customFromDate: useCalendar ? dateRange.from : undefined,
+      customToDate: useCalendar ? dateRange.to : undefined,
     });
     setChartApplied(true);
     // Automatisch "Gesamtprofit" Content-Karte aktivieren/hervorheben
@@ -3204,8 +3245,16 @@ export default function Dashboard() {
                         type="number"
                         placeholder="0"
                         value={customDays}
-                        onChange={(e) => setCustomDays(e.target.value)}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          // Nur Zahlen erlauben
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setCustomDays(val);
+                          // Kalender-Auswahl zurücksetzen wenn in Felder eingegeben wird
+                          if (val) setDateRange({ from: undefined, to: undefined });
+                        }}
+                        className="h-8 text-xs no-spinner"
+                        min="0"
+                        data-testid="input-custom-days"
                       />
                       <span className="text-xs text-muted-foreground">D</span>
                       
@@ -3213,8 +3262,14 @@ export default function Dashboard() {
                         type="number"
                         placeholder="0"
                         value={customHours}
-                        onChange={(e) => setCustomHours(e.target.value)}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setCustomHours(val);
+                          if (val) setDateRange({ from: undefined, to: undefined });
+                        }}
+                        className="h-8 text-xs no-spinner"
+                        min="0"
+                        data-testid="input-custom-hours"
                       />
                       <span className="text-xs text-muted-foreground">H</span>
                       
@@ -3222,14 +3277,28 @@ export default function Dashboard() {
                         type="number"
                         placeholder="0"
                         value={customMinutes}
-                        onChange={(e) => setCustomMinutes(e.target.value)}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setCustomMinutes(val);
+                          if (val) setDateRange({ from: undefined, to: undefined });
+                        }}
+                        className="h-8 text-xs no-spinner"
+                        min="0"
+                        data-testid="input-custom-minutes"
                       />
                       <span className="text-xs text-muted-foreground">M</span>
                       
-                      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                      <Popover open={calendarOpen} onOpenChange={(open) => {
+                        setCalendarOpen(open);
+                        // Wenn Kalender geöffnet wird, Felder leeren
+                        if (open) {
+                          setCustomDays('');
+                          setCustomHours('');
+                          setCustomMinutes('');
+                        }
+                      }}>
                         <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                          <Button variant="outline" size="sm" className="h-8 w-8 p-0" data-testid="button-calendar">
                             <CalendarIcon className="h-4 w-4" />
                           </Button>
                         </PopoverTrigger>

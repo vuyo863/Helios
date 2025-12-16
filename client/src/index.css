@@ -287,6 +287,16 @@
   }
 }
 
+/* Hide number input spinners */
+input[type="number"].no-spinner::-webkit-outer-spin-button,
+input[type="number"].no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spinner {
+  -moz-appearance: textfield;
+}
+
 @media print {
   @page {
     margin: 2cm;
