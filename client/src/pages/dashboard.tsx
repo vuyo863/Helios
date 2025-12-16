@@ -1917,7 +1917,13 @@ export default function Dashboard() {
     setCustomTimeOpen(false);
   };
 
-  const handleDateSelect = (range: { from: Date | undefined; to: Date | undefined }) => {
+  const handleDateSelect = (range: { from: Date | undefined; to: Date | undefined } | undefined) => {
+    // Robuste Null-Prüfung: range kann undefined sein wenn Kalender zurückgesetzt wird
+    if (!range) {
+      setDateRange({ from: undefined, to: undefined });
+      return;
+    }
+    
     setDateRange(range);
     if (range.from && range.to) {
       const diffMs = range.to.getTime() - range.from.getTime();
@@ -3227,12 +3233,13 @@ export default function Dashboard() {
                             <CalendarIcon className="h-4 w-4" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
+                        <PopoverContent className="w-auto p-0 z-[9999]" align="end" sideOffset={5}>
                           <Calendar
                             mode="range"
                             selected={dateRange as any}
                             onSelect={handleDateSelect as any}
                             numberOfMonths={2}
+                            className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
