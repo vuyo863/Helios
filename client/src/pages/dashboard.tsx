@@ -3408,26 +3408,26 @@ export default function Dashboard() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm">Anzahl Metriks</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-medium bg-muted px-2 py-1 rounded" data-testid="text-update-count">
-                    {displayedUpdatesCount.total}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    ({displayedUpdatesCount.updateMetrics} Update, {displayedUpdatesCount.closedBots} Closed)
-                  </span>
+              <div className="flex items-end justify-between">
+                <div className="flex flex-col">
+                  <span className="text-sm">Anzahl Metriks</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm font-medium bg-muted px-2 py-1 rounded" data-testid="text-update-count">
+                      {displayedUpdatesCount.total}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({displayedUpdatesCount.updateMetrics} Update, {displayedUpdatesCount.closedBots} Closed)
+                    </span>
+                  </div>
                 </div>
+                <Button 
+                  size="sm"
+                  onClick={handleApplySettings}
+                  data-testid="button-apply-settings"
+                >
+                  Apply
+                </Button>
               </div>
-                </div>
-                <div className="mt-2 flex justify-end">
-                  <Button 
-                    size="sm"
-                    onClick={handleApplySettings}
-                    data-testid="button-apply-settings"
-                  >
-                    Apply
-                  </Button>
                 </div>
               </Card>
             )}
