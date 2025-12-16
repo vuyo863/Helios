@@ -3408,9 +3408,9 @@ export default function Dashboard() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col">
                 <span className="text-sm">Anzahl Metriks</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm font-medium bg-muted px-2 py-1 rounded" data-testid="text-update-count">
                     {displayedUpdatesCount.total}
                   </span>
@@ -3420,7 +3420,7 @@ export default function Dashboard() {
                 </div>
               </div>
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-2 flex justify-end">
                   <Button 
                     size="sm"
                     onClick={handleApplySettings}
