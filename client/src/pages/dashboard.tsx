@@ -3203,7 +3203,7 @@ export default function Dashboard() {
           </div>
           
           {/* Settings Container - Right side, aligned with chart top and bottom of Update Verlauf Card */}
-          <div className="flex flex-shrink-0 self-stretch ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ marginTop: '140px' }}>
+          <div className="flex flex-shrink-0 self-stretch ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ marginTop: '156px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
               className={cn(
