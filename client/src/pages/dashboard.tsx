@@ -53,7 +53,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { format } from "date-fns";
@@ -3240,138 +3240,201 @@ export default function Dashboard() {
               </div>
               
               {/* Time Range Dialog - Center of Screen */}
-              <Dialog open={timeRangeOpen} onOpenChange={setTimeRangeOpen}>
+              <Dialog open={timeRangeOpen} onOpenChange={(open) => {
+                setTimeRangeOpen(open);
+                if (!open) {
+                  setCustomTimeOpen(false);
+                  setCalendarOpen(false);
+                }
+              }}>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Zeitraum auswählen</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-2">
-                    {['1h', '24h', '7 Days', '30 Days'].map((option) => (
-                      <Button
-                        key={option}
-                        variant={selectedTimeRange === option ? "default" : "outline"}
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => {
-                          handleTimeRangeSelect(option);
-                          setTimeRangeOpen(false);
-                        }}
-                      >
-                        {option}
-                      </Button>
-                    ))}
-                    <Separator className="my-2" />
-                    <Button
-                      variant={selectedTimeRange === 'First-Last Update' ? "default" : "outline"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        handleTimeRangeSelect('First-Last Update');
-                        setTimeRangeOpen(false);
-                      }}
-                    >
-                      First-Last Update
-                    </Button>
-                    <Separator className="my-2" />
-                    <Button
-                      variant={selectedTimeRange === 'Custom' ? "default" : "outline"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedTimeRange('Custom');
-                        setCustomTimeOpen(true);
-                      }}
-                    >
-                      Custom
-                    </Button>
-                    
-                    {/* Custom fields inside dialog */}
-                    {customTimeOpen && selectedTimeRange === 'Custom' && (
-                      <div className="space-y-3 p-3 bg-muted/50 rounded-md mt-2">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={customDays}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
-                              setCustomDays(val);
-                              if (val) setDateRange({ from: undefined, to: undefined });
-                            }}
-                            className="h-8 w-14 text-xs no-spinner"
-                            min="0"
-                            data-testid="input-custom-days"
-                          />
-                          <span className="text-xs text-muted-foreground">D</span>
-                          
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={customHours}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
-                              setCustomHours(val);
-                              if (val) setDateRange({ from: undefined, to: undefined });
-                            }}
-                            className="h-8 w-14 text-xs no-spinner"
-                            min="0"
-                            data-testid="input-custom-hours"
-                          />
-                          <span className="text-xs text-muted-foreground">H</span>
-                          
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={customMinutes}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
-                              setCustomMinutes(val);
-                              if (val) setDateRange({ from: undefined, to: undefined });
-                            }}
-                            className="h-8 w-14 text-xs no-spinner"
-                            min="0"
-                            data-testid="input-custom-minutes"
-                          />
-                          <span className="text-xs text-muted-foreground">M</span>
-                          
-                          <Popover open={calendarOpen} onOpenChange={(open) => {
-                            setCalendarOpen(open);
-                            if (open) {
-                              setCustomDays('');
-                              setCustomHours('');
-                              setCustomMinutes('');
-                            }
-                          }}>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-8 w-8 p-0" data-testid="button-calendar">
-                                <CalendarIcon className="h-4 w-4" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 z-[9999]" align="end" sideOffset={5}>
-                              <Calendar
-                                mode="range"
-                                selected={dateRange as any}
-                                onSelect={handleDateSelect as any}
-                                numberOfMonths={2}
-                                className="pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        
+                    <div className="flex items-center gap-2">
+                      {customTimeOpen && (
                         <Button
-                          size="sm"
-                          className="w-full"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
                           onClick={() => {
-                            handleApplyCustomTime();
+                            setCustomTimeOpen(false);
+                            setCalendarOpen(false);
+                          }}
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <DialogTitle>{customTimeOpen ? 'Custom Zeitraum' : 'Zeitraum auswählen'}</DialogTitle>
+                    </div>
+                  </DialogHeader>
+                  
+                  {/* Time Options View */}
+                  {!customTimeOpen && (
+                    <div className="space-y-2">
+                      {['1h', '24h', '7 Days', '30 Days'].map((option) => (
+                        <Button
+                          key={option}
+                          variant={selectedTimeRange === option ? "default" : "outline"}
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            handleTimeRangeSelect(option);
                             setTimeRangeOpen(false);
                           }}
                         >
-                          Apply
+                          {option}
                         </Button>
-                      </div>
-                    )}
-                  </div>
+                      ))}
+                      <Separator className="my-2" />
+                      <Button
+                        variant={selectedTimeRange === 'First-Last Update' ? "default" : "outline"}
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          handleTimeRangeSelect('First-Last Update');
+                          setTimeRangeOpen(false);
+                        }}
+                      >
+                        First-Last Update
+                      </Button>
+                      <Separator className="my-2" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setSelectedTimeRange('Custom');
+                          setCustomTimeOpen(true);
+                        }}
+                      >
+                        Custom
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Custom View */}
+                  {customTimeOpen && (
+                    <div className="space-y-4">
+                      {/* Input Fields */}
+                      {!calendarOpen && (
+                        <>
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="flex flex-col items-center">
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={customDays}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                  setCustomDays(val);
+                                  if (val) setDateRange({ from: undefined, to: undefined });
+                                }}
+                                className="h-10 w-16 text-center no-spinner"
+                                min="0"
+                                data-testid="input-custom-days"
+                              />
+                              <span className="text-xs text-muted-foreground mt-1">Tage</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center">
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={customHours}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                  setCustomHours(val);
+                                  if (val) setDateRange({ from: undefined, to: undefined });
+                                }}
+                                className="h-10 w-16 text-center no-spinner"
+                                min="0"
+                                data-testid="input-custom-hours"
+                              />
+                              <span className="text-xs text-muted-foreground mt-1">Stunden</span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center">
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={customMinutes}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                  setCustomMinutes(val);
+                                  if (val) setDateRange({ from: undefined, to: undefined });
+                                }}
+                                className="h-10 w-16 text-center no-spinner"
+                                min="0"
+                                data-testid="input-custom-minutes"
+                              />
+                              <span className="text-xs text-muted-foreground mt-1">Minuten</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => {
+                                setCalendarOpen(true);
+                                setCustomDays('');
+                                setCustomHours('');
+                                setCustomMinutes('');
+                              }}
+                              data-testid="button-calendar"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                              Kalender öffnen
+                            </Button>
+                          </div>
+                          
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              handleApplyCustomTime();
+                              setTimeRangeOpen(false);
+                              setCustomTimeOpen(false);
+                            }}
+                          >
+                            Apply
+                          </Button>
+                        </>
+                      )}
+                      
+                      {/* Calendar View */}
+                      {calendarOpen && (
+                        <div className="space-y-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => setCalendarOpen(false)}
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                            Zurück zu Eingabe
+                          </Button>
+                          <Calendar
+                            mode="range"
+                            selected={dateRange as any}
+                            onSelect={handleDateSelect as any}
+                            numberOfMonths={1}
+                            className="rounded-md border mx-auto"
+                          />
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              handleApplyCustomTime();
+                              setTimeRangeOpen(false);
+                              setCustomTimeOpen(false);
+                              setCalendarOpen(false);
+                            }}
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </DialogContent>
               </Dialog>
               
