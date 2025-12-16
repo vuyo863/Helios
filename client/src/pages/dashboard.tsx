@@ -2466,7 +2466,7 @@ export default function Dashboard() {
                         { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
                       ])
                   }
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleLineChartMouseMove}
                   onMouseLeave={handleLineChartMouseLeave}
                 >
@@ -2487,7 +2487,7 @@ export default function Dashboard() {
                     interval={0}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                    height={55}
+                    height={70}
                     tickSize={8}
                     tick={(props: any) => {
                       const { x, y, payload, index } = props;
