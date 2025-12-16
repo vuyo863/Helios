@@ -3202,8 +3202,8 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Settings Container - Right side, same height as chart */}
-          <div className="flex flex-shrink-0 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg">
+          {/* Settings Container - Right side, aligned with chart top */}
+          <div className="flex flex-shrink-0 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ marginTop: '148px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
               className={cn(
