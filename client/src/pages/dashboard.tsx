@@ -3202,8 +3202,19 @@ export default function Dashboard() {
             </Card>
           </div>
           
-          {/* Settings Container - Right side, aligned with chart (300px height) */}
-          <div className="flex flex-shrink-0 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg self-end" style={{ height: '300px' }}>
+          {/* Right Column - Two Cards stacked */}
+          <div className="flex flex-col flex-shrink-0 gap-4">
+            {/* Upper Card - Presets/Actions (aligned with Update Verlauf top) */}
+            <Card className="p-4 w-[296px]" style={{ height: '140px' }}>
+              <h4 className="text-sm font-semibold mb-3">Presets</h4>
+              <div className="space-y-2">
+                {/* Placeholder for future content */}
+                <p className="text-xs text-muted-foreground">Gespeicherte Einstellungen erscheinen hier.</p>
+              </div>
+            </Card>
+            
+            {/* Settings Container - Graph-Einstellungen (Golden State - 300px height) */}
+            <div className="flex ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ height: '300px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
               className={cn(
@@ -3514,6 +3525,7 @@ export default function Dashboard() {
                 </div>
               </Card>
             )}
+          </div>
           </div>
         </div>
 
