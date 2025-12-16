@@ -2407,6 +2407,36 @@ export default function Dashboard() {
                 )}
               </div>
               
+              {/* Separate Marker Container above Chart - Independent Grid */}
+              <div 
+                className="relative w-full h-16 border-l border-r"
+                style={{ 
+                  marginLeft: '20px', 
+                  marginRight: '30px',
+                  width: 'calc(100% - 50px)',
+                  background: `
+                    repeating-linear-gradient(
+                      90deg,
+                      transparent,
+                      transparent 49px,
+                      hsl(var(--border)) 49px,
+                      hsl(var(--border)) 50px
+                    ),
+                    repeating-linear-gradient(
+                      0deg,
+                      transparent,
+                      transparent 15px,
+                      hsl(var(--border)) 15px,
+                      hsl(var(--border)) 16px
+                    )
+                  `,
+                  borderColor: 'hsl(var(--border))'
+                }}
+                data-testid="chart-marker-container"
+              >
+                {/* Start and End markers will be placed here */}
+              </div>
+              
               {/* Chart Container with Zoom & Pan Events */}
               {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
               {((isMultiBotChartMode && multiBotChartData.data.length === 0) || 
@@ -2436,7 +2466,7 @@ export default function Dashboard() {
                         { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
                       ])
                   }
-                  margin={{ top: 50, right: 30, left: 20, bottom: 20 }}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleLineChartMouseMove}
                   onMouseLeave={handleLineChartMouseLeave}
                 >
