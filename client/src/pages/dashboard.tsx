@@ -3239,9 +3239,9 @@ export default function Dashboard() {
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-48 p-2" align="end">
+                  <PopoverContent className="w-auto p-2" align="end">
                     <div className="space-y-1">
-                      {['Custom', '1h', '24h', '7 Days', '30 Days'].map((option) => (
+                      {['1h', '24h', '7 Days', '30 Days'].map((option) => (
                         <Button
                           key={option}
                           variant={selectedTimeRange === option ? "default" : "ghost"}
@@ -3261,99 +3261,109 @@ export default function Dashboard() {
                       >
                         First-Last Update
                       </Button>
+                      <Separator className="my-1" />
+                      <Button
+                        variant={selectedTimeRange === 'Custom' ? "default" : "ghost"}
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setSelectedTimeRange('Custom');
+                          setCustomTimeOpen(true);
+                        }}
+                      >
+                        Custom
+                      </Button>
+                      
+                      {/* Custom fields inside popover */}
+                      {customTimeOpen && selectedTimeRange === 'Custom' && (
+                        <div className="space-y-2 p-2 bg-muted/50 rounded-md mt-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={customDays}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setCustomDays(val);
+                                if (val) setDateRange({ from: undefined, to: undefined });
+                              }}
+                              className="h-8 w-12 text-xs no-spinner"
+                              min="0"
+                              data-testid="input-custom-days"
+                            />
+                            <span className="text-xs text-muted-foreground">D</span>
+                            
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={customHours}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setCustomHours(val);
+                                if (val) setDateRange({ from: undefined, to: undefined });
+                              }}
+                              className="h-8 w-12 text-xs no-spinner"
+                              min="0"
+                              data-testid="input-custom-hours"
+                            />
+                            <span className="text-xs text-muted-foreground">H</span>
+                            
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={customMinutes}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setCustomMinutes(val);
+                                if (val) setDateRange({ from: undefined, to: undefined });
+                              }}
+                              className="h-8 w-12 text-xs no-spinner"
+                              min="0"
+                              data-testid="input-custom-minutes"
+                            />
+                            <span className="text-xs text-muted-foreground">M</span>
+                            
+                            <Popover open={calendarOpen} onOpenChange={(open) => {
+                              setCalendarOpen(open);
+                              if (open) {
+                                setCustomDays('');
+                                setCustomHours('');
+                                setCustomMinutes('');
+                              }
+                            }}>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 w-8 p-0" data-testid="button-calendar">
+                                  <CalendarIcon className="h-4 w-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0 z-[9999]" align="end" sideOffset={5}>
+                                <Calendar
+                                  mode="range"
+                                  selected={dateRange as any}
+                                  onSelect={handleDateSelect as any}
+                                  numberOfMonths={2}
+                                  className="pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          <Button
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            onClick={() => {
+                              handleApplyCustomTime();
+                              setTimeRangeOpen(false);
+                            }}
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>
               </div>
-              
-              {customTimeOpen && (
-                <>
-                  <Separator />
-                  <div className="space-y-2 p-2 bg-muted/50 rounded-md">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={customDays}
-                        onChange={(e) => {
-                          // Nur Zahlen erlauben
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setCustomDays(val);
-                          // Kalender-Auswahl zurücksetzen wenn in Felder eingegeben wird
-                          if (val) setDateRange({ from: undefined, to: undefined });
-                        }}
-                        className="h-8 text-xs no-spinner"
-                        min="0"
-                        data-testid="input-custom-days"
-                      />
-                      <span className="text-xs text-muted-foreground">D</span>
-                      
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={customHours}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setCustomHours(val);
-                          if (val) setDateRange({ from: undefined, to: undefined });
-                        }}
-                        className="h-8 text-xs no-spinner"
-                        min="0"
-                        data-testid="input-custom-hours"
-                      />
-                      <span className="text-xs text-muted-foreground">H</span>
-                      
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={customMinutes}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setCustomMinutes(val);
-                          if (val) setDateRange({ from: undefined, to: undefined });
-                        }}
-                        className="h-8 text-xs no-spinner"
-                        min="0"
-                        data-testid="input-custom-minutes"
-                      />
-                      <span className="text-xs text-muted-foreground">M</span>
-                      
-                      <Popover open={calendarOpen} onOpenChange={(open) => {
-                        setCalendarOpen(open);
-                        // Wenn Kalender geöffnet wird, Felder leeren
-                        if (open) {
-                          setCustomDays('');
-                          setCustomHours('');
-                          setCustomMinutes('');
-                        }
-                      }}>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8 w-8 p-0" data-testid="button-calendar">
-                            <CalendarIcon className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[9999]" align="end" sideOffset={5}>
-                          <Calendar
-                            mode="range"
-                            selected={dateRange as any}
-                            onSelect={handleDateSelect as any}
-                            numberOfMonths={2}
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    
-                    <Button
-                      size="sm"
-                      className="w-full h-7 text-xs"
-                      onClick={handleApplyCustomTime}
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                </>
-              )}
               
               <Separator />
               <div className="space-y-3">
