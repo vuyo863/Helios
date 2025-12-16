@@ -2409,11 +2409,11 @@ export default function Dashboard() {
               
               {/* Separate Marker Container above Chart - Independent Grid */}
               <div 
-                className="relative h-16 border rounded-sm"
+                className="relative h-20 border rounded-sm"
                 style={{ 
-                  marginLeft: '65px', 
+                  marginLeft: '72px', 
                   marginRight: '30px',
-                  marginBottom: '8px',
+                  marginBottom: '16px',
                   background: `
                     repeating-linear-gradient(
                       90deg,
