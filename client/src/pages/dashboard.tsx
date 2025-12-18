@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical, RotateCcw, ZoomIn } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical, RotateCcw, ZoomIn, Eye, LineChart as LineChartIcon, Trash2 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -3204,12 +3204,29 @@ export default function Dashboard() {
           
           {/* Right Column - Two Cards stacked, stretches to match left column height */}
           <div className="flex flex-col flex-shrink-0">
-            {/* Upper Card - Presets/Actions (fills space above Graph-Einstellungen) */}
+            {/* Upper Card - Selected Metric Preview (fills space above Graph-Einstellungen) */}
             <Card className="p-4 w-[296px] mb-4 flex-1">
-              <h4 className="text-sm font-semibold mb-3">Presets</h4>
-              <div className="space-y-2">
-                {/* Placeholder for future content */}
-                <p className="text-xs text-muted-foreground">Gespeicherte Einstellungen erscheinen hier.</p>
+              {/* Selected Metric Display */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">Update #5</span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Vorschau">
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Action Icons Row */}
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8" title="Suchen">
+                  <Search className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren">
+                  <LineChartIcon className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" title="Löschen">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </Card>
             
