@@ -3769,9 +3769,21 @@ export default function Dashboard() {
                 </div>
                 
                 {/* Laufzeit (von - bis) */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-muted-foreground">Laufzeit</span>
                   <span className="text-xs">12.01 - 15.01.2025</span>
+                </div>
+                
+                {/* Apply Button - rechts unten */}
+                <div className="flex justify-end">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="h-7 px-3"
+                    data-testid="button-apply-metric"
+                  >
+                    Apply
+                  </Button>
                 </div>
               </Card>
               
