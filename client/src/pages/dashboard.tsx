@@ -2306,7 +2306,7 @@ export default function Dashboard() {
 
         <div className="flex items-stretch gap-4 mb-8">
           <div className="flex-1">
-            <Card className="p-6 pt-[10px] pb-[10px]">
+            <Card className="p-6 pt-[20px] pb-[20px]">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold">Update Verlauf</h3>
                 <div className="flex items-center gap-2">
