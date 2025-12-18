@@ -2442,7 +2442,7 @@ export default function Dashboard() {
                 
                 {/* Marker Container - Dynamic Grid aligned with Chart */}
                 <div 
-                  className="relative h-20 border rounded-sm overflow-hidden flex-1"
+                  className="relative h-20 border rounded-sm flex-1"
                   style={{ 
                     marginRight: '30px',
                     borderColor: 'hsl(var(--border))'
@@ -2450,7 +2450,7 @@ export default function Dashboard() {
                   data-testid="chart-marker-container"
                 >
                 {/* Dynamic vertical grid lines - synced with chart X-axis */}
-                <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                <svg className="absolute inset-0 w-full h-full pointer-events-auto" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
                   {/* Horizontal grid lines (static) */}
                   {[0.25, 0.5, 0.75].map((ratio) => (
                     <line
@@ -2462,6 +2462,7 @@ export default function Dashboard() {
                       stroke="hsl(var(--border))"
                       strokeWidth="1"
                       strokeDasharray="3 3"
+                      style={{ pointerEvents: 'none' }}
                     />
                   ))}
                   
@@ -2488,6 +2489,7 @@ export default function Dashboard() {
                           stroke="hsl(var(--border))"
                           strokeWidth="1"
                           strokeDasharray="3 3"
+                          style={{ pointerEvents: 'none' }}
                         />
                       );
                     });
@@ -2630,18 +2632,18 @@ export default function Dashboard() {
                       return (
                         <g 
                           key={`u-${i}`}
-                          style={{ cursor: markerViewActive ? 'pointer' : 'default' }}
+                          style={{ cursor: markerViewActive ? 'pointer' : 'default', pointerEvents: 'all' }}
                           onMouseEnter={() => markerViewActive && setHoveredUpdateId(updateKey)}
                           onMouseLeave={() => setHoveredUpdateId(null)}
                         >
                           {/* Invisible wider hitbox for easier hover */}
-                          <line
-                            x1={`${clampedStartX}%`}
-                            y1={`${yPercent}%`}
-                            x2={`${clampedEndX}%`}
-                            y2={`${yPercent}%`}
-                            stroke="transparent"
-                            strokeWidth="12"
+                          <rect
+                            x={`${clampedStartX}%`}
+                            y={`${yPercent - 8}%`}
+                            width={`${clampedEndX - clampedStartX}%`}
+                            height="16%"
+                            fill="transparent"
+                            style={{ pointerEvents: 'all' }}
                           />
                           {/* Horizontal line */}
                           <line
