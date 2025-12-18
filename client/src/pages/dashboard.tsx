@@ -2694,13 +2694,18 @@ export default function Dashboard() {
                         
                         const handleClosedMouseEnter = () => {
                           if (markerViewActive) setHoveredUpdateId(closedKey);
-                          // Stift: nur hovern wenn nichts ausgewählt ist
-                          if (markerEditActive && !editSelectedUpdateId) setEditHoveredUpdateId(closedKey);
+                          // Stift: NUR hovern wenn NICHTS ausgewählt ist (strikt)
+                          if (markerEditActive && editSelectedUpdateId === null) {
+                            setEditHoveredUpdateId(closedKey);
+                          }
                         };
                         
                         const handleClosedMouseLeave = () => {
                           setHoveredUpdateId(null);
-                          if (!editSelectedUpdateId) setEditHoveredUpdateId(null);
+                          // Stift: NUR Hover clearen wenn NICHTS ausgewählt ist
+                          if (editSelectedUpdateId === null) {
+                            setEditHoveredUpdateId(null);
+                          }
                         };
                         
                         // Calculate dashed line Y position for closed bot
@@ -2859,13 +2864,18 @@ export default function Dashboard() {
                       
                       const handleMouseEnter = () => {
                         if (markerViewActive) setHoveredUpdateId(updateKey);
-                        // Stift: nur hovern wenn nichts ausgewählt ist
-                        if (markerEditActive && !editSelectedUpdateId) setEditHoveredUpdateId(updateKey);
+                        // Stift: NUR hovern wenn NICHTS ausgewählt ist (strikt)
+                        if (markerEditActive && editSelectedUpdateId === null) {
+                          setEditHoveredUpdateId(updateKey);
+                        }
                       };
                       
                       const handleMouseLeave = () => {
                         setHoveredUpdateId(null);
-                        if (!editSelectedUpdateId) setEditHoveredUpdateId(null);
+                        // Stift: NUR Hover clearen wenn NICHTS ausgewählt ist
+                        if (editSelectedUpdateId === null) {
+                          setEditHoveredUpdateId(null);
+                        }
                       };
                       
                       return (
@@ -3811,25 +3821,106 @@ export default function Dashboard() {
             <Card className="p-4 w-[296px] mb-4 flex-1 flex flex-col ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]">
               {/* Inner Content Card - Update/Closed Bot Details */}
               <Card className="p-3 mb-3" data-testid="card-selected-metric">
-                {/* Header: Title + Eye Icon */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold">Update #5</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Vorschau" data-testid="button-preview-metric">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {/* Gesamt Profit */}
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">Gesamt Profit</span>
-                  <span className="text-sm font-medium text-green-600">+$245.50</span>
-                </div>
-                
-                {/* Laufzeit (von - bis) */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Laufzeit</span>
-                  <span className="text-xs">12.01 - 15.01.2025</span>
-                </div>
+                {(() => {
+                  // Stift-Modus: Finde das aktive Update
+                  const activeEditId = editSelectedUpdateId || editHoveredUpdateId;
+                  
+                  if (!markerEditActive || !activeEditId) {
+                    // Default-Anzeige wenn kein Update ausgewählt
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-muted-foreground">Kein Update ausgewählt</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Vorschau" data-testid="button-preview-metric">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Gesamt Profit</span>
+                          <span className="text-sm font-medium text-muted-foreground">--</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Laufzeit</span>
+                          <span className="text-xs text-muted-foreground">--</span>
+                        </div>
+                      </>
+                    );
+                  }
+                  
+                  // Parse Update ID (u-X oder c-X)
+                  const isClosedBot = activeEditId.startsWith('c-');
+                  const version = parseInt(activeEditId.split('-')[1], 10);
+                  
+                  // Finde das Update in den Daten
+                  const allUpdates = selectedBotTypeData?.id 
+                    ? (allBotTypeUpdates || []).filter((u: BotTypeUpdate) => u.botTypeId === selectedBotTypeData.id)
+                    : [];
+                  
+                  const update = allUpdates.find((u: BotTypeUpdate) => 
+                    u.version === version && 
+                    (isClosedBot ? u.status === 'Closed Bots' : u.status === 'Update Metrics')
+                  );
+                  
+                  if (!update) {
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-muted-foreground">Update nicht gefunden</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Vorschau" data-testid="button-preview-metric">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Gesamt Profit</span>
+                          <span className="text-sm font-medium text-muted-foreground">--</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Laufzeit</span>
+                          <span className="text-xs text-muted-foreground">--</span>
+                        </div>
+                      </>
+                    );
+                  }
+                  
+                  // Berechne Daten für das Update
+                  const title = isClosedBot ? `Closed Bot #${version}` : `Update #${version}`;
+                  
+                  // Gesamt Profit: Bei Closed Bots = profit, bei Update Metrics = overallGridProfitUsdt
+                  const profitValue = isClosedBot 
+                    ? parseFloat(update.profit || '0') 
+                    : parseFloat(update.overallGridProfitUsdt || '0');
+                  const profitText = `${profitValue >= 0 ? '+' : ''}$${profitValue.toFixed(2)}`;
+                  const profitColor = profitValue >= 0 ? 'text-green-600' : 'text-red-600';
+                  
+                  // Laufzeit: Start bis End Datum
+                  const startDate = update.createdAt ? new Date(update.createdAt) : null;
+                  const endDate = update.timestamp ? new Date(update.timestamp) : null;
+                  const formatDate = (d: Date) => `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+                  const laufzeitText = startDate && endDate 
+                    ? `${formatDate(startDate)} - ${formatDate(endDate)}`
+                    : endDate 
+                      ? formatDate(endDate)
+                      : '--';
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold">{title}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Vorschau" data-testid="button-preview-metric">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">Gesamt Profit</span>
+                        <span className={`text-sm font-medium ${profitColor}`}>{profitText}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Laufzeit</span>
+                        <span className="text-xs">{laufzeitText}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </Card>
               
               {/* Separator */}
@@ -3851,6 +3942,7 @@ export default function Dashboard() {
                 <Button 
                   variant="default" 
                   size="sm"
+                  disabled={!markerEditActive || (!editSelectedUpdateId && !editHoveredUpdateId)}
                   data-testid="button-apply-metric"
                 >
                   Apply
