@@ -250,6 +250,9 @@ export default function Dashboard() {
   const [markerEditActive, setMarkerEditActive] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
+  // Stift-Modus: nur Single-Select (einer zur Zeit)
+  const [editHoveredUpdateId, setEditHoveredUpdateId] = useState<string | null>(null);
+  const [editSelectedUpdateId, setEditSelectedUpdateId] = useState<string | null>(null);
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -2655,22 +2658,49 @@ export default function Dashboard() {
                       if (isClosedBot) {
                         // Closed Bot: Only end marker (circle) - positioned below label
                         const closedKey = `c-${update.version}`;
+                        
+                        // Auge-Modus (Multi-Select)
                         const isClosedLocked = lockedUpdateIds.has(closedKey);
                         const isClosedHovered = hoveredUpdateId === closedKey && markerViewActive;
-                        const isClosedActive = (isClosedHovered || isClosedLocked) && markerViewActive;
+                        const isClosedActiveView = (isClosedHovered || isClosedLocked) && markerViewActive;
+                        
+                        // Stift-Modus (Single-Select)
+                        const isEditHovered = editHoveredUpdateId === closedKey && markerEditActive;
+                        const isEditSelected = editSelectedUpdateId === closedKey && markerEditActive;
+                        const isClosedActiveEdit = (isEditHovered || isEditSelected) && markerEditActive;
+                        
+                        // Kombiniert: aktiv wenn Auge ODER Stift aktiv
+                        const isClosedActive = isClosedActiveView || isClosedActiveEdit;
                         const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                         
                         const handleClosedClick = () => {
-                          if (!markerViewActive) return;
-                          setLockedUpdateIds(prev => {
-                            const newSet = new Set(prev);
-                            if (newSet.has(closedKey)) {
-                              newSet.delete(closedKey);
-                            } else {
-                              newSet.add(closedKey);
-                            }
-                            return newSet;
-                          });
+                          // Auge-Modus: Multi-Select Toggle
+                          if (markerViewActive) {
+                            setLockedUpdateIds(prev => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(closedKey)) {
+                                newSet.delete(closedKey);
+                              } else {
+                                newSet.add(closedKey);
+                              }
+                              return newSet;
+                            });
+                          }
+                          // Stift-Modus: Single-Select (ersetzt vorherige Auswahl)
+                          if (markerEditActive) {
+                            setEditSelectedUpdateId(prev => prev === closedKey ? null : closedKey);
+                          }
+                        };
+                        
+                        const handleClosedMouseEnter = () => {
+                          if (markerViewActive) setHoveredUpdateId(closedKey);
+                          // Stift: nur hovern wenn nichts ausgewählt ist
+                          if (markerEditActive && !editSelectedUpdateId) setEditHoveredUpdateId(closedKey);
+                        };
+                        
+                        const handleClosedMouseLeave = () => {
+                          setHoveredUpdateId(null);
+                          if (!editSelectedUpdateId) setEditHoveredUpdateId(null);
                         };
                         
                         // Calculate dashed line Y position for closed bot
@@ -2742,9 +2772,9 @@ export default function Dashboard() {
                         return (
                           <g 
                             key={`cb-${i}`}
-                            style={{ cursor: markerViewActive ? 'pointer' : 'default', pointerEvents: 'all' }}
-                            onMouseEnter={() => markerViewActive && setHoveredUpdateId(closedKey)}
-                            onMouseLeave={() => setHoveredUpdateId(null)}
+                            style={{ cursor: (markerViewActive || markerEditActive) ? 'pointer' : 'default', pointerEvents: 'all' }}
+                            onMouseEnter={handleClosedMouseEnter}
+                            onMouseLeave={handleClosedMouseLeave}
                             onClick={handleClosedClick}
                           >
                             {/* Invisible hitbox for easier hover */}
@@ -2792,31 +2822,58 @@ export default function Dashboard() {
                       
                       // Update Metrics: Line from start to end with markers
                       const updateKey = `u-${update.version}`;
+                      
+                      // Auge-Modus (Multi-Select)
                       const isLocked = lockedUpdateIds.has(updateKey);
                       const isHovered = hoveredUpdateId === updateKey && markerViewActive;
-                      const isActive = (isHovered || isLocked) && markerViewActive;
+                      const isActiveView = (isHovered || isLocked) && markerViewActive;
+                      
+                      // Stift-Modus (Single-Select)
+                      const isEditHovered = editHoveredUpdateId === updateKey && markerEditActive;
+                      const isEditSelected = editSelectedUpdateId === updateKey && markerEditActive;
+                      const isActiveEdit = (isEditHovered || isEditSelected) && markerEditActive;
+                      
+                      // Kombiniert: aktiv wenn Auge ODER Stift aktiv
+                      const isActive = isActiveView || isActiveEdit;
                       const strokeColor = isActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                       
-                      // Click handler to toggle lock (add/remove from set)
+                      // Click handler
                       const handleClick = () => {
-                        if (!markerViewActive) return;
-                        setLockedUpdateIds(prev => {
-                          const newSet = new Set(prev);
-                          if (newSet.has(updateKey)) {
-                            newSet.delete(updateKey);
-                          } else {
-                            newSet.add(updateKey);
-                          }
-                          return newSet;
-                        });
+                        // Auge-Modus: Multi-Select Toggle
+                        if (markerViewActive) {
+                          setLockedUpdateIds(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(updateKey)) {
+                              newSet.delete(updateKey);
+                            } else {
+                              newSet.add(updateKey);
+                            }
+                            return newSet;
+                          });
+                        }
+                        // Stift-Modus: Single-Select (ersetzt vorherige Auswahl)
+                        if (markerEditActive) {
+                          setEditSelectedUpdateId(prev => prev === updateKey ? null : updateKey);
+                        }
+                      };
+                      
+                      const handleMouseEnter = () => {
+                        if (markerViewActive) setHoveredUpdateId(updateKey);
+                        // Stift: nur hovern wenn nichts ausgewählt ist
+                        if (markerEditActive && !editSelectedUpdateId) setEditHoveredUpdateId(updateKey);
+                      };
+                      
+                      const handleMouseLeave = () => {
+                        setHoveredUpdateId(null);
+                        if (!editSelectedUpdateId) setEditHoveredUpdateId(null);
                       };
                       
                       return (
                         <g 
                           key={`u-${i}`}
-                          style={{ cursor: markerViewActive ? 'pointer' : 'default', pointerEvents: 'all' }}
-                          onMouseEnter={() => markerViewActive && setHoveredUpdateId(updateKey)}
-                          onMouseLeave={() => setHoveredUpdateId(null)}
+                          style={{ cursor: (markerViewActive || markerEditActive) ? 'pointer' : 'default', pointerEvents: 'all' }}
+                          onMouseEnter={handleMouseEnter}
+                          onMouseLeave={handleMouseLeave}
                           onClick={handleClick}
                         >
                           {/* Invisible wider hitbox for easier hover */}
