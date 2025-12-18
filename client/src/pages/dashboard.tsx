@@ -2480,32 +2480,65 @@ export default function Dashboard() {
                     const domainRange = domainEnd - domainStart;
                     if (domainRange <= 0) return null;
                     
-                    // Get updates from chartData (grouped by version)
+                    // Get updates directly from sortedUpdates (authoritative source)
+                    // This ensures we get correct start/end even for comparison mode updates
                     const updateRanges: { version: number; status: string; startTs: number; endTs: number }[] = [];
                     
-                    // Group chartData points by version to get start/end per update
-                    const versionMap = new Map<number, { start?: number; end?: number; status?: string }>();
+                    // Filter updates same as chartData logic
+                    let filteredUpdates = [...(sortedUpdates || [])];
                     
-                    (isMultiBotChartMode ? multiBotChartData.data : transformedChartData).forEach((point: any) => {
-                      if (!point.version) return;
-                      const entry = versionMap.get(point.version) || {};
-                      if (point.isStartPoint) {
-                        entry.start = point.timestamp;
-                      } else {
-                        entry.end = point.timestamp;
+                    if (appliedChartSettings?.fromUpdate && appliedChartSettings?.untilUpdate) {
+                      const fromTs = getUpdateTimestamp(appliedChartSettings.fromUpdate);
+                      const untilTs = getUpdateTimestamp(appliedChartSettings.untilUpdate);
+                      filteredUpdates = filteredUpdates.filter(u => {
+                        const ts = getUpdateTimestamp(u);
+                        return ts >= fromTs && ts <= untilTs;
+                      });
+                    } else if (appliedChartSettings?.timeRange === 'Custom' && appliedChartSettings?.customFromDate && appliedChartSettings?.customToDate) {
+                      const fromTs = appliedChartSettings.customFromDate.getTime();
+                      const toDate = new Date(appliedChartSettings.customToDate);
+                      toDate.setHours(23, 59, 59, 999);
+                      const untilTs = toDate.getTime();
+                      filteredUpdates = filteredUpdates.filter(u => {
+                        const ts = getUpdateTimestamp(u);
+                        return ts >= fromTs && ts <= untilTs;
+                      });
+                    } else if (appliedChartSettings?.timeRange && appliedChartSettings.timeRange !== 'First-Last Update') {
+                      const rangeMs = parseTimeRangeToMs(
+                        appliedChartSettings.timeRange,
+                        appliedChartSettings.customDays,
+                        appliedChartSettings.customHours,
+                        appliedChartSettings.customMinutes
+                      );
+                      if (rangeMs !== null && rangeMs > 0) {
+                        const now = Date.now();
+                        const cutoff = now - rangeMs;
+                        filteredUpdates = filteredUpdates.filter(u => getUpdateTimestamp(u) >= cutoff);
                       }
-                      entry.status = point.status;
-                      versionMap.set(point.version, entry);
-                    });
+                    }
                     
-                    versionMap.forEach((range, version) => {
-                      if (range.end) {
+                    // Sort by end timestamp (thisUpload)
+                    filteredUpdates.sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+                    
+                    // Build ranges from update objects directly
+                    let prevEndTs = 0;
+                    filteredUpdates.forEach((update, idx) => {
+                      const endTs = update.thisUpload ? parseGermanDate(update.thisUpload)?.getTime() || 0 : 0;
+                      let startTs = update.lastUpload ? parseGermanDate(update.lastUpload)?.getTime() || 0 : 0;
+                      
+                      // For comparison updates where start equals previous end, use previous end
+                      if (startTs === 0 || (prevEndTs > 0 && Math.abs(startTs - prevEndTs) < 60000)) {
+                        startTs = prevEndTs > 0 ? prevEndTs : endTs;
+                      }
+                      
+                      if (endTs > 0) {
                         updateRanges.push({
-                          version,
-                          status: range.status || 'Update Metrics',
-                          startTs: range.start || range.end,
-                          endTs: range.end,
+                          version: update.version || idx + 1,
+                          status: update.status || 'Update Metrics',
+                          startTs: startTs || endTs,
+                          endTs,
                         });
+                        prevEndTs = endTs;
                       }
                     });
                     
