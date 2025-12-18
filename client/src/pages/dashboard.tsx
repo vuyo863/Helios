@@ -409,8 +409,14 @@ export default function Dashboard() {
                    (startTs && Math.abs(startTs - hoveredTs) < 60000);
           });
           
-          if (matchingUpdate && matchingUpdate.status === 'Update Metrics') {
-            setHoveredUpdateId(`u-${matchingUpdate.version}`);
+          if (matchingUpdate) {
+            if (matchingUpdate.status === 'Closed Bots') {
+              setHoveredUpdateId(`c-${matchingUpdate.version}`);
+            } else if (matchingUpdate.status === 'Update Metrics') {
+              setHoveredUpdateId(`u-${matchingUpdate.version}`);
+            } else {
+              setHoveredUpdateId(null);
+            }
           } else {
             setHoveredUpdateId(null);
           }
@@ -2648,14 +2654,115 @@ export default function Dashboard() {
                       
                       if (isClosedBot) {
                         // Closed Bot: Only end marker (circle) - positioned below label
+                        const closedKey = `c-${update.version}`;
+                        const isClosedLocked = lockedUpdateIds.has(closedKey);
+                        const isClosedHovered = hoveredUpdateId === closedKey && markerViewActive;
+                        const isClosedActive = (isClosedHovered || isClosedLocked) && markerViewActive;
+                        const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
+                        
+                        const handleClosedClick = () => {
+                          if (!markerViewActive) return;
+                          setLockedUpdateIds(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(closedKey)) {
+                              newSet.delete(closedKey);
+                            } else {
+                              newSet.add(closedKey);
+                            }
+                            return newSet;
+                          });
+                        };
+                        
+                        // Calculate dashed line Y position for closed bot
+                        const getClosedBotChartY = () => {
+                          if (!isClosedActive) return null;
+                          const chartDataArray = transformedChartData || [];
+                          if (chartDataArray.length === 0) return null;
+                          
+                          const activeMetric = activeMetricCards[0];
+                          if (!activeMetric) return null;
+                          
+                          // Find value at closed timestamp
+                          const sorted = [...chartDataArray].sort((a, b) => a.timestamp - b.timestamp);
+                          let before = null;
+                          let after = null;
+                          const targetTs = update.endTs;
+                          
+                          for (let j = 0; j < sorted.length; j++) {
+                            if (sorted[j].timestamp <= targetTs) before = sorted[j];
+                            if (sorted[j].timestamp >= targetTs && !after) after = sorted[j];
+                          }
+                          
+                          let endValue: number | null = null;
+                          if (before && before.timestamp === targetTs) {
+                            endValue = before[activeMetric as keyof typeof before] as number;
+                          } else if (after && after.timestamp === targetTs) {
+                            endValue = after[activeMetric as keyof typeof after] as number;
+                          } else if (before && after && before !== after) {
+                            const beforeVal = before[activeMetric as keyof typeof before] as number;
+                            const afterVal = after[activeMetric as keyof typeof after] as number;
+                            const t = (targetTs - before.timestamp) / (after.timestamp - before.timestamp);
+                            endValue = beforeVal + t * (afterVal - beforeVal);
+                          } else if (before) {
+                            endValue = before[activeMetric as keyof typeof before] as number;
+                          } else if (after) {
+                            endValue = after[activeMetric as keyof typeof after] as number;
+                          }
+                          
+                          if (endValue === null) return null;
+                          
+                          // Calculate Y position
+                          let yMinNum: number, yMaxNum: number;
+                          const [yMin, yMax] = yAxisDomain;
+                          if (typeof yMin === 'number' && typeof yMax === 'number') {
+                            yMinNum = yMin;
+                            yMaxNum = yMax;
+                          } else {
+                            const allVals = chartDataArray.map(d => d[activeMetric as keyof typeof d] as number).filter(v => typeof v === 'number');
+                            if (allVals.length === 0) return null;
+                            yMinNum = Math.min(...allVals);
+                            yMaxNum = Math.max(...allVals);
+                          }
+                          const yRange = yMaxNum - yMinNum;
+                          
+                          const markerHeight = 80;
+                          const gapHeight = 16;
+                          const chartTopMargin = 5;
+                          const plotHeight = 225;
+                          
+                          if (yRange === 0) return 100;
+                          const relativeValue = (endValue - yMinNum) / yRange;
+                          const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
+                          const rawY = (markerHeight + gapHeight + chartY) / markerHeight * 100;
+                          return Math.max(100, rawY);
+                        };
+                        
+                        const closedY2 = getClosedBotChartY();
+                        
                         return (
-                          <g key={`cb-${i}`}>
+                          <g 
+                            key={`cb-${i}`}
+                            style={{ cursor: markerViewActive ? 'pointer' : 'default', pointerEvents: 'all' }}
+                            onMouseEnter={() => markerViewActive && setHoveredUpdateId(closedKey)}
+                            onMouseLeave={() => setHoveredUpdateId(null)}
+                            onClick={handleClosedClick}
+                          >
+                            {/* Invisible hitbox for easier hover */}
+                            <rect
+                              x={`${clampedEndX - 2}%`}
+                              y={`${yPercent - 10}%`}
+                              width="4%"
+                              height="20%"
+                              fill="transparent"
+                              style={{ pointerEvents: 'all' }}
+                            />
                             <text
                               x={`${clampedEndX}%`}
                               y={`${yPercent - 2}%`}
                               textAnchor="middle"
                               fontSize={9}
-                              fill="hsl(var(--muted-foreground))"
+                              fill={closedStrokeColor}
+                              style={isClosedActive ? { filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.8))' } : {}}
                             >
                               {label}
                             </text>
@@ -2663,8 +2770,22 @@ export default function Dashboard() {
                               cx={`${clampedEndX}%`}
                               cy={`${yPercent + 8}%`}
                               r={4}
-                              fill="hsl(var(--muted-foreground))"
+                              fill={closedStrokeColor}
+                              style={isClosedActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                             />
+                            {/* Dashed line to chart when active */}
+                            {isClosedActive && closedY2 !== null && (
+                              <line
+                                x1={`${clampedEndX}%`}
+                                y1={`${yPercent + 12}%`}
+                                x2={`${clampedEndX}%`}
+                                y2={`${closedY2}%`}
+                                stroke="rgb(8, 145, 178)"
+                                strokeWidth="1"
+                                strokeDasharray="4 3"
+                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                              />
+                            )}
                           </g>
                         );
                       }
