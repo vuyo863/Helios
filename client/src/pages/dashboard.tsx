@@ -249,6 +249,7 @@ export default function Dashboard() {
   const [markerViewActive, setMarkerViewActive] = useState(false);
   const [markerEditActive, setMarkerEditActive] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
+  const [lockedUpdateId, setLockedUpdateId] = useState<string | null>(null);
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -2446,7 +2447,14 @@ export default function Dashboard() {
                       "h-7 w-7",
                       markerViewActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                     )}
-                    onClick={() => setMarkerViewActive(!markerViewActive)}
+                    onClick={() => {
+                      const newValue = !markerViewActive;
+                      setMarkerViewActive(newValue);
+                      if (!newValue) {
+                        setLockedUpdateId(null);
+                        setHoveredUpdateId(null);
+                      }
+                    }}
                     data-testid="button-marker-view"
                   >
                     <Eye className="h-4 w-4" />
@@ -2651,15 +2659,27 @@ export default function Dashboard() {
                       
                       // Update Metrics: Line from start to end with markers
                       const updateKey = `u-${update.version}`;
-                      const isHovered = hoveredUpdateId === updateKey && markerViewActive;
+                      const isLocked = lockedUpdateId === updateKey;
+                      const isHovered = (hoveredUpdateId === updateKey || isLocked) && markerViewActive;
                       const strokeColor = isHovered ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
+                      
+                      // Click handler to toggle lock
+                      const handleClick = () => {
+                        if (!markerViewActive) return;
+                        if (isLocked) {
+                          setLockedUpdateId(null);
+                        } else {
+                          setLockedUpdateId(updateKey);
+                        }
+                      };
                       
                       return (
                         <g 
                           key={`u-${i}`}
                           style={{ cursor: markerViewActive ? 'pointer' : 'default', pointerEvents: 'all' }}
-                          onMouseEnter={() => markerViewActive && setHoveredUpdateId(updateKey)}
-                          onMouseLeave={() => setHoveredUpdateId(null)}
+                          onMouseEnter={() => markerViewActive && !lockedUpdateId && setHoveredUpdateId(updateKey)}
+                          onMouseLeave={() => !lockedUpdateId && setHoveredUpdateId(null)}
+                          onClick={handleClick}
                         >
                           {/* Invisible wider hitbox for easier hover */}
                           <rect
