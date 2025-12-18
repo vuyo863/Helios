@@ -2702,32 +2702,71 @@ export default function Dashboard() {
                           />
                           {/* Dashed lines down to chart points when hovered */}
                           {isHovered && (() => {
-                            // Find chart data values at start and end timestamps
                             const chartDataArray = transformedChartData || [];
-                            const startPoint = chartDataArray.find(p => Math.abs(p.timestamp - update.startTs) < 60000);
-                            const endPoint = chartDataArray.find(p => Math.abs(p.timestamp - update.endTs) < 60000);
+                            if (chartDataArray.length === 0) return null;
                             
                             // Get first active metric to determine Y value
                             const activeMetric = activeMetricCards[0];
-                            const startValue = startPoint ? (startPoint[activeMetric as keyof typeof startPoint] as number) : null;
-                            const endValue = endPoint ? (endPoint[activeMetric as keyof typeof endPoint] as number) : null;
+                            if (!activeMetric) return null;
                             
-                            // Get Y domain
+                            // Helper: Find value at timestamp with interpolation
+                            const getValueAtTs = (targetTs: number): number | null => {
+                              // Sort by timestamp
+                              const sorted = [...chartDataArray].sort((a, b) => a.timestamp - b.timestamp);
+                              
+                              // Find bracketing points
+                              let before = null;
+                              let after = null;
+                              for (let i = 0; i < sorted.length; i++) {
+                                if (sorted[i].timestamp <= targetTs) before = sorted[i];
+                                if (sorted[i].timestamp >= targetTs && !after) after = sorted[i];
+                              }
+                              
+                              // Exact match
+                              if (before && before.timestamp === targetTs) {
+                                return before[activeMetric as keyof typeof before] as number;
+                              }
+                              if (after && after.timestamp === targetTs) {
+                                return after[activeMetric as keyof typeof after] as number;
+                              }
+                              
+                              // Interpolate between before and after
+                              if (before && after && before !== after) {
+                                const beforeVal = before[activeMetric as keyof typeof before] as number;
+                                const afterVal = after[activeMetric as keyof typeof after] as number;
+                                const t = (targetTs - before.timestamp) / (after.timestamp - before.timestamp);
+                                return beforeVal + t * (afterVal - beforeVal);
+                              }
+                              
+                              // Clamp to edges
+                              if (before) return before[activeMetric as keyof typeof before] as number;
+                              if (after) return after[activeMetric as keyof typeof after] as number;
+                              return null;
+                            };
+                            
+                            const startValue = getValueAtTs(update.startTs);
+                            const endValue = getValueAtTs(update.endTs);
+                            
+                            // Get Y domain - compute from data if 'auto'
+                            let yMinNum: number, yMaxNum: number;
                             const [yMin, yMax] = yAxisDomain;
-                            const yMinNum = typeof yMin === 'number' ? yMin : 0;
-                            const yMaxNum = typeof yMax === 'number' ? yMax : 100;
+                            if (typeof yMin === 'number' && typeof yMax === 'number') {
+                              yMinNum = yMin;
+                              yMaxNum = yMax;
+                            } else {
+                              // Compute from chart data
+                              const allVals = chartDataArray.map(p => p[activeMetric as keyof typeof p] as number).filter(v => typeof v === 'number');
+                              yMinNum = Math.min(...allVals);
+                              yMaxNum = Math.max(...allVals);
+                            }
                             const yRange = yMaxNum - yMinNum;
                             
-                            // Chart dimensions: 300px height, margins top=5, bottom=20
-                            // Plot area = 275px, starts at 5px from top
-                            // Marker container = 80px, gap = 16px
-                            // So chart starts at 80 + 16 = 96px below marker container top
+                            // Chart dimensions
                             const markerHeight = 80;
                             const gapHeight = 16;
                             const chartTopMargin = 5;
                             const plotHeight = 275;
                             
-                            // Calculate Y position in chart area (inverted: higher value = lower Y)
                             const calcChartY = (value: number) => {
                               if (yRange === 0) return markerHeight + gapHeight + chartTopMargin + plotHeight / 2;
                               const relativeValue = (value - yMinNum) / yRange;
