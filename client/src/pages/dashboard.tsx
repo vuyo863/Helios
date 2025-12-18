@@ -2487,7 +2487,14 @@ export default function Dashboard() {
                       "h-7 w-7",
                       markerEditActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                     )}
-                    onClick={() => setMarkerEditActive(!markerEditActive)}
+                    onClick={() => {
+                      if (!markerEditActive) {
+                        // Beim Aktivieren: vorherige Auswahl löschen
+                        setEditSelectedUpdateId(null);
+                        setEditHoveredUpdateId(null);
+                      }
+                      setMarkerEditActive(!markerEditActive);
+                    }}
                     data-testid="button-marker-edit"
                   >
                     <Pencil className="h-4 w-4" />
@@ -3823,9 +3830,10 @@ export default function Dashboard() {
               <Card className="p-3 mb-3" data-testid="card-selected-metric">
                 {(() => {
                   // Stift-Modus: Finde das aktive Update
-                  const activeEditId = editSelectedUpdateId || editHoveredUpdateId;
+                  // Priorität: Selected > Hovered (nur wenn Stift aktiv)
+                  const activeEditId = editSelectedUpdateId || (markerEditActive ? editHoveredUpdateId : null);
                   
-                  if (!markerEditActive || !activeEditId) {
+                  if (!activeEditId) {
                     // Default-Anzeige wenn kein Update ausgewählt
                     return (
                       <>
@@ -3942,7 +3950,16 @@ export default function Dashboard() {
                 <Button 
                   variant="default" 
                   size="sm"
-                  disabled={!markerEditActive || (!editSelectedUpdateId && !editHoveredUpdateId)}
+                  disabled={!markerEditActive || !editSelectedUpdateId}
+                  onClick={() => {
+                    if (editSelectedUpdateId) {
+                      // Auswahl übernehmen: Stift-Modus deaktivieren
+                      setMarkerEditActive(false);
+                      // Hover-State clearen
+                      setEditHoveredUpdateId(null);
+                      // Selected bleibt für die Anzeige, wird beim nächsten Stift-Aktivieren geleert
+                    }
+                  }}
                   data-testid="button-apply-metric"
                 >
                   Apply
