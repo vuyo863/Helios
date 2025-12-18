@@ -2666,18 +2666,20 @@ export default function Dashboard() {
                         // Closed Bot: Only end marker (circle) - positioned below label
                         const closedKey = `c-${update.version}`;
                         
-                        // Auge-Modus (Multi-Select)
-                        const isClosedLocked = lockedUpdateIds.has(closedKey);
-                        const isClosedHovered = hoveredUpdateId === closedKey && markerViewActive;
-                        const isClosedActiveView = (isClosedHovered || isClosedLocked) && markerViewActive;
+                        // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus
+                        let isClosedActive = false;
                         
-                        // Stift-Modus (Single-Select)
-                        const isEditHovered = editHoveredUpdateId === closedKey && markerEditActive;
-                        const isEditSelected = editSelectedUpdateId === closedKey && markerEditActive;
-                        const isClosedActiveEdit = (isEditHovered || isEditSelected) && markerEditActive;
-                        
-                        // Kombiniert: aktiv wenn Auge ODER Stift aktiv
-                        const isClosedActive = isClosedActiveView || isClosedActiveEdit;
+                        if (markerEditActive) {
+                          // Stift-Modus: NUR das ausgewählte oder gehoverte (Single-Select)
+                          const isEditHovered = editHoveredUpdateId === closedKey;
+                          const isEditSelected = editSelectedUpdateId === closedKey;
+                          isClosedActive = isEditHovered || isEditSelected;
+                        } else if (markerViewActive) {
+                          // Auge-Modus: Multi-Select (nur wenn Stift NICHT aktiv)
+                          const isClosedLocked = lockedUpdateIds.has(closedKey);
+                          const isClosedHovered = hoveredUpdateId === closedKey;
+                          isClosedActive = isClosedHovered || isClosedLocked;
+                        }
                         const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                         
                         const handleClosedClick = () => {
@@ -2835,18 +2837,20 @@ export default function Dashboard() {
                       // Update Metrics: Line from start to end with markers
                       const updateKey = `u-${update.version}`;
                       
-                      // Auge-Modus (Multi-Select)
-                      const isLocked = lockedUpdateIds.has(updateKey);
-                      const isHovered = hoveredUpdateId === updateKey && markerViewActive;
-                      const isActiveView = (isHovered || isLocked) && markerViewActive;
+                      // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus
+                      let isActive = false;
                       
-                      // Stift-Modus (Single-Select)
-                      const isEditHovered = editHoveredUpdateId === updateKey && markerEditActive;
-                      const isEditSelected = editSelectedUpdateId === updateKey && markerEditActive;
-                      const isActiveEdit = (isEditHovered || isEditSelected) && markerEditActive;
-                      
-                      // Kombiniert: aktiv wenn Auge ODER Stift aktiv
-                      const isActive = isActiveView || isActiveEdit;
+                      if (markerEditActive) {
+                        // Stift-Modus: NUR das ausgewählte oder gehoverte (Single-Select)
+                        const isEditHovered = editHoveredUpdateId === updateKey;
+                        const isEditSelected = editSelectedUpdateId === updateKey;
+                        isActive = isEditHovered || isEditSelected;
+                      } else if (markerViewActive) {
+                        // Auge-Modus: Multi-Select (nur wenn Stift NICHT aktiv)
+                        const isLocked = lockedUpdateIds.has(updateKey);
+                        const isHovered = hoveredUpdateId === updateKey;
+                        isActive = isHovered || isLocked;
+                      }
                       const strokeColor = isActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                       
                       // Click handler
