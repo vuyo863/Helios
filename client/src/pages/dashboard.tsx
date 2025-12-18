@@ -417,6 +417,10 @@ export default function Dashboard() {
     setTooltipIsNearPoint(false);
     setTooltipActivePayload(null);
     setTooltipCoordinate(null);
+    // Clear chart-triggered hover (but not locked items)
+    if (markerViewActive) {
+      setHoveredUpdateId(null);
+    }
   };
   
   // Handler für Update-Auswahl Icons
