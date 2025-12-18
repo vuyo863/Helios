@@ -2527,8 +2527,8 @@ export default function Dashboard() {
                     });
                     
                     const containerHeight = 80; // h-20 = 80px
-                    const lineHeight = 12;
-                    const topPadding = 8;
+                    const lineHeight = 14;
+                    const topPadding = 25;
                     
                     return updateLanes.map((update, i) => {
                       const startX = ((update.startTs - domainStart) / domainRange) * 100;
