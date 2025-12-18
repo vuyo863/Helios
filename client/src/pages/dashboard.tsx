@@ -3233,7 +3233,7 @@ export default function Dashboard() {
           {/* Right Column - Two Cards stacked, stretches to match left column height */}
           <div className="flex flex-col flex-shrink-0">
             {/* Upper Card - Selected Metric Preview (fills space above Graph-Einstellungen) */}
-            <Card className="p-4 w-[296px] mb-4 flex-1 flex flex-col">
+            <Card className="p-4 w-[296px] mb-4 flex-1 flex flex-col ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]">
               {/* Inner Content Card - Update/Closed Bot Details */}
               <Card className="p-3 mb-3" data-testid="card-selected-metric">
                 {/* Header: Title + Eye Icon */}
