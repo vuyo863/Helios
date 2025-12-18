@@ -2711,6 +2711,8 @@ export default function Dashboard() {
                           // Stift-Modus: Single-Select (ersetzt vorherige Auswahl)
                           if (markerEditActive) {
                             setEditSelectedUpdateId(prev => prev === closedKey ? null : closedKey);
+                            // WICHTIG: Hover zurücksetzen bei Klick, damit nur das angeklickte Element blau bleibt
+                            setEditHoveredUpdateId(null);
                           }
                         };
                         
@@ -2888,6 +2890,8 @@ export default function Dashboard() {
                         // Stift-Modus: Single-Select (ersetzt vorherige Auswahl)
                         if (markerEditActive) {
                           setEditSelectedUpdateId(prev => prev === updateKey ? null : updateKey);
+                          // WICHTIG: Hover zurücksetzen bei Klick, damit nur das angeklickte Element blau bleibt
+                          setEditHoveredUpdateId(null);
                         }
                       };
                       
