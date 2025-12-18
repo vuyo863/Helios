@@ -2471,8 +2471,148 @@ export default function Dashboard() {
                       );
                     });
                   })()}
+                  
+                  {/* Update Connection Lines - Start to End markers */}
+                  {(() => {
+                    const [domainStart, domainEnd] = xAxisDomain;
+                    if (typeof domainStart !== 'number' || typeof domainEnd !== 'number') return null;
+                    
+                    const domainRange = domainEnd - domainStart;
+                    if (domainRange <= 0) return null;
+                    
+                    // Get updates from chartData (grouped by version)
+                    const updateRanges: { version: number; status: string; startTs: number; endTs: number }[] = [];
+                    
+                    // Group chartData points by version to get start/end per update
+                    const versionMap = new Map<number, { start?: number; end?: number; status?: string }>();
+                    
+                    (isMultiBotChartMode ? multiBotChartData.data : transformedChartData).forEach((point: any) => {
+                      if (!point.version) return;
+                      const entry = versionMap.get(point.version) || {};
+                      if (point.isStartPoint) {
+                        entry.start = point.timestamp;
+                      } else {
+                        entry.end = point.timestamp;
+                      }
+                      entry.status = point.status;
+                      versionMap.set(point.version, entry);
+                    });
+                    
+                    versionMap.forEach((range, version) => {
+                      if (range.end) {
+                        updateRanges.push({
+                          version,
+                          status: range.status || 'Update Metrics',
+                          startTs: range.start || range.end,
+                          endTs: range.end,
+                        });
+                      }
+                    });
+                    
+                    // Sort by start time
+                    updateRanges.sort((a, b) => a.startTs - b.startTs);
+                    
+                    // Assign vertical lanes to avoid overlaps
+                    const lanes: { endTs: number }[] = [];
+                    const updateLanes = updateRanges.map(update => {
+                      // Find first available lane
+                      let laneIndex = lanes.findIndex(lane => lane.endTs < update.startTs);
+                      if (laneIndex === -1) {
+                        laneIndex = lanes.length;
+                        lanes.push({ endTs: update.endTs });
+                      } else {
+                        lanes[laneIndex].endTs = update.endTs;
+                      }
+                      return { ...update, lane: laneIndex };
+                    });
+                    
+                    const containerHeight = 80; // h-20 = 80px
+                    const lineHeight = 12;
+                    const topPadding = 8;
+                    
+                    return updateLanes.map((update, i) => {
+                      const startX = ((update.startTs - domainStart) / domainRange) * 100;
+                      const endX = ((update.endTs - domainStart) / domainRange) * 100;
+                      const yPos = topPadding + (update.lane * lineHeight);
+                      const yPercent = (yPos / containerHeight) * 100;
+                      
+                      const isClosedBot = update.status === 'Closed Bots';
+                      const label = isClosedBot ? `C${update.version}` : `U${update.version}`;
+                      
+                      // Check if within visible range
+                      if (endX < 0 || startX > 100) return null;
+                      
+                      const clampedStartX = Math.max(0, startX);
+                      const clampedEndX = Math.min(100, endX);
+                      
+                      if (isClosedBot) {
+                        // Closed Bot: Only end marker (circle)
+                        return (
+                          <g key={`cb-${i}`}>
+                            <circle
+                              cx={`${clampedEndX}%`}
+                              cy={`${yPercent}%`}
+                              r={4}
+                              fill="hsl(var(--muted-foreground))"
+                            />
+                            <text
+                              x={`${clampedEndX}%`}
+                              y={`${yPercent - 3}%`}
+                              textAnchor="middle"
+                              fontSize={9}
+                              fill="hsl(var(--muted-foreground))"
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      }
+                      
+                      // Update Metrics: Line from start to end with markers
+                      return (
+                        <g key={`u-${i}`}>
+                          {/* Horizontal line */}
+                          <line
+                            x1={`${clampedStartX}%`}
+                            y1={`${yPercent}%`}
+                            x2={`${clampedEndX}%`}
+                            y2={`${yPercent}%`}
+                            stroke="hsl(var(--muted-foreground))"
+                            strokeWidth="2"
+                          />
+                          {/* Start marker (vertical tick) */}
+                          <line
+                            x1={`${clampedStartX}%`}
+                            y1={`${yPercent - 4}%`}
+                            x2={`${clampedStartX}%`}
+                            y2={`${yPercent + 4}%`}
+                            stroke="hsl(var(--muted-foreground))"
+                            strokeWidth="2"
+                          />
+                          {/* End marker (vertical tick) */}
+                          <line
+                            x1={`${clampedEndX}%`}
+                            y1={`${yPercent - 4}%`}
+                            x2={`${clampedEndX}%`}
+                            y2={`${yPercent + 4}%`}
+                            stroke="hsl(var(--muted-foreground))"
+                            strokeWidth="2"
+                          />
+                          {/* Label */}
+                          <text
+                            x={`${(clampedStartX + clampedEndX) / 2}%`}
+                            y={`${yPercent - 6}%`}
+                            textAnchor="middle"
+                            fontSize={9}
+                            fill="hsl(var(--muted-foreground))"
+                          >
+                            {label}
+                          </text>
+                        </g>
+                      );
+                    });
+                  })()}
                 </svg>
-                {/* Start and End markers will be placed here */}
                 </div>
               </div>
               
