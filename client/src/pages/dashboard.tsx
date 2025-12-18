@@ -253,6 +253,8 @@ export default function Dashboard() {
   // Stift-Modus: nur Single-Select (einer zur Zeit)
   const [editHoveredUpdateId, setEditHoveredUpdateId] = useState<string | null>(null);
   const [editSelectedUpdateId, setEditSelectedUpdateId] = useState<string | null>(null);
+  // Nach Apply: das bestätigte Update wird dauerhaft blau angezeigt
+  const [appliedUpdateId, setAppliedUpdateId] = useState<string | null>(null);
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -2669,6 +2671,9 @@ export default function Dashboard() {
                         // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus
                         let isClosedActive = false;
                         
+                        // Nach Apply: das angewandte Update bleibt dauerhaft blau
+                        const isApplied = appliedUpdateId === closedKey;
+                        
                         if (markerEditActive) {
                           // Stift-Modus: NUR das ausgewählte oder gehoverte (Single-Select)
                           const isEditHovered = editHoveredUpdateId === closedKey;
@@ -2680,6 +2685,9 @@ export default function Dashboard() {
                           const isClosedHovered = hoveredUpdateId === closedKey;
                           isClosedActive = isClosedHovered || isClosedLocked;
                         }
+                        
+                        // Angewandtes Update ist immer aktiv (blau)
+                        if (isApplied) isClosedActive = true;
                         const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                         
                         const handleClosedClick = () => {
@@ -2840,6 +2848,9 @@ export default function Dashboard() {
                       // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus
                       let isActive = false;
                       
+                      // Nach Apply: das angewandte Update bleibt dauerhaft blau
+                      const isApplied = appliedUpdateId === updateKey;
+                      
                       if (markerEditActive) {
                         // Stift-Modus: NUR das ausgewählte oder gehoverte (Single-Select)
                         const isEditHovered = editHoveredUpdateId === updateKey;
@@ -2851,6 +2862,9 @@ export default function Dashboard() {
                         const isHovered = hoveredUpdateId === updateKey;
                         isActive = isHovered || isLocked;
                       }
+                      
+                      // Angewandtes Update ist immer aktiv (blau)
+                      if (isApplied) isActive = true;
                       const strokeColor = isActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                       
                       // Click handler
@@ -3834,8 +3848,8 @@ export default function Dashboard() {
               <Card className="p-3 mb-3" data-testid="card-selected-metric">
                 {(() => {
                   // Stift-Modus: Finde das aktive Update
-                  // Priorität: Selected > Hovered (nur wenn Stift aktiv)
-                  const activeEditId = editSelectedUpdateId || (markerEditActive ? editHoveredUpdateId : null);
+                  // Priorität: Selected > Hovered (nur wenn Stift aktiv) > Applied (dauerhaft)
+                  const activeEditId = editSelectedUpdateId || (markerEditActive ? editHoveredUpdateId : null) || appliedUpdateId;
                   
                   if (!activeEditId) {
                     // Default-Anzeige wenn kein Update ausgewählt
@@ -3947,7 +3961,18 @@ export default function Dashboard() {
                   <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren" data-testid="button-analyze-metric">
                     <LineChartIcon className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" title="Löschen" data-testid="button-delete-metric">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    title="Löschen"
+                    disabled={!appliedUpdateId}
+                    onClick={() => {
+                      // Angewandtes Update entfernen
+                      setAppliedUpdateId(null);
+                    }}
+                    data-testid="button-delete-metric"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -3957,11 +3982,14 @@ export default function Dashboard() {
                   disabled={!markerEditActive || !editSelectedUpdateId}
                   onClick={() => {
                     if (editSelectedUpdateId) {
-                      // Auswahl übernehmen: Stift-Modus deaktivieren
+                      // Auswahl übernehmen: Als "angewandt" speichern
+                      setAppliedUpdateId(editSelectedUpdateId);
+                      // Stift-Modus deaktivieren
                       setMarkerEditActive(false);
                       // Hover-State clearen
                       setEditHoveredUpdateId(null);
-                      // Selected bleibt für die Anzeige, wird beim nächsten Stift-Aktivieren geleert
+                      // Selected clearen (wird jetzt von appliedUpdateId gehalten)
+                      setEditSelectedUpdateId(null);
                     }
                   }}
                   data-testid="button-apply-metric"
