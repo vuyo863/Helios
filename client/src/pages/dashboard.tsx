@@ -2674,14 +2674,12 @@ export default function Dashboard() {
                         // Closed Bot: Only end marker (circle) - positioned below label
                         const closedKey = `c-${update.version}`;
                         
-                        // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus
+                        // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus UND appliedUpdateId
                         let isClosedActive = false;
-                        
-                        // Nach Apply: das angewandte Update bleibt dauerhaft blau
-                        const isApplied = appliedUpdateId === closedKey;
                         
                         if (markerEditActive) {
                           // Stift-Modus: NUR das ausgewählte oder gehoverte (Single-Select)
+                          // Im Stift-Modus wird appliedUpdateId IGNORIERT - nur aktuelle Auswahl zählt
                           const isEditHovered = editHoveredUpdateId === closedKey;
                           const isEditSelected = editSelectedUpdateId === closedKey;
                           isClosedActive = isEditHovered || isEditSelected;
@@ -2690,10 +2688,11 @@ export default function Dashboard() {
                           const isClosedLocked = lockedUpdateIds.has(closedKey);
                           const isClosedHovered = hoveredUpdateId === closedKey;
                           isClosedActive = isClosedHovered || isClosedLocked;
+                        } else {
+                          // Kein Modus aktiv: Zeige appliedUpdateId (wenn vorhanden)
+                          const isApplied = appliedUpdateId === closedKey;
+                          if (isApplied) isClosedActive = true;
                         }
-                        
-                        // Angewandtes Update ist immer aktiv (blau)
-                        if (isApplied) isClosedActive = true;
                         const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                         
                         const handleClosedClick = () => {
@@ -2851,14 +2850,12 @@ export default function Dashboard() {
                       // Update Metrics: Line from start to end with markers
                       const updateKey = `u-${update.version}`;
                       
-                      // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus
+                      // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus UND appliedUpdateId
                       let isActive = false;
-                      
-                      // Nach Apply: das angewandte Update bleibt dauerhaft blau
-                      const isApplied = appliedUpdateId === updateKey;
                       
                       if (markerEditActive) {
                         // Stift-Modus: NUR das ausgewählte oder gehoverte (Single-Select)
+                        // Im Stift-Modus wird appliedUpdateId IGNORIERT - nur aktuelle Auswahl zählt
                         const isEditHovered = editHoveredUpdateId === updateKey;
                         const isEditSelected = editSelectedUpdateId === updateKey;
                         isActive = isEditHovered || isEditSelected;
@@ -2867,10 +2864,11 @@ export default function Dashboard() {
                         const isLocked = lockedUpdateIds.has(updateKey);
                         const isHovered = hoveredUpdateId === updateKey;
                         isActive = isHovered || isLocked;
+                      } else {
+                        // Kein Modus aktiv: Zeige appliedUpdateId (wenn vorhanden)
+                        const isApplied = appliedUpdateId === updateKey;
+                        if (isApplied) isActive = true;
                       }
-                      
-                      // Angewandtes Update ist immer aktiv (blau)
-                      if (isApplied) isActive = true;
                       const strokeColor = isActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                       
                       // Click handler
