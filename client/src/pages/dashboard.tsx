@@ -255,6 +255,8 @@ export default function Dashboard() {
   const [editSelectedUpdateId, setEditSelectedUpdateId] = useState<string | null>(null);
   // Nach Apply: das bestätigte Update wird dauerhaft blau angezeigt
   const [appliedUpdateId, setAppliedUpdateId] = useState<string | null>(null);
+  // Such-Dialog für Metrik-Auswahl
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -3955,9 +3957,74 @@ export default function Dashboard() {
               {/* Action Icons Row - Outside inner card */}
               <div className="flex items-center justify-between" data-testid="metric-action-icons">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8" title="Suchen" data-testid="button-search-metric">
-                    <Search className="h-4 w-4" />
-                  </Button>
+                  <Popover open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8" 
+                        title="Suchen"
+                        disabled={!markerEditActive}
+                        data-testid="button-search-metric"
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-3" align="start">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm mb-3">Metrik auswählen</h4>
+                        <div className="max-h-60 overflow-y-auto space-y-2">
+                          {/* Sichtbare Updates aus dem Graph */}
+                          {(() => {
+                            const visibleUpdates = sortedUpdates || [];
+                            if (visibleUpdates.length === 0) {
+                              return <p className="text-sm text-muted-foreground">Keine Metriken verfügbar</p>;
+                            }
+                            
+                            return visibleUpdates.map((update: any, index: number) => {
+                              const isClosedBot = update.botName?.toLowerCase().includes('closed') || 
+                                                  update.botName?.toLowerCase().includes('abn') ||
+                                                  update.botName?.toLowerCase().includes('geschlossen');
+                              const key = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
+                              const title = isClosedBot ? `Closed Bot #${update.version}` : `Update #${update.version}`;
+                              const isSelected = editSelectedUpdateId === key;
+                              
+                              return (
+                                <Card 
+                                  key={key}
+                                  className={cn(
+                                    "p-3 cursor-pointer transition-all",
+                                    isSelected && "ring-2 ring-cyan-600 bg-cyan-50 dark:bg-cyan-950"
+                                  )}
+                                  onClick={() => {
+                                    setEditSelectedUpdateId(key);
+                                    setSearchDialogOpen(false);
+                                  }}
+                                  data-testid={`search-result-${key}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">{title}</span>
+                                    {update.botName && (
+                                      <span className="text-xs text-muted-foreground">{update.botName}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-xs text-muted-foreground">Grid Profit</span>
+                                    <span className={cn(
+                                      "text-xs font-medium",
+                                      (update.gridProfit || 0) >= 0 ? "text-green-600" : "text-red-600"
+                                    )}>
+                                      ${(update.gridProfit || 0).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </Card>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren" data-testid="button-analyze-metric">
                     <LineChartIcon className="h-4 w-4" />
                   </Button>
