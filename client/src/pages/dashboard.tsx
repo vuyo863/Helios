@@ -2411,10 +2411,10 @@ export default function Dashboard() {
               <div className="flex" style={{ marginBottom: '16px' }}>
                 {/* Left Icon Panel */}
                 <div className="flex flex-col items-center justify-center gap-1" style={{ width: '80px' }}>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" data-testid="button-marker-view">
+                  <Button variant="outline" size="icon" className="h-7 w-7" data-testid="button-marker-view">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" data-testid="button-marker-edit">
+                  <Button variant="outline" size="icon" className="h-7 w-7" data-testid="button-marker-edit">
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
