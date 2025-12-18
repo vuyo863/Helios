@@ -2761,11 +2761,12 @@ export default function Dashboard() {
                             }
                             const yRange = yMaxNum - yMinNum;
                             
-                            // Chart dimensions
+                            // Chart dimensions: 300px total, margin top=5, XAxis height=70
+                            // Plot area = 300 - 5 - 70 = 225px
                             const markerHeight = 80;
                             const gapHeight = 16;
                             const chartTopMargin = 5;
-                            const plotHeight = 275;
+                            const plotHeight = 225;
                             
                             const calcChartY = (value: number) => {
                               if (yRange === 0) return markerHeight + gapHeight + chartTopMargin + plotHeight / 2;
