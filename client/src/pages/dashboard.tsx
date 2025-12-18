@@ -248,6 +248,7 @@ export default function Dashboard() {
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
   const [markerViewActive, setMarkerViewActive] = useState(false);
   const [markerEditActive, setMarkerEditActive] = useState(false);
+  const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -2622,16 +2623,35 @@ export default function Dashboard() {
                       }
                       
                       // Update Metrics: Line from start to end with markers
+                      const updateKey = `u-${update.version}`;
+                      const isHovered = hoveredUpdateId === updateKey && markerViewActive;
+                      const strokeColor = isHovered ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
+                      
                       return (
-                        <g key={`u-${i}`}>
+                        <g 
+                          key={`u-${i}`}
+                          style={{ cursor: markerViewActive ? 'pointer' : 'default' }}
+                          onMouseEnter={() => markerViewActive && setHoveredUpdateId(updateKey)}
+                          onMouseLeave={() => setHoveredUpdateId(null)}
+                        >
+                          {/* Invisible wider hitbox for easier hover */}
+                          <line
+                            x1={`${clampedStartX}%`}
+                            y1={`${yPercent}%`}
+                            x2={`${clampedEndX}%`}
+                            y2={`${yPercent}%`}
+                            stroke="transparent"
+                            strokeWidth="12"
+                          />
                           {/* Horizontal line */}
                           <line
                             x1={`${clampedStartX}%`}
                             y1={`${yPercent}%`}
                             x2={`${clampedEndX}%`}
                             y2={`${yPercent}%`}
-                            stroke="hsl(var(--muted-foreground))"
+                            stroke={strokeColor}
                             strokeWidth="2"
+                            style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
                           {/* Start marker (vertical tick) */}
                           <line
@@ -2639,8 +2659,9 @@ export default function Dashboard() {
                             y1={`${yPercent - 4}%`}
                             x2={`${clampedStartX}%`}
                             y2={`${yPercent + 4}%`}
-                            stroke="hsl(var(--muted-foreground))"
+                            stroke={strokeColor}
                             strokeWidth="2"
+                            style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
                           {/* End marker (vertical tick) */}
                           <line
@@ -2648,16 +2669,43 @@ export default function Dashboard() {
                             y1={`${yPercent - 4}%`}
                             x2={`${clampedEndX}%`}
                             y2={`${yPercent + 4}%`}
-                            stroke="hsl(var(--muted-foreground))"
+                            stroke={strokeColor}
                             strokeWidth="2"
+                            style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
+                          {/* Dashed lines down to chart when hovered */}
+                          {isHovered && (
+                            <>
+                              <line
+                                x1={`${clampedStartX}%`}
+                                y1={`${yPercent + 4}%`}
+                                x2={`${clampedStartX}%`}
+                                y2="100%"
+                                stroke="rgb(8, 145, 178)"
+                                strokeWidth="1"
+                                strokeDasharray="4 3"
+                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))' }}
+                              />
+                              <line
+                                x1={`${clampedEndX}%`}
+                                y1={`${yPercent + 4}%`}
+                                x2={`${clampedEndX}%`}
+                                y2="100%"
+                                stroke="rgb(8, 145, 178)"
+                                strokeWidth="1"
+                                strokeDasharray="4 3"
+                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))' }}
+                              />
+                            </>
+                          )}
                           {/* Label */}
                           <text
                             x={`${(clampedStartX + clampedEndX) / 2}%`}
                             y={`${yPercent - 6}%`}
                             textAnchor="middle"
                             fontSize={9}
-                            fill="hsl(var(--muted-foreground))"
+                            fill={strokeColor}
+                            style={isHovered ? { filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.8))' } : {}}
                           >
                             {label}
                           </text>
