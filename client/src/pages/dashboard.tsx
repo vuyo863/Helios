@@ -2500,6 +2500,10 @@ export default function Dashboard() {
                         // Beim Aktivieren: vorherige Auswahl löschen
                         setEditSelectedUpdateId(null);
                         setEditHoveredUpdateId(null);
+                      } else {
+                        // Beim Deaktivieren OHNE Apply: Auswahl zurücksetzen
+                        setEditSelectedUpdateId(null);
+                        setEditHoveredUpdateId(null);
                       }
                       setMarkerEditActive(!markerEditActive);
                     }}
