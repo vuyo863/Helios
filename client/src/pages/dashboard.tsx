@@ -389,23 +389,31 @@ export default function Dashboard() {
       const isNearPoint = distance <= TOOLTIP_ACTIVATION_RADIUS;
       setTooltipIsNearPoint(isNearPoint);
       
-      // When eye is active and near a point, check if it's an update start/end point
-      if (markerViewActive && isNearPoint && state.activePayload[0]?.payload?.timestamp) {
-        const hoveredTs = state.activePayload[0].payload.timestamp;
-        
-        // Find matching update by checking if this timestamp matches start or end
-        const matchingUpdate = sortedUpdates?.find(u => {
-          const endTs = u.thisUpload ? parseGermanDate(u.thisUpload)?.getTime() : null;
-          const startTs = u.lastUpload ? parseGermanDate(u.lastUpload)?.getTime() : null;
-          // Allow 60 second tolerance for matching
-          return (endTs && Math.abs(endTs - hoveredTs) < 60000) || 
-                 (startTs && Math.abs(startTs - hoveredTs) < 60000);
-        });
-        
-        if (matchingUpdate && matchingUpdate.status === 'Update Metrics') {
-          setHoveredUpdateId(`u-${matchingUpdate.version}`);
-        } else {
+      // When eye is active, check if near an update start/end point
+      if (markerViewActive) {
+        // If not near any point, clear hover immediately
+        if (!isNearPoint) {
           setHoveredUpdateId(null);
+          return;
+        }
+        
+        if (state.activePayload[0]?.payload?.timestamp) {
+          const hoveredTs = state.activePayload[0].payload.timestamp;
+          
+          // Find matching update by checking if this timestamp matches start or end
+          const matchingUpdate = sortedUpdates?.find(u => {
+            const endTs = u.thisUpload ? parseGermanDate(u.thisUpload)?.getTime() : null;
+            const startTs = u.lastUpload ? parseGermanDate(u.lastUpload)?.getTime() : null;
+            // Allow 60 second tolerance for matching
+            return (endTs && Math.abs(endTs - hoveredTs) < 60000) || 
+                   (startTs && Math.abs(startTs - hoveredTs) < 60000);
+          });
+          
+          if (matchingUpdate && matchingUpdate.status === 'Update Metrics') {
+            setHoveredUpdateId(`u-${matchingUpdate.version}`);
+          } else {
+            setHoveredUpdateId(null);
+          }
         }
       }
     } else {
