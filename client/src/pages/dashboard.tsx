@@ -2407,33 +2407,61 @@ export default function Dashboard() {
                 )}
               </div>
               
-              {/* Separate Marker Container above Chart - Independent Grid */}
+              {/* Separate Marker Container above Chart - Dynamic Grid aligned with Chart */}
               <div 
-                className="relative h-20 border rounded-sm"
+                className="relative h-20 border rounded-sm overflow-hidden"
                 style={{ 
                   marginLeft: '80px', 
                   marginRight: '30px',
                   marginBottom: '16px',
-                  background: `
-                    repeating-linear-gradient(
-                      90deg,
-                      transparent,
-                      transparent 49px,
-                      hsl(var(--border)) 49px,
-                      hsl(var(--border)) 50px
-                    ),
-                    repeating-linear-gradient(
-                      0deg,
-                      transparent,
-                      transparent 15px,
-                      hsl(var(--border)) 15px,
-                      hsl(var(--border)) 16px
-                    )
-                  `,
                   borderColor: 'hsl(var(--border))'
                 }}
                 data-testid="chart-marker-container"
               >
+                {/* Dynamic vertical grid lines - synced with chart X-axis */}
+                <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                  {/* Horizontal grid lines (static) */}
+                  {[0.25, 0.5, 0.75].map((ratio) => (
+                    <line
+                      key={`h-${ratio}`}
+                      x1="0"
+                      y1={`${ratio * 100}%`}
+                      x2="100%"
+                      y2={`${ratio * 100}%`}
+                      stroke="hsl(var(--border))"
+                      strokeWidth="1"
+                      strokeDasharray="3 3"
+                    />
+                  ))}
+                  
+                  {/* Vertical grid lines - synced with chart xAxisTicks */}
+                  {(() => {
+                    const [domainStart, domainEnd] = xAxisDomain;
+                    if (typeof domainStart !== 'number' || typeof domainEnd !== 'number') return null;
+                    
+                    const domainRange = domainEnd - domainStart;
+                    if (domainRange <= 0) return null;
+                    
+                    // Filter ticks within visible domain
+                    const visibleTicks = xAxisTicks.filter(t => t >= domainStart && t <= domainEnd);
+                    
+                    return visibleTicks.map((tick, i) => {
+                      const xPercent = ((tick - domainStart) / domainRange) * 100;
+                      return (
+                        <line
+                          key={`v-${i}`}
+                          x1={`${xPercent}%`}
+                          y1="0"
+                          x2={`${xPercent}%`}
+                          y2="100%"
+                          stroke="hsl(var(--border))"
+                          strokeWidth="1"
+                          strokeDasharray="3 3"
+                        />
+                      );
+                    });
+                  })()}
+                </svg>
                 {/* Start and End markers will be placed here */}
               </div>
               
