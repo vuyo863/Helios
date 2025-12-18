@@ -3769,21 +3769,9 @@ export default function Dashboard() {
                 </div>
                 
                 {/* Laufzeit (von - bis) */}
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Laufzeit</span>
                   <span className="text-xs">12.01 - 15.01.2025</span>
-                </div>
-                
-                {/* Apply Button - rechts unten */}
-                <div className="flex justify-end">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="h-7 px-3"
-                    data-testid="button-apply-metric"
-                  >
-                    Apply
-                  </Button>
                 </div>
               </Card>
               
@@ -3791,15 +3779,24 @@ export default function Dashboard() {
               <div className="border-t my-2" />
               
               {/* Action Icons Row - Outside inner card */}
-              <div className="flex items-center gap-2" data-testid="metric-action-icons">
-                <Button variant="outline" size="icon" className="h-8 w-8" title="Suchen" data-testid="button-search-metric">
-                  <Search className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren" data-testid="button-analyze-metric">
-                  <LineChartIcon className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" title="Löschen" data-testid="button-delete-metric">
-                  <Trash2 className="h-4 w-4" />
+              <div className="flex items-center justify-between" data-testid="metric-action-icons">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8" title="Suchen" data-testid="button-search-metric">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren" data-testid="button-analyze-metric">
+                    <LineChartIcon className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8" title="Löschen" data-testid="button-delete-metric">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  data-testid="button-apply-metric"
+                >
+                  Apply
                 </Button>
               </div>
             </Card>
