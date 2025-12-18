@@ -2775,8 +2775,11 @@ export default function Dashboard() {
                               return markerHeight + gapHeight + chartY;
                             };
                             
-                            const startY2 = startValue !== null ? (calcChartY(startValue) / markerHeight) * 100 : 500;
-                            const endY2 = endValue !== null ? (calcChartY(endValue) / markerHeight) * 100 : 500;
+                            // Clamp Y2 to minimum 100% (never go above marker container bottom)
+                            const startY2Raw = startValue !== null ? (calcChartY(startValue) / markerHeight) * 100 : 500;
+                            const endY2Raw = endValue !== null ? (calcChartY(endValue) / markerHeight) * 100 : 500;
+                            const startY2 = Math.max(100, startY2Raw);
+                            const endY2 = Math.max(100, endY2Raw);
                             
                             return (
                               <>
