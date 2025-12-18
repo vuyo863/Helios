@@ -3924,15 +3924,26 @@ export default function Dashboard() {
                   const profitText = `${profitValue >= 0 ? '+' : ''}$${profitValue.toFixed(2)}`;
                   const profitColor = profitValue >= 0 ? 'text-green-600' : 'text-red-600';
                   
-                  // Laufzeit: Start bis End Datum
-                  const startDate = update.createdAt ? new Date(update.createdAt) : null;
-                  const endDate = update.timestamp ? new Date(update.timestamp) : null;
-                  const formatDate = (d: Date) => `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
-                  const laufzeitText = startDate && endDate 
-                    ? `${formatDate(startDate)} - ${formatDate(endDate)}`
-                    : endDate 
-                      ? formatDate(endDate)
-                      : '--';
+                  // Laufzeit: From (lastUpload) bis Until (thisUpload)
+                  // Format: "6.12.2025 21:27" -> "06.12.2025"
+                  const formatLaufzeit = (dateStr: string | null | undefined): string => {
+                    if (!dateStr) return '';
+                    // Parse "6.12.2025 21:27" format
+                    const parts = dateStr.split(' ')[0]; // Get date part only
+                    if (!parts) return '';
+                    const [day, month, year] = parts.split('.');
+                    if (!day || !month || !year) return dateStr;
+                    return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+                  };
+                  const fromDate = formatLaufzeit(update.lastUpload);
+                  const untilDate = formatLaufzeit(update.thisUpload);
+                  const laufzeitText = fromDate && untilDate 
+                    ? `${fromDate} - ${untilDate}`
+                    : untilDate 
+                      ? untilDate
+                      : fromDate 
+                        ? fromDate
+                        : '--';
                   
                   return (
                     <>
