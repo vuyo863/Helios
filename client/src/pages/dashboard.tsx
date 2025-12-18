@@ -2700,7 +2700,14 @@ export default function Dashboard() {
                         const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                         
                         const handleClosedClick = () => {
-                          // Auge-Modus: Multi-Select Toggle
+                          // Stift-Modus hat PRIORITÄT - blockiert Auge-Modus
+                          if (markerEditActive) {
+                            setEditSelectedUpdateId(prev => prev === closedKey ? null : closedKey);
+                            // WICHTIG: Hover zurücksetzen bei Klick, damit nur das angeklickte Element blau bleibt
+                            setEditHoveredUpdateId(null);
+                            return; // Blockiere Auge-Modus!
+                          }
+                          // Auge-Modus: Multi-Select Toggle (nur wenn Stift NICHT aktiv)
                           if (markerViewActive) {
                             setLockedUpdateIds(prev => {
                               const newSet = new Set(prev);
@@ -2711,12 +2718,6 @@ export default function Dashboard() {
                               }
                               return newSet;
                             });
-                          }
-                          // Stift-Modus: Single-Select (ersetzt vorherige Auswahl)
-                          if (markerEditActive) {
-                            setEditSelectedUpdateId(prev => prev === closedKey ? null : closedKey);
-                            // WICHTIG: Hover zurücksetzen bei Klick, damit nur das angeklickte Element blau bleibt
-                            setEditHoveredUpdateId(null);
                           }
                         };
                         
@@ -2879,7 +2880,14 @@ export default function Dashboard() {
                       
                       // Click handler
                       const handleClick = () => {
-                        // Auge-Modus: Multi-Select Toggle
+                        // Stift-Modus hat PRIORITÄT - blockiert Auge-Modus
+                        if (markerEditActive) {
+                          setEditSelectedUpdateId(prev => prev === updateKey ? null : updateKey);
+                          // WICHTIG: Hover zurücksetzen bei Klick, damit nur das angeklickte Element blau bleibt
+                          setEditHoveredUpdateId(null);
+                          return; // Blockiere Auge-Modus!
+                        }
+                        // Auge-Modus: Multi-Select Toggle (nur wenn Stift NICHT aktiv)
                         if (markerViewActive) {
                           setLockedUpdateIds(prev => {
                             const newSet = new Set(prev);
@@ -2890,12 +2898,6 @@ export default function Dashboard() {
                             }
                             return newSet;
                           });
-                        }
-                        // Stift-Modus: Single-Select (ersetzt vorherige Auswahl)
-                        if (markerEditActive) {
-                          setEditSelectedUpdateId(prev => prev === updateKey ? null : updateKey);
-                          // WICHTIG: Hover zurücksetzen bei Klick, damit nur das angeklickte Element blau bleibt
-                          setEditHoveredUpdateId(null);
                         }
                       };
                       
