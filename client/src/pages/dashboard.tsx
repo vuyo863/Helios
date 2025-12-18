@@ -366,6 +366,10 @@ export default function Dashboard() {
       setTooltipIsNearPoint(false);
       setTooltipActivePayload(null);
       setTooltipCoordinate(null);
+      // Clear update hover when not near any point
+      if (markerViewActive) {
+        setHoveredUpdateId(null);
+      }
       return;
     }
     
@@ -381,7 +385,28 @@ export default function Dashboard() {
       const distance = Math.sqrt(dx * dx + dy * dy);
       
       // Nur aktivieren wenn innerhalb des Radius
-      setTooltipIsNearPoint(distance <= TOOLTIP_ACTIVATION_RADIUS);
+      const isNearPoint = distance <= TOOLTIP_ACTIVATION_RADIUS;
+      setTooltipIsNearPoint(isNearPoint);
+      
+      // When eye is active and near a point, check if it's an update start/end point
+      if (markerViewActive && isNearPoint && state.activePayload[0]?.payload?.timestamp) {
+        const hoveredTs = state.activePayload[0].payload.timestamp;
+        
+        // Find matching update by checking if this timestamp matches start or end
+        const matchingUpdate = sortedUpdates?.find(u => {
+          const endTs = u.thisUpload ? parseGermanDate(u.thisUpload)?.getTime() : null;
+          const startTs = u.lastUpload ? parseGermanDate(u.lastUpload)?.getTime() : null;
+          // Allow 60 second tolerance for matching
+          return (endTs && Math.abs(endTs - hoveredTs) < 60000) || 
+                 (startTs && Math.abs(startTs - hoveredTs) < 60000);
+        });
+        
+        if (matchingUpdate && matchingUpdate.status === 'Update Metrics') {
+          setHoveredUpdateId(`u-${matchingUpdate.version}`);
+        } else {
+          setHoveredUpdateId(null);
+        }
+      }
     } else {
       setTooltipIsNearPoint(false);
     }
@@ -2675,28 +2700,28 @@ export default function Dashboard() {
                             strokeWidth="2"
                             style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
-                          {/* Dashed lines down to chart when hovered */}
+                          {/* Dashed lines down to chart when hovered - extends into chart area */}
                           {isHovered && (
                             <>
                               <line
                                 x1={`${clampedStartX}%`}
                                 y1={`${yPercent + 4}%`}
                                 x2={`${clampedStartX}%`}
-                                y2="100%"
+                                y2="500%"
                                 stroke="rgb(8, 145, 178)"
                                 strokeWidth="1"
                                 strokeDasharray="4 3"
-                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))' }}
+                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
                               />
                               <line
                                 x1={`${clampedEndX}%`}
                                 y1={`${yPercent + 4}%`}
                                 x2={`${clampedEndX}%`}
-                                y2="100%"
+                                y2="500%"
                                 stroke="rgb(8, 145, 178)"
                                 strokeWidth="1"
                                 strokeDasharray="4 3"
-                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))' }}
+                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
                               />
                             </>
                           )}
