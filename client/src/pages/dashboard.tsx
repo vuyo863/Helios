@@ -4809,70 +4809,79 @@ export default function Dashboard() {
                 Metrik auswählen
               </DialogTitle>
             </DialogHeader>
-            <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-              {(() => {
-                const visibleUpdates = sortedUpdates || [];
-                if (visibleUpdates.length === 0) {
-                  return <p className="text-sm text-muted-foreground py-4 text-center">Keine Metriken verfügbar</p>;
-                }
-                
-                return visibleUpdates.map((update: any) => {
-                  const isClosedBot = update.status === 'Closed Bots';
-                  const key = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
-                  const title = isClosedBot ? `Closed Bot #${update.version}` : `Update #${update.version}`;
-                  const isSelected = editSelectedUpdateId === key;
-                  
-                  // Gesamt Profit berechnen
-                  const profitValue = isClosedBot 
-                    ? parseFloat(update.profit || '0') 
-                    : parseFloat(update.overallGridProfitUsdt || '0');
-                  const profitText = `${profitValue >= 0 ? '+' : ''}$${profitValue.toFixed(2)}`;
-                  const profitColor = profitValue >= 0 ? 'text-green-600' : 'text-red-600';
-                  
-                  // Laufzeit berechnen
-                  const formatLaufzeit = (dateStr: string | null | undefined): string => {
-                    if (!dateStr) return '';
-                    const parts = dateStr.split(' ')[0];
-                    if (!parts) return '';
-                    const [day, month, year] = parts.split('.');
-                    if (!day || !month || !year) return dateStr;
-                    return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
-                  };
-                  const fromDate = formatLaufzeit(update.lastUpload);
-                  const untilDate = formatLaufzeit(update.thisUpload);
-                  const laufzeitText = fromDate && untilDate 
-                    ? `${fromDate} - ${untilDate}`
-                    : untilDate || fromDate || '--';
-                  
-                  return (
-                    <Card 
-                      key={key}
-                      className={cn(
-                        "p-3 cursor-pointer transition-all hover-elevate",
-                        isSelected && "ring-2 ring-cyan-600 bg-cyan-50 dark:bg-cyan-950"
-                      )}
-                      onClick={() => {
-                        setEditSelectedUpdateId(key);
-                        setSearchDialogOpen(false);
-                      }}
-                      data-testid={`search-result-${key}`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold">{title}</span>
-                      </div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">Gesamt Profit</span>
-                        <span className={cn("text-sm font-medium", profitColor)}>{profitText}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Laufzeit</span>
-                        <span className="text-xs">{laufzeitText}</span>
-                      </div>
-                    </Card>
-                  );
-                });
-              })()}
-            </div>
+            {(() => {
+              const visibleUpdates = sortedUpdates || [];
+              const needsScroll = visibleUpdates.length > 3;
+              
+              if (visibleUpdates.length === 0) {
+                return <p className="text-sm text-muted-foreground py-4 text-center">Keine Metriken verfügbar</p>;
+              }
+              
+              return (
+                <div 
+                  className={cn(
+                    "space-y-3 p-1",
+                    needsScroll && "max-h-[320px] overflow-y-auto pr-2"
+                  )}
+                >
+                  {visibleUpdates.map((update: any) => {
+                    const isClosedBot = update.status === 'Closed Bots';
+                    const key = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
+                    const title = isClosedBot ? `Closed Bot #${update.version}` : `Update #${update.version}`;
+                    const isSelected = editSelectedUpdateId === key;
+                    
+                    // Gesamt Profit berechnen
+                    const profitValue = isClosedBot 
+                      ? parseFloat(update.profit || '0') 
+                      : parseFloat(update.overallGridProfitUsdt || '0');
+                    const profitText = `${profitValue >= 0 ? '+' : ''}$${profitValue.toFixed(2)}`;
+                    const profitColor = profitValue >= 0 ? 'text-green-600' : 'text-red-600';
+                    
+                    // Laufzeit berechnen
+                    const formatLaufzeit = (dateStr: string | null | undefined): string => {
+                      if (!dateStr) return '';
+                      const parts = dateStr.split(' ')[0];
+                      if (!parts) return '';
+                      const [day, month, year] = parts.split('.');
+                      if (!day || !month || !year) return dateStr;
+                      return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+                    };
+                    const fromDate = formatLaufzeit(update.lastUpload);
+                    const untilDate = formatLaufzeit(update.thisUpload);
+                    const laufzeitText = fromDate && untilDate 
+                      ? `${fromDate} - ${untilDate}`
+                      : untilDate || fromDate || '--';
+                    
+                    return (
+                      <Card 
+                        key={key}
+                        className={cn(
+                          "p-3 cursor-pointer transition-all hover-elevate",
+                          isSelected && "ring-2 ring-cyan-600 bg-cyan-50 dark:bg-cyan-950"
+                        )}
+                        onClick={() => {
+                          setEditSelectedUpdateId(key);
+                          setSearchDialogOpen(false);
+                        }}
+                        data-testid={`search-result-${key}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold">{title}</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">Gesamt Profit</span>
+                          <span className={cn("text-sm font-medium", profitColor)}>{profitText}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Laufzeit</span>
+                          <span className="text-xs">{laufzeitText}</span>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </DialogContent>
         </Dialog>
 
