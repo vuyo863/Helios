@@ -249,7 +249,7 @@ export default function Dashboard() {
   const [markerViewActive, setMarkerViewActive] = useState(false);
   const [markerEditActive, setMarkerEditActive] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
-  const [lockedUpdateId, setLockedUpdateId] = useState<string | null>(null);
+  const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -2451,7 +2451,7 @@ export default function Dashboard() {
                       const newValue = !markerViewActive;
                       setMarkerViewActive(newValue);
                       if (!newValue) {
-                        setLockedUpdateId(null);
+                        setLockedUpdateIds(new Set());
                         setHoveredUpdateId(null);
                       }
                     }}
@@ -2659,26 +2659,31 @@ export default function Dashboard() {
                       
                       // Update Metrics: Line from start to end with markers
                       const updateKey = `u-${update.version}`;
-                      const isLocked = lockedUpdateId === updateKey;
-                      const isHovered = (hoveredUpdateId === updateKey || isLocked) && markerViewActive;
-                      const strokeColor = isHovered ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
+                      const isLocked = lockedUpdateIds.has(updateKey);
+                      const isHovered = hoveredUpdateId === updateKey && markerViewActive;
+                      const isActive = (isHovered || isLocked) && markerViewActive;
+                      const strokeColor = isActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
                       
-                      // Click handler to toggle lock
+                      // Click handler to toggle lock (add/remove from set)
                       const handleClick = () => {
                         if (!markerViewActive) return;
-                        if (isLocked) {
-                          setLockedUpdateId(null);
-                        } else {
-                          setLockedUpdateId(updateKey);
-                        }
+                        setLockedUpdateIds(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(updateKey)) {
+                            newSet.delete(updateKey);
+                          } else {
+                            newSet.add(updateKey);
+                          }
+                          return newSet;
+                        });
                       };
                       
                       return (
                         <g 
                           key={`u-${i}`}
                           style={{ cursor: markerViewActive ? 'pointer' : 'default', pointerEvents: 'all' }}
-                          onMouseEnter={() => markerViewActive && !lockedUpdateId && setHoveredUpdateId(updateKey)}
-                          onMouseLeave={() => !lockedUpdateId && setHoveredUpdateId(null)}
+                          onMouseEnter={() => markerViewActive && setHoveredUpdateId(updateKey)}
+                          onMouseLeave={() => setHoveredUpdateId(null)}
                           onClick={handleClick}
                         >
                           {/* Invisible wider hitbox for easier hover */}
@@ -2698,7 +2703,7 @@ export default function Dashboard() {
                             y2={`${yPercent}%`}
                             stroke={strokeColor}
                             strokeWidth="2"
-                            style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
+                            style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
                           {/* Start marker (vertical tick) */}
                           <line
@@ -2708,7 +2713,7 @@ export default function Dashboard() {
                             y2={`${yPercent + 4}%`}
                             stroke={strokeColor}
                             strokeWidth="2"
-                            style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
+                            style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
                           {/* End marker (vertical tick) */}
                           <line
@@ -2718,10 +2723,10 @@ export default function Dashboard() {
                             y2={`${yPercent + 4}%`}
                             stroke={strokeColor}
                             strokeWidth="2"
-                            style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
+                            style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
                           {/* Dashed lines down to chart points when hovered */}
-                          {isHovered && (() => {
+                          {isActive && (() => {
                             const chartDataArray = transformedChartData || [];
                             if (chartDataArray.length === 0) return null;
                             
@@ -2833,7 +2838,7 @@ export default function Dashboard() {
                             textAnchor="middle"
                             fontSize={9}
                             fill={strokeColor}
-                            style={isHovered ? { filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.8))' } : {}}
+                            style={isActive ? { filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.8))' } : {}}
                           >
                             {label}
                           </text>
