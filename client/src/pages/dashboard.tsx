@@ -2700,31 +2700,69 @@ export default function Dashboard() {
                             strokeWidth="2"
                             style={isHovered ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
-                          {/* Dashed lines down to chart when hovered - extends into chart area */}
-                          {isHovered && (
-                            <>
-                              <line
-                                x1={`${clampedStartX}%`}
-                                y1={`${yPercent + 4}%`}
-                                x2={`${clampedStartX}%`}
-                                y2="500%"
-                                stroke="rgb(8, 145, 178)"
-                                strokeWidth="1"
-                                strokeDasharray="4 3"
-                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                              />
-                              <line
-                                x1={`${clampedEndX}%`}
-                                y1={`${yPercent + 4}%`}
-                                x2={`${clampedEndX}%`}
-                                y2="500%"
-                                stroke="rgb(8, 145, 178)"
-                                strokeWidth="1"
-                                strokeDasharray="4 3"
-                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                              />
-                            </>
-                          )}
+                          {/* Dashed lines down to chart points when hovered */}
+                          {isHovered && (() => {
+                            // Find chart data values at start and end timestamps
+                            const chartDataArray = transformedChartData || [];
+                            const startPoint = chartDataArray.find(p => Math.abs(p.timestamp - update.startTs) < 60000);
+                            const endPoint = chartDataArray.find(p => Math.abs(p.timestamp - update.endTs) < 60000);
+                            
+                            // Get first active metric to determine Y value
+                            const activeMetric = activeMetricCards[0];
+                            const startValue = startPoint ? (startPoint[activeMetric as keyof typeof startPoint] as number) : null;
+                            const endValue = endPoint ? (endPoint[activeMetric as keyof typeof endPoint] as number) : null;
+                            
+                            // Get Y domain
+                            const [yMin, yMax] = yAxisDomain;
+                            const yMinNum = typeof yMin === 'number' ? yMin : 0;
+                            const yMaxNum = typeof yMax === 'number' ? yMax : 100;
+                            const yRange = yMaxNum - yMinNum;
+                            
+                            // Chart dimensions: 300px height, margins top=5, bottom=20
+                            // Plot area = 275px, starts at 5px from top
+                            // Marker container = 80px, gap = 16px
+                            // So chart starts at 80 + 16 = 96px below marker container top
+                            const markerHeight = 80;
+                            const gapHeight = 16;
+                            const chartTopMargin = 5;
+                            const plotHeight = 275;
+                            
+                            // Calculate Y position in chart area (inverted: higher value = lower Y)
+                            const calcChartY = (value: number) => {
+                              if (yRange === 0) return markerHeight + gapHeight + chartTopMargin + plotHeight / 2;
+                              const relativeValue = (value - yMinNum) / yRange;
+                              const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
+                              return markerHeight + gapHeight + chartY;
+                            };
+                            
+                            const startY2 = startValue !== null ? (calcChartY(startValue) / markerHeight) * 100 : 500;
+                            const endY2 = endValue !== null ? (calcChartY(endValue) / markerHeight) * 100 : 500;
+                            
+                            return (
+                              <>
+                                <line
+                                  x1={`${clampedStartX}%`}
+                                  y1={`${yPercent + 4}%`}
+                                  x2={`${clampedStartX}%`}
+                                  y2={`${startY2}%`}
+                                  stroke="rgb(8, 145, 178)"
+                                  strokeWidth="1"
+                                  strokeDasharray="4 3"
+                                  style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                />
+                                <line
+                                  x1={`${clampedEndX}%`}
+                                  y1={`${yPercent + 4}%`}
+                                  x2={`${clampedEndX}%`}
+                                  y2={`${endY2}%`}
+                                  stroke="rgb(8, 145, 178)"
+                                  strokeWidth="1"
+                                  strokeDasharray="4 3"
+                                  style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                />
+                              </>
+                            );
+                          })()}
                           {/* Label */}
                           <text
                             x={`${(clampedStartX + clampedEndX) / 2}%`}
