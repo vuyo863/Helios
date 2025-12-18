@@ -2579,24 +2579,24 @@ export default function Dashboard() {
                       const clampedEndX = Math.min(100, endX);
                       
                       if (isClosedBot) {
-                        // Closed Bot: Only end marker (circle)
+                        // Closed Bot: Only end marker (circle) - positioned below label
                         return (
                           <g key={`cb-${i}`}>
-                            <circle
-                              cx={`${clampedEndX}%`}
-                              cy={`${yPercent}%`}
-                              r={4}
-                              fill="hsl(var(--muted-foreground))"
-                            />
                             <text
                               x={`${clampedEndX}%`}
-                              y={`${yPercent - 3}%`}
+                              y={`${yPercent - 2}%`}
                               textAnchor="middle"
                               fontSize={9}
                               fill="hsl(var(--muted-foreground))"
                             >
                               {label}
                             </text>
+                            <circle
+                              cx={`${clampedEndX}%`}
+                              cy={`${yPercent + 8}%`}
+                              r={4}
+                              fill="hsl(var(--muted-foreground))"
+                            />
                           </g>
                         );
                       }
