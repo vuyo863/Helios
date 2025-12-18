@@ -2407,17 +2407,27 @@ export default function Dashboard() {
                 )}
               </div>
               
-              {/* Separate Marker Container above Chart - Dynamic Grid aligned with Chart */}
-              <div 
-                className="relative h-20 border rounded-sm overflow-hidden"
-                style={{ 
-                  marginLeft: '80px', 
-                  marginRight: '30px',
-                  marginBottom: '16px',
-                  borderColor: 'hsl(var(--border))'
-                }}
-                data-testid="chart-marker-container"
-              >
+              {/* Marker Section with Left Icons */}
+              <div className="flex" style={{ marginBottom: '16px' }}>
+                {/* Left Icon Panel */}
+                <div className="flex flex-col items-center justify-center gap-1" style={{ width: '80px' }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" data-testid="button-marker-view">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" data-testid="button-marker-edit">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Marker Container - Dynamic Grid aligned with Chart */}
+                <div 
+                  className="relative h-20 border rounded-sm overflow-hidden flex-1"
+                  style={{ 
+                    marginRight: '30px',
+                    borderColor: 'hsl(var(--border))'
+                  }}
+                  data-testid="chart-marker-container"
+                >
                 {/* Dynamic vertical grid lines - synced with chart X-axis */}
                 <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                   {/* Horizontal grid lines (static) */}
@@ -2463,6 +2473,7 @@ export default function Dashboard() {
                   })()}
                 </svg>
                 {/* Start and End markers will be placed here */}
+                </div>
               </div>
               
               {/* Chart Container with Zoom & Pan Events */}
