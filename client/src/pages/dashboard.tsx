@@ -46,7 +46,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -4896,106 +4896,134 @@ export default function Dashboard() {
             </DialogHeader>
 
             {appliedUpdateDetails && (
-              <div className="space-y-6">
+              <div className="space-y-4">
+                {/* 1. Info Section */}
                 <Card>
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-3">Info</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Datum und Uhrzeit</p>
-                        <p className="font-medium">{appliedUpdateDetails.date || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Bot-Richtung</p>
-                        <p className="font-medium">{appliedUpdateDetails.botDirection || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Hebel</p>
-                        <p className="font-medium">{appliedUpdateDetails.leverage || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Anzahl</p>
-                        <p className="font-medium">{appliedUpdateDetails.screenshotCount || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Berechnungsmodus</p>
-                        <p className="font-medium">{appliedUpdateDetails.calculationMode || 'Normal'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Längste Laufzeit</p>
-                        <p className="font-medium">{appliedUpdateDetails.longestRuntime || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Durchschnittliche Laufzeit</p>
-                        <p className="font-medium">{appliedUpdateDetails.avgRuntime || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">
-                          {appliedUpdateDetails.status === 'Closed Bots' ? 'Laufzeit' : 'Upload Laufzeit'}
-                        </p>
-                        <p className="font-medium">{appliedUpdateDetails.uploadRuntime || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">
-                          {appliedUpdateDetails.status === 'Closed Bots' ? 'Start Date' : 'From'}
-                        </p>
-                        <p className="font-medium">{appliedUpdateDetails.lastUpload || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">
-                          {appliedUpdateDetails.status === 'Closed Bots' ? 'End Date' : 'Until'}
-                        </p>
-                        <p className="font-medium">{appliedUpdateDetails.thisUpload || '-'}</p>
-                      </div>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Datum und Uhrzeit</p>
+                      <p className="font-medium">{appliedUpdateDetails.date || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Bot-Richtung</p>
+                      <p className="font-medium">{appliedUpdateDetails.botDirection || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Hebel</p>
+                      <p className="font-medium">{appliedUpdateDetails.leverage || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Anzahl</p>
+                      <p className="font-medium">{appliedUpdateDetails.screenshotCount || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Berechnungsmodus</p>
+                      <p className="font-medium">{appliedUpdateDetails.calculationMode || 'Normal'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Längste Laufzeit</p>
+                      <p className="font-medium">{appliedUpdateDetails.longestRuntime || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Durchschnittliche Laufzeit</p>
+                      <p className="font-medium">{appliedUpdateDetails.avgRuntime || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">
+                        {appliedUpdateDetails.status === 'Closed Bots' ? 'Laufzeit' : 'Upload Laufzeit'}
+                      </p>
+                      <p className="font-medium">{appliedUpdateDetails.uploadRuntime || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">
+                        {appliedUpdateDetails.status === 'Closed Bots' ? 'Start Date' : 'From'}
+                      </p>
+                      <p className="font-medium">{appliedUpdateDetails.lastUpload || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">
+                        {appliedUpdateDetails.status === 'Closed Bots' ? 'End Date' : 'Until'}
+                      </p>
+                      <p className="font-medium">{appliedUpdateDetails.thisUpload || '-'}</p>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* 2. Investment Section */}
                 <Card>
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-3">Investment</h4>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Investitionsmenge (USDT)</p>
-                        <p className="font-medium">{appliedUpdateDetails.investment || '0.00'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Extra Margin</p>
-                        <p className="font-medium">{appliedUpdateDetails.extraMargin || '0.00'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Gesamtinvestment</p>
-                        <p className="font-medium">{appliedUpdateDetails.totalInvestment || '0.00'}</p>
-                      </div>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Investment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Investitionsmenge (USDT)</p>
+                      <p className="font-medium">{appliedUpdateDetails.investment || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Extra Margin</p>
+                      <p className="font-medium">{appliedUpdateDetails.extraMargin || '0.00'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtinvestment</p>
+                      <p className="font-medium">{appliedUpdateDetails.totalInvestment || '0.00'}</p>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* 3. Gesamter Profit / P&L Section */}
                 <Card>
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-3">Gesamter Profit / P&L</h4>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Gesamtprofit (USDT)</p>
-                        <p className={`font-medium ${parseFloat(appliedUpdateDetails.profit || '0') >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {parseFloat(appliedUpdateDetails.profit || '0') >= 0 ? '+' : ''}{parseFloat(appliedUpdateDetails.profit || '0').toFixed(2)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Gesamtinvestment</p>
-                        <p className="font-medium">{appliedUpdateDetails.profitPercent_gesamtinvestment || '-'}%</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Investitionsmenge</p>
-                        <p className="font-medium">{appliedUpdateDetails.profitPercent_investitionsmenge || '-'}%</p>
-                      </div>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Gesamter Profit / P&L</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtprofit (USDT)</p>
+                      <p className={`font-medium ${parseFloat(appliedUpdateDetails.profit || '0') >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {parseFloat(appliedUpdateDetails.profit || '0') >= 0 ? '+' : ''}{parseFloat(appliedUpdateDetails.profit || '0').toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Gesamtinvestment</p>
+                      <p className="font-medium">{appliedUpdateDetails.profitPercent_gesamtinvestment || '-'}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Gesamtprofit (%) - Investitionsmenge</p>
+                      <p className="font-medium">{appliedUpdateDetails.profitPercent_investitionsmenge || '-'}%</p>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* 4. Trend P&L Section */}
                 <Card>
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-3">Grid Trading</h4>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Trend P&L</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Trend P&L (USDT)</p>
+                      <p className="font-medium">{appliedUpdateDetails.overallTrendPnlUsdt || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Trend P&L (%) - Gesamtinvestment</p>
+                      <p className="font-medium">{appliedUpdateDetails.overallTrendPnlPercent_gesamtinvestment || '-'}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Trend P&L (%) - Investitionsmenge</p>
+                      <p className="font-medium">{appliedUpdateDetails.overallTrendPnlPercent_investitionsmenge || '-'}%</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 5. Grid Trading Section - Complete with all sub-sections */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Grid Trading</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Gesamter Grid Profit */}
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Gesamter Grid Profit (USDT)</p>
@@ -5012,7 +5040,28 @@ export default function Dashboard() {
                         <p className="font-medium">{appliedUpdateDetails.overallGridProfitPercent_investitionsmenge || '-'}%</p>
                       </div>
                     </div>
-                    <Separator className="my-4" />
+                    
+                    <Separator />
+                    
+                    {/* Ø Grid Profit */}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit (USDT)</p>
+                        <p className="font-medium">{appliedUpdateDetails.highestGridProfit || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Gesamtinvestment</p>
+                        <p className="font-medium">{appliedUpdateDetails.highestGridProfitPercent_gesamtinvestment || '-'}%</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Ø Grid Profit (%) - Investitionsmenge</p>
+                        <p className="font-medium">{appliedUpdateDetails.highestGridProfitPercent_investitionsmenge || '-'}%</p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    {/* Ø Grid Profit / Zeit */}
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Ø Grid Profit / Stunde</p>
@@ -5027,28 +5076,94 @@ export default function Dashboard() {
                         <p className="font-medium">{appliedUpdateDetails.avgGridProfitWeek || '-'}</p>
                       </div>
                     </div>
+                    
+                    {/* Last Grid Profit Durchschnitt (Zeit) */}
+                    <Separator />
+                    <p className="text-sm font-semibold text-muted-foreground">Last Grid Profit Durchschnitt (Zeit)</p>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Stunde</p>
+                        <p className="font-medium">{appliedUpdateDetails.lastAvgGridProfitHour || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Tag</p>
+                        <p className="font-medium">{appliedUpdateDetails.lastAvgGridProfitDay || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Woche</p>
+                        <p className="font-medium">{appliedUpdateDetails.lastAvgGridProfitWeek || '-'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Change (Differenz zum vorherigen Upload) */}
+                    <Separator />
+                    <p className="text-sm font-semibold text-muted-foreground">Change (Differenz zum vorherigen Upload)</p>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Stunde ($)</p>
+                        <p className="font-medium">{appliedUpdateDetails.changeHourDollar || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Tag ($)</p>
+                        <p className="font-medium">{appliedUpdateDetails.changeDayDollar || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Woche ($)</p>
+                        <p className="font-medium">{appliedUpdateDetails.changeWeekDollar || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Stunde (%)</p>
+                        <p className="font-medium">{appliedUpdateDetails.changeHourPercent ? `${appliedUpdateDetails.changeHourPercent}%` : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Tag (%)</p>
+                        <p className="font-medium">{appliedUpdateDetails.changeDayPercent ? `${appliedUpdateDetails.changeDayPercent}%` : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Woche (%)</p>
+                        <p className="font-medium">{appliedUpdateDetails.changeWeekPercent ? `${appliedUpdateDetails.changeWeekPercent}%` : '-'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Last Upload (Ø Grid Profit) und Change */}
+                    <Separator />
+                    <p className="text-sm font-semibold text-muted-foreground">Last Upload (Ø Grid Profit) und Change</p>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground mb-1">Last Upload (Ø Grid Profit)</p>
+                        <p className="font-medium">{appliedUpdateDetails.lastAvgGridProfitUsdt || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Change ($)</p>
+                        <p className="font-medium">{appliedUpdateDetails.avgGridProfitChangeDollar || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-1">Change (%)</p>
+                        <p className="font-medium">{appliedUpdateDetails.avgGridProfitChangePercent ? `${appliedUpdateDetails.avgGridProfitChangePercent}%` : '-'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Notizen Section */}
+                    {appliedUpdateDetails.notes && (
+                      <>
+                        <Separator />
+                        <div className="text-sm">
+                          <p className="text-muted-foreground mb-2 font-medium">Notizen</p>
+                          <div className="whitespace-pre-wrap bg-muted/30 p-3 rounded-md">
+                            {appliedUpdateDetails.notes}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-3">Trend P&L</h4>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Trend P&L (USDT)</p>
-                        <p className="font-medium">{appliedUpdateDetails.overallTrendPnlUsdt || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Trend P&L (%) - Gesamtinvestment</p>
-                        <p className="font-medium">{appliedUpdateDetails.overallTrendPnlPercent_gesamtinvestment || '-'}%</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Trend P&L (%) - Investitionsmenge</p>
-                        <p className="font-medium">{appliedUpdateDetails.overallTrendPnlPercent_investitionsmenge || '-'}%</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Erstellt am */}
+                <div className="text-xs text-muted-foreground text-center">
+                  Erstellt am: {appliedUpdateDetails.createdAt ? new Date(appliedUpdateDetails.createdAt as Date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                </div>
               </div>
             )}
           </DialogContent>
