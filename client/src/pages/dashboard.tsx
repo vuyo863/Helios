@@ -246,6 +246,8 @@ export default function Dashboard() {
   const [updateSortBy, setUpdateSortBy] = useState<'datum' | 'gridProfit' | 'gridProfit24h' | 'gesInvest'>('datum');
   const [updateSortDirection, setUpdateSortDirection] = useState<'desc' | 'asc'>('desc');
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
+  const [markerViewActive, setMarkerViewActive] = useState(false);
+  const [markerEditActive, setMarkerEditActive] = useState(false);
   
   // Update-Auswahl Bestätigungs-Status: 'idle' | 'editing' | 'confirmed'
   const [updateSelectionMode, setUpdateSelectionMode] = useState<'idle' | 'editing' | 'confirmed'>('idle');
@@ -2411,10 +2413,28 @@ export default function Dashboard() {
               <div className="flex" style={{ marginBottom: '16px' }}>
                 {/* Left Icon Panel */}
                 <div className="flex flex-col items-center justify-center gap-1" style={{ width: '80px' }}>
-                  <Button variant="outline" size="icon" className="h-7 w-7" data-testid="button-marker-view">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className={cn(
+                      "h-7 w-7",
+                      markerViewActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                    )}
+                    onClick={() => setMarkerViewActive(!markerViewActive)}
+                    data-testid="button-marker-view"
+                  >
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" className="h-7 w-7" data-testid="button-marker-edit">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className={cn(
+                      "h-7 w-7",
+                      markerEditActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                    )}
+                    onClick={() => setMarkerEditActive(!markerEditActive)}
+                    data-testid="button-marker-edit"
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </div>
