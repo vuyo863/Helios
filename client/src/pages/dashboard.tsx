@@ -3205,26 +3205,42 @@ export default function Dashboard() {
           {/* Right Column - Two Cards stacked, stretches to match left column height */}
           <div className="flex flex-col flex-shrink-0">
             {/* Upper Card - Selected Metric Preview (fills space above Graph-Einstellungen) */}
-            <Card className="p-4 w-[296px] mb-4 flex-1">
-              {/* Selected Metric Display */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
+            <Card className="p-4 w-[296px] mb-4 flex-1 flex flex-col">
+              {/* Inner Content Card - Update/Closed Bot Details */}
+              <Card className="p-3 mb-3" data-testid="card-selected-metric">
+                {/* Header: Title + Eye Icon */}
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold">Update #5</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Vorschau" data-testid="button-preview-metric">
+                    <Eye className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="Vorschau">
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </div>
+                
+                {/* Gesamt Profit */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">Gesamt Profit</span>
+                  <span className="text-sm font-medium text-green-600">+$245.50</span>
+                </div>
+                
+                {/* Laufzeit (von - bis) */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Laufzeit</span>
+                  <span className="text-xs">12.01 - 15.01.2025</span>
+                </div>
+              </Card>
               
-              {/* Action Icons Row */}
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8" title="Suchen">
+              {/* Separator */}
+              <div className="border-t my-2" />
+              
+              {/* Action Icons Row - Outside inner card */}
+              <div className="flex items-center gap-2" data-testid="metric-action-icons">
+                <Button variant="outline" size="icon" className="h-8 w-8" title="Suchen" data-testid="button-search-metric">
                   <Search className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren">
+                <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren" data-testid="button-analyze-metric">
                   <LineChartIcon className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" title="Löschen">
+                <Button variant="outline" size="icon" className="h-8 w-8" title="Löschen" data-testid="button-delete-metric">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
