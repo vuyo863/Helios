@@ -3420,6 +3420,66 @@ export default function Dashboard() {
                           />
                           {/* Dashed lines down to chart points when hovered */}
                           {isActive && (() => {
+                            // COMPARE MODUS: Verwende compareChartData
+                            if (isMultiSelectCompareMode) {
+                              const chartDataArray = compareChartData.data || [];
+                              if (chartDataArray.length === 0) return null;
+                              
+                              // Get Y domain
+                              let yMinNum: number, yMaxNum: number;
+                              const [yMin, yMax] = yAxisDomain;
+                              if (typeof yMin === 'number' && typeof yMax === 'number') {
+                                yMinNum = yMin;
+                                yMaxNum = yMax;
+                              } else {
+                                return null;
+                              }
+                              const yRange = yMaxNum - yMinNum;
+                              
+                              const markerHeight = 80;
+                              const gapHeight = 16;
+                              const chartTopMargin = 5;
+                              const plotHeight = 225;
+                              
+                              const calcChartY = (value: number) => {
+                                if (yRange === 0) return markerHeight + gapHeight + chartTopMargin + plotHeight / 2;
+                                const relativeValue = (value - yMinNum) / yRange;
+                                const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
+                                return markerHeight + gapHeight + chartY;
+                              };
+                              
+                              const startY2Raw = calcChartY(0);
+                              const endY2Raw = calcChartY(0);
+                              const startY2 = Math.max(100, (startY2Raw / markerHeight) * 100);
+                              const endY2 = Math.max(100, (endY2Raw / markerHeight) * 100);
+                              
+                              return (
+                                <>
+                                  <line
+                                    x1={`${clampedStartX}%`}
+                                    y1={`${yPercent + 4}%`}
+                                    x2={`${clampedStartX}%`}
+                                    y2={`${startY2}%`}
+                                    stroke="rgb(8, 145, 178)"
+                                    strokeWidth="1"
+                                    strokeDasharray="4 3"
+                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                  />
+                                  <line
+                                    x1={`${clampedEndX}%`}
+                                    y1={`${yPercent + 4}%`}
+                                    x2={`${clampedEndX}%`}
+                                    y2={`${endY2}%`}
+                                    stroke="rgb(8, 145, 178)"
+                                    strokeWidth="1"
+                                    strokeDasharray="4 3"
+                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                  />
+                                </>
+                              );
+                            }
+                            
+                            // NORMALER MODUS
                             const chartDataArray = transformedChartData || [];
                             if (chartDataArray.length === 0) return null;
                             
