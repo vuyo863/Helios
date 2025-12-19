@@ -3166,7 +3166,10 @@ export default function Dashboard() {
                       
                       if (isClosedBot) {
                         // Closed Bot: Only end marker (circle) - positioned below label
-                        const closedKey = `c-${update.version}`;
+                        // Im Compare-Modus: BotTypeId in den Key aufnehmen für eindeutige Zuordnung
+                        const closedKey = isMultiSelectCompareMode && update.botTypeId 
+                          ? `${update.botTypeId}:c-${update.version}` 
+                          : `c-${update.version}`;
                         
                         // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus UND appliedUpdateId
                         let isClosedActive = false;
@@ -3440,7 +3443,10 @@ export default function Dashboard() {
                       }
                       
                       // Update Metrics: Line from start to end with markers
-                      const updateKey = `u-${update.version}`;
+                      // Im Compare-Modus: BotTypeId in den Key aufnehmen für eindeutige Zuordnung
+                      const updateKey = isMultiSelectCompareMode && update.botTypeId 
+                        ? `${update.botTypeId}:u-${update.version}` 
+                        : `u-${update.version}`;
                       
                       // Stift-Modus hat Priorität - wenn aktiv, ignoriere Auge-Modus UND appliedUpdateId
                       let isActive = false;
@@ -4494,45 +4500,61 @@ export default function Dashboard() {
                             const dotTimestamp = payload?.timestamp;
                             
                             // Finde den passenden Update-Key für diesen Punkt
+                            // Im Compare-Modus: Bot-Type-ID im Key für eindeutige Zuordnung
+                            // WICHTIG: Nur der EXAKTE Punkt soll matchen, nicht alle in der Nähe
+                            // KRITISCH: Prüfe ob dieser Punkt für DIESEN Bot-Type relevant ist
+                            const pointBotTypeName = payload?.botTypeName;
+                            const isStartPoint = payload?.isStartPoint === true;
+                            const pointValue = payload?.[botTypeName];
+                            
+                            // Nur Punkte für DIESEN Bot-Type können matchen
+                            // MUSS sowohl den richtigen botTypeName haben ALS AUCH einen Wert (nicht null)
+                            const isRelevantPoint = pointBotTypeName === botTypeName && pointValue !== null && pointValue !== undefined;
+                            
                             const findMatchingUpdateKey = () => {
-                              if (!dotTimestamp || !botTypeId) return null;
-                              // Durchsuche allBotTypeUpdates nach passendem Update
+                              // WICHTIG: Nur Punkte die zu diesem Bot-Type gehören können matchen
+                              if (!dotTimestamp || !botTypeId || !isRelevantPoint) return null;
+                              
+                              // Durchsuche allBotTypeUpdates nach passendem Update - NUR für diesen Bot-Type
                               const relevantUpdates = allBotTypeUpdates.filter(u => 
                                 String(u.botTypeId) === String(botTypeId)
                               );
                               
-                              // Finde das BESTE Match (kleinstes Delta)
-                              let bestMatch: { key: string; delta: number } | null = null;
-                              
+                              // Finde NUR exakte Matches
                               for (const update of relevantUpdates) {
                                 const endTs = update.thisUpload ? parseGermanDate(update.thisUpload)?.getTime() || 0 : 0;
                                 const startTs = update.lastUpload ? parseGermanDate(update.lastUpload)?.getTime() || 0 : endTs;
-                                const isClosedBot = update.status === 'Closed Bots';
-                                const key = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
+                                const isClosedBotUpdate = update.status === 'Closed Bots';
+                                // Im Compare-Modus: BotTypeId in den Key aufnehmen
+                                const key = isClosedBotUpdate 
+                                  ? `${botTypeId}:c-${update.version}` 
+                                  : `${botTypeId}:u-${update.version}`;
                                 
-                                // Bei Closed Bots: NUR End-Punkt zählt
-                                if (isClosedBot) {
+                                // Bei Closed Bots: NUR der End-Punkt zählt (NICHT Start-Punkt!)
+                                if (isClosedBotUpdate) {
+                                  // Closed Bots: Nur End-Punkt, NICHT Start-Punkt
+                                  if (isStartPoint) continue; // Skip Start-Punkte bei Closed Bots
+                                  
                                   const endDelta = Math.abs(endTs - dotTimestamp);
-                                  if (endDelta < 3600000) { // 1 Stunde Toleranz für exakten Match
-                                    if (!bestMatch || endDelta < bestMatch.delta) {
-                                      bestMatch = { key, delta: endDelta };
-                                    }
+                                  if (endDelta < 60000) { // 60 Sekunden Toleranz
+                                    return key;
                                   }
                                 } else {
                                   // Normale Updates: Start ODER Ende
                                   const startDelta = Math.abs(startTs - dotTimestamp);
                                   const endDelta = Math.abs(endTs - dotTimestamp);
-                                  const minDelta = Math.min(startDelta, endDelta);
                                   
-                                  if (minDelta < 3600000) { // 1 Stunde Toleranz
-                                    if (!bestMatch || minDelta < bestMatch.delta) {
-                                      bestMatch = { key, delta: minDelta };
-                                    }
+                                  // Prüfe ob dieser Punkt zum Start oder Ende gehört
+                                  if (isStartPoint && startDelta < 60000) {
+                                    return key;
+                                  }
+                                  if (!isStartPoint && endDelta < 60000) {
+                                    return key;
                                   }
                                 }
                               }
                               
-                              return bestMatch?.key || null;
+                              return null;
                             };
                             
                             const matchingKey = markerViewActive ? findMatchingUpdateKey() : null;
