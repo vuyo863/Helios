@@ -1429,6 +1429,89 @@ export default function Dashboard() {
   // - Wochen → TAGES-Ticks (!), Labels = Datum + ab und zu KW
   // - Monate → TAGES-Ticks (!), Labels = Datum + ab und zu Monat
   const xAxisTicks = useMemo(() => {
+    // ANALYSIEREN-MODUS: Spezielle Tick-Generierung für 10-12 Ticks
+    if (analyzeModeBounds) {
+      const { startTs, endTs } = analyzeModeBounds;
+      const durationMs = endTs - startTs;
+      const durationHours = durationMs / (1000 * 60 * 60);
+      const durationDays = durationHours / 24;
+      
+      // Ziel: 10-12 Ticks
+      const targetTicks = 10;
+      
+      // Berechne ideales Intervall basierend auf Zeitspanne
+      let tickInterval: number;
+      let useHourFormat = false;
+      
+      if (durationHours <= 6) {
+        // < 6 Stunden: 30-Minuten-Intervalle
+        tickInterval = 30 * 60 * 1000;
+        useHourFormat = true;
+      } else if (durationHours <= 24) {
+        // < 1 Tag: 2-Stunden-Intervalle
+        tickInterval = 2 * 60 * 60 * 1000;
+        useHourFormat = true;
+      } else if (durationDays <= 3) {
+        // 1-3 Tage: 6-Stunden-Intervalle
+        tickInterval = 6 * 60 * 60 * 1000;
+        useHourFormat = true;
+      } else if (durationDays <= 7) {
+        // 3-7 Tage: 12-Stunden-Intervalle
+        tickInterval = 12 * 60 * 60 * 1000;
+        useHourFormat = true;
+      } else if (durationDays <= 14) {
+        // 1-2 Wochen: Tages-Intervalle
+        tickInterval = 24 * 60 * 60 * 1000;
+      } else if (durationDays <= 60) {
+        // 2-8 Wochen: 2-Tages-Intervalle
+        tickInterval = 2 * 24 * 60 * 60 * 1000;
+      } else {
+        // > 2 Monate: 1-Wochen-Intervalle
+        tickInterval = 7 * 24 * 60 * 60 * 1000;
+      }
+      
+      // Generiere Ticks
+      const ticks: number[] = [];
+      
+      // Starte genau bei startTs
+      ticks.push(startTs);
+      
+      // Runde den nächsten Tick auf sinnvolle Zeit
+      const startDate = new Date(startTs);
+      let roundedStart: Date;
+      
+      if (useHourFormat && tickInterval < 24 * 60 * 60 * 1000) {
+        // Bei Stunden-Format: runde auf nächste volle Stunde
+        roundedStart = new Date(startDate);
+        roundedStart.setMinutes(0, 0, 0);
+        if (roundedStart.getTime() <= startTs) {
+          roundedStart = new Date(roundedStart.getTime() + 60 * 60 * 1000);
+        }
+      } else {
+        // Bei Tages-Format: runde auf nächsten Mitternacht
+        roundedStart = new Date(startDate);
+        roundedStart.setHours(0, 0, 0, 0);
+        if (roundedStart.getTime() <= startTs) {
+          roundedStart = new Date(roundedStart.getTime() + 24 * 60 * 60 * 1000);
+        }
+      }
+      
+      let currentTs = roundedStart.getTime();
+      
+      while (currentTs < endTs) {
+        ticks.push(currentTs);
+        currentTs += tickInterval;
+      }
+      
+      // Füge endTs hinzu wenn nicht schon vorhanden
+      if (ticks[ticks.length - 1] !== endTs) {
+        ticks.push(endTs);
+      }
+      
+      return ticks;
+    }
+    
+    // NORMALER MODUS: Originale Logik
     if (!chartData || chartData.length === 0) return [];
     
     const timestamps = chartData.map(d => d.timestamp).filter(t => t > 0);
@@ -1488,7 +1571,7 @@ export default function Dashboard() {
     }
     
     return ticks;
-  }, [chartData, appliedChartSettings?.sequence, chartZoomX]);
+  }, [chartData, appliedChartSettings?.sequence, chartZoomX, analyzeModeBounds]);
 
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
