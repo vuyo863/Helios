@@ -3053,7 +3053,7 @@ export default function Dashboard() {
                     if (domainRange <= 0) return null;
                     
                     // Get updates - Compare Mode: alle ausgewählten Bot-Types, sonst nur sortedUpdates
-                    const updateRanges: { version: number; status: string; startTs: number; endTs: number; botTypeName?: string }[] = [];
+                    const updateRanges: { version: number; status: string; startTs: number; endTs: number; botTypeName?: string; botTypeId?: string }[] = [];
                     
                     // COMPARE MODUS: Alle Updates von allen ausgewählten Bot-Types
                     let filteredUpdates: typeof sortedUpdates = [];
@@ -3118,6 +3118,7 @@ export default function Dashboard() {
                           status: update.status || 'Update Metrics',
                           startTs: startTs || endTs,
                           endTs,
+                          botTypeId: update.botTypeId ? String(update.botTypeId) : undefined,
                         });
                         prevEndTs = endTs;
                       }
@@ -3361,7 +3362,16 @@ export default function Dashboard() {
                         const isApplied = appliedUpdateId === updateKey;
                         if (isApplied) isActive = true;
                       }
-                      const strokeColor = isActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
+                      // Farbe: Aktiv = neonblau, sonst grau ODER im Compare-Modus die Bot-Type-Farbe
+                      let strokeColor: string;
+                      if (isActive) {
+                        strokeColor = "rgb(8, 145, 178)"; // Neonblau wenn aktiv/gehoverd
+                      } else if (isMultiSelectCompareMode && update.botTypeId) {
+                        // Compare-Modus: Verwende die Farbe des Bot-Types
+                        strokeColor = compareColorMap[update.botTypeId] || "hsl(var(--muted-foreground))";
+                      } else {
+                        strokeColor = "hsl(var(--muted-foreground))"; // Grau als Default
+                      }
                       
                       // Click handler
                       const handleClick = () => {
