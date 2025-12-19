@@ -3654,6 +3654,7 @@ export default function Dashboard() {
                       return true;
                     }) : undefined}
                     interval={0}
+                    minTickGap={isMultiSelectCompareMode ? 30 : 50}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                     height={70}
@@ -3666,6 +3667,24 @@ export default function Dashboard() {
                       
                       const date = new Date(payload.value);
                       const baseSequence = appliedChartSettings?.sequence || 'days';
+                      
+                      // COMPARE MODUS: Einfache Datumsformatierung
+                      if (isMultiSelectCompareMode) {
+                        const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <text
+                              x={0}
+                              y={12}
+                              textAnchor="middle"
+                              fill="hsl(var(--muted-foreground))"
+                              fontSize={10}
+                            >
+                              {dateStr}
+                            </text>
+                          </g>
+                        );
+                      }
                       
                       // ANALYSIEREN-MODUS: Adaptive Time Axis mit dynamischer Zeitauflösung
                       // Formatierung basiert auf Zeitspanne, nicht auf sequence-Einstellung
