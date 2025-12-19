@@ -3909,10 +3909,10 @@ export default function Dashboard() {
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     tickSize={8}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                    tickCount={Math.min(15, Math.max(5, Math.floor(chartZoomY * 3)))}
+                    tickCount={isMultiSelectCompareMode ? 8 : Math.min(15, Math.max(5, Math.floor(chartZoomY * 3)))}
                     tickFormatter={(value) => {
                       // Bei höherem Zoom mehr Dezimalstellen anzeigen
-                      const decimals = chartZoomY >= 5 ? 4 : chartZoomY >= 3 ? 3 : 2;
+                      const decimals = isMultiSelectCompareMode ? 2 : (chartZoomY >= 5 ? 4 : chartZoomY >= 3 ? 3 : 2);
                       return value.toLocaleString('de-DE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
                     }}
                   />
