@@ -104,28 +104,70 @@ const compareColorMap = useMemo(() => {
 
 ---
 
-## 5. AKTUELLER BUG (IN ARBEIT)
+## 5. ANALYZE SINGLE METRIC MODE (Neu: 2025-12-19)
 
-### 5.1 Problem
+### 5.1 Konzept
+"Ausnahmezustand" innerhalb des Compare-Modus: Wenn Analyze Mode aktiviert wird mit einem Metrik aus Compare Mode (Key enthält `:` wie `{botTypeId}:u-{version}`), wird:
+1. Compare Mode Rendering verlassen (normaler Single-Bot Chart)
+2. Nur die Daten dieser einzelnen Metrik vom Start- bis Enddatum angezeigt
+3. Content Cards mit den Werten der Metrik befüllt
+4. Normale Metric Card Nutzung ermöglicht
+
+### 5.2 States & Flags
+```typescript
+// Erkennung: Key enthält `:` = Compare-Format
+const isAnalyzeSingleMetricMode = analyzeMode && appliedUpdateId?.includes(':');
+
+// Extrahiere Bot-Type-Info aus dem Key
+const analyzeSingleMetricInfo = useMemo(() => {
+  if (!isAnalyzeSingleMetricMode) return null;
+  const colonIndex = appliedUpdateId.indexOf(':');
+  const botTypeId = appliedUpdateId.substring(0, colonIndex);
+  // ... Rest-Logik
+}, [analyzeMode, appliedUpdateId, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes]);
+
+// Override für effectiveSelectedBotTypeData
+const effectiveSelectedBotTypeData = isAnalyzeSingleMetricMode && analyzeSingleMetricInfo?.botType
+  ? analyzeSingleMetricInfo.botType
+  : selectedBotTypeData;
+```
+
+### 5.3 Kritische Overrides
+1. **isMultiSelectCompareMode**: Wird `false` wenn `isAnalyzeSingleMetricMode = true`
+2. **effectiveBotTypeIdForQuery**: Extrahiert BotType-ID aus Compare-Key für API-Query
+3. **xAxisDomain / xAxisTicks**: `analyzeModeBounds` hat höhere Priorität als Compare-Mode
+4. **Content Cards**: Verwenden `analyzeSingleMetricValues` statt aggregierte Werte
+
+### 5.4 Exit-Mechanismus
+Wenn `analyzeMode` auf `false` gesetzt wird:
+- `isAnalyzeSingleMetricMode` wird automatisch `false`
+- `isMultiSelectCompareMode` wird wieder `true` (wenn 2+ Bot-Types ausgewählt)
+- Compare Mode Rendering wird wiederhergestellt
+
+---
+
+## 6. AKTUELLER BUG (IN ARBEIT)
+
+### 6.1 Problem
 Im Compare-Modus + Auge-Modus: Hover über Closed Bot Marker (C1) aktiviert 3 Punkte statt 1.
 
-### 5.2 Ursache
+### 6.2 Ursache
 1. compareChartData erstellt ZWEI Punkte (Start + Ende) für JEDEN Update
 2. Auch für Closed Bots werden zwei Punkte erstellt
 3. findMatchingUpdateKey findet mehrere Punkte innerhalb Zeittoleranz
 
-### 5.3 Bisherige Fix-Versuche
+### 6.3 Bisherige Fix-Versuche
 1. BotTypeId in Key: `${botTypeId}:c-${version}` ✅
 2. isRelevantPoint Prüfung: `pointBotTypeName === botTypeName` ✅
 3. Start-Punkte überspringen bei Closed Bots ✅
 4. **Nicht ausreichend** - Bug besteht weiterhin
 
-### 5.4 Empfohlene Lösung (NICHT implementiert)
+### 6.4 Empfohlene Lösung (NICHT implementiert)
 1. compareChartData refaktorieren: Für Closed Bots NUR End-Punkt erstellen
 2. `updateKeyWithBotType` im Payload speichern für direktes Key-Matching
 3. Statt Zeitstempel-Matching: Direkte Key-Vergleiche
 
-### 5.5 Relevante Code-Stellen
+### 6.5 Relevante Code-Stellen
 - dashboard.tsx ~880-1015: compareChartData useMemo
 - dashboard.tsx ~3167-3175: Closed Bot Marker Key
 - dashboard.tsx ~4505-4560: findMatchingUpdateKey Funktion
@@ -133,7 +175,7 @@ Im Compare-Modus + Auge-Modus: Hover über Closed Bot Marker (C1) aktiviert 3 Pu
 
 ---
 
-## 6. STATE-ÜBERSICHT
+## 7. STATE-ÜBERSICHT
 
 ```typescript
 // Modus-States
@@ -155,23 +197,23 @@ selectedChartBotTypes: string[]
 
 ---
 
-## 7. PRIORITÄTEN-REIHENFOLGE
+## 8. PRIORITÄTEN-REIHENFOLGE
 1. Stift-Modus → Hat IMMER Vorrang
 2. Auge-Modus → Nur wenn Stift NICHT aktiv
 3. appliedUpdateId → Nur wenn BEIDE Modi inaktiv
 
 ---
 
-## 8. CLOSED BOTS REGELN
+## 9. CLOSED BOTS REGELN
 - NUR End-Punkt (kein Start)
 - Hohler Kreis: `fill="hsl(var(--background))"` + `stroke={color}`
 - Compare-Modus Key: `${botTypeId}:c-${version}`
 
 ---
 
-## 9. BEHOBENE FEHLER (NIEMALS WIEDERHOLEN!)
+## 10. BEHOBENE FEHLER (NIEMALS WIEDERHOLEN!)
 
-### 9.1 CONNECTION ISSUE CLOSED BOT (Fix: 2025-12-19)
+### 10.1 CONNECTION ISSUE CLOSED BOT (Fix: 2025-12-19)
 **Problem:** Im Compare-Modus wurden für Closed Bot Marker ZWEI Kreise angezeigt statt einem.
 **Ursache:** 
 1. Marker-SVG (Zeilen ~3437-3447) zeichnete einen manuellen Kreis am Chart-Punkt
