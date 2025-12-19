@@ -255,6 +255,8 @@ export default function Dashboard() {
   const [editSelectedUpdateId, setEditSelectedUpdateId] = useState<string | null>(null);
   // Nach Apply: das bestätigte Update wird dauerhaft blau angezeigt
   const [appliedUpdateId, setAppliedUpdateId] = useState<string | null>(null);
+  // Analysieren-Modus: zeigt nur das eine ausgewählte Update im Graph
+  const [analyzeMode, setAnalyzeMode] = useState(false);
   // Such-Dialog für Metrik-Auswahl
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   // Detail-Dialog für angewandte Metrik (Auge-Button)
