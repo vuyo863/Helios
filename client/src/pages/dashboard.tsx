@@ -5975,7 +5975,24 @@ export default function Dashboard() {
               </DialogTitle>
             </DialogHeader>
             {(() => {
-              const visibleUpdates = sortedUpdates || [];
+              // Compare-Modus: Alle Updates der ausgewählten Bot-Types
+              // Normal-Modus: Nur sortedUpdates des einen Bot-Types
+              const isCompareMode = selectedChartBotTypes.length >= 2;
+              
+              let visibleUpdates: any[] = [];
+              if (isCompareMode) {
+                // Alle Updates der ausgewählten Bot-Types
+                visibleUpdates = (allBotTypeUpdates || [])
+                  .filter((u: BotTypeUpdate) => selectedChartBotTypes.includes(u.botTypeId))
+                  .sort((a: BotTypeUpdate, b: BotTypeUpdate) => {
+                    const dateA = a.thisUpload ? new Date(a.thisUpload).getTime() : 0;
+                    const dateB = b.thisUpload ? new Date(b.thisUpload).getTime() : 0;
+                    return dateB - dateA; // Neueste zuerst
+                  });
+              } else {
+                visibleUpdates = sortedUpdates || [];
+              }
+              
               const needsScroll = visibleUpdates.length > 3;
               
               if (visibleUpdates.length === 0) {
@@ -5991,8 +6008,16 @@ export default function Dashboard() {
                 >
                   {visibleUpdates.map((update: any) => {
                     const isClosedBot = update.status === 'Closed Bots';
-                    const key = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
-                    const title = isClosedBot ? `Closed Bot #${update.version}` : `Update #${update.version}`;
+                    // Compare-Modus: Key mit botTypeId-Prefix
+                    // Normal-Modus: Einfaches Key-Format
+                    const baseKey = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
+                    const key = isCompareMode && update.botTypeId ? `${update.botTypeId}:${baseKey}` : baseKey;
+                    
+                    // Im Compare-Modus: Bot-Type-Name zum Titel hinzufügen
+                    const botTypeName = update.botTypeId ? availableBotTypes.find(bt => bt.id === update.botTypeId)?.name : null;
+                    const baseTitle = isClosedBot ? `Closed Bot #${update.version}` : `Update #${update.version}`;
+                    const title = isCompareMode && botTypeName ? `${botTypeName}: ${baseTitle}` : baseTitle;
+                    
                     const isSelected = editSelectedUpdateId === key;
                     
                     // Gesamt Profit berechnen
