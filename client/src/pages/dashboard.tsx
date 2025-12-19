@@ -4482,6 +4482,63 @@ export default function Dashboard() {
                             // Prüfe ob dieser Datenpunkt ein Closed Bot für diesen Bot-Type ist
                             const closedStatusKey = `${botTypeName}_status`;
                             const isClosedBot = payload?.[closedStatusKey] === 'Closed Bots';
+                            const dotTimestamp = payload?.timestamp;
+                            
+                            // Finde den passenden Update-Key für diesen Punkt
+                            const findMatchingUpdateKey = () => {
+                              if (!dotTimestamp || !botTypeId) return null;
+                              // Durchsuche allBotTypeUpdates nach passendem Update
+                              const relevantUpdates = allBotTypeUpdates.filter(u => 
+                                String(u.botTypeId) === String(botTypeId)
+                              );
+                              for (const update of relevantUpdates) {
+                                const endTs = update.thisUpload ? parseGermanDate(update.thisUpload)?.getTime() || 0 : 0;
+                                const startTs = update.lastUpload ? parseGermanDate(update.lastUpload)?.getTime() || 0 : endTs;
+                                // Prüfe ob der Timestamp zum Start oder Ende passt
+                                const isStart = Math.abs(startTs - dotTimestamp) < 86400000; // 1 Tag Toleranz
+                                const isEnd = Math.abs(endTs - dotTimestamp) < 86400000;
+                                if (isStart || isEnd) {
+                                  return update.status === 'Closed Bots' ? `c-${update.version}` : `u-${update.version}`;
+                                }
+                              }
+                              return null;
+                            };
+                            
+                            const matchingKey = markerViewActive ? findMatchingUpdateKey() : null;
+                            const isPointActive = matchingKey && (hoveredUpdateId === matchingKey || lockedUpdateIds.has(matchingKey));
+                            
+                            // Hover-Handler für bidirektionale Interaktion
+                            const handleDotMouseEnter = () => {
+                              if (markerViewActive && matchingKey) {
+                                setHoveredUpdateId(matchingKey);
+                              }
+                            };
+                            const handleDotMouseLeave = () => {
+                              if (markerViewActive) {
+                                setHoveredUpdateId(null);
+                              }
+                            };
+                            const handleDotClick = () => {
+                              if (markerViewActive && matchingKey) {
+                                setLockedUpdateIds(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(matchingKey)) {
+                                    newSet.delete(matchingKey);
+                                  } else {
+                                    newSet.add(matchingKey);
+                                  }
+                                  return newSet;
+                                });
+                              }
+                            };
+                            
+                            // Aktiver Punkt: Neon-Blau Glow
+                            const activeStyle = isPointActive ? { 
+                              filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))',
+                              cursor: 'pointer'
+                            } : { cursor: markerViewActive ? 'pointer' : 'default' };
+                            const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : lineColor;
+                            const activeStrokeWidth = isPointActive ? 3 : 2;
                             
                             if (isClosedBot) {
                               // Closed Bots: Hohler Kreis (nur Rand, kein Fill)
@@ -4492,9 +4549,13 @@ export default function Dashboard() {
                                   cy={cy}
                                   r={dotR + 1}
                                   fill="hsl(var(--background))"
-                                  stroke={lineColor}
-                                  strokeWidth={2}
+                                  stroke={activeStroke}
+                                  strokeWidth={activeStrokeWidth}
                                   strokeOpacity={strokeOpacity}
+                                  style={activeStyle}
+                                  onMouseEnter={handleDotMouseEnter}
+                                  onMouseLeave={handleDotMouseLeave}
+                                  onClick={handleDotClick}
                                 />
                               );
                             }
@@ -4505,10 +4566,14 @@ export default function Dashboard() {
                                 key={`dot-compare-${payload?.timestamp}-${botTypeName}`}
                                 cx={cx}
                                 cy={cy}
-                                r={dotR}
-                                fill={lineColor}
-                                stroke={lineColor}
+                                r={isPointActive ? dotR + 1 : dotR}
+                                fill={isPointActive ? 'rgb(8, 145, 178)' : lineColor}
+                                stroke={activeStroke}
                                 strokeOpacity={strokeOpacity}
+                                style={activeStyle}
+                                onMouseEnter={handleDotMouseEnter}
+                                onMouseLeave={handleDotMouseLeave}
+                                onClick={handleDotClick}
                               />
                             );
                           }}
