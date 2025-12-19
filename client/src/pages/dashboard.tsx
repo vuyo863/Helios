@@ -1641,6 +1641,25 @@ export default function Dashboard() {
       return [];
     }
     
+    // ANALYSIEREN-MODUS: Nur das ausgewählte Update für StatCards verwenden
+    if (analyzeMode && appliedUpdateId) {
+      // Parse Update-ID: "u-X" = Update Metrics, "c-X" = Closed Bots
+      const isClosedBot = appliedUpdateId.startsWith('c-');
+      const versionStr = appliedUpdateId.replace(/^[uc]-/, '');
+      const version = parseInt(versionStr, 10);
+      
+      // Finde das passende Update
+      const selectedUpdate = allBotTypeUpdates.find(update => {
+        if (isClosedBot) {
+          return update.status === "Closed Bots" && update.version === version;
+        } else {
+          return update.status === "Update Metrics" && update.version === version;
+        }
+      });
+      
+      return selectedUpdate ? [selectedUpdate] : [];
+    }
+    
     // Wenn keine appliedChartSettings vorhanden, alle Updates zurückgeben
     if (!appliedChartSettings) {
       return allBotTypeUpdates;
@@ -1701,7 +1720,7 @@ export default function Dashboard() {
     // Priorität 4: First-Last Update = Alle Updates (kein Filter)
     
     return filtered;
-  }, [allBotTypeUpdates, appliedChartSettings]);
+  }, [allBotTypeUpdates, appliedChartSettings, analyzeMode, appliedUpdateId]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
   // Verwendet dieselbe Logik wie Bot-Types-Seite: Durchschnitt aller "Update Metrics" pro Bot-Type
