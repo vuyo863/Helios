@@ -1,60 +1,195 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-
-The Pionex Bot Profit Tracker is a full-stack web application for tracking and analyzing profits from Pionex trading bots. It features a comprehensive dashboard, a flexible data upload interface, and generates detailed, filterable financial reports. The application aims to provide clear, professional financial insights, leveraging a React frontend and an Express backend.
+The Pionex Bot Profit Tracker is a full-stack web application designed to track and analyze profits from Pionex trading bots. It features a comprehensive dashboard, a flexible data upload interface, and generates detailed, filterable financial reports. The primary goal is to provide clear, professional financial insights to users through a React frontend and an Express backend.
 
 ## User Preferences
+Preferred communication style: Simple, everyday language (German).
 
-Preferred communication style: Simple, everyday language.
+---
+
+# AUSFÜHRLICHE FEATURE-DOKUMENTATION FÜR ÜBERGABE
+
+## GOLDEN STATE - NICHT ÄNDERN
+Alles oberhalb der "Alle Einträge" Section funktioniert korrekt:
+- Graph-Einstellungen Panel
+- Chart-Funktionalität (Zoom, Pan, Offset)
+- Stat Cards
+- Marker-System oberhalb des Charts
+- Zeitraum-Filter
+
+---
+
+## 1. CHART-SYSTEM
+
+### 1.1 Compare-Modus
+- Aktivierung: `selectedChartBotTypes.length >= 2` + Toggle auf "Compare"
+- Variable: `isMultiSelectCompareMode = true`
+- Datenquelle: `compareChartData` useMemo
+- Visualisierung: ZWEI Punkte pro Update (Start + Ende) für jeden Bot-Type
+- Zeilen: ~880-1015 in dashboard.tsx
+
+### 1.2 Added-Modus
+- Aktivierung: `selectedChartBotTypes.length >= 2` + Toggle auf "Added"
+- Variable: `isMultiBotChartMode = true`
+- Datenquelle: `multiBotChartData` useMemo
+- Visualisierung: Kumulierte Werte aller Bot-Types
+
+### 1.3 Marker-System
+- Update Metrics (U1, U2, ...): Horizontale Linie mit Start/End-Markern
+- Closed Bots (C1, C2, ...): NUR End-Marker (ein Kreis)
+- Normal-Modus Keys: `u-${version}` oder `c-${version}`
+- Compare-Modus Keys: `${botTypeId}:u-${version}` oder `${botTypeId}:c-${version}`
+
+### 1.4 Chart-Punkte
+- Normale Updates: Gefüllter Kreis
+- Closed Bots: HOHLER Kreis (fill=background, stroke=color)
+- Aktiv: Neon-Blau rgb(8, 145, 178) mit Glow
+
+---
+
+## 2. AUGE-MODUS (markerViewActive)
+
+### 2.1 States
+- `markerViewActive: boolean` - Toggle
+- `hoveredUpdateId: string | null` - Aktuell gehoverter Marker
+- `lockedUpdateIds: Set<string>` - Gelockte Marker (Multi-Select)
+
+### 2.2 Funktionalität
+- Multi-Select: Klick auf Marker togglet in lockedUpdateIds Set
+- Bidirektionale Interaktion:
+  - Marker Hover → Chart-Punkt wird aktiv
+  - Chart-Punkt Hover → Marker wird aktiv
+
+### 2.3 Visuelle Effekte
+- Aktive Marker: Neon-Blau mit Glow
+- Gestrichelte Linie vom Marker zum Chart-Punkt
+- Aktiver Chart-Punkt: Neon-Blau Glow
+
+---
+
+## 3. STIFT-MODUS (markerEditActive)
+
+### 3.1 States
+- `markerEditActive: boolean` - Toggle
+- `editSelectedUpdateId: string | null` - Ausgewähltes Update
+- `editHoveredUpdateId: string | null` - Gehovertes Update
+
+### 3.2 Funktionalität
+- Single-Select (nur EIN Update)
+- Hat IMMER Priorität über Auge-Modus
+- Content-Card zeigt Details des ausgewählten Updates
+
+---
+
+## 4. FARBSYSTEM
+
+### 4.1 compareColorMap
+```typescript
+const compareColorMap = useMemo(() => {
+  const map: Record<string, string> = {};
+  selectedChartBotTypes.forEach((id, index) => {
+    map[String(id)] = getCompareColor(index);
+  });
+  return map;
+}, [selectedChartBotTypes]);
+```
+
+### 4.2 Farb-Regeln
+| Kontext | Inaktiv | Aktiv |
+|---------|---------|-------|
+| Normal | Grau | Neon-Blau |
+| Compare | Bot-Type-Farbe | Neon-Blau |
+| Closed Bot | Hohler Kreis | Hohler Kreis mit Neon-Blau Rand |
+
+---
+
+## 5. AKTUELLER BUG (IN ARBEIT)
+
+### 5.1 Problem
+Im Compare-Modus + Auge-Modus: Hover über Closed Bot Marker (C1) aktiviert 3 Punkte statt 1.
+
+### 5.2 Ursache
+1. compareChartData erstellt ZWEI Punkte (Start + Ende) für JEDEN Update
+2. Auch für Closed Bots werden zwei Punkte erstellt
+3. findMatchingUpdateKey findet mehrere Punkte innerhalb Zeittoleranz
+
+### 5.3 Bisherige Fix-Versuche
+1. BotTypeId in Key: `${botTypeId}:c-${version}` ✅
+2. isRelevantPoint Prüfung: `pointBotTypeName === botTypeName` ✅
+3. Start-Punkte überspringen bei Closed Bots ✅
+4. **Nicht ausreichend** - Bug besteht weiterhin
+
+### 5.4 Empfohlene Lösung (NICHT implementiert)
+1. compareChartData refaktorieren: Für Closed Bots NUR End-Punkt erstellen
+2. `updateKeyWithBotType` im Payload speichern für direktes Key-Matching
+3. Statt Zeitstempel-Matching: Direkte Key-Vergleiche
+
+### 5.5 Relevante Code-Stellen
+- dashboard.tsx ~880-1015: compareChartData useMemo
+- dashboard.tsx ~3167-3175: Closed Bot Marker Key
+- dashboard.tsx ~4505-4560: findMatchingUpdateKey Funktion
+- dashboard.tsx ~4595-4615: Closed Bot Rendering (hohler Kreis)
+
+---
+
+## 6. STATE-ÜBERSICHT
+
+```typescript
+// Modus-States
+markerViewActive: boolean  // Auge-Modus
+markerEditActive: boolean  // Stift-Modus
+
+// Auge-Modus
+hoveredUpdateId: string | null
+lockedUpdateIds: Set<string>
+
+// Stift-Modus
+editSelectedUpdateId: string | null
+editHoveredUpdateId: string | null
+
+// Chart
+hoveredBotTypeId: string | null
+selectedChartBotTypes: string[]
+```
+
+---
+
+## 7. PRIORITÄTEN-REIHENFOLGE
+1. Stift-Modus → Hat IMMER Vorrang
+2. Auge-Modus → Nur wenn Stift NICHT aktiv
+3. appliedUpdateId → Nur wenn BEIDE Modi inaktiv
+
+---
+
+## 8. CLOSED BOTS REGELN
+- NUR End-Punkt (kein Start)
+- Hohler Kreis: `fill="hsl(var(--background))"` + `stroke={color}`
+- Compare-Modus Key: `${botTypeId}:c-${version}`
+
+---
 
 ## System Architecture
 
-### Frontend
-- **Framework**: React with TypeScript (Vite).
-- **UI/UX**: shadcn/ui (Radix UI primitives) adhering to Material Design 3 principles, using Roboto font for data clarity and professional aesthetics.
-- **Routing**: Wouter library with dedicated routes for Dashboard, Upload, Bot Types, and Reports.
-- **State Management**: TanStack Query for server state; React hooks for local component state.
-- **Data Visualization**: Recharts for dynamic line and bar charts.
-- **Styling**: Tailwind CSS with custom design tokens for theming.
-- **Features**: Advanced profit calculation logic ("Neu" for current values, "Vergleich" for precise differences), bot types management (CRUD), and dynamic chart animations with zoom, pan, and offset capabilities.
+### UI/UX
+- Framework: React with TypeScript (Vite)
+- Design System: shadcn/ui + Material Design 3 + Roboto font
+- Styling: Tailwind CSS
+- Charts: Recharts
 
 ### Backend
-- **Framework**: Express.js with Node.js and TypeScript.
-- **API Design**: RESTful API for managing bot entries and types.
-- **Data Storage**: Currently in-memory (`MemStorage`), designed for future migration to persistent storage.
-- **AI Integration (GPT-4o)**: Utilizes AI for structured JSON data extraction from Pionex bot screenshots (Phase 2) and intelligent calculation support (Phase 4). Server-side logic handles "Vergleich" mode calculations for reliability.
-- **Validation**: Zod for schema validation and robust input validation to prevent invalid requests and ensure data integrity.
+- Framework: Express.js + Node.js + TypeScript
+- Storage: MemStorage (in-memory)
+- Validation: Zod
 
 ### Database
-- **ORM**: Drizzle ORM configured for PostgreSQL.
-- **Schema**:
-    - `users`: User authentication.
-    - `bot_types`: Bot categorization (name, description, color).
-    - `bot_entries`: Core trading records (date, botName, investment, profit, various grid profit metrics, trend P&L).
-- **Migrations**: Drizzle Kit for schema versioning.
+- ORM: Drizzle ORM for PostgreSQL
+- Schema: users, bot_types, bot_entries
+- Migrations: Drizzle Kit
 
 ## External Dependencies
-
-### Database
-- Neon Serverless PostgreSQL (`@neondatabase/serverless`)
+- Neon Serverless PostgreSQL
 - Drizzle ORM
-
-### UI/Visualization
-- Radix UI primitives
-- Recharts
-- date-fns
-- Lucide React
-
-### Form Handling
-- React Hook Form
-- `@hookform/resolvers` (with Zod)
-
-### Utilities
-- clsx
-- tailwind-merge
-- class-variance-authority
-
-### Development Tools
-- ESBuild
-- TSX
+- Radix UI, Recharts, date-fns, Lucide React
+- React Hook Form + Zod
+- clsx, tailwind-merge, class-variance-authority
