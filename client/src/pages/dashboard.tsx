@@ -194,6 +194,7 @@ export default function Dashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [removedBotsFromTable, setRemovedBotsFromTable] = useState<string[]>([]);
   const [selectedChartBotTypes, setSelectedChartBotTypes] = useState<string[]>([]);
+  const [alleEintraegeMode, setAlleEintraegeMode] = useState<'compare' | 'added'>('compare');
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -552,7 +553,7 @@ export default function Dashboard() {
 
   const uniqueBotNames = useMemo(() => {
     const allNames = availableBotTypes.map(bt => bt.name);
-    return ["Gesamt", ...allNames.sort()];
+    return ["Gesamt", "Custom", ...allNames.sort()];
   }, [availableBotTypes]);
 
   const uniqueBotNamesOnly = useMemo(() => {
@@ -4680,9 +4681,37 @@ export default function Dashboard() {
         </div>
 
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">
-            Alle Einträge
-          </h2>
+          <div className="flex items-center gap-4 mb-4">
+            <h2 className="text-xl font-bold">
+              Alle Einträge
+            </h2>
+            <div className="flex items-center bg-muted rounded-lg p-1" data-testid="toggle-alle-eintraege-mode">
+              <button
+                onClick={() => setAlleEintraegeMode('compare')}
+                className={cn(
+                  "px-3 py-1 text-sm font-medium rounded-md transition-colors",
+                  alleEintraegeMode === 'compare' 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid="button-mode-compare"
+              >
+                Compare
+              </button>
+              <button
+                onClick={() => setAlleEintraegeMode('added')}
+                className={cn(
+                  "px-3 py-1 text-sm font-medium rounded-md transition-colors",
+                  alleEintraegeMode === 'added' 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid="button-mode-added"
+              >
+                Added
+              </button>
+            </div>
+          </div>
           <BotEntryTable 
             botTypeData={botTypeTableData} 
             sortColumn={sortColumn}
