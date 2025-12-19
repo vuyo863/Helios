@@ -1806,6 +1806,32 @@ export default function Dashboard() {
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   const yAxisDomain = useMemo((): [number | string, number | string] => {
+    // COMPARE MODUS: Berechne Y-Domain aus compareChartData
+    if (isMultiSelectCompareMode && compareChartData.data.length > 0) {
+      const allValues: number[] = [];
+      compareChartData.botTypeNames.forEach(botTypeName => {
+        compareChartData.data.forEach(point => {
+          const val = point[botTypeName];
+          if (typeof val === 'number' && !isNaN(val)) {
+            allValues.push(val);
+          }
+        });
+      });
+      
+      if (allValues.length === 0) return ['auto', 'auto'];
+      
+      const minVal = Math.min(...allValues);
+      const maxVal = Math.max(...allValues);
+      const dataRange = maxVal - minVal;
+      const padding = dataRange > 0 ? dataRange * 0.2 : Math.abs(maxVal) * 0.2 || 10;
+      
+      // WICHTIG: Immer genug Platz für negative Werte
+      const baseLower = minVal - padding;
+      const baseUpper = maxVal + padding;
+      
+      return [baseLower, baseUpper];
+    }
+    
     const dataToUse = transformedChartData;
     if (!dataToUse || dataToUse.length === 0 || activeMetricCards.length === 0) {
       return ['auto', 'auto'];
@@ -1886,7 +1912,7 @@ export default function Dashboard() {
     zoomedLower = zoomedLower - zoomPadding;
     
     return [zoomedLower, zoomedUpper];
-  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY]);
+  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY, isMultiSelectCompareMode, compareChartData]);
 
   // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
