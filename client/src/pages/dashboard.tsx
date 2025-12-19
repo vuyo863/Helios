@@ -3420,7 +3420,7 @@ export default function Dashboard() {
                           />
                           {/* Dashed lines down to chart points when hovered */}
                           {isActive && (() => {
-                            // COMPARE MODUS: Verwende compareChartData
+                            // COMPARE MODUS: Verwende compareChartData - Linie nur bis zum Datenpunkt
                             if (isMultiSelectCompareMode) {
                               const chartDataArray = compareChartData.data || [];
                               if (chartDataArray.length === 0) return null;
@@ -3435,6 +3435,7 @@ export default function Dashboard() {
                                 return null;
                               }
                               const yRange = yMaxNum - yMinNum;
+                              if (yRange === 0) return null;
                               
                               const markerHeight = 80;
                               const gapHeight = 16;
@@ -3442,39 +3443,76 @@ export default function Dashboard() {
                               const plotHeight = 225;
                               
                               const calcChartY = (value: number) => {
-                                if (yRange === 0) return markerHeight + gapHeight + chartTopMargin + plotHeight / 2;
                                 const relativeValue = (value - yMinNum) / yRange;
                                 const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
                                 return markerHeight + gapHeight + chartY;
                               };
                               
-                              const startY2Raw = calcChartY(0);
-                              const endY2Raw = calcChartY(0);
-                              const startY2 = Math.max(100, (startY2Raw / markerHeight) * 100);
-                              const endY2 = Math.max(100, (endY2Raw / markerHeight) * 100);
+                              // Finde den tatsächlichen Wert am Start- und End-Timestamp
+                              // Suche im compareChartData nach dem nächsten Datenpunkt
+                              const findValueAtTs = (targetTs: number): number | null => {
+                                // Finde den nächsten Punkt zum Timestamp
+                                let closestPoint = null;
+                                let closestDist = Infinity;
+                                
+                                for (const point of chartDataArray) {
+                                  const dist = Math.abs(point.timestamp - targetTs);
+                                  if (dist < closestDist) {
+                                    closestDist = dist;
+                                    closestPoint = point;
+                                  }
+                                }
+                                
+                                if (!closestPoint) return null;
+                                
+                                // Finde den ersten Bot-Type-Wert im Punkt
+                                for (const botName of compareChartData.botTypeNames) {
+                                  const val = closestPoint[botName];
+                                  if (typeof val === 'number' && !isNaN(val)) {
+                                    return val;
+                                  }
+                                }
+                                return null;
+                              };
+                              
+                              const startValue = findValueAtTs(update.startTs);
+                              const endValue = findValueAtTs(update.endTs);
+                              
+                              // Berechne Y-Position nur wenn Werte gefunden wurden
+                              const startY2Raw = startValue !== null ? calcChartY(startValue) : null;
+                              const endY2Raw = endValue !== null ? calcChartY(endValue) : null;
+                              
+                              if (startY2Raw === null && endY2Raw === null) return null;
+                              
+                              const startY2 = startY2Raw !== null ? Math.max(100, (startY2Raw / markerHeight) * 100) : null;
+                              const endY2 = endY2Raw !== null ? Math.max(100, (endY2Raw / markerHeight) * 100) : null;
                               
                               return (
                                 <>
-                                  <line
-                                    x1={`${clampedStartX}%`}
-                                    y1={`${yPercent + 4}%`}
-                                    x2={`${clampedStartX}%`}
-                                    y2={`${startY2}%`}
-                                    stroke="rgb(8, 145, 178)"
-                                    strokeWidth="1"
-                                    strokeDasharray="4 3"
-                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                                  />
-                                  <line
-                                    x1={`${clampedEndX}%`}
-                                    y1={`${yPercent + 4}%`}
-                                    x2={`${clampedEndX}%`}
-                                    y2={`${endY2}%`}
-                                    stroke="rgb(8, 145, 178)"
-                                    strokeWidth="1"
-                                    strokeDasharray="4 3"
-                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                                  />
+                                  {startY2 !== null && (
+                                    <line
+                                      x1={`${clampedStartX}%`}
+                                      y1={`${yPercent + 4}%`}
+                                      x2={`${clampedStartX}%`}
+                                      y2={`${startY2}%`}
+                                      stroke="rgb(8, 145, 178)"
+                                      strokeWidth="1"
+                                      strokeDasharray="4 3"
+                                      style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                    />
+                                  )}
+                                  {endY2 !== null && (
+                                    <line
+                                      x1={`${clampedEndX}%`}
+                                      y1={`${yPercent + 4}%`}
+                                      x2={`${clampedEndX}%`}
+                                      y2={`${endY2}%`}
+                                      stroke="rgb(8, 145, 178)"
+                                      strokeWidth="1"
+                                      strokeDasharray="4 3"
+                                      style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                    />
+                                  )}
                                 </>
                               );
                             }
