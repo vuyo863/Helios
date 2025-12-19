@@ -459,10 +459,42 @@ export default function Dashboard() {
           });
           
           if (matchingUpdate) {
+            // COMPARE MODUS: Key enthält botTypeId als Prefix
+            // Format: "${botTypeId}:c-${version}" oder "${botTypeId}:u-${version}"
+            const keyPrefix = isMultiSelectCompareMode && matchingUpdate.botTypeId 
+              ? `${matchingUpdate.botTypeId}:` 
+              : '';
+            
             if (matchingUpdate.status === 'Closed Bots') {
-              setHoveredUpdateId(`c-${matchingUpdate.version}`);
+              const newKey = `${keyPrefix}c-${matchingUpdate.version}`;
+              fetch('/api/log-hover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event: 'Closed Bot activated',
+                  key: newKey,
+                  botTypeName: hoveredBotTypeName,
+                  timestamp: hoveredTs,
+                  mode: isMultiSelectCompareMode ? 'COMPARE' : 'NORMAL',
+                  direction: 'Chart → Marker'
+                })
+              }).catch(() => {});
+              setHoveredUpdateId(newKey);
             } else if (matchingUpdate.status === 'Update Metrics') {
-              setHoveredUpdateId(`u-${matchingUpdate.version}`);
+              const newKey = `${keyPrefix}u-${matchingUpdate.version}`;
+              fetch('/api/log-hover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event: 'Update Metrics activated',
+                  key: newKey,
+                  botTypeName: hoveredBotTypeName,
+                  timestamp: hoveredTs,
+                  mode: isMultiSelectCompareMode ? 'COMPARE' : 'NORMAL',
+                  direction: 'Chart → Marker'
+                })
+              }).catch(() => {});
+              setHoveredUpdateId(newKey);
             } else {
               setHoveredUpdateId(null);
             }
@@ -3265,7 +3297,21 @@ export default function Dashboard() {
                         };
                         
                         const handleClosedMouseEnter = () => {
-                          if (markerViewActive) setHoveredUpdateId(closedKey);
+                          if (markerViewActive) {
+                            fetch('/api/log-hover', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                event: 'Closed Bot marker hovered',
+                                key: closedKey,
+                                botTypeName: update.botTypeId ? availableBotTypes.find(bt => bt.id === update.botTypeId)?.name : null,
+                                timestamp: update.endTs,
+                                mode: isMultiSelectCompareMode ? 'COMPARE' : 'NORMAL',
+                                direction: 'Marker → Chart'
+                              })
+                            }).catch(() => {});
+                            setHoveredUpdateId(closedKey);
+                          }
                           // Stift: NUR hovern wenn NICHTS ausgewählt ist (strikt)
                           if (markerEditActive && editSelectedUpdateId === null) {
                             setEditHoveredUpdateId(closedKey);
@@ -3532,7 +3578,21 @@ export default function Dashboard() {
                       };
                       
                       const handleMouseEnter = () => {
-                        if (markerViewActive) setHoveredUpdateId(updateKey);
+                        if (markerViewActive) {
+                          fetch('/api/log-hover', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              event: 'Update Metrics marker hovered',
+                              key: updateKey,
+                              botTypeName: update.botTypeId ? availableBotTypes.find(bt => bt.id === update.botTypeId)?.name : null,
+                              timestamp: update.endTs,
+                              mode: isMultiSelectCompareMode ? 'COMPARE' : 'NORMAL',
+                              direction: 'Marker → Chart'
+                            })
+                          }).catch(() => {});
+                          setHoveredUpdateId(updateKey);
+                        }
                         // Stift: NUR hovern wenn NICHTS ausgewählt ist (strikt)
                         if (markerEditActive && editSelectedUpdateId === null) {
                           setEditHoveredUpdateId(updateKey);

@@ -1761,6 +1761,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST Bidirectional Hover Logging (for testing)
+  app.post("/api/log-hover", (req, res) => {
+    const { event, key, botTypeName, timestamp, mode, direction } = req.body;
+    console.log(`[BIDIRECTIONAL-HOVER] ${direction}: ${event}`, {
+      key,
+      botTypeName,
+      timestamp: timestamp ? new Date(timestamp).toISOString() : null,
+      mode
+    });
+    res.json({ logged: true });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
