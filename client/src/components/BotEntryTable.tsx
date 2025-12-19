@@ -116,9 +116,26 @@ interface BotEntryTableProps {
   onRemoveBotType: (botTypeId: string) => void;
   selectedChartBotTypes?: string[];
   onToggleChartBotType?: (botTypeId: string) => void;
+  // Compare-Modus: Farben und Hover
+  isCompareMode?: boolean;
+  compareColors?: Record<string, string>; // botTypeId -> color
+  hoveredBotType?: string | null;
+  onBotTypeHover?: (botTypeId: string | null) => void;
 }
 
-export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, onSort, onRemoveBotType, selectedChartBotTypes = [], onToggleChartBotType }: BotEntryTableProps) {
+export default function BotEntryTable({ 
+  botTypeData, 
+  sortColumn, 
+  sortDirection, 
+  onSort, 
+  onRemoveBotType, 
+  selectedChartBotTypes = [], 
+  onToggleChartBotType,
+  isCompareMode = false,
+  compareColors = {},
+  hoveredBotType,
+  onBotTypeHover
+}: BotEntryTableProps) {
   const formatNumber = (value: string | number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
     return num.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -216,8 +233,18 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                   </TableCell>
                 </TableRow>
               ) : (
-                botTypeData.map((botType) => (
-                  <TableRow key={botType.id} className="hover-elevate" data-testid={`row-entry-${botType.id}`}>
+                botTypeData.map((botType) => {
+                  const botColor = compareColors[botType.id];
+                  const isHovered = hoveredBotType === botType.id;
+                  
+                  return (
+                  <TableRow 
+                    key={botType.id} 
+                    className={`hover-elevate ${isHovered && isCompareMode ? 'bg-muted/50' : ''}`}
+                    data-testid={`row-entry-${botType.id}`}
+                    onMouseEnter={() => isCompareMode && onBotTypeHover?.(botType.id)}
+                    onMouseLeave={() => isCompareMode && onBotTypeHover?.(null)}
+                  >
                     <TableCell className="text-sm" data-testid={`cell-last-updated-${botType.id}`}>
                       {botType.lastUpdated 
                         ? format(new Date(botType.lastUpdated), 'dd.MM.yyyy', { locale: de })
@@ -225,7 +252,16 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                       }
                     </TableCell>
                     <TableCell className="font-medium text-sm" data-testid={`cell-bot-name-${botType.id}`}>
-                      {botType.name}
+                      <div className="flex items-center gap-2">
+                        <span>{botType.name}</span>
+                        {isCompareMode && botColor && (
+                          <span 
+                            className="inline-block w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: botColor }}
+                            title={`Graph-Farbe: ${botType.name}`}
+                          />
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right text-sm" data-testid={`cell-investment-${botType.id}`}>
                       {formatNumber(botType.gesamtInvestmentAvg)}
@@ -287,7 +323,8 @@ export default function BotEntryTable({ botTypeData, sortColumn, sortDirection, 
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

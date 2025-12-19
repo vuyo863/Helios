@@ -195,6 +195,7 @@ export default function Dashboard() {
   const [removedBotsFromTable, setRemovedBotsFromTable] = useState<string[]>([]);
   const [selectedChartBotTypes, setSelectedChartBotTypes] = useState<string[]>([]);
   const [alleEintraegeMode, setAlleEintraegeMode] = useState<'compare' | 'added'>('compare');
+  const [hoveredBotTypeId, setHoveredBotTypeId] = useState<string | null>(null);
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -840,6 +841,15 @@ export default function Dashboard() {
   const getCompareColor = (index: number): string => {
     return COMPARE_MODE_COLORS[index % COMPARE_MODE_COLORS.length];
   };
+  
+  // Farb-Map für Compare-Modus: BotTypeId -> Farbe (basierend auf Auswahl-Reihenfolge)
+  const compareColorMap = useMemo(() => {
+    const colorMap: Record<string, string> = {};
+    selectedChartBotTypes.forEach((botTypeId, index) => {
+      colorMap[botTypeId] = getCompareColor(index);
+    });
+    return colorMap;
+  }, [selectedChartBotTypes]);
 
   // Multi-Bot-Type Chart Modus DEAKTIVIERT
   // selectedChartBotTypes wird nur noch für UI-Toggle (blau/grau) in Alle Einträge genutzt
@@ -4342,8 +4352,19 @@ export default function Dashboard() {
                   {isMultiSelectCompareMode ? (
                     // COMPARE MODUS: Farbige Linien für jeden ausgewählten Bot-Type
                     // Rot und Blau zuerst, dann weitere Farben
+                    // Hover-Effekt: Linie leuchtet auf wenn Bot-Type in Tabelle gehoverd
                     compareChartData.botTypeNames.map((botTypeName, index) => {
                       const lineColor = getCompareColor(index);
+                      // Finde Bot-Type-ID für diesen Namen um Hover zu prüfen
+                      const botType = availableBotTypes.find(bt => bt.name === botTypeName);
+                      const isHovered = botType && hoveredBotTypeId === String(botType.id);
+                      const isAnyHovered = hoveredBotTypeId !== null;
+                      
+                      // Wenn gehoverd: Diese Linie hervorheben, andere dimmen
+                      const strokeOpacity = isAnyHovered ? (isHovered ? 1 : 0.3) : 1;
+                      const strokeW = isHovered ? 4 : 2;
+                      const dotR = isHovered ? 6 : 4;
+                      
                       return (
                         <Line 
                           key={`compare-${botTypeName}`}
@@ -4351,13 +4372,15 @@ export default function Dashboard() {
                           dataKey={botTypeName}
                           name={botTypeName}
                           stroke={lineColor}
-                          strokeWidth={2}
-                          dot={{ fill: lineColor, r: 4, stroke: lineColor }}
+                          strokeWidth={strokeW}
+                          strokeOpacity={strokeOpacity}
+                          dot={{ fill: lineColor, r: dotR, stroke: lineColor, strokeOpacity }}
                           connectNulls
                           isAnimationActive={true}
                           animationDuration={1200}
                           animationBegin={0}
                           animationEasing="ease-out"
+                          style={isHovered ? { filter: `drop-shadow(0 0 8px ${lineColor})` } : {}}
                         />
                       );
                     })
@@ -5145,6 +5168,10 @@ export default function Dashboard() {
                 return newSelection;
               });
             }}
+            isCompareMode={isMultiSelectCompareMode}
+            compareColors={compareColorMap}
+            hoveredBotType={hoveredBotTypeId}
+            onBotTypeHover={setHoveredBotTypeId}
           />
           
           <Card 
