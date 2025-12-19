@@ -4983,13 +4983,28 @@ export default function Dashboard() {
                     );
                   }
                   
-                  // Parse Update ID (u-X oder c-X)
-                  const isClosedBot = activeEditId.startsWith('c-');
-                  const version = parseInt(activeEditId.split('-')[1], 10);
+                  // Parse Update ID - unterstützt beide Formate:
+                  // Normal-Modus: "u-X" oder "c-X"
+                  // Compare-Modus: "{botTypeId}:u-X" oder "{botTypeId}:c-X"
+                  let parsedBotTypeId: string | null = null;
+                  let updatePart = activeEditId;
+                  
+                  if (activeEditId.includes(':')) {
+                    // Compare-Modus: extrahiere botTypeId und update-Teil
+                    const colonIndex = activeEditId.indexOf(':');
+                    parsedBotTypeId = activeEditId.substring(0, colonIndex);
+                    updatePart = activeEditId.substring(colonIndex + 1);
+                  }
+                  
+                  const isClosedBot = updatePart.startsWith('c-');
+                  const version = parseInt(updatePart.split('-')[1], 10);
                   
                   // Finde das Update in den Daten
-                  const allUpdates = selectedBotTypeData?.id 
-                    ? (allBotTypeUpdates || []).filter((u: BotTypeUpdate) => u.botTypeId === selectedBotTypeData.id)
+                  // Compare-Modus: Suche in dem spezifischen Bot-Type
+                  // Normal-Modus: Suche im ausgewählten Bot-Type
+                  const targetBotTypeId = parsedBotTypeId || selectedBotTypeData?.id;
+                  const allUpdates = targetBotTypeId 
+                    ? (allBotTypeUpdates || []).filter((u: BotTypeUpdate) => u.botTypeId === targetBotTypeId)
                     : [];
                   
                   const update = allUpdates.find((u: BotTypeUpdate) => 
