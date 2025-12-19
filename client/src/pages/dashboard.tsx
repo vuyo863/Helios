@@ -3327,7 +3327,92 @@ export default function Dashboard() {
                       const date = new Date(payload.value);
                       const baseSequence = appliedChartSettings?.sequence || 'days';
                       
-                      // ZOOM-basierte automatische Sequence-Anpassung
+                      // ANALYSIEREN-MODUS: Adaptive Time Axis mit dynamischer Zeitauflösung
+                      // Formatierung basiert auf Zeitspanne, nicht auf sequence-Einstellung
+                      if (analyzeModeBounds) {
+                        const { startTs, endTs } = analyzeModeBounds;
+                        const durationMs = endTs - startTs;
+                        const durationHours = durationMs / (1000 * 60 * 60);
+                        const durationDays = durationHours / 24;
+                        
+                        const currentTs = payload.value;
+                        const isFirst = currentTs === startTs;
+                        const isLast = currentTs === endTs;
+                        const hour = date.getHours();
+                        const isMidnight = hour === 0 && date.getMinutes() === 0;
+                        
+                        let label = '';
+                        let isMajor = false;
+                        
+                        // Start und End immer mit Datum + Uhrzeit
+                        if (isFirst || isLast) {
+                          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                          label = `${dateStr}\n${timeStr}`;
+                          isMajor = true;
+                        } else if (durationDays <= 7) {
+                          // Bei ≤7 Tagen: Stunden-Format mit Datum bei Mitternacht
+                          if (isMidnight) {
+                            label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                            isMajor = true;
+                          } else {
+                            label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                          }
+                        } else if (durationDays <= 60) {
+                          // Bei 1-8 Wochen: Tages-Format
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          isMajor = isMidnight;
+                        } else {
+                          // Bei > 2 Monaten: Wochen-Format
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          isMajor = date.getDay() === 1; // Montag
+                        }
+                        
+                        // Mehrzeiliges Label für Start/End
+                        if (label.includes('\n')) {
+                          const lines = label.split('\n');
+                          return (
+                            <g transform={`translate(${x},${y})`}>
+                              <text
+                                x={0}
+                                y={12}
+                                textAnchor="middle"
+                                fill="hsl(var(--foreground))"
+                                fontSize={10}
+                                fontWeight={isMajor ? 600 : 400}
+                              >
+                                {lines[0]}
+                              </text>
+                              <text
+                                x={0}
+                                y={24}
+                                textAnchor="middle"
+                                fill="hsl(var(--muted-foreground))"
+                                fontSize={9}
+                              >
+                                {lines[1]}
+                              </text>
+                            </g>
+                          );
+                        }
+                        
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <text
+                              x={0}
+                              y={12}
+                              textAnchor="middle"
+                              fill={isMajor ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))"}
+                              fontSize={10}
+                              fontWeight={isMajor ? 600 : 400}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      }
+                      
+                      // NORMALER MODUS: ZOOM-basierte automatische Sequence-Anpassung
                       // Bei hohem Zoom automatisch detailliertere Labels zeigen
                       let effectiveSequence = baseSequence;
                       if (chartZoomX >= 6) {
