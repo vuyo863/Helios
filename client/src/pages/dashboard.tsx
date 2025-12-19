@@ -3490,14 +3490,14 @@ export default function Dashboard() {
                       let isMajor = false;  // Major = größere Einheit mit blauer Umrandung
                       let showLabel = false;
                       
-                      // FESTE BOUNDARY-TICKS: Start und End IMMER anzeigen
+                      // FESTE BOUNDARY-TICKS: Start und End IMMER anzeigen (normale Formatierung, nicht blau)
                       const currentTs = payload.value;
                       const isFirstTick = currentTs === startTime;
                       const isLastTick = currentTs === endTime;
                       
                       if (isFirstTick || isLastTick) {
                         label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                        isMajor = true;
+                        isMajor = false;  // Normale Formatierung ohne blaue Umrandung
                         showLabel = true;
                       } else if (sequence === 'hours') {
                         // ADAPTIVE Stunden-Intervalle basierend auf Zeitraum
