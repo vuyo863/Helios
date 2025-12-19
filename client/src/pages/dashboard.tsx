@@ -4514,7 +4514,8 @@ export default function Dashboard() {
                             };
                             
                             const matchingKey = markerViewActive ? findMatchingUpdateKey() : null;
-                            const isPointActive = matchingKey && (hoveredUpdateId === matchingKey || lockedUpdateIds.has(matchingKey));
+                            // Punkt ist nur aktiv wenn gehoverd ODER gelockt - nicht per Default
+                            const isPointActive = matchingKey !== null && (hoveredUpdateId === matchingKey || lockedUpdateIds.has(matchingKey));
                             
                             // Hover-Handler für bidirektionale Interaktion
                             const handleDotMouseEnter = () => {
