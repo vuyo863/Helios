@@ -1314,6 +1314,63 @@ export default function Dashboard() {
     });
   }, [chartData, hasGesamtkapitalActive]);
 
+  // Berechne Zeitgrenzen für Analysieren-Modus
+  // Wenn analyzeMode aktiv: Nur das ausgewählte Update wird im Graph angezeigt
+  const analyzeModeBounds = useMemo(() => {
+    if (!analyzeMode || !appliedUpdateId) {
+      return null;
+    }
+    
+    // Parse Update ID (u-X oder c-X)
+    const isClosedBot = appliedUpdateId.startsWith('c-');
+    const version = parseInt(appliedUpdateId.split('-')[1], 10);
+    
+    // Finde das Update in den Daten
+    const allUpdates = selectedBotTypeData?.id 
+      ? (allBotTypeUpdates || []).filter((u: BotTypeUpdate) => u.botTypeId === selectedBotTypeData.id)
+      : [];
+    
+    const update = allUpdates.find((u: BotTypeUpdate) => 
+      u.version === version && 
+      (isClosedBot ? u.status === 'Closed Bots' : u.status === 'Update Metrics')
+    );
+    
+    if (!update) {
+      return null;
+    }
+    
+    // Parse Start und End Zeitstempel
+    const parseTs = (dateStr: string | null | undefined): number | null => {
+      if (!dateStr) return null;
+      const parsed = parseGermanDate(dateStr);
+      return parsed ? parsed.getTime() : null;
+    };
+    
+    // Für Closed Bots: startDate und endDate verwenden
+    // Für Update Metrics: lastUpload (Start) und thisUpload (End)
+    let startTs: number | null;
+    let endTs: number | null;
+    
+    if (isClosedBot) {
+      startTs = parseTs(update.startDate);
+      endTs = parseTs(update.endDate);
+    } else {
+      startTs = parseTs(update.lastUpload);
+      endTs = parseTs(update.thisUpload);
+    }
+    
+    // Mindestens ein Zeitstempel muss vorhanden sein
+    if (startTs === null && endTs === null) {
+      return null;
+    }
+    
+    // Falls einer fehlt: Fallback auf den vorhandenen
+    if (startTs === null) startTs = endTs! - (24 * 60 * 60 * 1000); // 1 Tag vorher
+    if (endTs === null) endTs = startTs + (24 * 60 * 60 * 1000); // 1 Tag nachher
+    
+    return { startTs, endTs, update, isClosedBot, version };
+  }, [analyzeMode, appliedUpdateId, selectedBotTypeData, allBotTypeUpdates]);
+
   // Berechne Highest und Lowest Value für jede aktive Metrik
   // Diese werden als Marker im Chart angezeigt wenn die entsprechenden Toggles aktiv sind
   const extremeValues = useMemo(() => {
@@ -1520,7 +1577,17 @@ export default function Dashboard() {
 
   // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
+  // Bei analyzeMode: Nur den Zeitraum des ausgewählten Updates zeigen
   const xAxisDomain = useMemo((): [number | string, number | string] => {
+    // ANALYSIEREN-MODUS: Nur das ausgewählte Update anzeigen
+    if (analyzeModeBounds) {
+      const { startTs, endTs } = analyzeModeBounds;
+      // 5% Padding auf jeder Seite für schöne Darstellung
+      const range = endTs - startTs;
+      const padding = range * 0.05;
+      return [startTs - padding, endTs + padding];
+    }
+    
     // Hole Start- und Endzeit aus den Daten
     const dataToUse = transformedChartData;
     if (!dataToUse || dataToUse.length === 0) {
@@ -1564,7 +1631,7 @@ export default function Dashboard() {
     const zoomedEnd = center + zoomedRange / 2 + panOffset;
     
     return [zoomedStart, zoomedEnd];
-  }, [transformedChartData, chartZoomX, chartPanX]);
+  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds]);
 
   // ===== ZEITFILTER FÜR STATCARDS =====
   // Diese gefilterten Updates werden in allen StatCard-Berechnungen verwendet
@@ -2376,8 +2443,8 @@ export default function Dashboard() {
                       variant="outline" 
                       size="sm" 
                       className="gap-2 min-w-[100px]"
-                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && setFromUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed'}
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && setFromUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode}
                     >
                       {selectedFromUpdate ? `#${selectedFromUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
@@ -2389,8 +2456,8 @@ export default function Dashboard() {
                       variant="outline" 
                       size="sm" 
                       className="gap-2 min-w-[100px]"
-                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && setUntilUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed'}
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && setUntilUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode}
                     >
                       {selectedUntilUpdate ? `#${selectedUntilUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
@@ -2476,8 +2543,9 @@ export default function Dashboard() {
                     size="icon" 
                     className={cn(
                       "h-7 w-7",
-                      markerViewActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                      markerViewActive && !analyzeMode && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                     )}
+                    disabled={analyzeMode}
                     onClick={() => {
                       const newValue = !markerViewActive;
                       setMarkerViewActive(newValue);
@@ -2495,8 +2563,9 @@ export default function Dashboard() {
                     size="icon" 
                     className={cn(
                       "h-7 w-7",
-                      markerEditActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                      markerEditActive && !analyzeMode && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                     )}
+                    disabled={analyzeMode}
                     onClick={() => {
                       if (!markerEditActive) {
                         // Beim Aktivieren: vorherige Auswahl löschen
@@ -4000,13 +4069,24 @@ export default function Dashboard() {
                         size="icon" 
                         className="h-8 w-8" 
                         title="Suchen"
-                        disabled={!markerEditActive}
+                        disabled={!markerEditActive || analyzeMode}
                         onClick={() => setSearchDialogOpen(true)}
                         data-testid="button-search-metric"
                       >
                         <Search className="h-4 w-4" />
                       </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" title="Analysieren" data-testid="button-analyze-metric">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className={cn(
+                      "h-8 w-8",
+                      analyzeMode && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                    )}
+                    title="Analysieren"
+                    disabled={!appliedUpdateId}
+                    onClick={() => setAnalyzeMode(!analyzeMode)}
+                    data-testid="button-analyze-metric"
+                  >
                     <LineChartIcon className="h-4 w-4" />
                   </Button>
                   <Button 
@@ -4014,7 +4094,7 @@ export default function Dashboard() {
                     size="icon" 
                     className="h-8 w-8" 
                     title="Löschen"
-                    disabled={!appliedUpdateId}
+                    disabled={!appliedUpdateId || analyzeMode}
                     onClick={() => {
                       // Angewandtes Update entfernen
                       setAppliedUpdateId(null);
@@ -4027,7 +4107,7 @@ export default function Dashboard() {
                 <Button 
                   variant="default" 
                   size="sm"
-                  disabled={!markerEditActive || !editSelectedUpdateId}
+                  disabled={!markerEditActive || !editSelectedUpdateId || analyzeMode}
                   onClick={() => {
                     if (editSelectedUpdateId) {
                       // Auswahl übernehmen: Als "angewandt" speichern
@@ -4070,14 +4150,14 @@ export default function Dashboard() {
               <Card className="p-4 flex flex-col rounded-l-none border-l-0 w-64">
                 <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
                 <div className="space-y-3 flex-1">
-              <div className={cn("flex items-center justify-between", updateSelectionMode === 'confirmed' && "opacity-50")}>
+              <div className={cn("flex items-center justify-between", (updateSelectionMode === 'confirmed' || analyzeMode) && "opacity-50")}>
                 <span className="text-sm">Letzten</span>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="gap-2"
-                  disabled={updateSelectionMode === 'confirmed'}
-                  onClick={() => updateSelectionMode !== 'confirmed' && setTimeRangeOpen(true)}
+                  disabled={updateSelectionMode === 'confirmed' || analyzeMode}
+                  onClick={() => updateSelectionMode !== 'confirmed' && !analyzeMode && setTimeRangeOpen(true)}
                 >
                   {selectedTimeRange}
                   <ChevronDown className="h-3 w-3" />
