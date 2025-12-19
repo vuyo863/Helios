@@ -1470,40 +1470,24 @@ export default function Dashboard() {
         tickInterval = 7 * 24 * 60 * 60 * 1000;
       }
       
-      // Generiere Ticks
+      // Generiere Ticks - ANCHORED an startTs (nicht global ausgerichtet)
+      // TradingView-Level: Ticks beginnen exakt beim Start-Datum
       const ticks: number[] = [];
       
-      // Starte genau bei startTs
+      // Erster Tick = exaktes Start-Datum
       ticks.push(startTs);
       
-      // Runde den nächsten Tick auf sinnvolle Zeit
-      const startDate = new Date(startTs);
-      let roundedStart: Date;
-      
-      if (useHourFormat && tickInterval < 24 * 60 * 60 * 1000) {
-        // Bei Stunden-Format: runde auf nächste volle Stunde
-        roundedStart = new Date(startDate);
-        roundedStart.setMinutes(0, 0, 0);
-        if (roundedStart.getTime() <= startTs) {
-          roundedStart = new Date(roundedStart.getTime() + 60 * 60 * 1000);
-        }
-      } else {
-        // Bei Tages-Format: runde auf nächsten Mitternacht
-        roundedStart = new Date(startDate);
-        roundedStart.setHours(0, 0, 0, 0);
-        if (roundedStart.getTime() <= startTs) {
-          roundedStart = new Date(roundedStart.getTime() + 24 * 60 * 60 * 1000);
-        }
-      }
-      
-      let currentTs = roundedStart.getTime();
+      // Zwischen-Ticks: Inkrementiere direkt von startTs
+      // KEINE globale Rundung auf "runde" Zeiten!
+      // Beispiel: Start 16:52 mit 6h-Intervall → 16:52, 22:52, 04:52...
+      let currentTs = startTs + tickInterval;
       
       while (currentTs < endTs) {
         ticks.push(currentTs);
         currentTs += tickInterval;
       }
       
-      // Füge endTs hinzu wenn nicht schon vorhanden
+      // Letzter Tick = exaktes End-Datum
       if (ticks[ticks.length - 1] !== endTs) {
         ticks.push(endTs);
       }
