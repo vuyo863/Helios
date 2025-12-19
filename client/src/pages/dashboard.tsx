@@ -737,9 +737,21 @@ export default function Dashboard() {
   }, [selectedBotsForTable, availableBotTypes, allBotTypeUpdates, sortColumn, sortDirection]);
 
   // Hole Updates für den ausgewählten Bot Type
+  // WICHTIG: Verwende effectiveSelectedBotTypeData für Analyze Single Metric Mode
+  // Aber effectiveSelectedBotTypeData ist noch nicht definiert an dieser Stelle!
+  // Deshalb: Prüfe auch analyzeSingleMetricInfo falls vorhanden
+  const effectiveBotTypeIdForQuery = useMemo(() => {
+    // Wenn Analyze Single Metric Mode aktiv, verwende die extrahierte Bot-Type-ID
+    if (analyzeMode && appliedUpdateId?.includes(':')) {
+      const colonIndex = appliedUpdateId.indexOf(':');
+      return appliedUpdateId.substring(0, colonIndex);
+    }
+    return selectedBotTypeData?.id || null;
+  }, [analyzeMode, appliedUpdateId, selectedBotTypeData?.id]);
+  
   const { data: selectedBotTypeUpdates = [] } = useQuery<any[]>({
-    queryKey: ['/api/bot-types', selectedBotTypeData?.id || 'none', 'updates'],
-    enabled: !!selectedBotTypeData?.id,
+    queryKey: ['/api/bot-types', effectiveBotTypeIdForQuery || 'none', 'updates'],
+    enabled: !!effectiveBotTypeIdForQuery,
     refetchInterval: 2000, // Auto-refresh alle 2 Sekunden
   });
 
@@ -1695,7 +1707,7 @@ export default function Dashboard() {
     if (endTs === null) endTs = startTs + (24 * 60 * 60 * 1000); // 1 Tag nachher
     
     return { startTs, endTs, update, isClosedBot, version };
-  }, [analyzeMode, appliedUpdateId, selectedBotTypeData, allBotTypeUpdates]);
+  }, [analyzeMode, appliedUpdateId, effectiveSelectedBotTypeData, allBotTypeUpdates]);
 
   // Berechne Highest und Lowest Value für jede aktive Metrik
   // Diese werden als Marker im Chart angezeigt wenn die entsprechenden Toggles aktiv sind
