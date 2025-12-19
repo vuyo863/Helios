@@ -1524,6 +1524,44 @@ export default function Dashboard() {
   // - Wochen → TAGES-Ticks (!), Labels = Datum + ab und zu KW
   // - Monate → TAGES-Ticks (!), Labels = Datum + ab und zu Monat
   const xAxisTicks = useMemo(() => {
+    // COMPARE MODUS: Tick-Generierung für den Vergleichsmodus
+    if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
+      const startTs = compareChartData.minTimestamp;
+      const endTs = compareChartData.maxTimestamp;
+      const durationMs = endTs - startTs;
+      const durationDays = durationMs / (1000 * 60 * 60 * 24);
+      
+      // Berechne ideales Intervall basierend auf Zeitspanne
+      let tickInterval: number;
+      
+      if (durationDays <= 7) {
+        tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
+      } else if (durationDays <= 14) {
+        tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
+      } else if (durationDays <= 30) {
+        tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
+      } else if (durationDays <= 60) {
+        tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+      } else {
+        tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+      }
+      
+      const ticks: number[] = [];
+      ticks.push(startTs);
+      
+      let currentTs = startTs + tickInterval;
+      while (currentTs < endTs) {
+        ticks.push(currentTs);
+        currentTs += tickInterval;
+      }
+      
+      if (ticks[ticks.length - 1] !== endTs) {
+        ticks.push(endTs);
+      }
+      
+      return ticks;
+    }
+    
     // ANALYSIEREN-MODUS: Spezielle Tick-Generierung für 10-12 Ticks
     if (analyzeModeBounds) {
       const { startTs, endTs } = analyzeModeBounds;
@@ -1701,7 +1739,7 @@ export default function Dashboard() {
     }
     
     return ticks;
-  }, [chartData, appliedChartSettings?.sequence, chartZoomX, analyzeModeBounds]);
+  }, [chartData, appliedChartSettings?.sequence, chartZoomX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData]);
 
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
