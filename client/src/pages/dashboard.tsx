@@ -819,9 +819,10 @@ export default function Dashboard() {
     return BOT_TYPE_COLORS[index % BOT_TYPE_COLORS.length];
   };
 
-  // Multi-Bot-Type Chart Modus aktiv?
-  // Nur aktiv wenn Bot-Types ausgewählt UND Chart-Settings angewendet wurden
-  const isMultiBotChartMode = selectedChartBotTypes.length > 0 && chartApplied;
+  // Multi-Bot-Type Chart Modus DEAKTIVIERT
+  // selectedChartBotTypes wird nur noch für UI-Toggle (blau/grau) in Alle Einträge genutzt
+  // Chart-Funktionalität wird später separat implementiert
+  const isMultiBotChartMode = false;
 
   // Chart-Daten für Multi-Bot-Type Modus
   // Zeigt Gesamtprofit für jeden ausgewählten Bot-Type als separate Linie
@@ -4690,22 +4691,12 @@ export default function Dashboard() {
             onRemoveBotType={handleRemoveBotType}
             selectedChartBotTypes={selectedChartBotTypes}
             onToggleChartBotType={(botTypeId) => {
+              // NUR UI-Toggle (blau/grau) - keine Chart-Funktionen mehr
               setSelectedChartBotTypes(prev => 
                 prev.includes(botTypeId)
                   ? prev.filter(id => id !== botTypeId)
                   : [...prev, botTypeId]
               );
-              // Reset alle Chart-Einstellungen auf Default
-              setSelectedTimeRange('First-Last Update');
-              setChartSequence('days');
-              setShowGridProfit(false);
-              setShowHighestValue(false);
-              setShowLowestValue(false);
-              setSelectedFromUpdate(null);
-              setSelectedUntilUpdate(null);
-              setChartApplied(false);
-              setAppliedChartSettings(null);
-              setUpdateSelectionMode('idle');
             }}
           />
           
