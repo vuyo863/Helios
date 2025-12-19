@@ -1709,6 +1709,49 @@ export default function Dashboard() {
   // - Wochen → TAGES-Ticks (!), Labels = Datum + ab und zu KW
   // - Monate → TAGES-Ticks (!), Labels = Datum + ab und zu Monat
   const xAxisTicks = useMemo(() => {
+    // ANALYSIEREN-MODUS hat PRIORITÄT - auch im Compare-Modus!
+    // Spezielle Tick-Generierung für 10-12 Ticks
+    if (analyzeModeBounds) {
+      const { startTs, endTs } = analyzeModeBounds;
+      const durationMs = endTs - startTs;
+      const durationHours = durationMs / (1000 * 60 * 60);
+      const durationDays = durationHours / 24;
+      
+      // Ziel: 10-12 Ticks
+      let tickInterval: number;
+      
+      if (durationHours <= 6) {
+        tickInterval = 30 * 60 * 1000;
+      } else if (durationHours <= 24) {
+        tickInterval = 2 * 60 * 60 * 1000;
+      } else if (durationDays <= 3) {
+        tickInterval = 6 * 60 * 60 * 1000;
+      } else if (durationDays <= 7) {
+        tickInterval = 12 * 60 * 60 * 1000;
+      } else if (durationDays <= 14) {
+        tickInterval = 24 * 60 * 60 * 1000;
+      } else if (durationDays <= 60) {
+        tickInterval = 2 * 24 * 60 * 60 * 1000;
+      } else {
+        tickInterval = 7 * 24 * 60 * 60 * 1000;
+      }
+      
+      const ticks: number[] = [];
+      ticks.push(startTs);
+      
+      let currentTs = startTs + tickInterval;
+      while (currentTs < endTs) {
+        ticks.push(currentTs);
+        currentTs += tickInterval;
+      }
+      
+      if (ticks[ticks.length - 1] !== endTs) {
+        ticks.push(endTs);
+      }
+      
+      return ticks;
+    }
+    
     // COMPARE MODUS: Tick-Generierung für den Vergleichsmodus - MEHR TICKS wie normaler Chart
     if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
       const startTs = compareChartData.minTimestamp;
@@ -1745,72 +1788,6 @@ export default function Dashboard() {
         currentTs += tickInterval;
       }
       
-      if (ticks[ticks.length - 1] !== endTs) {
-        ticks.push(endTs);
-      }
-      
-      return ticks;
-    }
-    
-    // ANALYSIEREN-MODUS: Spezielle Tick-Generierung für 10-12 Ticks
-    if (analyzeModeBounds) {
-      const { startTs, endTs } = analyzeModeBounds;
-      const durationMs = endTs - startTs;
-      const durationHours = durationMs / (1000 * 60 * 60);
-      const durationDays = durationHours / 24;
-      
-      // Ziel: 10-12 Ticks
-      const targetTicks = 10;
-      
-      // Berechne ideales Intervall basierend auf Zeitspanne
-      let tickInterval: number;
-      let useHourFormat = false;
-      
-      if (durationHours <= 6) {
-        // < 6 Stunden: 30-Minuten-Intervalle
-        tickInterval = 30 * 60 * 1000;
-        useHourFormat = true;
-      } else if (durationHours <= 24) {
-        // < 1 Tag: 2-Stunden-Intervalle
-        tickInterval = 2 * 60 * 60 * 1000;
-        useHourFormat = true;
-      } else if (durationDays <= 3) {
-        // 1-3 Tage: 6-Stunden-Intervalle
-        tickInterval = 6 * 60 * 60 * 1000;
-        useHourFormat = true;
-      } else if (durationDays <= 7) {
-        // 3-7 Tage: 12-Stunden-Intervalle
-        tickInterval = 12 * 60 * 60 * 1000;
-        useHourFormat = true;
-      } else if (durationDays <= 14) {
-        // 1-2 Wochen: Tages-Intervalle
-        tickInterval = 24 * 60 * 60 * 1000;
-      } else if (durationDays <= 60) {
-        // 2-8 Wochen: 2-Tages-Intervalle
-        tickInterval = 2 * 24 * 60 * 60 * 1000;
-      } else {
-        // > 2 Monate: 1-Wochen-Intervalle
-        tickInterval = 7 * 24 * 60 * 60 * 1000;
-      }
-      
-      // Generiere Ticks - ANCHORED an startTs (nicht global ausgerichtet)
-      // TradingView-Level: Ticks beginnen exakt beim Start-Datum
-      const ticks: number[] = [];
-      
-      // Erster Tick = exaktes Start-Datum
-      ticks.push(startTs);
-      
-      // Zwischen-Ticks: Inkrementiere direkt von startTs
-      // KEINE globale Rundung auf "runde" Zeiten!
-      // Beispiel: Start 16:52 mit 6h-Intervall → 16:52, 22:52, 04:52...
-      let currentTs = startTs + tickInterval;
-      
-      while (currentTs < endTs) {
-        ticks.push(currentTs);
-        currentTs += tickInterval;
-      }
-      
-      // Letzter Tick = exaktes End-Datum
       if (ticks[ticks.length - 1] !== endTs) {
         ticks.push(endTs);
       }
@@ -2046,20 +2023,21 @@ export default function Dashboard() {
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   // Bei analyzeMode: Nur den Zeitraum des ausgewählten Updates zeigen
   const xAxisDomain = useMemo((): [number | string, number | string] => {
-    // COMPARE MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types
-    if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
-      const range = compareChartData.maxTimestamp - compareChartData.minTimestamp;
-      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
-      return [compareChartData.minTimestamp - padding, compareChartData.maxTimestamp + padding];
-    }
-    
-    // ANALYSIEREN-MODUS: Nur das ausgewählte Update anzeigen
+    // ANALYSIEREN-MODUS hat PRIORITÄT - auch im Compare-Modus!
+    // Nur das ausgewählte Update anzeigen
     if (analyzeModeBounds) {
       const { startTs, endTs } = analyzeModeBounds;
       // 5% Padding auf jeder Seite für schöne Darstellung
       const range = endTs - startTs;
       const padding = range * 0.05;
       return [startTs - padding, endTs + padding];
+    }
+    
+    // COMPARE MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types
+    if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
+      const range = compareChartData.maxTimestamp - compareChartData.minTimestamp;
+      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
+      return [compareChartData.minTimestamp - padding, compareChartData.maxTimestamp + padding];
     }
     
     // Hole Start- und Endzeit aus den Daten
