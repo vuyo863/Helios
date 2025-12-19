@@ -920,8 +920,8 @@ export default function Dashboard() {
     selectedBotTypesInfo.forEach(botType => {
       const updates = updatesByBotType[botType.name] || [];
       
-      // Kumulativer Wert für Vergleichs-Modus
-      let cumulativeProfit = 0;
+      // Speichere vorherigen End-Wert für Start-Punkt Berechnung
+      let previousEndValue = 0;
       
       updates.forEach((update, idx) => {
         // End-Timestamp: thisUpload
@@ -938,7 +938,8 @@ export default function Dashboard() {
         
         allTimestamps.push(startTimestamp, endTimestamp);
         
-        // Berechne den Profit-Wert
+        // Berechne den Profit-Wert - IMMER RAW-WERT verwenden, KEINE Kumulierung!
+        // Das ist identisch zur MainChart Logik (Golden State)
         let profitValue = 0;
         if (update.status === 'Closed Bots') {
           profitValue = parseFloat(update.profit || '0') || 0;
@@ -946,27 +947,8 @@ export default function Dashboard() {
           profitValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
         }
         
-        // Prüfe ob Vergleichs-Modus (wie in chartData)
-        const hasAbsoluteFields = update.overallGridProfitUsdtAbsolute !== null && update.overallGridProfitUsdtAbsolute !== undefined;
-        let isVergleichsModus = false;
-        
-        if (hasAbsoluteFields) {
-          const absoluteValue = parseFloat(update.overallGridProfitUsdtAbsolute || '0') || 0;
-          isVergleichsModus = Math.abs(profitValue - absoluteValue) > 0.01;
-        } else {
-          isVergleichsModus = update.calculationMode === 'Normal';
-        }
-        
-        // Bei Vergleichs-Modus: kumuliere Werte
-        if (isVergleichsModus && idx > 0) {
-          cumulativeProfit += profitValue;
-          profitValue = cumulativeProfit;
-        } else {
-          cumulativeProfit = profitValue;
-        }
-        
         // Start-Punkt: Wert vom vorherigen Endpunkt oder 0
-        const startValue = idx > 0 ? dataPoints.filter(p => p[botType.name] !== null && p[botType.name] !== undefined).slice(-1)[0]?.[botType.name] || 0 : 0;
+        const startValue = idx > 0 ? previousEndValue : 0;
         
         // Erstelle Start-Punkt
         const startPoint: Record<string, any> = {
@@ -1001,6 +983,9 @@ export default function Dashboard() {
         endPoint[botType.name] = profitValue;
         endPoint[`${botType.name}_status`] = update.status; // Status für Closed Bot Erkennung
         dataPoints.push(endPoint);
+        
+        // Speichere End-Wert für nächsten Start-Punkt
+        previousEndValue = profitValue;
       });
     });
 
