@@ -3599,11 +3599,16 @@ export default function Dashboard() {
                               const findValueAtTs = (targetTs: number): number | null => {
                                 if (!updateBotTypeName) return null;
                                 
-                                // Finde den nächsten Punkt zum Timestamp
+                                // Finde den nächsten Punkt der TATSÄCHLICH einen Wert für diesen Bot-Type hat
+                                // (nicht einfach den nächsten Punkt - der könnte zu einem anderen Bot-Type gehören!)
                                 let closestPoint = null;
                                 let closestDist = Infinity;
                                 
                                 for (const point of chartDataArray) {
+                                  // WICHTIG: Nur Punkte berücksichtigen die einen Wert für diesen Bot-Type haben!
+                                  const val = point[updateBotTypeName];
+                                  if (typeof val !== 'number' || isNaN(val)) continue;
+                                  
                                   const dist = Math.abs(point.timestamp - targetTs);
                                   if (dist < closestDist) {
                                     closestDist = dist;
@@ -3613,12 +3618,8 @@ export default function Dashboard() {
                                 
                                 if (!closestPoint) return null;
                                 
-                                // NUR den Wert vom Bot-Type dieses Updates verwenden (nicht den ersten Wert!)
-                                const val = closestPoint[updateBotTypeName];
-                                if (typeof val === 'number' && !isNaN(val)) {
-                                  return val;
-                                }
-                                return null;
+                                // Wert zurückgeben (wir wissen bereits dass er existiert)
+                                return closestPoint[updateBotTypeName] as number;
                               };
                               
                               const startValue = findValueAtTs(update.startTs);
