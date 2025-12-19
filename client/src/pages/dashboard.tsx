@@ -825,6 +825,22 @@ export default function Dashboard() {
   // Chart-Funktionalität wird später separat implementiert
   const isMultiBotChartMode = false;
 
+  // Compare/Added Modus: 2+ Bot-Types ausgewählt
+  // Bei 2+ werden From/Until deaktiviert, Content Cards zeigen "--"
+  const isMultiSelectCompareMode = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2;
+
+  // Bei 2+ Bot-Types: Graph-Einstellungen auf Default setzen
+  useEffect(() => {
+    if (isMultiSelectCompareMode) {
+      setSelectedTimeRange('First-Last Update');
+      setShowHighestValue(false);
+      setShowLowestValue(false);
+      setChartSequence('days');
+      setSelectedFromUpdate(null);
+      setSelectedUntilUpdate(null);
+    }
+  }, [isMultiSelectCompareMode]);
+
   // Chart-Daten für Multi-Bot-Type Modus
   // Zeigt Gesamtprofit für jeden ausgewählten Bot-Type als separate Linie
   // Respektiert dieselben Filter wie der Single-Bot Modus (Zeitraum, From/Until)
@@ -2458,31 +2474,31 @@ export default function Dashboard() {
                 const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string }> = {
                   'Gesamtkapital': {
                     label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge',
-                    value: `${displayedInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: isMultiSelectCompareMode ? '--' : `${displayedInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
                     icon: Wallet,
                     iconColor: 'bg-blue-100 text-blue-600',
                   },
                   'Gesamtprofit': {
                     label: 'Gesamtprofit',
-                    value: `${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: isMultiSelectCompareMode ? '--' : `${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
                     icon: TrendingUp,
                     iconColor: 'bg-green-100 text-green-600',
                   },
                   'Gesamtprofit %': {
                     label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtprofit % (GI)' : 'Gesamtprofit % (IM)',
-                    value: `${totalProfitPercent.toFixed(2)}%`,
+                    value: isMultiSelectCompareMode ? '--' : `${totalProfitPercent.toFixed(2)}%`,
                     icon: Percent,
                     iconColor: 'bg-purple-100 text-purple-600',
                   },
                   'Ø Profit/Tag': {
                     label: 'Ø Profit/Tag',
-                    value: `${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: isMultiSelectCompareMode ? '--' : `${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
                     icon: CalendarIcon,
                     iconColor: 'bg-orange-100 text-orange-600',
                   },
                   'Real Profit/Tag': {
                     label: 'Real Profit/Tag',
-                    value: `${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: isMultiSelectCompareMode ? '--' : `${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
                     icon: Zap,
                     iconColor: 'bg-yellow-100 text-yellow-600',
                   },
@@ -2586,8 +2602,8 @@ export default function Dashboard() {
                       variant="outline" 
                       size="sm" 
                       className="gap-2 min-w-[100px]"
-                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && setFromUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode}
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && !isMultiSelectCompareMode && setFromUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode || isMultiSelectCompareMode}
                     >
                       {selectedFromUpdate ? `#${selectedFromUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
@@ -2599,8 +2615,8 @@ export default function Dashboard() {
                       variant="outline" 
                       size="sm" 
                       className="gap-2 min-w-[100px]"
-                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && setUntilUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode}
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && !isMultiSelectCompareMode && setUntilUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode || isMultiSelectCompareMode}
                     >
                       {selectedUntilUpdate ? `#${selectedUntilUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
