@@ -415,13 +415,47 @@ export default function Dashboard() {
         if (state.activePayload[0]?.payload?.timestamp) {
           const hoveredTs = state.activePayload[0].payload.timestamp;
           
+          // COMPARE MODUS: Suche in allBotTypeUpdates für alle ausgewählten Bot-Types
+          // Identifiziere den Bot-Type aus dem Tooltip-Namen
+          let updatesToSearch: typeof sortedUpdates = [];
+          let hoveredBotTypeName: string | null = null;
+          
+          if (isMultiSelectCompareMode && selectedChartBotTypes.length >= 2) {
+            // Finde welcher Bot-Type im Tooltip angezeigt wird (der nächste Punkt)
+            // activePayload enthält Einträge für alle Linien - finde den mit einem Wert
+            for (const entry of state.activePayload) {
+              if (entry.value !== null && entry.value !== undefined && entry.name) {
+                hoveredBotTypeName = entry.name;
+                break;
+              }
+            }
+            
+            // Sammle alle Updates von ausgewählten Bot-Types
+            selectedChartBotTypes.forEach(botTypeId => {
+              const updates = allBotTypeUpdates.filter(u => u.botTypeId === botTypeId);
+              updatesToSearch.push(...updates);
+            });
+          } else {
+            // Normaler Modus: Nur sortedUpdates
+            updatesToSearch = sortedUpdates || [];
+          }
+          
           // Find matching update by checking if this timestamp matches start or end
-          const matchingUpdate = sortedUpdates?.find(u => {
+          // In Compare mode: Auch den Bot-Type matchen wenn möglich
+          const matchingUpdate = updatesToSearch.find(u => {
             const endTs = u.thisUpload ? parseGermanDate(u.thisUpload)?.getTime() : null;
             const startTs = u.lastUpload ? parseGermanDate(u.lastUpload)?.getTime() : null;
-            // Allow 60 second tolerance for matching
-            return (endTs && Math.abs(endTs - hoveredTs) < 60000) || 
-                   (startTs && Math.abs(startTs - hoveredTs) < 60000);
+            const timestampMatches = (endTs && Math.abs(endTs - hoveredTs) < 60000) || 
+                                     (startTs && Math.abs(startTs - hoveredTs) < 60000);
+            
+            // In Compare mode: Optional Bot-Type prüfen
+            if (isMultiSelectCompareMode && hoveredBotTypeName && timestampMatches) {
+              // Finde den Bot-Type-Namen für dieses Update
+              const botType = availableBotTypes.find(bt => bt.id === u.botTypeId);
+              return botType?.name === hoveredBotTypeName;
+            }
+            
+            return timestampMatches;
           });
           
           if (matchingUpdate) {
