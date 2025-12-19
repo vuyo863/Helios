@@ -169,6 +169,29 @@ selectedChartBotTypes: string[]
 
 ---
 
+## 9. BEHOBENE FEHLER (NIEMALS WIEDERHOLEN!)
+
+### 9.1 CONNECTION ISSUE CLOSED BOT (Fix: 2025-12-19)
+**Problem:** Im Compare-Modus wurden für Closed Bot Marker ZWEI Kreise angezeigt statt einem.
+**Ursache:** 
+1. Marker-SVG (Zeilen ~3437-3447) zeichnete einen manuellen Kreis am Chart-Punkt
+2. Line-Komponente dot-Renderer (Zeilen ~4604-4621) zeichnete ebenfalls einen Kreis
+3. Zusätzlich: dot-Renderer prüfte nicht ob `pointValue === null` → Kreise für ALLE Bot-Types gerendert
+
+**Fix:**
+1. Manuellen Kreis in Marker-SVG entfernt (nur gestrichelte Linie bleibt)
+2. In Line dot-Renderer: Skip wenn `pointValue === null || pointValue === undefined`
+
+**Regel:** Jeder Datenpunkt gehört NUR zu EINEM Bot-Type. Vor dem Rendern IMMER prüfen ob der Wert existiert!
+
+### 9.2 DASHED LINE WRONG BOT-TYPE (Fix: 2025-12-19)
+**Problem:** Gestrichelte Linien von Update Markern gingen zum FALSCHEN Bot-Type (z.B. U1 von bhj ging zur roten teshh-Linie).
+**Ursache:** `findValueAtTs()` Funktion nahm den ERSTEN Bot-Type-Wert statt den Wert vom richtigen Bot-Type.
+**Fix:** Bot-Type-Name via `update.botTypeId` ermitteln und NUR dessen Wert aus dem Chart-Punkt lesen.
+**Regel:** Updates gehören zu EINEM Bot-Type. Immer `update.botTypeId` verwenden um den richtigen Wert zu finden!
+
+---
+
 ## System Architecture
 
 ### UI/UX

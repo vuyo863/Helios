@@ -3590,9 +3590,15 @@ export default function Dashboard() {
                                 return markerHeight + gapHeight + chartY;
                               };
                               
+                              // Finde den Bot-Type-Namen für dieses Update
+                              const updateBotType = availableBotTypes.find(bt => String(bt.id) === String(update.botTypeId));
+                              const updateBotTypeName = updateBotType?.name || null;
+                              
                               // Finde den tatsächlichen Wert am Start- und End-Timestamp
-                              // Suche im compareChartData nach dem nächsten Datenpunkt
+                              // WICHTIG: Nur den Wert vom Bot-Type verwenden, zu dem dieses Update gehört!
                               const findValueAtTs = (targetTs: number): number | null => {
+                                if (!updateBotTypeName) return null;
+                                
                                 // Finde den nächsten Punkt zum Timestamp
                                 let closestPoint = null;
                                 let closestDist = Infinity;
@@ -3607,12 +3613,10 @@ export default function Dashboard() {
                                 
                                 if (!closestPoint) return null;
                                 
-                                // Finde den ersten Bot-Type-Wert im Punkt
-                                for (const botName of compareChartData.botTypeNames) {
-                                  const val = closestPoint[botName];
-                                  if (typeof val === 'number' && !isNaN(val)) {
-                                    return val;
-                                  }
+                                // NUR den Wert vom Bot-Type dieses Updates verwenden (nicht den ersten Wert!)
+                                const val = closestPoint[updateBotTypeName];
+                                if (typeof val === 'number' && !isNaN(val)) {
+                                  return val;
                                 }
                                 return null;
                               };
