@@ -3282,25 +3282,34 @@ export default function Dashboard() {
                             
                             if (endValue === null) return null;
                             
-                            // Calculate Y position using compare chart bounds
-                            const allVals = chartDataArray.flatMap(d => 
-                              compareChartData.botTypeNames.map(name => d[name]).filter(v => typeof v === 'number')
-                            ) as number[];
-                            if (allVals.length === 0) return null;
-                            const yMinNum = Math.min(...allVals);
-                            const yMaxNum = Math.max(...allVals);
+                            // Calculate Y position using yAxisDomain (gleiche Logik wie normale Updates)
+                            let yMinNum: number, yMaxNum: number;
+                            const [yMin, yMax] = yAxisDomain;
+                            if (typeof yMin === 'number' && typeof yMax === 'number') {
+                              yMinNum = yMin;
+                              yMaxNum = yMax;
+                            } else {
+                              // Fallback: Berechne aus Chart-Daten
+                              const allVals = chartDataArray.flatMap(d => 
+                                compareChartData.botTypeNames.map(name => d[name]).filter(v => typeof v === 'number')
+                              ) as number[];
+                              if (allVals.length === 0) return null;
+                              yMinNum = Math.min(...allVals);
+                              yMaxNum = Math.max(...allVals);
+                            }
                             const yRange = yMaxNum - yMinNum;
+                            if (yRange === 0) return null;
                             
                             const markerHeight = 80;
                             const gapHeight = 16;
                             const chartTopMargin = 5;
                             const plotHeight = 225;
                             
-                            if (yRange === 0) return 100;
+                            // Gleiche Berechnung wie bei normalen Updates
                             const relativeValue = (endValue - yMinNum) / yRange;
                             const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
-                            const rawY = (markerHeight + gapHeight + chartY) / markerHeight * 100;
-                            return Math.max(100, rawY);
+                            const rawY = markerHeight + gapHeight + chartY;
+                            return Math.max(100, (rawY / markerHeight) * 100);
                           }
                           
                           // Single-Bot Modus: Verwende transformedChartData
