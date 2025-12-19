@@ -196,6 +196,8 @@ export default function Notifications() {
     return saved ? JSON.parse(saved) : {};
   });
 
+  const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
+
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
     // Check all trading pairs with thresholds
@@ -302,7 +304,6 @@ export default function Notifications() {
   const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
-  const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
   
   // Save watchlist to localStorage whenever it changes
   useEffect(() => {
