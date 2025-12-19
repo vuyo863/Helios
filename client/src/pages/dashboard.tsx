@@ -4691,12 +4691,23 @@ export default function Dashboard() {
             onRemoveBotType={handleRemoveBotType}
             selectedChartBotTypes={selectedChartBotTypes}
             onToggleChartBotType={(botTypeId) => {
-              // NUR UI-Toggle (blau/grau) - keine Chart-Funktionen mehr
-              setSelectedChartBotTypes(prev => 
-                prev.includes(botTypeId)
+              // UI-Toggle (blau/grau) + Suche oben setzen wenn nur EINER ausgewählt
+              setSelectedChartBotTypes(prev => {
+                const newSelection = prev.includes(botTypeId)
                   ? prev.filter(id => id !== botTypeId)
-                  : [...prev, botTypeId]
-              );
+                  : [...prev, botTypeId];
+                
+                // Wenn nach dem Toggle genau EINER ausgewählt ist → Suche oben setzen
+                if (newSelection.length === 1) {
+                  const selectedId = newSelection[0];
+                  const botType = availableBotTypes.find(bt => String(bt.id) === String(selectedId));
+                  if (botType) {
+                    setSelectedBotName(botType.name);
+                  }
+                }
+                
+                return newSelection;
+              });
             }}
           />
           
