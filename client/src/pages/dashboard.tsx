@@ -3183,7 +3183,16 @@ export default function Dashboard() {
                           const isApplied = appliedUpdateId === closedKey;
                           if (isApplied) isClosedActive = true;
                         }
-                        const closedStrokeColor = isClosedActive ? "rgb(8, 145, 178)" : "hsl(var(--muted-foreground))";
+                        // Farbe: Aktiv = neonblau, sonst grau ODER im Compare-Modus die Bot-Type-Farbe
+                        let closedStrokeColor: string;
+                        if (isClosedActive) {
+                          closedStrokeColor = "rgb(8, 145, 178)"; // Neonblau wenn aktiv/gehoverd
+                        } else if (isMultiSelectCompareMode && update.botTypeId) {
+                          // Compare-Modus: Verwende die Farbe des Bot-Types
+                          closedStrokeColor = compareColorMap[update.botTypeId] || "hsl(var(--muted-foreground))";
+                        } else {
+                          closedStrokeColor = "hsl(var(--muted-foreground))"; // Grau als Default
+                        }
                         
                         const handleClosedClick = () => {
                           // Stift-Modus hat PRIORITÄT - blockiert Auge-Modus
