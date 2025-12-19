@@ -3401,7 +3401,7 @@ export default function Dashboard() {
                               fill={closedStrokeColor}
                               style={isClosedActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                             />
-                            {/* Dashed line to chart when active */}
+                            {/* Dashed line to chart when active - gerade nach unten */}
                             {isClosedActive && closedY2 !== null && (
                               <line
                                 x1={`${clampedEndX}%`}
@@ -3412,6 +3412,18 @@ export default function Dashboard() {
                                 strokeWidth="1"
                                 strokeDasharray="4 3"
                                 style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                              />
+                            )}
+                            {/* Neon dot at chart point when active */}
+                            {isClosedActive && closedY2 !== null && (
+                              <circle
+                                cx={`${clampedEndX}%`}
+                                cy={`${closedY2}%`}
+                                r={5}
+                                fill="hsl(var(--background))"
+                                stroke="rgb(8, 145, 178)"
+                                strokeWidth={2}
+                                style={{ filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))', pointerEvents: 'none' }}
                               />
                             )}
                           </g>
