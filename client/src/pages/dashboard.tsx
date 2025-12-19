@@ -4685,7 +4685,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold">
               Alle Einträge
             </h2>
-            <div className="flex items-center bg-muted rounded-lg p-1" data-testid="toggle-alle-eintraege-mode">
+            <div className="flex items-center bg-muted rounded-lg p-1 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]" data-testid="toggle-alle-eintraege-mode">
               <button
                 onClick={() => setAlleEintraegeMode('compare')}
                 className={cn(
