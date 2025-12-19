@@ -924,7 +924,53 @@ export default function Dashboard() {
 
   // Compare/Added Modus: 2+ Bot-Types ausgewählt
   // Bei 2+ werden From/Until deaktiviert, Content Cards zeigen "--"
-  const isMultiSelectCompareMode = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2;
+  const isMultiSelectCompareModeBase = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2;
+
+  // AUSNAHME-ZUSTAND: Analyze Mode in Compare Mode
+  // Wenn analyzeMode aktiv und appliedUpdateId ein Compare-Format hat ({botTypeId}:u-X)
+  // Dann wird Compare Mode "pausiert" und wir arbeiten wie im Normal Mode mit einer einzelnen Metrik
+  const analyzeSingleMetricInfo = useMemo(() => {
+    if (!analyzeMode || !appliedUpdateId || !appliedUpdateId.includes(':')) {
+      return null;
+    }
+    
+    // Parse Compare-Format: "{botTypeId}:u-X" oder "{botTypeId}:c-X"
+    const colonIndex = appliedUpdateId.indexOf(':');
+    const botTypeId = appliedUpdateId.substring(0, colonIndex);
+    const updatePart = appliedUpdateId.substring(colonIndex + 1);
+    const isClosedBot = updatePart.startsWith('c-');
+    const version = parseInt(updatePart.split('-')[1], 10);
+    
+    // Finde den Bot-Type Namen
+    const botType = availableBotTypes.find(bt => String(bt.id) === botTypeId);
+    const botTypeName = botType?.name || 'Unknown';
+    
+    return { 
+      botTypeId, 
+      updatePart, 
+      isClosedBot, 
+      version,
+      botTypeName,
+      originalKey: appliedUpdateId
+    };
+  }, [analyzeMode, appliedUpdateId, availableBotTypes]);
+
+  // Wenn Analyze Single Metric aktiv: Compare Mode wird DEAKTIVIERT
+  // Das ermöglicht normale Chart-Darstellung und Content Card Funktionalität
+  const isAnalyzeSingleMetricMode = analyzeSingleMetricInfo !== null;
+  const isMultiSelectCompareMode = isMultiSelectCompareModeBase && !isAnalyzeSingleMetricMode;
+
+  // EFFEKTIVER Bot-Type für Chart-Daten:
+  // - Normal Mode: selectedBotTypeData (basiert auf selectedBotName)
+  // - Analyze Single Metric Mode: Bot-Type aus der ausgewählten Metrik
+  const effectiveSelectedBotTypeData = useMemo(() => {
+    if (isAnalyzeSingleMetricMode && analyzeSingleMetricInfo) {
+      // Finde den Bot-Type basierend auf der extrahierten ID
+      const botType = availableBotTypes.find(bt => String(bt.id) === analyzeSingleMetricInfo.botTypeId);
+      return botType || null;
+    }
+    return selectedBotTypeData;
+  }, [isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, availableBotTypes, selectedBotTypeData]);
 
   // Bei 2+ Bot-Types: Graph-Einstellungen auf Default setzen
   useEffect(() => {
@@ -1605,7 +1651,7 @@ export default function Dashboard() {
     // Finde das Update in den Daten
     // Compare-Modus: Suche im spezifischen Bot-Type
     // Normal-Modus: Suche im ausgewählten Bot-Type
-    const targetBotTypeId = parsedBotTypeId || selectedBotTypeData?.id;
+    const targetBotTypeId = parsedBotTypeId || effectiveSelectedBotTypeData?.id;
     const allUpdates = targetBotTypeId 
       ? (allBotTypeUpdates || []).filter((u: BotTypeUpdate) => u.botTypeId === targetBotTypeId)
       : [];
@@ -2486,6 +2532,56 @@ export default function Dashboard() {
     }
   }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, selectedBotTypeData]);
 
+  // ANALYZE SINGLE METRIC MODE: Extrahiere Werte aus dem ausgewählten Update
+  // Diese Werte überschreiben die aggregierten Content Card Werte
+  const analyzeSingleMetricValues = useMemo(() => {
+    if (!isAnalyzeSingleMetricMode || !analyzeSingleMetricInfo || !allBotTypeUpdates) {
+      return null;
+    }
+    
+    const { botTypeId, isClosedBot, version } = analyzeSingleMetricInfo;
+    
+    // Finde das spezifische Update
+    const update = allBotTypeUpdates.find((u: BotTypeUpdate) => 
+      String(u.botTypeId) === botTypeId && 
+      u.version === version && 
+      (isClosedBot ? u.status === 'Closed Bots' : u.status === 'Update Metrics')
+    );
+    
+    if (!update) {
+      return null;
+    }
+    
+    // Extrahiere die relevanten Werte aus dem Update
+    const investment = parseFloat(update.totalInvestment || update.investment || '0') || 0;
+    const baseInvestment = parseFloat(update.investment || '0') || 0;
+    
+    // Profit: Je nach Status unterschiedliche Felder
+    const profit = isClosedBot 
+      ? parseFloat(update.profit || '0') || 0
+      : parseFloat(update.overallGridProfitUsdt || '0') || 0;
+    
+    // Profit %: Berechne basierend auf Investment
+    const profitPercent = investment > 0 ? (profit / investment) * 100 : 0;
+    
+    // Ø Profit/Tag: gridProfit24hAvg oder berechnet
+    const avgDaily = parseFloat(update.gridProfit24hAvg || '0') || 0;
+    
+    // Real Profit/Tag: avgGridProfitPerDay
+    const realDaily = parseFloat(update.avgGridProfitPerDay || '0') || 0;
+    
+    return {
+      investment,
+      baseInvestment,
+      profit,
+      profitPercent,
+      avgDailyProfit: avgDaily,
+      realDailyProfit: realDaily,
+      updateName: update.name || `Update ${version}`,
+      botTypeName: analyzeSingleMetricInfo.botTypeName
+    };
+  }, [isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, allBotTypeUpdates]);
+
   const lineChartData = useMemo(() => 
     filteredEntriesForStats
       .slice(0, 10)
@@ -2787,34 +2883,77 @@ export default function Dashboard() {
           >
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 ${isCardEditMode ? 'pt-4' : ''}`}>
               {(isCardEditMode ? tempCardOrder : cardOrder).map((cardId) => {
+                // ANALYZE SINGLE METRIC MODE: Verwende Werte aus der einzelnen Metrik
+                // Sonst: Verwende aggregierte Werte oder "--" im Compare Mode
+                const getCardValue = (cardId: string): string => {
+                  if (isMultiSelectCompareMode) return '--';
+                  
+                  if (isAnalyzeSingleMetricMode && analyzeSingleMetricValues) {
+                    // Werte aus der einzelnen ausgewählten Metrik
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        const inv = profitPercentBase === 'gesamtinvestment' 
+                          ? analyzeSingleMetricValues.investment 
+                          : analyzeSingleMetricValues.baseInvestment;
+                        return `${inv.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit':
+                        return `${analyzeSingleMetricValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit %':
+                        return `${analyzeSingleMetricValues.profitPercent.toFixed(2)}%`;
+                      case 'Ø Profit/Tag':
+                        return `${analyzeSingleMetricValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Real Profit/Tag':
+                        return `${analyzeSingleMetricValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      default:
+                        return '--';
+                    }
+                  }
+                  
+                  // Normale aggregierte Werte
+                  switch (cardId) {
+                    case 'Gesamtkapital':
+                      return `${displayedInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                    case 'Gesamtprofit':
+                      return `${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                    case 'Gesamtprofit %':
+                      return `${totalProfitPercent.toFixed(2)}%`;
+                    case 'Ø Profit/Tag':
+                      return `${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                    case 'Real Profit/Tag':
+                      return `${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                    default:
+                      return '--';
+                  }
+                };
+                
                 const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string }> = {
                   'Gesamtkapital': {
                     label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge',
-                    value: isMultiSelectCompareMode ? '--' : `${displayedInvestment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: getCardValue('Gesamtkapital'),
                     icon: Wallet,
                     iconColor: 'bg-blue-100 text-blue-600',
                   },
                   'Gesamtprofit': {
                     label: 'Gesamtprofit',
-                    value: isMultiSelectCompareMode ? '--' : `${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: getCardValue('Gesamtprofit'),
                     icon: TrendingUp,
                     iconColor: 'bg-green-100 text-green-600',
                   },
                   'Gesamtprofit %': {
                     label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtprofit % (GI)' : 'Gesamtprofit % (IM)',
-                    value: isMultiSelectCompareMode ? '--' : `${totalProfitPercent.toFixed(2)}%`,
+                    value: getCardValue('Gesamtprofit %'),
                     icon: Percent,
                     iconColor: 'bg-purple-100 text-purple-600',
                   },
                   'Ø Profit/Tag': {
                     label: 'Ø Profit/Tag',
-                    value: isMultiSelectCompareMode ? '--' : `${avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: getCardValue('Ø Profit/Tag'),
                     icon: CalendarIcon,
                     iconColor: 'bg-orange-100 text-orange-600',
                   },
                   'Real Profit/Tag': {
                     label: 'Real Profit/Tag',
-                    value: isMultiSelectCompareMode ? '--' : `${real24hProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`,
+                    value: getCardValue('Real Profit/Tag'),
                     icon: Zap,
                     iconColor: 'bg-yellow-100 text-yellow-600',
                   },
@@ -4995,7 +5134,7 @@ export default function Dashboard() {
                   // Finde das Update in den Daten
                   // Compare-Modus: Suche in dem spezifischen Bot-Type
                   // Normal-Modus: Suche im ausgewählten Bot-Type
-                  const targetBotTypeId = parsedBotTypeId || selectedBotTypeData?.id;
+                  const targetBotTypeId = parsedBotTypeId || effectiveSelectedBotTypeData?.id;
                   const allUpdates = targetBotTypeId 
                     ? (allBotTypeUpdates || []).filter((u: BotTypeUpdate) => u.botTypeId === targetBotTypeId)
                     : [];
