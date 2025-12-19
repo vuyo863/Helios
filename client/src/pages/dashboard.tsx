@@ -1586,26 +1586,31 @@ export default function Dashboard() {
   // - Wochen → TAGES-Ticks (!), Labels = Datum + ab und zu KW
   // - Monate → TAGES-Ticks (!), Labels = Datum + ab und zu Monat
   const xAxisTicks = useMemo(() => {
-    // COMPARE MODUS: Tick-Generierung für den Vergleichsmodus
+    // COMPARE MODUS: Tick-Generierung für den Vergleichsmodus - MEHR TICKS wie normaler Chart
     if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
       const startTs = compareChartData.minTimestamp;
       const endTs = compareChartData.maxTimestamp;
       const durationMs = endTs - startTs;
       const durationDays = durationMs / (1000 * 60 * 60 * 24);
       
-      // Berechne ideales Intervall basierend auf Zeitspanne
+      // Berechne ideales Intervall - KLEINERE Intervalle für MEHR Ticks (wie normaler Chart)
+      // Ziel: ~10-15 Ticks auf der X-Achse
       let tickInterval: number;
       
-      if (durationDays <= 7) {
-        tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
+      if (durationDays <= 3) {
+        tickInterval = 6 * 60 * 60 * 1000; // 6 Stunden
+      } else if (durationDays <= 7) {
+        tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
       } else if (durationDays <= 14) {
-        tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
+        tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
       } else if (durationDays <= 30) {
-        tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
+        tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
       } else if (durationDays <= 60) {
-        tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+        tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
+      } else if (durationDays <= 90) {
+        tickInterval = 5 * 24 * 60 * 60 * 1000; // 5 Tage
       } else {
-        tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+        tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
       }
       
       const ticks: number[] = [];
