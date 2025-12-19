@@ -3490,7 +3490,16 @@ export default function Dashboard() {
                       let isMajor = false;  // Major = größere Einheit mit blauer Umrandung
                       let showLabel = false;
                       
-                      if (sequence === 'hours') {
+                      // FESTE BOUNDARY-TICKS: Start und End IMMER anzeigen
+                      const currentTs = payload.value;
+                      const isFirstTick = currentTs === startTime;
+                      const isLastTick = currentTs === endTime;
+                      
+                      if (isFirstTick || isLastTick) {
+                        label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        isMajor = true;
+                        showLabel = true;
+                      } else if (sequence === 'hours') {
                         // ADAPTIVE Stunden-Intervalle basierend auf Zeitraum
                         // Bei längeren Zeiträumen (>7 Tage): NUR Mitternacht-Labels (1 pro Tag)
                         // Bei kürzeren Zeiträumen: Zusätzlich Stunden-Labels
