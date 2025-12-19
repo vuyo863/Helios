@@ -4594,10 +4594,15 @@ export default function Dashboard() {
                             }
                             
                             // Aktiver Punkt: Neon-Blau Glow
+                            // WICHTIG: pointerEvents: 'all' damit Hover auf SVG-Kreisen funktioniert!
                             const activeStyle = isPointActive ? { 
                               filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))',
-                              cursor: 'pointer'
-                            } : { cursor: markerViewActive ? 'pointer' : 'default' };
+                              cursor: 'pointer',
+                              pointerEvents: 'all' as const
+                            } : { 
+                              cursor: markerViewActive ? 'pointer' : 'default',
+                              pointerEvents: 'all' as const
+                            };
                             const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : lineColor;
                             const activeStrokeWidth = isPointActive ? 3 : 2;
                             
