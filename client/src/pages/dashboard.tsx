@@ -978,9 +978,11 @@ export default function Dashboard() {
         // Initialisiere alle Bot-Types mit null
         selectedBotTypesInfo.forEach(bt => {
           startPoint[bt.name] = null;
+          startPoint[`${bt.name}_status`] = null;
         });
         // Setze den Wert für diesen Bot-Type
         startPoint[botType.name] = idx === 0 ? 0 : startValue;
+        startPoint[`${botType.name}_status`] = update.status; // Status für Closed Bot Erkennung
         dataPoints.push(startPoint);
         
         // Erstelle End-Punkt
@@ -993,9 +995,11 @@ export default function Dashboard() {
         // Initialisiere alle Bot-Types mit null
         selectedBotTypesInfo.forEach(bt => {
           endPoint[bt.name] = null;
+          endPoint[`${bt.name}_status`] = null;
         });
         // Setze den Wert für diesen Bot-Type
         endPoint[botType.name] = profitValue;
+        endPoint[`${botType.name}_status`] = update.status; // Status für Closed Bot Erkennung
         dataPoints.push(endPoint);
       });
     });
@@ -4396,7 +4400,41 @@ export default function Dashboard() {
                           stroke={lineColor}
                           strokeWidth={strokeW}
                           strokeOpacity={strokeOpacity}
-                          dot={{ fill: lineColor, r: dotR, stroke: lineColor, strokeOpacity }}
+                          dot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            // Prüfe ob dieser Datenpunkt ein Closed Bot für diesen Bot-Type ist
+                            const closedStatusKey = `${botTypeName}_status`;
+                            const isClosedBot = payload?.[closedStatusKey] === 'Closed Bots';
+                            
+                            if (isClosedBot) {
+                              // Closed Bots: Hohler Kreis (nur Rand, kein Fill)
+                              return (
+                                <circle
+                                  key={`dot-compare-${payload?.timestamp}-${botTypeName}`}
+                                  cx={cx}
+                                  cy={cy}
+                                  r={dotR + 1}
+                                  fill="hsl(var(--background))"
+                                  stroke={lineColor}
+                                  strokeWidth={2}
+                                  strokeOpacity={strokeOpacity}
+                                />
+                              );
+                            }
+                            
+                            // Normale Punkte: Gefüllter Kreis
+                            return (
+                              <circle
+                                key={`dot-compare-${payload?.timestamp}-${botTypeName}`}
+                                cx={cx}
+                                cy={cy}
+                                r={dotR}
+                                fill={lineColor}
+                                stroke={lineColor}
+                                strokeOpacity={strokeOpacity}
+                              />
+                            );
+                          }}
                           connectNulls
                           isAnimationActive={true}
                           animationDuration={1200}
