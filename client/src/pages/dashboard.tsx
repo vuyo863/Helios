@@ -4500,17 +4500,39 @@ export default function Dashboard() {
                               const relevantUpdates = allBotTypeUpdates.filter(u => 
                                 String(u.botTypeId) === String(botTypeId)
                               );
+                              
+                              // Finde das BESTE Match (kleinstes Delta)
+                              let bestMatch: { key: string; delta: number } | null = null;
+                              
                               for (const update of relevantUpdates) {
                                 const endTs = update.thisUpload ? parseGermanDate(update.thisUpload)?.getTime() || 0 : 0;
                                 const startTs = update.lastUpload ? parseGermanDate(update.lastUpload)?.getTime() || 0 : endTs;
-                                // Prüfe ob der Timestamp zum Start oder Ende passt
-                                const isStart = Math.abs(startTs - dotTimestamp) < 86400000; // 1 Tag Toleranz
-                                const isEnd = Math.abs(endTs - dotTimestamp) < 86400000;
-                                if (isStart || isEnd) {
-                                  return update.status === 'Closed Bots' ? `c-${update.version}` : `u-${update.version}`;
+                                const isClosedBot = update.status === 'Closed Bots';
+                                const key = isClosedBot ? `c-${update.version}` : `u-${update.version}`;
+                                
+                                // Bei Closed Bots: NUR End-Punkt zählt
+                                if (isClosedBot) {
+                                  const endDelta = Math.abs(endTs - dotTimestamp);
+                                  if (endDelta < 3600000) { // 1 Stunde Toleranz für exakten Match
+                                    if (!bestMatch || endDelta < bestMatch.delta) {
+                                      bestMatch = { key, delta: endDelta };
+                                    }
+                                  }
+                                } else {
+                                  // Normale Updates: Start ODER Ende
+                                  const startDelta = Math.abs(startTs - dotTimestamp);
+                                  const endDelta = Math.abs(endTs - dotTimestamp);
+                                  const minDelta = Math.min(startDelta, endDelta);
+                                  
+                                  if (minDelta < 3600000) { // 1 Stunde Toleranz
+                                    if (!bestMatch || minDelta < bestMatch.delta) {
+                                      bestMatch = { key, delta: minDelta };
+                                    }
+                                  }
                                 }
                               }
-                              return null;
+                              
+                              return bestMatch?.key || null;
                             };
                             
                             const matchingKey = markerViewActive ? findMatchingUpdateKey() : null;
