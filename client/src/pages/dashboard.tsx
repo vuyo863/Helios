@@ -841,6 +841,83 @@ export default function Dashboard() {
     }
   }, [isMultiSelectCompareMode]);
 
+  // ========== COMPARE MODUS - SEPARATE SECTION ==========
+  // Diese Logik ist komplett unabhängig von den Graph-Einstellungen (Golden State)
+  // Linien werden GRAU angezeigt (nicht von Content Cards bestimmt)
+  
+  // Compare-Modus: Chart-Daten für alle ausgewählten Bot-Types
+  // Findet automatisch das früheste und späteste Datum aller Bot-Types
+  const compareChartData = useMemo(() => {
+    if (!isMultiSelectCompareMode || allBotTypeUpdates.length === 0) {
+      return { data: [], botTypeNames: [] as string[], minTimestamp: 0, maxTimestamp: 0 };
+    }
+
+    const selectedIds = selectedChartBotTypes.map(id => String(id));
+    
+    // Finde die Namen der ausgewählten Bot-Types
+    const selectedBotTypesInfo = availableBotTypes.filter(bt => 
+      selectedIds.includes(String(bt.id))
+    );
+    const botTypeNames = selectedBotTypesInfo.map(bt => bt.name);
+
+    // Filtere Updates für die ausgewählten Bot-Types
+    const relevantUpdates = allBotTypeUpdates.filter(update => 
+      selectedIds.includes(String(update.botTypeId))
+    );
+
+    if (relevantUpdates.length === 0) {
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
+    }
+
+    // Finde das allerfrühste und allerspäteste Datum ALLER ausgewählten Bot-Types
+    const allTimestamps = relevantUpdates.map(update => getUpdateTimestamp(update)).filter(t => t > 0);
+    const minTimestamp = Math.min(...allTimestamps);
+    const maxTimestamp = Math.max(...allTimestamps);
+
+    // Sortiere nach Zeitstempel
+    const sortedUpdates = [...relevantUpdates].sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+
+    // Generiere Chart-Daten: Ein Datenpunkt pro Update
+    // Jeder Bot-Type bekommt seine eigene Linie (später in GRAU)
+    const dataPoints: Array<Record<string, any>> = [];
+
+    sortedUpdates.forEach(update => {
+      const timestamp = getUpdateTimestamp(update);
+      const botType = selectedBotTypesInfo.find(bt => String(bt.id) === String(update.botTypeId));
+      if (!botType) return;
+
+      // Finde oder erstelle Datenpunkt für diesen Zeitstempel
+      let point = dataPoints.find(p => p.timestamp === timestamp);
+      if (!point) {
+        point = {
+          time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+          timestamp,
+        };
+        // Initialisiere alle Bot-Types mit null
+        selectedBotTypesInfo.forEach(bt => {
+          point![bt.name] = null;
+        });
+        dataPoints.push(point);
+      }
+
+      // Gesamtprofit für diesen Bot-Type (die ausgewählte Metrik - erstmal Gesamtprofit)
+      let value = 0;
+      if (update.status === 'Closed Bots') {
+        value = parseFloat(update.profit || '0') || 0;
+      } else {
+        value = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      }
+
+      point[botType.name] = value;
+    });
+
+    // Sortiere Datenpunkte nach Zeitstempel
+    dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+
+    return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
+  }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes]);
+  // ========== ENDE COMPARE MODUS SECTION ==========
+
   // Chart-Daten für Multi-Bot-Type Modus
   // Zeigt Gesamtprofit für jeden ausgewählten Bot-Type als separate Linie
   // Respektiert dieselben Filter wie der Single-Bot Modus (Zeitraum, From/Until)
@@ -1715,6 +1792,13 @@ export default function Dashboard() {
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   // Bei analyzeMode: Nur den Zeitraum des ausgewählten Updates zeigen
   const xAxisDomain = useMemo((): [number | string, number | string] => {
+    // COMPARE MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types
+    if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
+      const range = compareChartData.maxTimestamp - compareChartData.minTimestamp;
+      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
+      return [compareChartData.minTimestamp - padding, compareChartData.maxTimestamp + padding];
+    }
+    
     // ANALYSIEREN-MODUS: Nur das ausgewählte Update anzeigen
     if (analyzeModeBounds) {
       const { startTs, endTs } = analyzeModeBounds;
@@ -1767,7 +1851,7 @@ export default function Dashboard() {
     const zoomedEnd = center + zoomedRange / 2 + panOffset;
     
     return [zoomedStart, zoomedEnd];
-  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds]);
+  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData]);
 
   // ===== ZEITFILTER FÜR STATCARDS =====
   // Diese gefilterten Updates werden in allen StatCard-Berechnungen verwendet
@@ -3321,8 +3405,9 @@ export default function Dashboard() {
               
               {/* Chart Container with Zoom & Pan Events */}
               {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
-              {((isMultiBotChartMode && multiBotChartData.data.length === 0) || 
-                (!isMultiBotChartMode && transformedChartData.length === 0)) ? (
+              {((isMultiSelectCompareMode && compareChartData.data.length === 0) ||
+                (!isMultiSelectCompareMode && isMultiBotChartMode && multiBotChartData.data.length === 0) || 
+                (!isMultiSelectCompareMode && !isMultiBotChartMode && transformedChartData.length === 0)) ? (
                 <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                   <div className="text-center">
                     <p className="text-lg font-medium">No Metrics Available</p>
@@ -3342,11 +3427,13 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
                   key={investmentBaseKey}
-                  data={isMultiBotChartMode 
-                    ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
-                    : (transformedChartData.length > 0 ? transformedChartData : [
-                        { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
-                      ])
+                  data={isMultiSelectCompareMode
+                    ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
+                    : isMultiBotChartMode 
+                      ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
+                      : (transformedChartData.length > 0 ? transformedChartData : [
+                          { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
+                        ])
                   }
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleLineChartMouseMove}
@@ -3973,8 +4060,27 @@ export default function Dashboard() {
                       );
                     }}
                   />
-                  {/* Dynamisch Lines rendern - Multi-Bot-Mode oder Single-Bot mit Metriken */}
-                  {isMultiBotChartMode ? (
+                  {/* Dynamisch Lines rendern - Compare-Mode, Multi-Bot-Mode oder Single-Bot mit Metriken */}
+                  {isMultiSelectCompareMode ? (
+                    // COMPARE MODUS: Graue Linien für jeden ausgewählten Bot-Type
+                    // Farben werden NICHT von Content Cards bestimmt!
+                    compareChartData.botTypeNames.map((botTypeName, index) => (
+                      <Line 
+                        key={`compare-${botTypeName}`}
+                        type="monotone" 
+                        dataKey={botTypeName}
+                        name={botTypeName}
+                        stroke="#888888"
+                        strokeWidth={2}
+                        dot={{ fill: '#888888', r: 4, stroke: '#888888' }}
+                        connectNulls
+                        isAnimationActive={true}
+                        animationDuration={1200}
+                        animationBegin={0}
+                        animationEasing="ease-out"
+                      />
+                    ))
+                  ) : isMultiBotChartMode ? (
                     // Multi-Bot-Type Modus: Eine Linie pro Bot-Type (zeigt Gesamtprofit)
                     multiBotChartData.botTypeNames.map((botTypeName, index) => (
                       <Line 
