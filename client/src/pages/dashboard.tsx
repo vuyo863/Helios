@@ -814,10 +814,31 @@ export default function Dashboard() {
     '#059669', // Emerald
     '#d946ef', // Fuchsia
   ];
+  
+  // Compare-Modus Farben: ROT und BLAU immer zuerst, dann weitere Farben
+  const COMPARE_MODE_COLORS = [
+    '#dc2626', // Rot - immer erste Linie
+    '#2563eb', // Blau - immer zweite Linie
+    '#16a34a', // Grün
+    '#ea580c', // Orange
+    '#ca8a04', // Gelb/Gold
+    '#9333ea', // Lila
+    '#0891b2', // Cyan
+    '#7c3aed', // Violett
+    '#059669', // Emerald
+    '#d946ef', // Fuchsia
+    '#f97316', // Orange-hell
+    '#14b8a6', // Teal
+  ];
 
   // Hole Farbe für Bot-Type basierend auf Index
   const getBotTypeColor = (index: number): string => {
     return BOT_TYPE_COLORS[index % BOT_TYPE_COLORS.length];
+  };
+  
+  // Hole Farbe für Compare-Modus: Rot/Blau zuerst, dann weitere
+  const getCompareColor = (index: number): string => {
+    return COMPARE_MODE_COLORS[index % COMPARE_MODE_COLORS.length];
   };
 
   // Multi-Bot-Type Chart Modus DEAKTIVIERT
@@ -4319,24 +4340,27 @@ export default function Dashboard() {
                   />
                   {/* Dynamisch Lines rendern - Compare-Mode, Multi-Bot-Mode oder Single-Bot mit Metriken */}
                   {isMultiSelectCompareMode ? (
-                    // COMPARE MODUS: Graue Linien für jeden ausgewählten Bot-Type
-                    // Farben werden NICHT von Content Cards bestimmt!
-                    compareChartData.botTypeNames.map((botTypeName, index) => (
-                      <Line 
-                        key={`compare-${botTypeName}`}
-                        type="monotone" 
-                        dataKey={botTypeName}
-                        name={botTypeName}
-                        stroke="#888888"
-                        strokeWidth={2}
-                        dot={{ fill: '#888888', r: 4, stroke: '#888888' }}
-                        connectNulls
-                        isAnimationActive={true}
-                        animationDuration={1200}
-                        animationBegin={0}
-                        animationEasing="ease-out"
-                      />
-                    ))
+                    // COMPARE MODUS: Farbige Linien für jeden ausgewählten Bot-Type
+                    // Rot und Blau zuerst, dann weitere Farben
+                    compareChartData.botTypeNames.map((botTypeName, index) => {
+                      const lineColor = getCompareColor(index);
+                      return (
+                        <Line 
+                          key={`compare-${botTypeName}`}
+                          type="monotone" 
+                          dataKey={botTypeName}
+                          name={botTypeName}
+                          stroke={lineColor}
+                          strokeWidth={2}
+                          dot={{ fill: lineColor, r: 4, stroke: lineColor }}
+                          connectNulls
+                          isAnimationActive={true}
+                          animationDuration={1200}
+                          animationBegin={0}
+                          animationEasing="ease-out"
+                        />
+                      );
+                    })
                   ) : isMultiBotChartMode ? (
                     // Multi-Bot-Type Modus: Eine Linie pro Bot-Type (zeigt Gesamtprofit)
                     multiBotChartData.botTypeNames.map((botTypeName, index) => (
