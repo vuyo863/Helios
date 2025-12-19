@@ -3239,6 +3239,71 @@ export default function Dashboard() {
                         // Calculate dashed line Y position for closed bot
                         const getClosedBotChartY = () => {
                           if (!isClosedActive) return null;
+                          
+                          // Im Compare-Modus: Verwende compareChartData und Bot-Type-Name
+                          if (isMultiSelectCompareMode) {
+                            const chartDataArray = compareChartData.data || [];
+                            if (chartDataArray.length === 0) return null;
+                            
+                            // Finde Bot-Type-Name für dieses Update
+                            const botType = availableBotTypes.find(bt => String(bt.id) === String(update.botTypeId));
+                            if (!botType) return null;
+                            const metricKey = botType.name;
+                            
+                            // Find value at closed timestamp
+                            const targetTs = update.endTs;
+                            const sorted = [...chartDataArray].sort((a, b) => a.timestamp - b.timestamp);
+                            let before: any = null;
+                            let after: any = null;
+                            
+                            for (let j = 0; j < sorted.length; j++) {
+                              const val = sorted[j][metricKey];
+                              if (val !== null && val !== undefined) {
+                                if (sorted[j].timestamp <= targetTs) before = sorted[j];
+                                if (sorted[j].timestamp >= targetTs && !after) after = sorted[j];
+                              }
+                            }
+                            
+                            let endValue: number | null = null;
+                            if (before && before.timestamp === targetTs) {
+                              endValue = before[metricKey] as number;
+                            } else if (after && after.timestamp === targetTs) {
+                              endValue = after[metricKey] as number;
+                            } else if (before && after && before !== after) {
+                              const beforeVal = before[metricKey] as number;
+                              const afterVal = after[metricKey] as number;
+                              const t = (targetTs - before.timestamp) / (after.timestamp - before.timestamp);
+                              endValue = beforeVal + t * (afterVal - beforeVal);
+                            } else if (before) {
+                              endValue = before[metricKey] as number;
+                            } else if (after) {
+                              endValue = after[metricKey] as number;
+                            }
+                            
+                            if (endValue === null) return null;
+                            
+                            // Calculate Y position using compare chart bounds
+                            const allVals = chartDataArray.flatMap(d => 
+                              compareChartData.botTypeNames.map(name => d[name]).filter(v => typeof v === 'number')
+                            ) as number[];
+                            if (allVals.length === 0) return null;
+                            const yMinNum = Math.min(...allVals);
+                            const yMaxNum = Math.max(...allVals);
+                            const yRange = yMaxNum - yMinNum;
+                            
+                            const markerHeight = 80;
+                            const gapHeight = 16;
+                            const chartTopMargin = 5;
+                            const plotHeight = 225;
+                            
+                            if (yRange === 0) return 100;
+                            const relativeValue = (endValue - yMinNum) / yRange;
+                            const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
+                            const rawY = (markerHeight + gapHeight + chartY) / markerHeight * 100;
+                            return Math.max(100, rawY);
+                          }
+                          
+                          // Single-Bot Modus: Verwende transformedChartData
                           const chartDataArray = transformedChartData || [];
                           if (chartDataArray.length === 0) return null;
                           
