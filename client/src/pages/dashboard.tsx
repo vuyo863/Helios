@@ -846,6 +846,7 @@ export default function Dashboard() {
   // Linien werden GRAU angezeigt (nicht von Content Cards bestimmt)
   
   // Compare-Modus: Chart-Daten für alle ausgewählten Bot-Types
+  // WICHTIG: Gleiche Logik wie chartData - ZWEI Punkte pro Update (Start + Ende)
   // Findet automatisch das früheste und späteste Datum aller Bot-Types
   const compareChartData = useMemo(() => {
     if (!isMultiSelectCompareMode || allBotTypeUpdates.length === 0) {
@@ -869,47 +870,108 @@ export default function Dashboard() {
       return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    // Finde das allerfrühste und allerspäteste Datum ALLER ausgewählten Bot-Types
-    const allTimestamps = relevantUpdates.map(update => getUpdateTimestamp(update)).filter(t => t > 0);
-    const minTimestamp = Math.min(...allTimestamps);
-    const maxTimestamp = Math.max(...allTimestamps);
+    // Gruppiere Updates pro Bot-Type und sortiere jede Gruppe nach Zeit
+    const updatesByBotType: Record<string, typeof relevantUpdates> = {};
+    selectedBotTypesInfo.forEach(bt => {
+      updatesByBotType[bt.name] = relevantUpdates
+        .filter(u => String(u.botTypeId) === String(bt.id))
+        .sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+    });
 
-    // Sortiere nach Zeitstempel
-    const sortedUpdates = [...relevantUpdates].sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+    // Sammle alle Timestamps für min/max Berechnung
+    const allTimestamps: number[] = [];
 
-    // Generiere Chart-Daten: Ein Datenpunkt pro Update
-    // Jeder Bot-Type bekommt seine eigene Linie (später in GRAU)
+    // Generiere Chart-Daten: ZWEI Punkte pro Update (Start + Ende)
+    // Jeder Bot-Type bekommt seine eigene Linie
     const dataPoints: Array<Record<string, any>> = [];
 
-    sortedUpdates.forEach(update => {
-      const timestamp = getUpdateTimestamp(update);
-      const botType = selectedBotTypesInfo.find(bt => String(bt.id) === String(update.botTypeId));
-      if (!botType) return;
-
-      // Finde oder erstelle Datenpunkt für diesen Zeitstempel
-      let point = dataPoints.find(p => p.timestamp === timestamp);
-      if (!point) {
-        point = {
-          time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
-          timestamp,
+    // Für jeden Bot-Type: Erstelle Start- und End-Punkte pro Update
+    selectedBotTypesInfo.forEach(botType => {
+      const updates = updatesByBotType[botType.name] || [];
+      
+      // Kumulativer Wert für Vergleichs-Modus
+      let cumulativeProfit = 0;
+      
+      updates.forEach((update, idx) => {
+        // End-Timestamp: thisUpload
+        const endTimestamp = getUpdateTimestamp(update);
+        
+        // Start-Timestamp: lastUpload (oder endTimestamp wenn nicht vorhanden)
+        let startTimestamp = endTimestamp;
+        if (update.lastUpload) {
+          const parsed = parseGermanDate(update.lastUpload);
+          if (parsed) {
+            startTimestamp = parsed.getTime();
+          }
+        }
+        
+        allTimestamps.push(startTimestamp, endTimestamp);
+        
+        // Berechne den Profit-Wert
+        let profitValue = 0;
+        if (update.status === 'Closed Bots') {
+          profitValue = parseFloat(update.profit || '0') || 0;
+        } else {
+          profitValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+        }
+        
+        // Prüfe ob Vergleichs-Modus (wie in chartData)
+        const hasAbsoluteFields = update.overallGridProfitUsdtAbsolute !== null && update.overallGridProfitUsdtAbsolute !== undefined;
+        let isVergleichsModus = false;
+        
+        if (hasAbsoluteFields) {
+          const absoluteValue = parseFloat(update.overallGridProfitUsdtAbsolute || '0') || 0;
+          isVergleichsModus = Math.abs(profitValue - absoluteValue) > 0.01;
+        } else {
+          isVergleichsModus = update.calculationMode === 'Normal';
+        }
+        
+        // Bei Vergleichs-Modus: kumuliere Werte
+        if (isVergleichsModus && idx > 0) {
+          cumulativeProfit += profitValue;
+          profitValue = cumulativeProfit;
+        } else {
+          cumulativeProfit = profitValue;
+        }
+        
+        // Start-Punkt: Wert vom vorherigen Endpunkt oder 0
+        const startValue = idx > 0 ? dataPoints.filter(p => p[botType.name] !== null && p[botType.name] !== undefined).slice(-1)[0]?.[botType.name] || 0 : 0;
+        
+        // Erstelle Start-Punkt
+        const startPoint: Record<string, any> = {
+          time: new Date(startTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+          timestamp: startTimestamp,
+          isStartPoint: true,
+          botTypeName: botType.name,
         };
         // Initialisiere alle Bot-Types mit null
         selectedBotTypesInfo.forEach(bt => {
-          point![bt.name] = null;
+          startPoint[bt.name] = null;
         });
-        dataPoints.push(point);
-      }
-
-      // Gesamtprofit für diesen Bot-Type (die ausgewählte Metrik - erstmal Gesamtprofit)
-      let value = 0;
-      if (update.status === 'Closed Bots') {
-        value = parseFloat(update.profit || '0') || 0;
-      } else {
-        value = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-      }
-
-      point[botType.name] = value;
+        // Setze den Wert für diesen Bot-Type
+        startPoint[botType.name] = idx === 0 ? 0 : startValue;
+        dataPoints.push(startPoint);
+        
+        // Erstelle End-Punkt
+        const endPoint: Record<string, any> = {
+          time: new Date(endTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+          timestamp: endTimestamp,
+          isStartPoint: false,
+          botTypeName: botType.name,
+        };
+        // Initialisiere alle Bot-Types mit null
+        selectedBotTypesInfo.forEach(bt => {
+          endPoint[bt.name] = null;
+        });
+        // Setze den Wert für diesen Bot-Type
+        endPoint[botType.name] = profitValue;
+        dataPoints.push(endPoint);
+      });
     });
+
+    // Berechne min/max Timestamps
+    const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : 0;
+    const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : 0;
 
     // Sortiere Datenpunkte nach Zeitstempel
     dataPoints.sort((a, b) => a.timestamp - b.timestamp);
