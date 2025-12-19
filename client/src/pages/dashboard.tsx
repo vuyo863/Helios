@@ -3016,12 +3016,21 @@ export default function Dashboard() {
                     const domainRange = domainEnd - domainStart;
                     if (domainRange <= 0) return null;
                     
-                    // Get updates directly from sortedUpdates (authoritative source)
-                    // This ensures we get correct start/end even for comparison mode updates
-                    const updateRanges: { version: number; status: string; startTs: number; endTs: number }[] = [];
+                    // Get updates - Compare Mode: alle ausgewählten Bot-Types, sonst nur sortedUpdates
+                    const updateRanges: { version: number; status: string; startTs: number; endTs: number; botTypeName?: string }[] = [];
                     
-                    // Filter updates same as chartData logic
-                    let filteredUpdates = [...(sortedUpdates || [])];
+                    // COMPARE MODUS: Alle Updates von allen ausgewählten Bot-Types
+                    let filteredUpdates: typeof sortedUpdates = [];
+                    
+                    if (isMultiSelectCompareMode && lockedBotTypeIds.size > 0) {
+                      // Sammle Updates von allen ausgewählten Bot-Types
+                      lockedBotTypeIds.forEach(botTypeId => {
+                        const updates = allBotTypeUpdates.filter(u => u.botTypeId === botTypeId);
+                        filteredUpdates.push(...updates);
+                      });
+                    } else {
+                      filteredUpdates = [...(sortedUpdates || [])];
+                    }
                     
                     if (appliedChartSettings?.fromUpdate && appliedChartSettings?.untilUpdate) {
                       const fromTs = getUpdateTimestamp(appliedChartSettings.fromUpdate);
