@@ -3022,9 +3022,9 @@ export default function Dashboard() {
                     // COMPARE MODUS: Alle Updates von allen ausgewählten Bot-Types
                     let filteredUpdates: typeof sortedUpdates = [];
                     
-                    if (isMultiSelectCompareMode && lockedBotTypeIds.size > 0) {
+                    if (isMultiSelectCompareMode && selectedChartBotTypes.length > 0) {
                       // Sammle Updates von allen ausgewählten Bot-Types
-                      lockedBotTypeIds.forEach(botTypeId => {
+                      selectedChartBotTypes.forEach(botTypeId => {
                         const updates = allBotTypeUpdates.filter(u => u.botTypeId === botTypeId);
                         filteredUpdates.push(...updates);
                       });
