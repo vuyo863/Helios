@@ -1553,25 +1553,56 @@ export default function Dashboard() {
       tickInterval = 7 * 24 * 60 * 60 * 1000;
     }
     
-    // Generiere Ticks vom Startpunkt bis Endpunkt
+    // FESTE BOUNDARY-TICKS: Start- und Enddatum IMMER sichtbar
     const ticks: number[] = [];
     
-    // Starte bei sinnvollem Startpunkt (runde auf volle Stunde/Tag)
+    // 1. IMMER mit startTime beginnen (feste Grenze)
+    ticks.push(startTime);
+    
+    // 2. Adaptive Zwischen-Ticks generieren
     const startDate = new Date(startTime);
     if (tickInterval < 24 * 60 * 60 * 1000) {
-      // Bei Stunden-Intervallen: runde auf volle Stunde
+      // Bei Stunden-Intervallen: runde auf nächste volle Stunde nach startTime
       startDate.setMinutes(0, 0, 0);
+      if (startDate.getTime() <= startTime) {
+        startDate.setTime(startDate.getTime() + 60 * 60 * 1000);
+      }
     } else {
-      // Bei Tages-Intervallen: runde auf Mitternacht
+      // Bei Tages-Intervallen: runde auf nächste Mitternacht nach startTime
       startDate.setHours(0, 0, 0, 0);
+      if (startDate.getTime() <= startTime) {
+        startDate.setTime(startDate.getTime() + 24 * 60 * 60 * 1000);
+      }
     }
     
     let currentTs = startDate.getTime();
     
-    // Generiere Ticks über den gesamten fixen Zeitraum
-    while (currentTs <= endTime + tickInterval) {
-      ticks.push(currentTs);
+    // Generiere Zwischen-Ticks (nicht zu nah an Start/End)
+    const minGap = tickInterval * 0.3; // Mindestabstand zu Boundaries
+    while (currentTs < endTime - minGap) {
+      if (currentTs > startTime + minGap) {
+        ticks.push(currentTs);
+      }
       currentTs += tickInterval;
+    }
+    
+    // 3. IMMER mit endTime enden (feste Grenze)
+    if (endTime !== startTime) {
+      ticks.push(endTime);
+    }
+    
+    // 4. FALLBACK: Wenn zu wenige Ticks (< 3), kleinere Einheit verwenden
+    if (ticks.length < 3 && totalRange > 60 * 60 * 1000) {
+      // Fallback auf Stunden-Intervalle
+      const fallbackTicks: number[] = [startTime];
+      const fallbackInterval = Math.max(30 * 60 * 1000, totalRange / 8); // Min 30min, max 8 Ticks
+      let fallbackTs = startTime + fallbackInterval;
+      while (fallbackTs < endTime - fallbackInterval * 0.3) {
+        fallbackTicks.push(fallbackTs);
+        fallbackTs += fallbackInterval;
+      }
+      fallbackTicks.push(endTime);
+      return fallbackTicks;
     }
     
     return ticks;
