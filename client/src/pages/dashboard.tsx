@@ -917,11 +917,12 @@ export default function Dashboard() {
     const dataPoints: Array<Record<string, any>> = [];
 
     // Für jeden Bot-Type: Erstelle Start- und End-Punkte pro Update
+    // WICHTIG: Identische Logik wie MainChart (Golden State) für Start-Punkt Erstellung
     selectedBotTypesInfo.forEach(botType => {
       const updates = updatesByBotType[botType.name] || [];
       
-      // Speichere vorherigen End-Wert für Start-Punkt Berechnung
-      let previousEndValue = 0;
+      // Speichere vorherigen End-Timestamp für Überlappungs-Prüfung
+      let prevEndTimestamp = 0;
       
       updates.forEach((update, idx) => {
         // End-Timestamp: thisUpload
@@ -947,27 +948,48 @@ export default function Dashboard() {
           profitValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
         }
         
-        // Start-Punkt: Wert vom vorherigen Endpunkt oder 0
-        const startValue = idx > 0 ? previousEndValue : 0;
+        // === IDENTISCHE LOGIK WIE MAINCHART FÜR START-PUNKT ===
+        // Prüfe ob Vergleichs-Modus (wie in MainChart chartData)
+        const hasAbsoluteFields = update.overallGridProfitUsdtAbsolute !== null && update.overallGridProfitUsdtAbsolute !== undefined;
+        let isVergleichsModus = false;
         
-        // Erstelle Start-Punkt
-        const startPoint: Record<string, any> = {
-          time: new Date(startTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
-          timestamp: startTimestamp,
-          isStartPoint: true,
-          botTypeName: botType.name,
-        };
-        // Initialisiere alle Bot-Types mit null
-        selectedBotTypesInfo.forEach(bt => {
-          startPoint[bt.name] = null;
-          startPoint[`${bt.name}_status`] = null;
-        });
-        // Setze den Wert für diesen Bot-Type
-        startPoint[botType.name] = idx === 0 ? 0 : startValue;
-        startPoint[`${botType.name}_status`] = update.status; // Status für Closed Bot Erkennung
-        dataPoints.push(startPoint);
+        if (hasAbsoluteFields) {
+          const absoluteValue = parseFloat(update.overallGridProfitUsdtAbsolute || '0') || 0;
+          isVergleichsModus = Math.abs(profitValue - absoluteValue) > 0.01;
+        } else {
+          isVergleichsModus = update.calculationMode === 'Normal';
+        }
         
-        // Erstelle End-Punkt
+        // Start-Punkt überspringen wenn:
+        // 1. Closed Bots - nur End-Punkt
+        // 2. Vergleichs-Modus und NICHT erstes Update - Linie läuft flüssig weiter
+        // 3. Start überlappt mit vorherigem End (innerhalb 1 Minute)
+        const isClosedBots = update.status === 'Closed Bots';
+        const hasPreviousEndPoint = prevEndTimestamp !== 0;
+        const isFirstUpdate = !hasPreviousEndPoint;
+        const startOverlapsPrevEnd = hasPreviousEndPoint && Math.abs(startTimestamp - prevEndTimestamp) < 60000;
+        const skipStartPoint = isClosedBots || (isVergleichsModus && !isFirstUpdate) || startOverlapsPrevEnd;
+        
+        // Erstelle Start-Punkt NUR wenn nicht übersprungen werden soll
+        if (update.lastUpload && startTimestamp !== endTimestamp && !skipStartPoint) {
+          const startPoint: Record<string, any> = {
+            time: new Date(startTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+            timestamp: startTimestamp,
+            isStartPoint: true,
+            botTypeName: botType.name,
+          };
+          // Initialisiere alle Bot-Types mit null
+          selectedBotTypesInfo.forEach(bt => {
+            startPoint[bt.name] = null;
+            startPoint[`${bt.name}_status`] = null;
+          });
+          // Start-Punkt IMMER mit 0 (wie MainChart) - nicht mit previousEndValue!
+          startPoint[botType.name] = 0;
+          startPoint[`${botType.name}_status`] = update.status;
+          dataPoints.push(startPoint);
+        }
+        
+        // Erstelle End-Punkt (immer)
         const endPoint: Record<string, any> = {
           time: new Date(endTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
           timestamp: endTimestamp,
@@ -981,11 +1003,11 @@ export default function Dashboard() {
         });
         // Setze den Wert für diesen Bot-Type
         endPoint[botType.name] = profitValue;
-        endPoint[`${botType.name}_status`] = update.status; // Status für Closed Bot Erkennung
+        endPoint[`${botType.name}_status`] = update.status;
         dataPoints.push(endPoint);
         
-        // Speichere End-Wert für nächsten Start-Punkt
-        previousEndValue = profitValue;
+        // Speichere End-Timestamp für nächste Iteration
+        prevEndTimestamp = endTimestamp;
       });
     });
 
