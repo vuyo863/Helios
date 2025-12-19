@@ -190,6 +190,12 @@ export default function Notifications() {
     };
   }, [watchlist, allBinancePairs]); // Update when watchlist or pairs change
 
+  const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
+    // Load saved thresholds from localStorage on mount
+    const saved = localStorage.getItem('notifications-threshold-settings');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
     // Check all trading pairs with thresholds
@@ -297,12 +303,6 @@ export default function Notifications() {
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
-  
-  const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
-    // Load saved thresholds from localStorage on mount
-    const saved = localStorage.getItem('notifications-threshold-settings');
-    return saved ? JSON.parse(saved) : {};
-  });
   
   // Save watchlist to localStorage whenever it changes
   useEffect(() => {
