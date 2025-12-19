@@ -1518,31 +1518,51 @@ export default function Dashboard() {
     
     const sequence = effectiveSequence;
     
-    // Tick-Intervall je nach Sequence
-    // WICHTIG: Wochen und Monate haben auch TÄGLICHE Ticks!
-    // Nur die Beschriftung ändert sich
+    // TICK-DENSITY-CAP: Max. 8-12 Major-Ticks (Pro-Trading-UI-Level)
+    // Berechne sichtbare Zeitspanne basierend auf Zoom
+    const totalRange = endTime - startTime;
+    const visibleRange = totalRange / chartZoomX; // Sichtbarer Bereich bei Zoom
+    
+    // Adaptive Intervall-Wahl basierend auf sichtbarer Zeitspanne
+    // Ziel: 8-12 Ticks im sichtbaren Bereich
+    const visibleHours = visibleRange / (60 * 60 * 1000);
+    const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+    
     let tickInterval: number;
-    switch (sequence) {
-      case 'hours':
-        tickInterval = 60 * 60 * 1000;           // 1 Stunde
-        break;
-      case 'days':
-      case 'weeks':    // Tages-Ticks, aber KW-Labels am Montag
-      case 'months':   // Tages-Ticks, aber Monat-Labels am Monatsersten
-        tickInterval = 24 * 60 * 60 * 1000;      // 1 Tag
-        break;
-      default:
-        tickInterval = 24 * 60 * 60 * 1000;      // Default: 1 Tag
+    
+    if (visibleHours <= 12) {
+      // Sehr hoch gezoomt: 1-Stunden-Intervalle
+      tickInterval = 60 * 60 * 1000;
+    } else if (visibleHours <= 36) {
+      // Hoch gezoomt: 2-Stunden-Intervalle
+      tickInterval = 2 * 60 * 60 * 1000;
+    } else if (visibleHours <= 72) {
+      // Mittel gezoomt: 6-Stunden-Intervalle
+      tickInterval = 6 * 60 * 60 * 1000;
+    } else if (visibleDays <= 7) {
+      // Leicht gezoomt: 12-Stunden-Intervalle
+      tickInterval = 12 * 60 * 60 * 1000;
+    } else if (visibleDays <= 21) {
+      // Normal: Tages-Intervalle
+      tickInterval = 24 * 60 * 60 * 1000;
+    } else if (visibleDays <= 60) {
+      // Ausgezoomt: 2-Tages-Intervalle
+      tickInterval = 2 * 24 * 60 * 60 * 1000;
+    } else {
+      // Stark ausgezoomt: Wochen-Intervalle
+      tickInterval = 7 * 24 * 60 * 60 * 1000;
     }
     
-    // Generiere Ticks vom Startpunkt bis Endpunkt mit dem gewählten Intervall
+    // Generiere Ticks vom Startpunkt bis Endpunkt
     const ticks: number[] = [];
     
     // Starte bei sinnvollem Startpunkt (runde auf volle Stunde/Tag)
     const startDate = new Date(startTime);
-    if (sequence === 'hours') {
+    if (tickInterval < 24 * 60 * 60 * 1000) {
+      // Bei Stunden-Intervallen: runde auf volle Stunde
       startDate.setMinutes(0, 0, 0);
     } else {
+      // Bei Tages-Intervallen: runde auf Mitternacht
       startDate.setHours(0, 0, 0, 0);
     }
     
