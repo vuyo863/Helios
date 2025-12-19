@@ -4354,16 +4354,19 @@ export default function Dashboard() {
                     // Rot und Blau zuerst, dann weitere Farben
                     // Hover-Effekt: Linie leuchtet auf wenn Bot-Type in Tabelle gehoverd
                     compareChartData.botTypeNames.map((botTypeName, index) => {
-                      const lineColor = getCompareColor(index);
-                      // Finde Bot-Type-ID für diesen Namen um Hover zu prüfen
+                      // Finde Bot-Type-ID für diesen Namen - Farbe basiert auf ID, nicht Index!
                       const botType = availableBotTypes.find(bt => bt.name === botTypeName);
-                      const isHovered = botType && hoveredBotTypeId === String(botType.id);
+                      const botTypeId = botType ? String(botType.id) : '';
+                      // Farbe aus compareColorMap (basiert auf selectedChartBotTypes Reihenfolge)
+                      const lineColor = compareColorMap[botTypeId] || getCompareColor(index);
+                      
+                      const isHovered = botTypeId && hoveredBotTypeId === botTypeId;
                       const isAnyHovered = hoveredBotTypeId !== null;
                       
                       // Wenn gehoverd: Diese Linie hervorheben, andere dimmen
                       const strokeOpacity = isAnyHovered ? (isHovered ? 1 : 0.3) : 1;
-                      const strokeW = isHovered ? 4 : 2;
-                      const dotR = isHovered ? 6 : 4;
+                      const strokeW = isHovered ? 3 : 2;
+                      const dotR = isHovered ? 5 : 4;
                       
                       return (
                         <Line 
@@ -4380,7 +4383,7 @@ export default function Dashboard() {
                           animationDuration={1200}
                           animationBegin={0}
                           animationEasing="ease-out"
-                          style={isHovered ? { filter: `drop-shadow(0 0 8px ${lineColor})` } : {}}
+                          style={isHovered ? { filter: `drop-shadow(0 0 4px ${lineColor})` } : {}}
                         />
                       );
                     })
