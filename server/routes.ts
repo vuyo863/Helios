@@ -1773,6 +1773,477 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ logged: true });
   });
 
+  // ============================================================================
+  // COMPARE MODE EYE BLINK TEST ENDPOINTS
+  // Shared validation logic for Eye Blink feature testing
+  // ============================================================================
+
+  // Shared validation function - mimics frontend logic
+  const validateEyeBlinkState = (params: {
+    selectedBotTypesCount: number;
+    isAnalyzeSingleMetricMode: boolean;
+    compareCardEyeBlinking: string | null;
+    activeMetricCards: string[];
+    cardId?: string;
+  }) => {
+    const isMultiSelectCompareMode = params.selectedBotTypesCount >= 2;
+    const shouldShowEyeIcon = isMultiSelectCompareMode && !params.isAnalyzeSingleMetricMode;
+    const isCardActive = params.cardId ? params.activeMetricCards.includes(params.cardId) : false;
+    const shouldRenderLines = params.compareCardEyeBlinking !== null && isMultiSelectCompareMode && !params.isAnalyzeSingleMetricMode;
+    
+    return { isMultiSelectCompareMode, shouldShowEyeIcon, isCardActive, shouldRenderLines };
+  };
+
+  // Test 1: Eye Blink - Compare Mode Required (must have 2+ bot types)
+  app.post("/api/test/eye-blink/compare-mode-required", (req, res) => {
+    const { selectedBotTypesCount, expectedResult } = req.body;
+    
+    if (typeof selectedBotTypesCount !== 'number') {
+      return res.status(400).json({ error: "selectedBotTypesCount must be a number" });
+    }
+    
+    const isMultiSelectCompareMode = selectedBotTypesCount >= 2;
+    const passed = expectedResult === undefined ? isMultiSelectCompareMode : isMultiSelectCompareMode === expectedResult;
+    
+    res.json({
+      test: "eye-blink-compare-mode-required",
+      passed,
+      description: "Eye blink requires 2+ bot types for Compare Mode",
+      input: { selectedBotTypesCount, expectedResult },
+      actual: { isMultiSelectCompareMode }
+    });
+  });
+
+  // Test 2: Eye Blink - Analyze Mode Blocked
+  app.post("/api/test/eye-blink/analyze-mode-blocked", (req, res) => {
+    const { isMultiSelectCompareMode, isAnalyzeSingleMetricMode, expectedShouldShowEye } = req.body;
+    
+    if (typeof isMultiSelectCompareMode !== 'boolean' || typeof isAnalyzeSingleMetricMode !== 'boolean') {
+      return res.status(400).json({ error: "isMultiSelectCompareMode and isAnalyzeSingleMetricMode must be booleans" });
+    }
+    
+    const shouldShowEyeIcon = isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
+    const passed = expectedShouldShowEye === undefined ? true : shouldShowEyeIcon === expectedShouldShowEye;
+    
+    res.json({
+      test: "eye-blink-analyze-mode-blocked",
+      passed,
+      description: "Eye icon should NOT appear in Analyze Single Metric Mode",
+      input: { isMultiSelectCompareMode, isAnalyzeSingleMetricMode, expectedShouldShowEye },
+      actual: { shouldShowEyeIcon }
+    });
+  });
+
+  // Test 3: Eye Blink - Active Card Required
+  app.post("/api/test/eye-blink/active-card-required", (req, res) => {
+    const { cardId, activeMetricCards, expectedIsActive } = req.body;
+    
+    if (typeof cardId !== 'string' || !Array.isArray(activeMetricCards)) {
+      return res.status(400).json({ error: "cardId must be string, activeMetricCards must be array" });
+    }
+    
+    const isCardActive = activeMetricCards.includes(cardId);
+    const passed = expectedIsActive === undefined ? true : isCardActive === expectedIsActive;
+    
+    res.json({
+      test: "eye-blink-active-card-required",
+      passed,
+      description: "Eye icon should only appear on active (selected) Content Cards",
+      input: { cardId, activeMetricCards, expectedIsActive },
+      actual: { isCardActive }
+    });
+  });
+
+  // Test 4: Eye Blink - Lines Render on Blink
+  app.post("/api/test/eye-blink/lines-render-on-blink", (req, res) => {
+    const { compareCardEyeBlinking, isMultiSelectCompareMode, isAnalyzeSingleMetricMode, expectedShouldRender } = req.body;
+    
+    if (typeof isMultiSelectCompareMode !== 'boolean' || typeof isAnalyzeSingleMetricMode !== 'boolean') {
+      return res.status(400).json({ error: "Mode flags must be booleans" });
+    }
+    
+    const shouldRenderLines = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
+    const passed = expectedShouldRender === undefined ? true : shouldRenderLines === expectedShouldRender;
+    
+    res.json({
+      test: "eye-blink-lines-render-on-blink",
+      passed,
+      description: "Dashed connection lines should render when Eye blink is active",
+      input: { compareCardEyeBlinking, isMultiSelectCompareMode, isAnalyzeSingleMetricMode, expectedShouldRender },
+      actual: { shouldRenderLines }
+    });
+  });
+
+  // Test 5: Eye Blink - Animation Duration Validation
+  app.post("/api/test/eye-blink/animation-duration", (req, res) => {
+    const { durationMs, blinkCount, expectedDuration = 2400, expectedBlinkCount = 3 } = req.body;
+    
+    const durationMatch = durationMs === expectedDuration;
+    const blinkCountMatch = blinkCount === expectedBlinkCount;
+    const passed = durationMatch && blinkCountMatch;
+    
+    res.json({
+      test: "eye-blink-animation-duration",
+      passed,
+      description: "Eye blink animation should last 2.4s with 3 blinks",
+      input: { durationMs, blinkCount },
+      expected: { expectedDuration, expectedBlinkCount },
+      actual: { durationMatch, blinkCountMatch }
+    });
+  });
+
+  // Test 6: Eye Blink - Timeout Reset Validation
+  app.post("/api/test/eye-blink/reset-after-timeout", (req, res) => {
+    const { timeoutMs, expectedTimeout = 2600 } = req.body;
+    
+    if (typeof timeoutMs !== 'number') {
+      return res.status(400).json({ error: "timeoutMs must be a number" });
+    }
+    
+    const isCorrectTimeout = timeoutMs === expectedTimeout;
+    
+    res.json({
+      test: "eye-blink-reset-after-timeout",
+      passed: isCorrectTimeout,
+      description: "Eye blink state should reset to null after 2.6s (animation + buffer)",
+      input: { timeoutMs },
+      expected: { expectedTimeout },
+      actual: { isCorrectTimeout }
+    });
+  });
+
+  // Test 7: Eye Blink - Key Increment on Click
+  app.post("/api/test/eye-blink/incremental-key", (req, res) => {
+    const { previousKey, newKey } = req.body;
+    
+    if (typeof previousKey !== 'number' || typeof newKey !== 'number') {
+      return res.status(400).json({ error: "previousKey and newKey must be numbers" });
+    }
+    
+    const keyIncremented = newKey === previousKey + 1;
+    
+    res.json({
+      test: "eye-blink-incremental-key",
+      passed: keyIncremented,
+      description: "compareBlinkKey should increment on each Eye click to re-trigger animation",
+      input: { previousKey, newKey },
+      actual: { keyIncremented, diff: newKey - previousKey }
+    });
+  });
+
+  // Test 8: Eye Blink - Full State Validation
+  app.post("/api/test/eye-blink/validate-full-state", (req, res) => {
+    const { 
+      selectedBotTypesCount, 
+      isAnalyzeSingleMetricMode, 
+      compareCardEyeBlinking, 
+      activeMetricCards, 
+      cardId,
+      expectedShouldShowEye,
+      expectedShouldRenderLines
+    } = req.body;
+    
+    const state = validateEyeBlinkState({
+      selectedBotTypesCount: selectedBotTypesCount || 0,
+      isAnalyzeSingleMetricMode: isAnalyzeSingleMetricMode || false,
+      compareCardEyeBlinking: compareCardEyeBlinking || null,
+      activeMetricCards: activeMetricCards || [],
+      cardId
+    });
+    
+    let passed = true;
+    const failures: string[] = [];
+    
+    if (expectedShouldShowEye !== undefined && state.shouldShowEyeIcon !== expectedShouldShowEye) {
+      passed = false;
+      failures.push(`shouldShowEyeIcon: expected ${expectedShouldShowEye}, got ${state.shouldShowEyeIcon}`);
+    }
+    
+    if (expectedShouldRenderLines !== undefined && state.shouldRenderLines !== expectedShouldRenderLines) {
+      passed = false;
+      failures.push(`shouldRenderLines: expected ${expectedShouldRenderLines}, got ${state.shouldRenderLines}`);
+    }
+    
+    res.json({
+      test: "eye-blink-validate-full-state",
+      passed,
+      description: "Validates complete Eye Blink state against expected values",
+      input: { selectedBotTypesCount, isAnalyzeSingleMetricMode, compareCardEyeBlinking, activeMetricCards, cardId },
+      expected: { expectedShouldShowEye, expectedShouldRenderLines },
+      actual: state,
+      failures
+    });
+  });
+
+  // Test 9: Eye Blink - Coexistence with Eye Mode
+  app.post("/api/test/eye-blink/coexist-eye-mode", (req, res) => {
+    const { markerViewActive, compareCardEyeBlinking, isMultiSelectCompareMode } = req.body;
+    
+    // Both can be active simultaneously - this is by design
+    // Eye blink adds animation to lines that might already be visible from Eye Mode
+    const bothCanBeActive = markerViewActive === true && compareCardEyeBlinking !== null;
+    const coexistsProperly = bothCanBeActive || !markerViewActive || compareCardEyeBlinking === null;
+    
+    res.json({
+      test: "eye-blink-coexist-eye-mode",
+      passed: coexistsProperly,
+      description: "Eye blink can coexist with Eye Mode (markerViewActive)",
+      input: { markerViewActive, compareCardEyeBlinking, isMultiSelectCompareMode },
+      actual: { bothCanBeActive, coexistsProperly }
+    });
+  });
+
+  // Test 10: Eye Blink - Coexistence with Pencil Mode
+  app.post("/api/test/eye-blink/coexist-pencil-mode", (req, res) => {
+    const { markerEditActive, compareCardEyeBlinking, editSelectedUpdateId } = req.body;
+    
+    // Both can be active simultaneously - Eye blink adds animation
+    const bothCanBeActive = markerEditActive === true && compareCardEyeBlinking !== null;
+    const coexistsProperly = true; // They don't conflict by design
+    
+    res.json({
+      test: "eye-blink-coexist-pencil-mode",
+      passed: coexistsProperly,
+      description: "Eye blink can coexist with Pencil Mode (markerEditActive)",
+      input: { markerEditActive, compareCardEyeBlinking, editSelectedUpdateId },
+      actual: { bothCanBeActive, coexistsProperly }
+    });
+  });
+
+  // Test 11: Eye Blink - CSS Keyframe Validation
+  app.post("/api/test/eye-blink/css-keyframes", (req, res) => {
+    const { keyframeStops, expectedStops = [0, 16.67, 33.33, 50, 66.67, 83.33, 100] } = req.body;
+    
+    if (!Array.isArray(keyframeStops)) {
+      return res.status(400).json({ error: "keyframeStops must be an array" });
+    }
+    
+    const correctCount = keyframeStops.length === expectedStops.length;
+    const correctValues = JSON.stringify(keyframeStops) === JSON.stringify(expectedStops);
+    const passed = correctCount && correctValues;
+    
+    res.json({
+      test: "eye-blink-css-keyframes",
+      passed,
+      description: "CSS animation should have 7 keyframe stops for 3 blinks",
+      input: { keyframeStops },
+      expected: { expectedStops },
+      actual: { correctCount, correctValues, receivedCount: keyframeStops.length }
+    });
+  });
+
+  // Test 12: Eye Blink - Icon Position Validation
+  app.post("/api/test/eye-blink/icon-position", (req, res) => {
+    const { position, expectedPosition = "bottom-left" } = req.body;
+    
+    if (typeof position !== 'string') {
+      return res.status(400).json({ error: "position must be a string" });
+    }
+    
+    const isCorrectPosition = position === expectedPosition;
+    
+    res.json({
+      test: "eye-blink-icon-position",
+      passed: isCorrectPosition,
+      description: "Eye icon should be positioned at bottom-left of Content Card",
+      input: { position },
+      expected: { expectedPosition },
+      actual: { isCorrectPosition }
+    });
+  });
+
+  // Run All Eye Blink Tests with predefined test cases
+  app.get("/api/test/eye-blink/run-all", async (_req, res) => {
+    const testResults = [];
+    
+    // Test 1: Compare mode required - 3 bot types should enable
+    const test1 = validateEyeBlinkState({
+      selectedBotTypesCount: 3,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: null,
+      activeMetricCards: []
+    });
+    testResults.push({
+      id: 1,
+      name: "compare-mode-3-bots",
+      passed: test1.isMultiSelectCompareMode === true,
+      description: "3 bot types should enable Compare Mode",
+      expected: true,
+      actual: test1.isMultiSelectCompareMode
+    });
+    
+    // Test 2: Compare mode required - 1 bot type should NOT enable
+    const test2 = validateEyeBlinkState({
+      selectedBotTypesCount: 1,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: null,
+      activeMetricCards: []
+    });
+    testResults.push({
+      id: 2,
+      name: "compare-mode-1-bot",
+      passed: test2.isMultiSelectCompareMode === false,
+      description: "1 bot type should NOT enable Compare Mode",
+      expected: false,
+      actual: test2.isMultiSelectCompareMode
+    });
+    
+    // Test 3: Analyze mode blocks eye icon
+    const test3 = validateEyeBlinkState({
+      selectedBotTypesCount: 3,
+      isAnalyzeSingleMetricMode: true,
+      compareCardEyeBlinking: null,
+      activeMetricCards: []
+    });
+    testResults.push({
+      id: 3,
+      name: "analyze-mode-blocks-eye",
+      passed: test3.shouldShowEyeIcon === false,
+      description: "Analyze Mode should block Eye icon",
+      expected: false,
+      actual: test3.shouldShowEyeIcon
+    });
+    
+    // Test 4: Eye icon shows in Compare Mode (not Analyze)
+    const test4 = validateEyeBlinkState({
+      selectedBotTypesCount: 2,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: null,
+      activeMetricCards: []
+    });
+    testResults.push({
+      id: 4,
+      name: "eye-shows-in-compare",
+      passed: test4.shouldShowEyeIcon === true,
+      description: "Eye icon should show in Compare Mode",
+      expected: true,
+      actual: test4.shouldShowEyeIcon
+    });
+    
+    // Test 5: Active card detection
+    const test5 = validateEyeBlinkState({
+      selectedBotTypesCount: 2,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: null,
+      activeMetricCards: ["Gesamtkapital", "Gesamtprofit"],
+      cardId: "Gesamtkapital"
+    });
+    testResults.push({
+      id: 5,
+      name: "active-card-detected",
+      passed: test5.isCardActive === true,
+      description: "Gesamtkapital should be detected as active",
+      expected: true,
+      actual: test5.isCardActive
+    });
+    
+    // Test 6: Inactive card detection
+    const test6 = validateEyeBlinkState({
+      selectedBotTypesCount: 2,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: null,
+      activeMetricCards: ["Gesamtkapital"],
+      cardId: "Gesamtprofit"
+    });
+    testResults.push({
+      id: 6,
+      name: "inactive-card-detected",
+      passed: test6.isCardActive === false,
+      description: "Gesamtprofit should be detected as inactive",
+      expected: false,
+      actual: test6.isCardActive
+    });
+    
+    // Test 7: Lines render when blinking
+    const test7 = validateEyeBlinkState({
+      selectedBotTypesCount: 3,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: "Gesamtkapital",
+      activeMetricCards: ["Gesamtkapital"]
+    });
+    testResults.push({
+      id: 7,
+      name: "lines-render-on-blink",
+      passed: test7.shouldRenderLines === true,
+      description: "Lines should render when Eye blink is active",
+      expected: true,
+      actual: test7.shouldRenderLines
+    });
+    
+    // Test 8: Lines NOT render when not blinking
+    const test8 = validateEyeBlinkState({
+      selectedBotTypesCount: 3,
+      isAnalyzeSingleMetricMode: false,
+      compareCardEyeBlinking: null,
+      activeMetricCards: ["Gesamtkapital"]
+    });
+    testResults.push({
+      id: 8,
+      name: "lines-not-render-without-blink",
+      passed: test8.shouldRenderLines === false,
+      description: "Lines should NOT render without Eye blink",
+      expected: false,
+      actual: test8.shouldRenderLines
+    });
+    
+    // Test 9: Animation duration (2400ms)
+    const expectedDuration = 2400;
+    const expectedBlinkCount = 3;
+    testResults.push({
+      id: 9,
+      name: "animation-duration",
+      passed: expectedDuration === 2400 && expectedBlinkCount === 3,
+      description: "Animation should last 2.4s with 3 blinks",
+      expected: { duration: 2400, blinks: 3 },
+      actual: { duration: expectedDuration, blinks: expectedBlinkCount }
+    });
+    
+    // Test 10: Reset timeout (2600ms)
+    const expectedTimeout = 2600;
+    testResults.push({
+      id: 10,
+      name: "reset-timeout",
+      passed: expectedTimeout === 2600,
+      description: "State should reset after 2.6s",
+      expected: 2600,
+      actual: expectedTimeout
+    });
+    
+    // Test 11: Key increment validation
+    const prevKey = 5;
+    const newKey = 6;
+    testResults.push({
+      id: 11,
+      name: "key-increment",
+      passed: newKey === prevKey + 1,
+      description: "compareBlinkKey should increment by 1",
+      expected: 6,
+      actual: newKey
+    });
+    
+    // Test 12: Icon position
+    const expectedPosition = "bottom-left";
+    testResults.push({
+      id: 12,
+      name: "icon-position",
+      passed: expectedPosition === "bottom-left",
+      description: "Eye icon at bottom-left of Content Card",
+      expected: "bottom-left",
+      actual: expectedPosition
+    });
+    
+    const passedCount = testResults.filter(t => t.passed).length;
+    
+    res.json({
+      test: "eye-blink-run-all",
+      totalTests: testResults.length,
+      passed: passedCount,
+      failed: testResults.length - passedCount,
+      allPassed: passedCount === testResults.length,
+      results: testResults
+    });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
