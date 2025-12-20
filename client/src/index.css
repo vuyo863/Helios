@@ -297,6 +297,20 @@ input[type="number"].no-spinner {
   -moz-appearance: textfield;
 }
 
+/* Compare Mode Eye Blink Animation - 3x langsames Blinken */
+@keyframes compareEyeBlink {
+  0%, 100% { opacity: 1; }
+  16.67% { opacity: 0.15; }
+  33.33% { opacity: 1; }
+  50% { opacity: 0.15; }
+  66.67% { opacity: 1; }
+  83.33% { opacity: 0.15; }
+}
+
+.compare-eye-blink {
+  animation: compareEyeBlink 2.4s ease-in-out forwards;
+}
+
 @media print {
   @page {
     margin: 2cm;

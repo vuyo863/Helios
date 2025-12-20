@@ -276,6 +276,11 @@ export default function Dashboard() {
   // Separater Key NUR für Investitionsmenge/Gesamtinvestment-Wechsel wenn Gesamtkapital aktiv
   const [investmentBaseKey, setInvestmentBaseKey] = useState(0);
   
+  // Compare Mode Eye Blink: Wenn auf Eye-Icon einer Content Card geklickt wird
+  // Blinkt die Verbindungslinie 3x langsam (NUR im Compare Mode, NICHT im Analyze Mode)
+  const [compareCardEyeBlinking, setCompareCardEyeBlinking] = useState<string | null>(null); // cardId die blinkt
+  const [compareBlinkKey, setCompareBlinkKey] = useState(0); // Key um Animation neu zu triggern
+  
   // Chart Zoom & Pan State
   // zoomLevel: 1 = 100%, 2 = 200% (doppelt so detailliert), etc.
   const [chartZoomY, setChartZoomY] = useState(1);
@@ -3246,6 +3251,20 @@ export default function Dashboard() {
                 const config = cardConfig[cardId];
                 if (!config) return null;
                 
+                // Handler für Compare Mode Eye Blink
+                const handleCompareEyeClick = (e: React.MouseEvent, cardId: string) => {
+                  e.stopPropagation(); // Verhindert Card-Toggle
+                  // Nur im Compare Mode (nicht im Analyze Mode) blinken
+                  if (isMultiSelectCompareMode && !isAnalyzeSingleMetricMode) {
+                    setCompareCardEyeBlinking(cardId);
+                    setCompareBlinkKey(prev => prev + 1);
+                    // Nach Animation zurücksetzen (2.4s + etwas Puffer)
+                    setTimeout(() => {
+                      setCompareCardEyeBlinking(null);
+                    }, 2600);
+                  }
+                };
+                
                 return (
                   <SortableItem key={cardId} id={cardId} isEditMode={isCardEditMode}>
                     <div 
@@ -3257,6 +3276,18 @@ export default function Dashboard() {
                       } ${isCardEditMode ? 'ring-2 ring-dashed ring-muted-foreground/30 rounded-lg' : ''}`}
                       data-testid={`card-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                     >
+                      {/* Compare Mode Eye Icon: NUR auf ausgewählter Card, NUR im Compare Mode, NICHT im Analyze Mode */}
+                      {isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && activeMetricCards.includes(cardId) && !isCardEditMode && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 z-10 bg-background/80 hover:bg-background"
+                          onClick={(e) => handleCompareEyeClick(e, cardId)}
+                          data-testid={`button-compare-eye-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                        >
+                          <Eye className="h-4 w-4 text-cyan-600" />
+                        </Button>
+                      )}
                       <StatCard
                         label={config.label}
                         value={config.value}
@@ -3918,18 +3949,27 @@ export default function Dashboard() {
                             />
                             {/* Dashed line to chart when active - gerade nach unten */}
                             {/* KEIN zusätzlicher Kreis hier - die Line-Komponente rendert bereits den Kreis */}
-                            {isClosedActive && closedY2 !== null && (
-                              <line
-                                x1={`${clampedEndX}%`}
-                                y1={`${yPercent + 12}%`}
-                                x2={`${clampedEndX}%`}
-                                y2={`${closedY2}%`}
-                                stroke="rgb(8, 145, 178)"
-                                strokeWidth="1"
-                                strokeDasharray="4 3"
-                                style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                              />
-                            )}
+                            {isClosedActive && closedY2 !== null && (() => {
+                              // Compare Mode Eye Blink: Wenn auf Content Card Eye geklickt wurde
+                              const shouldBlinkClosedLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
+                              return (
+                                <g 
+                                  key={shouldBlinkClosedLine ? `closed-blink-${compareBlinkKey}` : undefined}
+                                  className={shouldBlinkClosedLine ? 'compare-eye-blink' : undefined}
+                                >
+                                  <line
+                                    x1={`${clampedEndX}%`}
+                                    y1={`${yPercent + 12}%`}
+                                    x2={`${clampedEndX}%`}
+                                    y2={`${closedY2}%`}
+                                    stroke="rgb(8, 145, 178)"
+                                    strokeWidth="1"
+                                    strokeDasharray="4 3"
+                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                  />
+                                </g>
+                              );
+                            })()}
                           </g>
                         );
                       }
@@ -4144,8 +4184,14 @@ export default function Dashboard() {
                               const startY2 = startY2Raw !== null ? Math.max(100, (startY2Raw / markerHeight) * 100) : null;
                               const endY2 = endY2Raw !== null ? Math.max(100, (endY2Raw / markerHeight) * 100) : null;
                               
+                              // Compare Mode Eye Blink: Wenn auf Content Card Eye geklickt wurde
+                              const shouldBlinkLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
+                              
                               return (
-                                <>
+                                <g 
+                                  key={shouldBlinkLine ? `blink-${compareBlinkKey}` : undefined}
+                                  className={shouldBlinkLine ? 'compare-eye-blink' : undefined}
+                                >
                                   {startY2 !== null && (
                                     <line
                                       x1={`${clampedStartX}%`}
@@ -4170,7 +4216,7 @@ export default function Dashboard() {
                                       style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
                                     />
                                   )}
-                                </>
+                                </g>
                               );
                             }
                             
