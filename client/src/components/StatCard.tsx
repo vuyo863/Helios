@@ -7,9 +7,10 @@ interface StatCardProps {
   icon: LucideIcon;
   iconColor: string;
   dropdown?: React.ReactNode;
+  eyeIcon?: React.ReactNode;
 }
 
-export default function StatCard({ label, value, icon: Icon, iconColor, dropdown }: StatCardProps) {
+export default function StatCard({ label, value, icon: Icon, iconColor, dropdown, eyeIcon }: StatCardProps) {
   return (
     <Card className="p-4 h-full">
       <div className="flex items-start justify-between gap-2">
@@ -17,6 +18,7 @@ export default function StatCard({ label, value, icon: Icon, iconColor, dropdown
           <div className="flex items-center gap-1 mb-1">
             <p className="text-xs text-muted-foreground whitespace-nowrap">{label}</p>
             {dropdown}
+            {eyeIcon}
           </div>
           <p className="text-lg font-bold whitespace-nowrap">{value}</p>
         </div>

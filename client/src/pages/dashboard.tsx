@@ -3265,6 +3265,22 @@ export default function Dashboard() {
                   }
                 };
                 
+                // Helper: Eye Icon für Compare Mode (nur auf aktiver Card, im Compare Mode, nicht im Analyze Mode)
+                const renderEyeIcon = () => {
+                  if (!isMultiSelectCompareMode || isAnalyzeSingleMetricMode || !activeMetricCards.includes(cardId) || isCardEditMode) {
+                    return undefined;
+                  }
+                  return (
+                    <div 
+                      onClick={(e) => handleCompareEyeClick(e, cardId)}
+                      data-testid={`button-compare-eye-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                      className={`p-0.5 rounded-full cursor-pointer transition-all hover:bg-cyan-100 ${compareCardEyeBlinking === cardId ? 'bg-cyan-100' : ''}`}
+                    >
+                      <Eye className="h-3 w-3 text-cyan-600" />
+                    </div>
+                  );
+                };
+                
                 return (
                   <SortableItem key={cardId} id={cardId} isEditMode={isCardEditMode}>
                     <div 
@@ -3276,19 +3292,6 @@ export default function Dashboard() {
                       } ${isCardEditMode ? 'ring-2 ring-dashed ring-muted-foreground/30 rounded-lg' : ''}`}
                       data-testid={`card-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                     >
-                      {/* Compare Mode Eye Icon: NUR auf ausgewählter Card, NUR im Compare Mode, NICHT im Analyze Mode */}
-                      {/* Positioniert unten-links der Card mit dezenterem Design */}
-                      {isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && activeMetricCards.includes(cardId) && !isCardEditMode && (
-                        <div 
-                          className="absolute bottom-2 left-2 z-10"
-                          onClick={(e) => handleCompareEyeClick(e, cardId)}
-                          data-testid={`button-compare-eye-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
-                        >
-                          <div className={`p-1 rounded-full cursor-pointer transition-all hover:bg-cyan-100 ${compareCardEyeBlinking === cardId ? 'bg-cyan-100' : 'bg-background/60'}`}>
-                            <Eye className="h-3.5 w-3.5 text-cyan-600" />
-                          </div>
-                        </div>
-                      )}
                       <StatCard
                         label={config.label}
                         value={config.value}
@@ -3352,6 +3355,7 @@ export default function Dashboard() {
                             </PopoverContent>
                           </Popover>
                         ) : undefined}
+                        eyeIcon={renderEyeIcon()}
                       />
                     </div>
                   </SortableItem>
@@ -3950,9 +3954,10 @@ export default function Dashboard() {
                             />
                             {/* Dashed line to chart when active OR when Eye blink is active */}
                             {/* KEIN zusätzlicher Kreis hier - die Line-Komponente rendert bereits den Kreis */}
-                            {(isClosedActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode)) && closedY2 !== null && (() => {
-                              // Compare Mode Eye Blink: Wenn auf Content Card Eye geklickt wurde
-                              const shouldBlinkClosedLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
+                            {/* Eye Blink nur wenn geklickte Card = aktive Chart-Metrik! */}
+                            {(isClosedActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0])) && closedY2 !== null && (() => {
+                              // Compare Mode Eye Blink: NUR wenn die geklickte Card die aktive Chart-Metrik ist!
+                              const shouldBlinkClosedLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0];
                               return (
                                 <g 
                                   key={shouldBlinkClosedLine ? `closed-blink-${compareBlinkKey}` : undefined}
@@ -4112,8 +4117,9 @@ export default function Dashboard() {
                             style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
                           {/* Dashed lines down to chart points when hovered OR when Eye blink is active */}
-                          {/* WICHTIG: Linien werden auch gezeigt wenn compareCardEyeBlinking gesetzt ist */}
-                          {(isActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode)) && (() => {
+                          {/* WICHTIG: Eye Blink nur wenn die geklickte Content Card = aktive Chart-Metrik */}
+                          {/* compareCardEyeBlinking muss mit activeMetricCards[0] übereinstimmen! */}
+                          {(isActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0])) && (() => {
                             // COMPARE MODUS: Verwende compareChartData - Linie nur bis zum Datenpunkt
                             if (isMultiSelectCompareMode) {
                               const chartDataArray = compareChartData.data || [];
@@ -4186,8 +4192,8 @@ export default function Dashboard() {
                               const startY2 = startY2Raw !== null ? Math.max(100, (startY2Raw / markerHeight) * 100) : null;
                               const endY2 = endY2Raw !== null ? Math.max(100, (endY2Raw / markerHeight) * 100) : null;
                               
-                              // Compare Mode Eye Blink: Wenn auf Content Card Eye geklickt wurde
-                              const shouldBlinkLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
+                              // Compare Mode Eye Blink: NUR wenn die geklickte Card die aktive Chart-Metrik ist!
+                              const shouldBlinkLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0];
                               
                               return (
                                 <g 

@@ -234,6 +234,64 @@ selectedChartBotTypes: string[]
 
 ---
 
+## 11. COMPARE MODE EYE BLINK FEATURE (Neu: 2025-12-20)
+
+### 11.1 Konzept
+Im Compare Mode erscheint ein Eye-Icon auf jeder AKTIVEN Content Card. Beim Klick auf das Eye blinken die Verbindungslinien im Chart, aber NUR wenn die geklickte Card die aktive Chart-Metrik ist.
+
+### 11.2 States
+```typescript
+compareCardEyeBlinking: string | null  // Card-ID der blinkenden Card
+compareBlinkKey: number                 // Inkrementiert für Re-Trigger
+```
+
+### 11.3 Eye Icon Positionierung
+- Im StatCard Header, NACH dem Label und NACH dem Dropdown (falls vorhanden)
+- StatCard hat neuen `eyeIcon?: React.ReactNode` Prop
+- Icon: `<Eye className="h-3 w-3 text-cyan-600" />`
+- Styling: `p-0.5 rounded-full hover:bg-cyan-100`
+
+### 11.4 Rendering-Bedingungen
+Eye Icon erscheint wenn:
+- `isMultiSelectCompareMode = true` (2+ Bot-Types ausgewählt)
+- `!isAnalyzeSingleMetricMode` (NICHT im Analyze Mode)
+- `activeMetricCards.includes(cardId)` (Card ist aktiv/ausgewählt)
+- `!isCardEditMode` (nicht im Edit-Modus)
+
+### 11.5 Blink-Logik (KRITISCH!)
+```typescript
+// Linien blinken NUR wenn geklickte Card = aktive Chart-Metrik!
+const shouldBlinkLine = 
+  compareCardEyeBlinking !== null && 
+  isMultiSelectCompareMode && 
+  !isAnalyzeSingleMetricMode && 
+  compareCardEyeBlinking === activeMetricCards[0];  // DIESE PRÜFUNG IST KRITISCH!
+```
+
+### 11.6 Animation
+- CSS-Klasse: `.compare-eye-blink`
+- Duration: 2.4s (3 langsame Blinks)
+- Keyframes: 7 Stops (0%, 16.67%, 33.33%, 50%, 66.67%, 83.33%, 100%)
+- Verwendet `opacity` und `stroke-opacity` für SVG-Kompatibilität
+- Reset-Timeout: 2.6s (Animation + 200ms Puffer)
+
+### 11.7 Test-Endpoints (12 Tests)
+- GET `/api/test/eye-blink/run-all` - Führt alle Tests aus
+- POST `/api/test/eye-blink/compare-mode-required`
+- POST `/api/test/eye-blink/analyze-mode-blocked`
+- POST `/api/test/eye-blink/active-card-required`
+- POST `/api/test/eye-blink/lines-render-on-blink`
+- POST `/api/test/eye-blink/animation-duration`
+- POST `/api/test/eye-blink/reset-after-timeout`
+- POST `/api/test/eye-blink/incremental-key`
+- POST `/api/test/eye-blink/validate-full-state`
+- POST `/api/test/eye-blink/coexist-eye-mode`
+- POST `/api/test/eye-blink/coexist-pencil-mode`
+- POST `/api/test/eye-blink/css-keyframes`
+- POST `/api/test/eye-blink/icon-position`
+
+---
+
 ## System Architecture
 
 ### UI/UX
