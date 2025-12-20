@@ -2576,11 +2576,14 @@ export default function Dashboard() {
     // Profit %: Berechne basierend auf Investment
     const profitPercent = investment > 0 ? (profit / investment) * 100 : 0;
     
-    // Ø Profit/Tag: gridProfit24hAvg oder berechnet
-    const avgDaily = parseFloat(update.gridProfit24hAvg || '0') || 0;
+    // Ø Profit/Tag: avgGridProfitDay (korrekter Feldname!)
+    const avgDaily = parseFloat(update.avgGridProfitDay || '0') || 0;
     
-    // Real Profit/Tag: avgGridProfitPerDay
-    const realDaily = parseFloat(update.avgGridProfitPerDay || '0') || 0;
+    // Real Profit/Tag: Berechnung basierend auf Runtime
+    // Wenn Runtime < 24h: Grid Profit gesamt, sonst avgGridProfitDay
+    const runtimeStr = update.avgRuntime || '';
+    const runtimeHours = parseRuntimeToHours(runtimeStr);
+    const realDaily = runtimeHours < 24 ? profit : avgDaily;
     
     return {
       investment,
@@ -2709,20 +2712,27 @@ export default function Dashboard() {
   };
 
   const toggleMetricCard = (cardName: string) => {
-    // Bei Multi-Bot-Auswahl (>1): Nur EINE Metrik-Card erlauben
-    if (selectedChartBotTypes.length > 1) {
-      // Im Multi-Bot-Mode: Toggle zwischen aktiv/inaktiv oder wechseln
+    // ANALYZE SINGLE METRIC MODE: Multi-Select erlaubt!
+    // Im Compare-Mode ohne Analyze: Nur EINE Metrik-Card erlauben
+    // Single-Bot Mode: Multi-Select erlaubt
+    const allowMultiSelect = isAnalyzeSingleMetricMode || selectedChartBotTypes.length <= 1;
+    
+    if (allowMultiSelect) {
+      // Multi-Select erlaubt: Normales Toggle-Verhalten
+      if (activeMetricCards.includes(cardName)) {
+        // Mindestens eine Metrik muss aktiv bleiben
+        if (activeMetricCards.length > 1) {
+          setActiveMetricCards(prev => prev.filter(name => name !== cardName));
+        }
+      } else {
+        setActiveMetricCards(prev => [...prev, cardName]);
+      }
+    } else {
+      // Multi-Bot-Mode (Compare) ohne Analyze: Nur EINE Metrik-Card erlauben
       const newMetrics = activeMetricCards.includes(cardName) && activeMetricCards.length === 1
         ? [] 
         : [cardName];
       setActiveMetricCards(newMetrics);
-    } else {
-      // Single-Bot oder kein Multi-Bot: Normales Toggle-Verhalten
-      if (activeMetricCards.includes(cardName)) {
-        setActiveMetricCards(prev => prev.filter(name => name !== cardName));
-      } else {
-        setActiveMetricCards(prev => [...prev, cardName]);
-      }
     }
     // Chart komplett neu rendern mit sauberer Animation
     setChartAnimationKey(prev => prev + 1);
