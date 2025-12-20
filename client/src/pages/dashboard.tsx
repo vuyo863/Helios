@@ -2678,6 +2678,114 @@ export default function Dashboard() {
     };
   }, [isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, allBotTypeUpdates]);
 
+  // COMPARE MODE: Berechne höchste Werte aller Bot-Types im Chart-Zeitraum
+  // Diese Werte werden in den Content Cards angezeigt
+  const compareHighestValues = useMemo(() => {
+    if (!isMultiSelectCompareMode || !allBotTypeUpdates || selectedChartBotTypes.length === 0) {
+      return null;
+    }
+    
+    // Hole alle Updates der ausgewählten Bot-Types
+    const selectedUpdates = allBotTypeUpdates.filter((update: BotTypeUpdate) => 
+      selectedChartBotTypes.includes(String(update.botTypeId))
+    );
+    
+    if (selectedUpdates.length === 0) return null;
+    
+    // Filter nach Chart-Zeitraum (xAxisDomain)
+    // xAxisDomain enthält den aktuellen sichtbaren Bereich (mit Zoom/Pan)
+    const domainStart = typeof xAxisDomain[0] === 'number' ? xAxisDomain[0] : 0;
+    const domainEnd = typeof xAxisDomain[1] === 'number' ? xAxisDomain[1] : Date.now();
+    
+    const updatesInTimeframe = selectedUpdates.filter((update: BotTypeUpdate) => {
+      // Für Closed Bots: Verwende date (Enddatum), sonst thisUpload
+      // Note: 'date' Feld wird für Closed Bots als Enddatum verwendet
+      const updateAny = update as any;
+      const dateStr = update.status === 'Closed Bots' 
+        ? (updateAny.endDate || update.date || update.thisUpload) 
+        : update.thisUpload;
+      if (!dateStr) return false;
+      const parsed = parseGermanDate(dateStr);
+      if (!parsed) return false;
+      const ts = parsed.getTime();
+      // Etwas Toleranz für die Grenzen
+      return ts >= domainStart - 86400000 && ts <= domainEnd + 86400000;
+    });
+    
+    if (updatesInTimeframe.length === 0) {
+      // Fallback: Alle Updates verwenden wenn keine im Zeitraum
+      return calculateHighestFromUpdates(selectedUpdates, profitPercentBase);
+    }
+    
+    return calculateHighestFromUpdates(updatesInTimeframe, profitPercentBase);
+  }, [isMultiSelectCompareMode, allBotTypeUpdates, selectedChartBotTypes, xAxisDomain, profitPercentBase]);
+  
+  // Helper-Funktion: Berechne höchste Werte aus einer Liste von Updates
+  function calculateHighestFromUpdates(updates: BotTypeUpdate[], percentBase: string) {
+    let highestInvestment = 0;
+    let highestBaseInvestment = 0;
+    let highestProfit = 0;
+    let highestProfitPercent = 0;
+    let highestAvgDaily = 0;
+    let highestRealDaily = 0;
+    let winnerBotType = '';
+    
+    updates.forEach((update: BotTypeUpdate) => {
+      const investment = parseFloat(update.totalInvestment || update.investment || '0') || 0;
+      const baseInvestment = parseFloat(update.investment || '0') || 0;
+      
+      // Profit: Je nach Status
+      const isClosedBot = update.status === 'Closed Bots';
+      const profit = isClosedBot 
+        ? parseFloat(update.profit || '0') || 0
+        : parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      
+      // Profit %: Basierend auf gewähltem Investment-Typ
+      const relevantInvestment = percentBase === 'gesamtinvestment' ? investment : baseInvestment;
+      const profitPercent = relevantInvestment > 0 ? (profit / relevantInvestment) * 100 : 0;
+      
+      // Ø Profit/Tag
+      const avgDaily = parseFloat(update.avgGridProfitDay || '0') || 0;
+      
+      // Real Profit/Tag
+      const runtimeStr = update.avgRuntime || '';
+      const runtimeHours = parseRuntimeToHours(runtimeStr);
+      const realDaily = runtimeHours < 24 ? profit : avgDaily;
+      
+      // Aktualisiere höchste Werte
+      if (investment > highestInvestment) {
+        highestInvestment = investment;
+      }
+      if (baseInvestment > highestBaseInvestment) {
+        highestBaseInvestment = baseInvestment;
+      }
+      if (profit > highestProfit) {
+        highestProfit = profit;
+        // update.name existiert nicht im Typ, verwende botTypeId
+        winnerBotType = String(update.botTypeId);
+      }
+      if (profitPercent > highestProfitPercent) {
+        highestProfitPercent = profitPercent;
+      }
+      if (avgDaily > highestAvgDaily) {
+        highestAvgDaily = avgDaily;
+      }
+      if (realDaily > highestRealDaily) {
+        highestRealDaily = realDaily;
+      }
+    });
+    
+    return {
+      investment: highestInvestment,
+      baseInvestment: highestBaseInvestment,
+      profit: highestProfit,
+      profitPercent: highestProfitPercent,
+      avgDailyProfit: highestAvgDaily,
+      realDailyProfit: highestRealDaily,
+      winnerBotType
+    };
+  }
+
   const lineChartData = useMemo(() => 
     filteredEntriesForStats
       .slice(0, 10)
@@ -2987,9 +3095,29 @@ export default function Dashboard() {
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 ${isCardEditMode ? 'pt-4' : ''}`}>
               {(isCardEditMode ? tempCardOrder : cardOrder).map((cardId) => {
                 // ANALYZE SINGLE METRIC MODE: Verwende Werte aus der einzelnen Metrik
-                // Sonst: Verwende aggregierte Werte oder "--" im Compare Mode
+                // COMPARE MODE: Zeige höchste Werte aller Bot-Types im Chart-Zeitraum
+                // Sonst: Verwende aggregierte Werte
                 const getCardValue = (cardId: string): string => {
-                  if (isMultiSelectCompareMode) return '--';
+                  // COMPARE MODE: Zeige höchste Werte aus dem Chart-Zeitraum
+                  if (isMultiSelectCompareMode && compareHighestValues) {
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        const compInv = profitPercentBase === 'gesamtinvestment' 
+                          ? compareHighestValues.investment 
+                          : compareHighestValues.baseInvestment;
+                        return `${compInv.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit':
+                        return `${compareHighestValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit %':
+                        return `${compareHighestValues.profitPercent.toFixed(2)}%`;
+                      case 'Ø Profit/Tag':
+                        return `${compareHighestValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Real Profit/Tag':
+                        return `${compareHighestValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      default:
+                        return '--';
+                    }
+                  }
                   
                   if (isAnalyzeSingleMetricMode && analyzeSingleMetricValues) {
                     // Werte aus der einzelnen ausgewählten Metrik
