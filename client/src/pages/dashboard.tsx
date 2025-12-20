@@ -1063,14 +1063,67 @@ export default function Dashboard() {
         
         allTimestamps.push(startTimestamp, endTimestamp);
         
-        // Berechne den Profit-Wert - IMMER RAW-WERT verwenden, KEINE Kumulierung!
-        // Das ist identisch zur MainChart Logik (Golden State)
-        let profitValue = 0;
+        // Berechne den Wert basierend auf ausgewählter Metrik (activeMetricCards[0])
+        // Im Compare Mode ist nur EINE Metrik aktiv
+        const selectedMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+        
+        let metricValue = 0;
+        const investment = parseFloat(update.totalInvestment || update.investment || '0') || 0;
+        const baseInvestment = parseFloat(update.investment || '0') || 0;
+        const relevantInvestment = profitPercentBase === 'gesamtinvestment' ? investment : baseInvestment;
+        
         if (update.status === 'Closed Bots') {
-          profitValue = parseFloat(update.profit || '0') || 0;
+          // Closed Bots: Verwende 'profit' Feld
+          const profit = parseFloat(update.profit || '0') || 0;
+          switch (selectedMetric) {
+            case 'Gesamtkapital':
+              metricValue = relevantInvestment;
+              break;
+            case 'Gesamtprofit':
+              metricValue = profit;
+              break;
+            case 'Gesamtprofit %':
+              metricValue = relevantInvestment > 0 ? (profit / relevantInvestment) * 100 : 0;
+              break;
+            case 'Ø Profit/Tag':
+              metricValue = parseFloat(update.avgGridProfitDay || '0') || 0;
+              break;
+            case 'Real Profit/Tag':
+              const runtimeStr = update.avgRuntime || '';
+              const runtimeHours = parseRuntimeToHours(runtimeStr);
+              metricValue = runtimeHours < 24 ? profit : parseFloat(update.avgGridProfitDay || '0') || 0;
+              break;
+            default:
+              metricValue = profit;
+          }
         } else {
-          profitValue = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+          // Update Metrics: Verwende Grid Profit Felder
+          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+          switch (selectedMetric) {
+            case 'Gesamtkapital':
+              metricValue = relevantInvestment;
+              break;
+            case 'Gesamtprofit':
+              metricValue = gridProfit;
+              break;
+            case 'Gesamtprofit %':
+              metricValue = relevantInvestment > 0 ? (gridProfit / relevantInvestment) * 100 : 0;
+              break;
+            case 'Ø Profit/Tag':
+              metricValue = parseFloat(update.avgGridProfitDay || '0') || 0;
+              break;
+            case 'Real Profit/Tag':
+              const runtimeStr = update.avgRuntime || '';
+              const runtimeHours = parseRuntimeToHours(runtimeStr);
+              metricValue = runtimeHours < 24 ? gridProfit : parseFloat(update.avgGridProfitDay || '0') || 0;
+              break;
+            default:
+              metricValue = gridProfit;
+          }
         }
+        
+        // Fallback für alte Variable
+        const profitValue = metricValue;
         
         // === IDENTISCHE LOGIK WIE MAINCHART FÜR START-PUNKT ===
         // Prüfe ob Vergleichs-Modus (wie in MainChart chartData)
@@ -1143,7 +1196,7 @@ export default function Dashboard() {
     dataPoints.sort((a, b) => a.timestamp - b.timestamp);
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes]);
+  }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase]);
   // ========== ENDE COMPARE MODUS SECTION ==========
 
   // Chart-Daten für Multi-Bot-Type Modus
