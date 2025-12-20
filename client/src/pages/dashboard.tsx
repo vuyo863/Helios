@@ -3277,16 +3277,17 @@ export default function Dashboard() {
                       data-testid={`card-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                     >
                       {/* Compare Mode Eye Icon: NUR auf ausgewählter Card, NUR im Compare Mode, NICHT im Analyze Mode */}
+                      {/* Positioniert unten-links der Card mit dezenterem Design */}
                       {isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && activeMetricCards.includes(cardId) && !isCardEditMode && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6 z-10 bg-background/80 hover:bg-background"
+                        <div 
+                          className="absolute bottom-2 left-2 z-10"
                           onClick={(e) => handleCompareEyeClick(e, cardId)}
                           data-testid={`button-compare-eye-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                         >
-                          <Eye className="h-4 w-4 text-cyan-600" />
-                        </Button>
+                          <div className={`p-1 rounded-full cursor-pointer transition-all hover:bg-cyan-100 ${compareCardEyeBlinking === cardId ? 'bg-cyan-100' : 'bg-background/60'}`}>
+                            <Eye className="h-3.5 w-3.5 text-cyan-600" />
+                          </div>
+                        </div>
                       )}
                       <StatCard
                         label={config.label}
@@ -3947,9 +3948,9 @@ export default function Dashboard() {
                               fill={closedStrokeColor}
                               style={isClosedActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                             />
-                            {/* Dashed line to chart when active - gerade nach unten */}
+                            {/* Dashed line to chart when active OR when Eye blink is active */}
                             {/* KEIN zusätzlicher Kreis hier - die Line-Komponente rendert bereits den Kreis */}
-                            {isClosedActive && closedY2 !== null && (() => {
+                            {(isClosedActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode)) && closedY2 !== null && (() => {
                               // Compare Mode Eye Blink: Wenn auf Content Card Eye geklickt wurde
                               const shouldBlinkClosedLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode;
                               return (
@@ -4110,8 +4111,9 @@ export default function Dashboard() {
                             strokeWidth="2"
                             style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
-                          {/* Dashed lines down to chart points when hovered */}
-                          {isActive && (() => {
+                          {/* Dashed lines down to chart points when hovered OR when Eye blink is active */}
+                          {/* WICHTIG: Linien werden auch gezeigt wenn compareCardEyeBlinking gesetzt ist */}
+                          {(isActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode)) && (() => {
                             // COMPARE MODUS: Verwende compareChartData - Linie nur bis zum Datenpunkt
                             if (isMultiSelectCompareMode) {
                               const chartDataArray = compareChartData.data || [];

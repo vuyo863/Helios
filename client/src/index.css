@@ -298,16 +298,21 @@ input[type="number"].no-spinner {
 }
 
 /* Compare Mode Eye Blink Animation - 3x langsames Blinken */
+/* Verwendet stroke-opacity für bessere SVG-Kompatibilität */
 @keyframes compareEyeBlink {
-  0%, 100% { opacity: 1; }
-  16.67% { opacity: 0.15; }
-  33.33% { opacity: 1; }
-  50% { opacity: 0.15; }
-  66.67% { opacity: 1; }
-  83.33% { opacity: 0.15; }
+  0%, 100% { opacity: 1; stroke-opacity: 1; }
+  16.67% { opacity: 0.1; stroke-opacity: 0.1; }
+  33.33% { opacity: 1; stroke-opacity: 1; }
+  50% { opacity: 0.1; stroke-opacity: 0.1; }
+  66.67% { opacity: 1; stroke-opacity: 1; }
+  83.33% { opacity: 0.1; stroke-opacity: 0.1; }
 }
 
 .compare-eye-blink {
+  animation: compareEyeBlink 2.4s ease-in-out forwards;
+}
+
+.compare-eye-blink line {
   animation: compareEyeBlink 2.4s ease-in-out forwards;
 }
 
