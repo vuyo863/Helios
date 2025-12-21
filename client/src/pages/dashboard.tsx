@@ -280,6 +280,7 @@ export default function Dashboard() {
   // Blinkt die Verbindungslinie 3x langsam (NUR im Compare Mode, NICHT im Analyze Mode)
   const [compareCardEyeBlinking, setCompareCardEyeBlinking] = useState<string | null>(null); // cardId die blinkt
   const [compareBlinkKey, setCompareBlinkKey] = useState(0); // Key um Animation neu zu triggern
+  const [blinkingUpdateKey, setBlinkingUpdateKey] = useState<string | null>(null); // Der spezifische updateKey der blinkt
   
   // Chart Zoom & Pan State
   // zoomLevel: 1 = 100%, 2 = 200% (doppelt so detailliert), etc.
@@ -2779,6 +2780,7 @@ export default function Dashboard() {
   }, [isMultiSelectCompareMode, allBotTypeUpdates, selectedChartBotTypes, xAxisDomain, profitPercentBase]);
   
   // Helper-Funktion: Berechne höchste Werte aus einer Liste von Updates
+  // Trackt auch welches Update (updateKey) den höchsten Wert für jede Metrik hat
   function calculateHighestFromUpdates(updates: BotTypeUpdate[], percentBase: string) {
     let highestInvestment = 0;
     let highestBaseInvestment = 0;
@@ -2787,6 +2789,14 @@ export default function Dashboard() {
     let highestAvgDaily = 0;
     let highestRealDaily = 0;
     let winnerBotType = '';
+    
+    // Track updateKeys für jede Metrik
+    let investmentUpdateKey = '';
+    let baseInvestmentUpdateKey = '';
+    let profitUpdateKey = '';
+    let profitPercentUpdateKey = '';
+    let avgDailyUpdateKey = '';
+    let realDailyUpdateKey = '';
     
     updates.forEach((update: BotTypeUpdate) => {
       const investment = parseFloat(update.totalInvestment || update.investment || '0') || 0;
@@ -2810,26 +2820,37 @@ export default function Dashboard() {
       const runtimeHours = parseRuntimeToHours(runtimeStr);
       const realDaily = runtimeHours < 24 ? profit : avgDaily;
       
-      // Aktualisiere höchste Werte
+      // Generiere updateKey: {botTypeId}:{u|c}-{version}
+      const version = update.version || 1;
+      const keyPrefix = isClosedBot ? 'c' : 'u';
+      const updateKey = `${update.botTypeId}:${keyPrefix}-${version}`;
+      
+      // Aktualisiere höchste Werte UND tracke updateKeys
       if (investment > highestInvestment) {
         highestInvestment = investment;
+        investmentUpdateKey = updateKey;
       }
       if (baseInvestment > highestBaseInvestment) {
         highestBaseInvestment = baseInvestment;
+        baseInvestmentUpdateKey = updateKey;
       }
       if (profit > highestProfit) {
         highestProfit = profit;
+        profitUpdateKey = updateKey;
         // update.name existiert nicht im Typ, verwende botTypeId
         winnerBotType = String(update.botTypeId);
       }
       if (profitPercent > highestProfitPercent) {
         highestProfitPercent = profitPercent;
+        profitPercentUpdateKey = updateKey;
       }
       if (avgDaily > highestAvgDaily) {
         highestAvgDaily = avgDaily;
+        avgDailyUpdateKey = updateKey;
       }
       if (realDaily > highestRealDaily) {
         highestRealDaily = realDaily;
+        realDailyUpdateKey = updateKey;
       }
     });
     
@@ -2840,7 +2861,16 @@ export default function Dashboard() {
       profitPercent: highestProfitPercent,
       avgDailyProfit: highestAvgDaily,
       realDailyProfit: highestRealDaily,
-      winnerBotType
+      winnerBotType,
+      // UpdateKeys für jede Metrik
+      updateKeys: {
+        investment: investmentUpdateKey,
+        baseInvestment: baseInvestmentUpdateKey,
+        profit: profitUpdateKey,
+        profitPercent: profitPercentUpdateKey,
+        avgDailyProfit: avgDailyUpdateKey,
+        realDailyProfit: realDailyUpdateKey
+      }
     };
   }
 
@@ -3255,12 +3285,36 @@ export default function Dashboard() {
                 const handleCompareEyeClick = (e: React.MouseEvent, cardId: string) => {
                   e.stopPropagation(); // Verhindert Card-Toggle
                   // Nur im Compare Mode (nicht im Analyze Mode) blinken
-                  if (isMultiSelectCompareMode && !isAnalyzeSingleMetricMode) {
+                  if (isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareHighestValues?.updateKeys) {
+                    // Finde den updateKey für die geklickte Metrik-Card
+                    let updateKeyForCard = '';
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        updateKeyForCard = profitPercentBase === 'gesamtinvestment' 
+                          ? compareHighestValues.updateKeys.investment 
+                          : compareHighestValues.updateKeys.baseInvestment;
+                        break;
+                      case 'Gesamtprofit':
+                        updateKeyForCard = compareHighestValues.updateKeys.profit;
+                        break;
+                      case 'Gesamtprofit %':
+                        updateKeyForCard = compareHighestValues.updateKeys.profitPercent;
+                        break;
+                      case 'Ø Profit/Tag':
+                        updateKeyForCard = compareHighestValues.updateKeys.avgDailyProfit;
+                        break;
+                      case 'Real Profit/Tag':
+                        updateKeyForCard = compareHighestValues.updateKeys.realDailyProfit;
+                        break;
+                    }
+                    
                     setCompareCardEyeBlinking(cardId);
+                    setBlinkingUpdateKey(updateKeyForCard || null);
                     setCompareBlinkKey(prev => prev + 1);
                     // Nach Animation zurücksetzen (2.4s + etwas Puffer)
                     setTimeout(() => {
                       setCompareCardEyeBlinking(null);
+                      setBlinkingUpdateKey(null);
                     }, 2600);
                   }
                 };
@@ -3952,12 +4006,12 @@ export default function Dashboard() {
                               fill={closedStrokeColor}
                               style={isClosedActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                             />
-                            {/* Dashed line to chart when active OR when Eye blink is active */}
+                            {/* Dashed line to chart when active OR when Eye blink is active for THIS specific update */}
                             {/* KEIN zusätzlicher Kreis hier - die Line-Komponente rendert bereits den Kreis */}
-                            {/* Eye Blink nur wenn geklickte Card = aktive Chart-Metrik! */}
-                            {(isClosedActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0])) && closedY2 !== null && (() => {
-                              // Compare Mode Eye Blink: NUR wenn die geklickte Card die aktive Chart-Metrik ist!
-                              const shouldBlinkClosedLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0];
+                            {/* Eye Blink nur wenn blinkingUpdateKey === dieser closedKey! */}
+                            {(isClosedActive || (blinkingUpdateKey === closedKey)) && closedY2 !== null && (() => {
+                              // Compare Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
+                              const shouldBlinkClosedLine = blinkingUpdateKey === closedKey;
                               return (
                                 <g 
                                   key={shouldBlinkClosedLine ? `closed-blink-${compareBlinkKey}` : undefined}
@@ -4116,10 +4170,9 @@ export default function Dashboard() {
                             strokeWidth="2"
                             style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))' } : {}}
                           />
-                          {/* Dashed lines down to chart points when hovered OR when Eye blink is active */}
-                          {/* WICHTIG: Eye Blink nur wenn die geklickte Content Card = aktive Chart-Metrik */}
-                          {/* compareCardEyeBlinking muss mit activeMetricCards[0] übereinstimmen! */}
-                          {(isActive || (compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0])) && (() => {
+                          {/* Dashed lines down to chart points when hovered OR when Eye blink is active for THIS update */}
+                          {/* WICHTIG: Eye Blink nur wenn blinkingUpdateKey === dieser updateKey */}
+                          {(isActive || (blinkingUpdateKey === updateKey)) && (() => {
                             // COMPARE MODUS: Verwende compareChartData - Linie nur bis zum Datenpunkt
                             if (isMultiSelectCompareMode) {
                               const chartDataArray = compareChartData.data || [];
@@ -4192,8 +4245,8 @@ export default function Dashboard() {
                               const startY2 = startY2Raw !== null ? Math.max(100, (startY2Raw / markerHeight) * 100) : null;
                               const endY2 = endY2Raw !== null ? Math.max(100, (endY2Raw / markerHeight) * 100) : null;
                               
-                              // Compare Mode Eye Blink: NUR wenn die geklickte Card die aktive Chart-Metrik ist!
-                              const shouldBlinkLine = compareCardEyeBlinking !== null && isMultiSelectCompareMode && !isAnalyzeSingleMetricMode && compareCardEyeBlinking === activeMetricCards[0];
+                              // Compare Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
+                              const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
                               return (
                                 <g 
