@@ -2019,16 +2019,20 @@ export default function Dashboard() {
     }
     
     // COMPARE MODUS: Tick-Generierung für den Vergleichsmodus
-    // WICHTIG: Zoom und Pan berücksichtigen wie im normalen Chart!
+    // WICHTIG: Sequence-Einstellung berücksichtigen wie im normalen Chart!
     if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
       const baseStartTs = compareChartData.minTimestamp;
       const baseEndTs = compareChartData.maxTimestamp;
       const totalRange = baseEndTs - baseStartTs;
       
+      // Sequence-Einstellung aus Graph-Einstellungen
+      const sequence = appliedChartSettings?.sequence || 'days';
+      
       // Sichtbare Zeitspanne basierend auf Zoom berechnen
       const visibleRange = totalRange / chartZoomX;
       const visibleHours = visibleRange / (60 * 60 * 1000);
       const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+      const visibleWeeks = visibleRange / (7 * 24 * 60 * 60 * 1000);
       
       // Berechne gezoomte Start/End-Zeitstempel
       const padding = totalRange > 0 ? totalRange * 0.05 : 24 * 60 * 60 * 1000;
@@ -2049,39 +2053,94 @@ export default function Dashboard() {
         endTs = center + zoomedRange / 2 + panOffset;
       }
       
-      // Adaptive Intervall-Wahl basierend auf sichtbarer Zeitspanne (wie normaler Chart)
+      // SEQUENCE-BASIERTE TICK-INTERVALLE (gleiche Logik wie Normal-Modus)
       let tickInterval: number;
       
-      if (visibleHours <= 12) {
-        tickInterval = 60 * 60 * 1000; // 1 Stunde
-      } else if (visibleHours <= 36) {
-        tickInterval = 2 * 60 * 60 * 1000; // 2 Stunden
-      } else if (visibleHours <= 72) {
-        tickInterval = 6 * 60 * 60 * 1000; // 6 Stunden
-      } else if (visibleDays <= 7) {
-        tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
-      } else if (visibleDays <= 21) {
-        tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
-      } else if (visibleDays <= 60) {
-        tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
+      if (sequence === 'hours') {
+        // STUNDEN-MODUS
+        if (visibleHours <= 6) {
+          tickInterval = 30 * 60 * 1000; // 30 Minuten
+        } else if (visibleHours <= 12) {
+          tickInterval = 60 * 60 * 1000; // 1 Stunde
+        } else if (visibleHours <= 24) {
+          tickInterval = 2 * 60 * 60 * 1000; // 2 Stunden
+        } else if (visibleHours <= 48) {
+          tickInterval = 4 * 60 * 60 * 1000; // 4 Stunden
+        } else if (visibleHours <= 96) {
+          tickInterval = 6 * 60 * 60 * 1000; // 6 Stunden
+        } else {
+          tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
+        }
+      } else if (sequence === 'weeks') {
+        // WOCHEN-MODUS
+        if (visibleWeeks <= 4) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+        } else if (visibleWeeks <= 8) {
+          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+        } else if (visibleWeeks <= 16) {
+          tickInterval = 28 * 24 * 60 * 60 * 1000; // 4 Wochen
+        } else {
+          tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
+        }
+      } else if (sequence === 'months') {
+        // MONATS-MODUS
+        const visibleMonths = visibleDays / 30;
+        if (visibleMonths <= 3) {
+          tickInterval = 30 * 24 * 60 * 60 * 1000; // 1 Monat
+        } else if (visibleMonths <= 6) {
+          tickInterval = 60 * 24 * 60 * 60 * 1000; // 2 Monate
+        } else if (visibleMonths <= 12) {
+          tickInterval = 90 * 24 * 60 * 60 * 1000; // 3 Monate
+        } else {
+          tickInterval = 180 * 24 * 60 * 60 * 1000; // 6 Monate
+        }
       } else {
-        tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+        // TAGES-MODUS (default)
+        if (visibleDays <= 7) {
+          tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
+        } else if (visibleDays <= 14) {
+          tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
+        } else if (visibleDays <= 30) {
+          tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
+        } else if (visibleDays <= 60) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+        } else {
+          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+        }
       }
       
       const ticks: number[] = [];
       ticks.push(startTs);
       
-      // Bei Tages-Intervallen: runde auf nächste Mitternacht
+      // Rundung basierend auf Sequence (wie Normal-Modus)
       const currentDate = new Date(startTs);
-      if (tickInterval >= 24 * 60 * 60 * 1000) {
-        currentDate.setHours(0, 0, 0, 0);
-        if (currentDate.getTime() <= startTs) {
-          currentDate.setTime(currentDate.getTime() + 24 * 60 * 60 * 1000);
-        }
-      } else {
+      
+      if (sequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+        // STUNDEN: Runde auf volle Stunde
         currentDate.setMinutes(0, 0, 0);
         if (currentDate.getTime() <= startTs) {
           currentDate.setTime(currentDate.getTime() + 60 * 60 * 1000);
+        }
+      } else if (sequence === 'weeks') {
+        // WOCHEN: Runde auf Montag 00:00
+        currentDate.setHours(0, 0, 0, 0);
+        const dayOfWeek = currentDate.getDay();
+        const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysUntilMonday === 0 && currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        } else {
+          currentDate.setTime(currentDate.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+        }
+      } else if (sequence === 'months') {
+        // MONATE: Runde auf 1. des nächsten Monats
+        currentDate.setHours(0, 0, 0, 0);
+        currentDate.setDate(1);
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      } else {
+        // TAGE: Runde auf Mitternacht
+        currentDate.setHours(0, 0, 0, 0);
+        if (currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 24 * 60 * 60 * 1000);
         }
       }
       
