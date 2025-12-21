@@ -1253,12 +1253,25 @@ export default function Dashboard() {
           dataPoints.push(startPoint);
         }
         
+        // Berechne Runtime in Millisekunden (End - Start)
+        // Bei Closed Bots: keine Runtime (nur ein Punkt mit End Date)
+        const runtimeMs = isClosedBots ? undefined : endTimestamp - startTimestamp;
+        
+        // Berechne Gesamtprofit und Gesamtkapital für den Tooltip
+        const gridProfit = update.status === 'Closed Bots' 
+          ? parseFloat(update.profit || '0') || 0
+          : parseFloat(update.overallGridProfitUsdt || '0') || 0;
+        const gesamtkapital = parseFloat(update.totalInvestment || update.investment || '0') || 0;
+        
         // Erstelle End-Punkt (immer)
         const endPoint: Record<string, any> = {
           time: new Date(endTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
           timestamp: endTimestamp,
           isStartPoint: false,
           botTypeName: botType.name,
+          runtimeMs: runtimeMs,
+          'Gesamtprofit': gridProfit,
+          'Gesamtkapital': gesamtkapital,
         };
         // Initialisiere alle Bot-Types mit null
         selectedBotTypesInfo.forEach(bt => {
