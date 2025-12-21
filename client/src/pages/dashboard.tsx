@@ -1899,6 +1899,74 @@ export default function Dashboard() {
     return { highest, lowest };
   }, [transformedChartData, activeMetricCards]);
 
+  // COMPARE MODE: Berechne Highest und Lowest Value für jede Bot-Type-Linie
+  // Im Compare-Modus wird die ausgewählte Metrik (activeMetricCards[0]) für JEDEN Bot-Type berechnet
+  const compareExtremeValues = useMemo(() => {
+    if (!isMultiSelectCompareMode || !compareChartData.data || compareChartData.data.length === 0) {
+      return { 
+        highest: {} as Record<string, { timestamp: number; value: number; botTypeName: string; color: string }>, 
+        lowest: {} as Record<string, { timestamp: number; value: number; botTypeName: string; color: string }> 
+      };
+    }
+    
+    const chartData = compareChartData.data;
+    const botTypeNames = compareChartData.botTypeNames || [];
+    
+    const highest: Record<string, { timestamp: number; value: number; botTypeName: string; color: string }> = {};
+    const lowest: Record<string, { timestamp: number; value: number; botTypeName: string; color: string }> = {};
+    
+    // Für jeden Bot-Type den höchsten und niedrigsten Wert finden
+    botTypeNames.forEach((botTypeName, idx) => {
+      let maxVal = -Infinity;
+      let minVal = Infinity;
+      let maxTimestamp = 0;
+      let maxValue = 0;
+      let minTimestamp = 0;
+      let minValue = 0;
+      let foundMax = false;
+      let foundMin = false;
+      
+      chartData.forEach((point: any) => {
+        const value = point[botTypeName];
+        if (typeof value === 'number' && !isNaN(value)) {
+          if (value > maxVal) {
+            maxVal = value;
+            maxTimestamp = point.timestamp;
+            maxValue = value;
+            foundMax = true;
+          }
+          if (value < minVal) {
+            minVal = value;
+            minTimestamp = point.timestamp;
+            minValue = value;
+            foundMin = true;
+          }
+        }
+      });
+      
+      const color = getCompareColor(idx);
+      
+      if (foundMax) {
+        highest[botTypeName] = { 
+          timestamp: maxTimestamp, 
+          value: maxValue, 
+          botTypeName, 
+          color 
+        };
+      }
+      if (foundMin) {
+        lowest[botTypeName] = { 
+          timestamp: minTimestamp, 
+          value: minValue, 
+          botTypeName, 
+          color 
+        };
+      }
+    });
+    
+    return { highest, lowest };
+  }, [isMultiSelectCompareMode, compareChartData.data, compareChartData.botTypeNames]);
+
   // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
   // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
   // Tick-Intervalle:
@@ -5629,6 +5697,144 @@ export default function Dashboard() {
                     return resolved.map(m => (
                       <ReferenceDot
                         key={`lowest-${m.metric}`}
+                        x={m.data.timestamp}
+                        y={m.data.value}
+                        r={0}
+                        label={{
+                          value: '↓L',
+                          position: 'top',
+                          fill: m.color,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          offset: m.offset,
+                        }}
+                      />
+                    ));
+                  })()}
+                  
+                  {/* ========== COMPARE MODE: Highest Value Markers ========== */}
+                  {/* Zeigt ↑H Marker für jeden Bot-Type im Compare-Modus */}
+                  {showHighestValue && isMultiSelectCompareMode && (() => {
+                    const markers = Object.entries(compareExtremeValues.highest)
+                      .map(([botTypeName, data]) => ({ botTypeName, data }))
+                      .filter(m => m.data) as { botTypeName: string; data: { timestamp: number; value: number; botTypeName: string; color: string } }[];
+                    
+                    if (markers.length === 0) return null;
+                    
+                    // Berechne Y-Range für relative Abstände
+                    const chartData = compareChartData.data || [];
+                    const botTypeNames = compareChartData.botTypeNames || [];
+                    const allY = chartData.flatMap((p: any) => 
+                      botTypeNames.map(name => p[name]).filter((v: any) => typeof v === 'number') as number[]
+                    );
+                    const minY = allY.length > 0 ? Math.min(...allY) : 0;
+                    const maxY = allY.length > 0 ? Math.max(...allY) : 1;
+                    const yRange = maxY - minY || 1;
+                    const minGap = yRange * 0.03;
+                    
+                    // Finde alle Y-Werte bei einem Timestamp
+                    const getYValuesAt = (ts: number) => {
+                      const point = chartData.find((p: any) => Math.abs(p.timestamp - ts) < 60000);
+                      if (!point) return [];
+                      return botTypeNames
+                        .map(name => (point as any)[name])
+                        .filter((v: any) => typeof v === 'number') as number[];
+                    };
+                    
+                    // Berechne Offset für jeden Marker
+                    const resolved = markers.map((marker, i) => {
+                      const { timestamp, value, color } = marker.data;
+                      let offset = 8;
+                      
+                      // Prüfe ob Graph-Linien unter diesem Punkt sind
+                      const yVals = getYValuesAt(timestamp);
+                      const linesBelow = yVals.filter(y => y < value && (value - y) < minGap * 3);
+                      
+                      // Wenn Linien knapp darunter sind → flippe nach oben
+                      const flipToTop = linesBelow.length > 0 || (value - minY) < minGap * 2;
+                      
+                      // Stapeln wenn mehrere H-Marker nah beieinander
+                      const prevSameArea = markers.slice(0, i).filter(m => 
+                        Math.abs(m.data.timestamp - timestamp) < 3600000 &&
+                        Math.abs(m.data.value - value) < minGap * 4
+                      ).length;
+                      offset += prevSameArea * 12;
+                      
+                      return { ...marker, offset, flipToTop, color };
+                    });
+                    
+                    return resolved.map(m => (
+                      <ReferenceDot
+                        key={`compare-highest-${m.botTypeName}`}
+                        x={m.data.timestamp}
+                        y={m.data.value}
+                        r={0}
+                        label={{
+                          value: '↑H',
+                          position: m.flipToTop ? 'top' : 'bottom',
+                          fill: m.color,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          offset: m.offset,
+                        }}
+                      />
+                    ));
+                  })()}
+                  
+                  {/* ========== COMPARE MODE: Lowest Value Markers ========== */}
+                  {/* Zeigt ↓L Marker für jeden Bot-Type im Compare-Modus */}
+                  {showLowestValue && isMultiSelectCompareMode && (() => {
+                    const markers = Object.entries(compareExtremeValues.lowest)
+                      .map(([botTypeName, data]) => ({ botTypeName, data }))
+                      .filter(m => m.data) as { botTypeName: string; data: { timestamp: number; value: number; botTypeName: string; color: string } }[];
+                    
+                    if (markers.length === 0) return null;
+                    
+                    // Berechne Y-Range
+                    const chartData = compareChartData.data || [];
+                    const botTypeNames = compareChartData.botTypeNames || [];
+                    const allY = chartData.flatMap((p: any) => 
+                      botTypeNames.map(name => p[name]).filter((v: any) => typeof v === 'number') as number[]
+                    );
+                    const maxY = allY.length > 0 ? Math.max(...allY) : 1;
+                    const minY = allY.length > 0 ? Math.min(...allY) : 0;
+                    const yRange = maxY - minY || 1;
+                    const minGap = yRange * 0.03;
+                    
+                    // Finde alle Y-Werte bei einem Timestamp
+                    const getYValuesAt = (ts: number) => {
+                      const point = chartData.find((p: any) => Math.abs(p.timestamp - ts) < 60000);
+                      if (!point) return [];
+                      return botTypeNames
+                        .map(name => (point as any)[name])
+                        .filter((v: any) => typeof v === 'number') as number[];
+                    };
+                    
+                    // Berechne Offset für jeden Marker
+                    const resolved = markers.map((marker, i) => {
+                      const { timestamp, value, color } = marker.data;
+                      let offset = 8;
+                      
+                      // Prüfe ob Graph-Linien über diesem Punkt sind
+                      const yVals = getYValuesAt(timestamp);
+                      const linesAbove = yVals.filter(y => y > value && (y - value) < minGap * 3);
+                      
+                      // Mehr Offset wenn Linien knapp darüber
+                      offset += linesAbove.length * 10;
+                      
+                      // Stapeln wenn mehrere L-Marker nah beieinander
+                      const prevSameArea = markers.slice(0, i).filter(m => 
+                        Math.abs(m.data.timestamp - timestamp) < 3600000 &&
+                        Math.abs(m.data.value - value) < minGap * 4
+                      ).length;
+                      offset += prevSameArea * 12;
+                      
+                      return { ...marker, offset, color };
+                    });
+                    
+                    return resolved.map(m => (
+                      <ReferenceDot
+                        key={`compare-lowest-${m.botTypeName}`}
                         x={m.data.timestamp}
                         y={m.data.value}
                         r={0}
