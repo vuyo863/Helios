@@ -5469,6 +5469,10 @@ export default function Dashboard() {
                         const botTypeId = botType ? String(botType.id) : '';
                         const botTypeColor = compareColorMap[botTypeId] || '#16a34a';
                         
+                        // Einheit basierend auf ausgewählter Metrik
+                        const selectedMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+                        const metricSuffix = selectedMetric === 'Gesamtprofit %' ? '%' : ' USDT';
+                        
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {/* END RUNTIME Box - Umrandung in Bot-Type Farbe */}
@@ -5492,7 +5496,7 @@ export default function Dashboard() {
                                 End Runtime
                               </p>
                               <p style={{ color: botTypeColor, margin: '2px 0' }}>
-                                {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{metricSuffix}
                               </p>
                               {runtimeMs > 0 && (
                                 <p style={{ color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
@@ -5521,7 +5525,7 @@ export default function Dashboard() {
                                 Start Time
                               </p>
                               <p style={{ color: botTypeColor, margin: '2px 0' }}>
-                                {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{metricSuffix}
                               </p>
                               {/* KEINE Runtime bei START */}
                             </div>
@@ -5569,6 +5573,10 @@ export default function Dashboard() {
                         const typeLabel = isEndPoint ? 'End Runtime' : 'Start Time';
                         const typeLabelColor = isEndPoint ? '#ef4444' : '#22c55e';
                         
+                        // Einheit basierend auf ausgewählter Metrik
+                        const selectedMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+                        const metricSuffix = selectedMetric === 'Gesamtprofit %' ? '%' : ' USDT';
+                        
                         return (
                           <div 
                             style={{ 
@@ -5592,7 +5600,7 @@ export default function Dashboard() {
                               {typeLabel}
                             </p>
                             <p style={{ color: botTypeColor, margin: '2px 0' }}>
-                              {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{metricSuffix}
                             </p>
                             {/* Runtime nur bei Endpunkten */}
                             {isEndPoint && runtimeMs > 0 && (
