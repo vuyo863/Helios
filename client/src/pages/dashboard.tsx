@@ -2027,7 +2027,9 @@ export default function Dashboard() {
         currentTs += tickInterval;
       }
       
-      if (ticks[ticks.length - 1] !== endTs) {
+      // End-Datum nur hinzufügen wenn mindestens minGap Abstand zum letzten Tick
+      const lastTick = ticks[ticks.length - 1];
+      if (lastTick !== endTs && (endTs - lastTick) >= minGap) {
         ticks.push(endTs);
       }
       
@@ -2820,45 +2822,65 @@ export default function Dashboard() {
 
   // COMPARE MODE: Berechne höchste Werte aller Bot-Types im Chart-Zeitraum
   // Diese Werte werden in den Content Cards angezeigt
+  // WICHTIG: Verwendet dieselbe Zeitfilter-Logik wie compareChartData!
   const compareHighestValues = useMemo(() => {
     if (!isMultiSelectCompareMode || !allBotTypeUpdates || selectedChartBotTypes.length === 0) {
       return null;
     }
     
     // Hole alle Updates der ausgewählten Bot-Types
-    const selectedUpdates = allBotTypeUpdates.filter((update: BotTypeUpdate) => 
+    let filteredUpdates = allBotTypeUpdates.filter((update: BotTypeUpdate) => 
       selectedChartBotTypes.includes(String(update.botTypeId))
     );
     
-    if (selectedUpdates.length === 0) return null;
+    if (filteredUpdates.length === 0) return null;
     
-    // Filter nach Chart-Zeitraum (xAxisDomain)
-    // xAxisDomain enthält den aktuellen sichtbaren Bereich (mit Zoom/Pan)
-    const domainStart = typeof xAxisDomain[0] === 'number' ? xAxisDomain[0] : 0;
-    const domainEnd = typeof xAxisDomain[1] === 'number' ? xAxisDomain[1] : Date.now();
+    // ========== ZEITFILTER AUS GRAPH-EINSTELLUNGEN (wie compareChartData) ==========
+    if (appliedChartSettings && appliedChartSettings.timeRange !== 'First-Last Update') {
+      // Priorität 1: Custom mit Kalender-Auswahl
+      if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+        const fromTs = appliedChartSettings.customFromDate.getTime();
+        const toDate = new Date(appliedChartSettings.customToDate);
+        toDate.setHours(23, 59, 59, 999);
+        const untilTs = toDate.getTime();
+        
+        filteredUpdates = filteredUpdates.filter((update: BotTypeUpdate) => {
+          const ts = getUpdateTimestamp(update);
+          return ts >= fromTs && ts <= untilTs;
+        });
+      }
+      // Priorität 2: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom mit D/H/M)
+      else {
+        const rangeMs = parseTimeRangeToMs(
+          appliedChartSettings.timeRange,
+          appliedChartSettings.customDays,
+          appliedChartSettings.customHours,
+          appliedChartSettings.customMinutes
+        );
+        
+        if (rangeMs !== null && rangeMs > 0) {
+          const now = Date.now();
+          const cutoffTimestamp = now - rangeMs;
+          
+          filteredUpdates = filteredUpdates.filter((update: BotTypeUpdate) => {
+            const ts = getUpdateTimestamp(update);
+            return ts >= cutoffTimestamp;
+          });
+        }
+      }
+    }
+    // ========== ENDE ZEITFILTER ==========
     
-    const updatesInTimeframe = selectedUpdates.filter((update: BotTypeUpdate) => {
-      // Für Closed Bots: Verwende date (Enddatum), sonst thisUpload
-      // Note: 'date' Feld wird für Closed Bots als Enddatum verwendet
-      const updateAny = update as any;
-      const dateStr = update.status === 'Closed Bots' 
-        ? (updateAny.endDate || update.date || update.thisUpload) 
-        : update.thisUpload;
-      if (!dateStr) return false;
-      const parsed = parseGermanDate(dateStr);
-      if (!parsed) return false;
-      const ts = parsed.getTime();
-      // Etwas Toleranz für die Grenzen
-      return ts >= domainStart - 86400000 && ts <= domainEnd + 86400000;
-    });
-    
-    if (updatesInTimeframe.length === 0) {
-      // Fallback: Alle Updates verwenden wenn keine im Zeitraum
-      return calculateHighestFromUpdates(selectedUpdates, profitPercentBase);
+    if (filteredUpdates.length === 0) {
+      // Fallback: Alle ausgewählten Updates verwenden
+      return calculateHighestFromUpdates(
+        allBotTypeUpdates.filter((u: BotTypeUpdate) => selectedChartBotTypes.includes(String(u.botTypeId))),
+        profitPercentBase
+      );
     }
     
-    return calculateHighestFromUpdates(updatesInTimeframe, profitPercentBase);
-  }, [isMultiSelectCompareMode, allBotTypeUpdates, selectedChartBotTypes, xAxisDomain, profitPercentBase]);
+    return calculateHighestFromUpdates(filteredUpdates, profitPercentBase);
+  }, [isMultiSelectCompareMode, allBotTypeUpdates, selectedChartBotTypes, appliedChartSettings, profitPercentBase]);
   
   // Helper-Funktion: Berechne höchste Werte aus einer Liste von Updates
   // Trackt auch welches Update (updateKey) den höchsten Wert für jede Metrik hat
