@@ -2019,20 +2019,51 @@ export default function Dashboard() {
     }
     
     // COMPARE MODUS: Tick-Generierung für den Vergleichsmodus
-    // WICHTIG: Sequence-Einstellung berücksichtigen wie im normalen Chart!
+    // WICHTIG: Sequence-Einstellung berücksichtigen + automatische Downgrade beim Zoomen!
     if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
       const baseStartTs = compareChartData.minTimestamp;
       const baseEndTs = compareChartData.maxTimestamp;
       const totalRange = baseEndTs - baseStartTs;
       
-      // Sequence-Einstellung aus Graph-Einstellungen
-      const sequence = appliedChartSettings?.sequence || 'days';
+      // Sequence-Einstellung aus Graph-Einstellungen (Basis-Einstellung)
+      const baseSequence = appliedChartSettings?.sequence || 'days';
       
       // Sichtbare Zeitspanne basierend auf Zoom berechnen
       const visibleRange = totalRange / chartZoomX;
       const visibleHours = visibleRange / (60 * 60 * 1000);
       const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
       const visibleWeeks = visibleRange / (7 * 24 * 60 * 60 * 1000);
+      
+      // AUTOMATISCHE SEQUENCE-DOWNGRADE beim Zoomen
+      // Months → Weeks → Days → Hours basierend auf sichtbarer Zeitspanne
+      let effectiveSequence = baseSequence;
+      
+      if (baseSequence === 'months') {
+        // Months: Downgrade zu Weeks wenn < 8 Wochen sichtbar
+        // Downgrade zu Days wenn < 2 Wochen sichtbar
+        // Downgrade zu Hours wenn < 3 Tage sichtbar
+        if (visibleDays < 3) {
+          effectiveSequence = 'hours';
+        } else if (visibleDays < 14) {
+          effectiveSequence = 'days';
+        } else if (visibleDays < 56) {
+          effectiveSequence = 'weeks';
+        }
+      } else if (baseSequence === 'weeks') {
+        // Weeks: Downgrade zu Days wenn < 2 Wochen sichtbar
+        // Downgrade zu Hours wenn < 3 Tage sichtbar
+        if (visibleDays < 3) {
+          effectiveSequence = 'hours';
+        } else if (visibleDays < 14) {
+          effectiveSequence = 'days';
+        }
+      } else if (baseSequence === 'days') {
+        // Days: Downgrade zu Hours wenn < 3 Tage sichtbar
+        if (visibleDays < 3) {
+          effectiveSequence = 'hours';
+        }
+      }
+      // Hours bleibt immer Hours (kleinste Einheit)
       
       // Berechne gezoomte Start/End-Zeitstempel
       const padding = totalRange > 0 ? totalRange * 0.05 : 24 * 60 * 60 * 1000;
@@ -2053,10 +2084,10 @@ export default function Dashboard() {
         endTs = center + zoomedRange / 2 + panOffset;
       }
       
-      // SEQUENCE-BASIERTE TICK-INTERVALLE (gleiche Logik wie Normal-Modus)
+      // SEQUENCE-BASIERTE TICK-INTERVALLE (mit effectiveSequence)
       let tickInterval: number;
       
-      if (sequence === 'hours') {
+      if (effectiveSequence === 'hours') {
         // STUNDEN-MODUS
         if (visibleHours <= 6) {
           tickInterval = 30 * 60 * 1000; // 30 Minuten
@@ -2071,7 +2102,7 @@ export default function Dashboard() {
         } else {
           tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
         }
-      } else if (sequence === 'weeks') {
+      } else if (effectiveSequence === 'weeks') {
         // WOCHEN-MODUS
         if (visibleWeeks <= 4) {
           tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
@@ -2082,7 +2113,7 @@ export default function Dashboard() {
         } else {
           tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
         }
-      } else if (sequence === 'months') {
+      } else if (effectiveSequence === 'months') {
         // MONATS-MODUS
         const visibleMonths = visibleDays / 30;
         if (visibleMonths <= 3) {
@@ -2112,16 +2143,16 @@ export default function Dashboard() {
       const ticks: number[] = [];
       ticks.push(startTs);
       
-      // Rundung basierend auf Sequence (wie Normal-Modus)
+      // Rundung basierend auf effectiveSequence (angepasst an Zoom-Level)
       const currentDate = new Date(startTs);
       
-      if (sequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+      if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
         // STUNDEN: Runde auf volle Stunde
         currentDate.setMinutes(0, 0, 0);
         if (currentDate.getTime() <= startTs) {
           currentDate.setTime(currentDate.getTime() + 60 * 60 * 1000);
         }
-      } else if (sequence === 'weeks') {
+      } else if (effectiveSequence === 'weeks') {
         // WOCHEN: Runde auf Montag 00:00
         currentDate.setHours(0, 0, 0, 0);
         const dayOfWeek = currentDate.getDay();
@@ -2131,7 +2162,7 @@ export default function Dashboard() {
         } else {
           currentDate.setTime(currentDate.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
         }
-      } else if (sequence === 'months') {
+      } else if (effectiveSequence === 'months') {
         // MONATE: Runde auf 1. des nächsten Monats
         currentDate.setHours(0, 0, 0, 0);
         currentDate.setDate(1);
@@ -2173,7 +2204,8 @@ export default function Dashboard() {
     const startTime = Math.min(...timestamps);
     const endTime = Math.max(...timestamps);
     
-    const sequence = appliedChartSettings?.sequence || 'days';
+    // Basis-Sequence aus Graph-Einstellungen
+    const baseSequence = appliedChartSettings?.sequence || 'days';
     
     // TICK-DENSITY-CAP: Max. 8-12 Major-Ticks (Pro-Trading-UI-Level)
     // Berechne sichtbare Zeitspanne basierend auf Zoom
@@ -2186,11 +2218,34 @@ export default function Dashboard() {
     const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
     const visibleWeeks = visibleRange / (7 * 24 * 60 * 60 * 1000);
     
+    // AUTOMATISCHE SEQUENCE-DOWNGRADE beim Zoomen
+    // Months → Weeks → Days → Hours basierend auf sichtbarer Zeitspanne
+    let effectiveSequence = baseSequence;
+    
+    if (baseSequence === 'months') {
+      if (visibleDays < 3) {
+        effectiveSequence = 'hours';
+      } else if (visibleDays < 14) {
+        effectiveSequence = 'days';
+      } else if (visibleDays < 56) {
+        effectiveSequence = 'weeks';
+      }
+    } else if (baseSequence === 'weeks') {
+      if (visibleDays < 3) {
+        effectiveSequence = 'hours';
+      } else if (visibleDays < 14) {
+        effectiveSequence = 'days';
+      }
+    } else if (baseSequence === 'days') {
+      if (visibleDays < 3) {
+        effectiveSequence = 'hours';
+      }
+    }
+    
     let tickInterval: number;
     
-    // SEQUENCE-BASIERTE TICK-INTERVALLE
-    // Jede Sequence hat ihre eigene Logik für optimale Tick-Anzahl (8-12 Ticks)
-    if (sequence === 'hours') {
+    // SEQUENCE-BASIERTE TICK-INTERVALLE (mit effectiveSequence)
+    if (effectiveSequence === 'hours') {
       // STUNDEN-MODUS: Ticks in Stunden-Einheiten
       if (visibleHours <= 6) {
         tickInterval = 30 * 60 * 1000; // 30 Minuten
@@ -2205,7 +2260,7 @@ export default function Dashboard() {
       } else {
         tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
       }
-    } else if (sequence === 'weeks') {
+    } else if (effectiveSequence === 'weeks') {
       // WOCHEN-MODUS: Ticks in Wochen-Einheiten
       if (visibleWeeks <= 4) {
         tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
@@ -2216,7 +2271,7 @@ export default function Dashboard() {
       } else {
         tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
       }
-    } else if (sequence === 'months') {
+    } else if (effectiveSequence === 'months') {
       // MONATS-MODUS: Ticks in Monats-Einheiten (ca. 30 Tage)
       const visibleMonths = visibleDays / 30;
       if (visibleMonths <= 3) {
@@ -2249,16 +2304,16 @@ export default function Dashboard() {
     // 1. IMMER mit startTime beginnen (feste Grenze)
     ticks.push(startTime);
     
-    // 2. Adaptive Zwischen-Ticks generieren (Rundung basierend auf Sequence)
+    // 2. Adaptive Zwischen-Ticks generieren (Rundung basierend auf effectiveSequence)
     const startDate = new Date(startTime);
     
-    if (sequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+    if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
       // STUNDEN: Runde auf nächste volle Stunde
       startDate.setMinutes(0, 0, 0);
       if (startDate.getTime() <= startTime) {
         startDate.setTime(startDate.getTime() + 60 * 60 * 1000);
       }
-    } else if (sequence === 'weeks') {
+    } else if (effectiveSequence === 'weeks') {
       // WOCHEN: Runde auf nächsten Montag 00:00
       startDate.setHours(0, 0, 0, 0);
       const dayOfWeek = startDate.getDay();
@@ -2268,7 +2323,7 @@ export default function Dashboard() {
       } else {
         startDate.setTime(startDate.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
       }
-    } else if (sequence === 'months') {
+    } else if (effectiveSequence === 'months') {
       // MONATE: Runde auf 1. des nächsten Monats
       startDate.setHours(0, 0, 0, 0);
       startDate.setDate(1);
