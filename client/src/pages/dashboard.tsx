@@ -2884,13 +2884,15 @@ export default function Dashboard() {
   
   // Helper-Funktion: Berechne höchste Werte aus einer Liste von Updates
   // Trackt auch welches Update (updateKey) den höchsten Wert für jede Metrik hat
+  // WICHTIG: Verwendet -Infinity als Startwert um auch negative Werte korrekt zu erfassen!
   function calculateHighestFromUpdates(updates: BotTypeUpdate[], percentBase: string) {
-    let highestInvestment = 0;
-    let highestBaseInvestment = 0;
-    let highestProfit = 0;
-    let highestProfitPercent = 0;
-    let highestAvgDaily = 0;
-    let highestRealDaily = 0;
+    // Starte mit -Infinity um auch negative Werte zu erfassen
+    let highestInvestment = -Infinity;
+    let highestBaseInvestment = -Infinity;
+    let highestProfit = -Infinity;
+    let highestProfitPercent = -Infinity;
+    let highestAvgDaily = -Infinity;
+    let highestRealDaily = -Infinity;
     let winnerBotType = '';
     
     // Track updateKeys für jede Metrik
@@ -2900,6 +2902,27 @@ export default function Dashboard() {
     let profitPercentUpdateKey = '';
     let avgDailyUpdateKey = '';
     let realDailyUpdateKey = '';
+    
+    // Wenn keine Updates, gib 0 zurück
+    if (updates.length === 0) {
+      return {
+        investment: 0,
+        baseInvestment: 0,
+        profit: 0,
+        profitPercent: 0,
+        avgDailyProfit: 0,
+        realDailyProfit: 0,
+        winnerBotType: '',
+        updateKeys: {
+          investment: '',
+          baseInvestment: '',
+          profit: '',
+          profitPercent: '',
+          avgDailyProfit: '',
+          realDailyProfit: ''
+        }
+      };
+    }
     
     updates.forEach((update: BotTypeUpdate) => {
       const investment = parseFloat(update.totalInvestment || update.investment || '0') || 0;
@@ -2929,6 +2952,7 @@ export default function Dashboard() {
       const updateKey = `${update.botTypeId}:${keyPrefix}-${version}`;
       
       // Aktualisiere höchste Werte UND tracke updateKeys
+      // Vergleich mit > funktioniert jetzt auch für negative Werte weil Startwert -Infinity ist
       if (investment > highestInvestment) {
         highestInvestment = investment;
         investmentUpdateKey = updateKey;
@@ -2940,7 +2964,6 @@ export default function Dashboard() {
       if (profit > highestProfit) {
         highestProfit = profit;
         profitUpdateKey = updateKey;
-        // update.name existiert nicht im Typ, verwende botTypeId
         winnerBotType = String(update.botTypeId);
       }
       if (profitPercent > highestProfitPercent) {
@@ -2957,13 +2980,14 @@ export default function Dashboard() {
       }
     });
     
+    // Falls noch -Infinity (sollte nicht passieren bei Updates > 0), setze auf 0
     return {
-      investment: highestInvestment,
-      baseInvestment: highestBaseInvestment,
-      profit: highestProfit,
-      profitPercent: highestProfitPercent,
-      avgDailyProfit: highestAvgDaily,
-      realDailyProfit: highestRealDaily,
+      investment: highestInvestment === -Infinity ? 0 : highestInvestment,
+      baseInvestment: highestBaseInvestment === -Infinity ? 0 : highestBaseInvestment,
+      profit: highestProfit === -Infinity ? 0 : highestProfit,
+      profitPercent: highestProfitPercent === -Infinity ? 0 : highestProfitPercent,
+      avgDailyProfit: highestAvgDaily === -Infinity ? 0 : highestAvgDaily,
+      realDailyProfit: highestRealDaily === -Infinity ? 0 : highestRealDaily,
       winnerBotType,
       // UpdateKeys für jede Metrik
       updateKeys: {
