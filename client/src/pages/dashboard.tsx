@@ -2114,52 +2114,74 @@ export default function Dashboard() {
     const startTime = Math.min(...timestamps);
     const endTime = Math.max(...timestamps);
     
-    const baseSequence = appliedChartSettings?.sequence || 'days';
-    
-    // ZOOM-basierte automatische Sequence-Anpassung für Ticks
-    // Bei hohem Zoom automatisch feinere Ticks generieren
-    let effectiveSequence = baseSequence;
-    if (chartZoomX >= 6) {
-      effectiveSequence = 'hours';
-    } else if (chartZoomX >= 3 && baseSequence !== 'hours') {
-      effectiveSequence = 'hours';
-    }
-    
-    const sequence = effectiveSequence;
+    const sequence = appliedChartSettings?.sequence || 'days';
     
     // TICK-DENSITY-CAP: Max. 8-12 Major-Ticks (Pro-Trading-UI-Level)
     // Berechne sichtbare Zeitspanne basierend auf Zoom
     const totalRange = endTime - startTime;
     const visibleRange = totalRange / chartZoomX; // Sichtbarer Bereich bei Zoom
     
-    // Adaptive Intervall-Wahl basierend auf sichtbarer Zeitspanne
     // Ziel: 8-12 Ticks im sichtbaren Bereich
+    // Die Sequence bestimmt die BASIS-Einheit, Intervall wird dynamisch angepasst
     const visibleHours = visibleRange / (60 * 60 * 1000);
     const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+    const visibleWeeks = visibleRange / (7 * 24 * 60 * 60 * 1000);
     
     let tickInterval: number;
     
-    if (visibleHours <= 12) {
-      // Sehr hoch gezoomt: 1-Stunden-Intervalle
-      tickInterval = 60 * 60 * 1000;
-    } else if (visibleHours <= 36) {
-      // Hoch gezoomt: 2-Stunden-Intervalle
-      tickInterval = 2 * 60 * 60 * 1000;
-    } else if (visibleHours <= 72) {
-      // Mittel gezoomt: 6-Stunden-Intervalle
-      tickInterval = 6 * 60 * 60 * 1000;
-    } else if (visibleDays <= 7) {
-      // Leicht gezoomt: 12-Stunden-Intervalle
-      tickInterval = 12 * 60 * 60 * 1000;
-    } else if (visibleDays <= 21) {
-      // Normal: Tages-Intervalle
-      tickInterval = 24 * 60 * 60 * 1000;
-    } else if (visibleDays <= 60) {
-      // Ausgezoomt: 2-Tages-Intervalle
-      tickInterval = 2 * 24 * 60 * 60 * 1000;
+    // SEQUENCE-BASIERTE TICK-INTERVALLE
+    // Jede Sequence hat ihre eigene Logik für optimale Tick-Anzahl (8-12 Ticks)
+    if (sequence === 'hours') {
+      // STUNDEN-MODUS: Ticks in Stunden-Einheiten
+      if (visibleHours <= 6) {
+        tickInterval = 30 * 60 * 1000; // 30 Minuten
+      } else if (visibleHours <= 12) {
+        tickInterval = 60 * 60 * 1000; // 1 Stunde
+      } else if (visibleHours <= 24) {
+        tickInterval = 2 * 60 * 60 * 1000; // 2 Stunden
+      } else if (visibleHours <= 48) {
+        tickInterval = 4 * 60 * 60 * 1000; // 4 Stunden
+      } else if (visibleHours <= 96) {
+        tickInterval = 6 * 60 * 60 * 1000; // 6 Stunden
+      } else {
+        tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
+      }
+    } else if (sequence === 'weeks') {
+      // WOCHEN-MODUS: Ticks in Wochen-Einheiten
+      if (visibleWeeks <= 4) {
+        tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+      } else if (visibleWeeks <= 8) {
+        tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+      } else if (visibleWeeks <= 16) {
+        tickInterval = 28 * 24 * 60 * 60 * 1000; // 4 Wochen
+      } else {
+        tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
+      }
+    } else if (sequence === 'months') {
+      // MONATS-MODUS: Ticks in Monats-Einheiten (ca. 30 Tage)
+      const visibleMonths = visibleDays / 30;
+      if (visibleMonths <= 3) {
+        tickInterval = 30 * 24 * 60 * 60 * 1000; // 1 Monat
+      } else if (visibleMonths <= 6) {
+        tickInterval = 60 * 24 * 60 * 60 * 1000; // 2 Monate
+      } else if (visibleMonths <= 12) {
+        tickInterval = 90 * 24 * 60 * 60 * 1000; // 3 Monate
+      } else {
+        tickInterval = 180 * 24 * 60 * 60 * 1000; // 6 Monate
+      }
     } else {
-      // Stark ausgezoomt: Wochen-Intervalle
-      tickInterval = 7 * 24 * 60 * 60 * 1000;
+      // TAGES-MODUS (default): Ticks in Tages-Einheiten (funktioniert bereits gut)
+      if (visibleDays <= 7) {
+        tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
+      } else if (visibleDays <= 14) {
+        tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
+      } else if (visibleDays <= 30) {
+        tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
+      } else if (visibleDays <= 60) {
+        tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+      } else {
+        tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+      }
     }
     
     // FESTE BOUNDARY-TICKS: Start- und Enddatum IMMER sichtbar
@@ -2168,16 +2190,32 @@ export default function Dashboard() {
     // 1. IMMER mit startTime beginnen (feste Grenze)
     ticks.push(startTime);
     
-    // 2. Adaptive Zwischen-Ticks generieren
+    // 2. Adaptive Zwischen-Ticks generieren (Rundung basierend auf Sequence)
     const startDate = new Date(startTime);
-    if (tickInterval < 24 * 60 * 60 * 1000) {
-      // Bei Stunden-Intervallen: runde auf nächste volle Stunde nach startTime
+    
+    if (sequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+      // STUNDEN: Runde auf nächste volle Stunde
       startDate.setMinutes(0, 0, 0);
       if (startDate.getTime() <= startTime) {
         startDate.setTime(startDate.getTime() + 60 * 60 * 1000);
       }
+    } else if (sequence === 'weeks') {
+      // WOCHEN: Runde auf nächsten Montag 00:00
+      startDate.setHours(0, 0, 0, 0);
+      const dayOfWeek = startDate.getDay();
+      const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+      if (daysUntilMonday === 0 && startDate.getTime() <= startTime) {
+        startDate.setTime(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      } else {
+        startDate.setTime(startDate.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+      }
+    } else if (sequence === 'months') {
+      // MONATE: Runde auf 1. des nächsten Monats
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(1);
+      startDate.setMonth(startDate.getMonth() + 1);
     } else {
-      // Bei Tages-Intervallen: runde auf nächste Mitternacht nach startTime
+      // TAGE (default): Runde auf nächste Mitternacht
       startDate.setHours(0, 0, 0, 0);
       if (startDate.getTime() <= startTime) {
         startDate.setTime(startDate.getTime() + 24 * 60 * 60 * 1000);
