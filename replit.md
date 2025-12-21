@@ -292,6 +292,60 @@ const shouldBlinkLine =
 
 ---
 
+## 12. GRAPH-EINSTELLUNGEN IM COMPARE-MODUS (Neu: 2025-12-21)
+
+### 12.1 Konzept
+Die Graph-Einstellungen (Zeitraum-Filter, Metrik-Zählung) funktionieren jetzt auch im Compare-Modus.
+- Normal-Modus: Zählt Updates des einzelnen ausgewählten Bot-Types
+- Compare-Modus: Zählt Updates ALLER ausgewählten Bot-Types
+
+### 12.2 displayedUpdatesCount im Compare-Modus
+```typescript
+// WICHTIG: Inline-Prüfung für isCompareMode
+// MUSS isAnalyzeSingleMetricMode ausschließen!
+const isAnalyzeSingleMetricModeInline = analyzeMode && appliedUpdateId && appliedUpdateId.includes(':');
+const isCompareMode = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2 && !isAnalyzeSingleMetricModeInline;
+
+if (isCompareMode && allBotTypeUpdates.length > 0) {
+  // Filtere Updates aller ausgewählten Bot-Types
+  const selectedIds = selectedChartBotTypes.map(id => String(id));
+  let filteredUpdates = allBotTypeUpdates.filter(update => 
+    selectedIds.includes(String(update.botTypeId))
+  );
+  // Wende dann die Zeitfilter an (Custom, 1h, 24h, 7D, 30D, First-Last)
+}
+```
+
+### 12.3 compareChartData mit Zeitfilter
+```typescript
+// compareChartData wendet jetzt appliedChartSettings.timeRange an
+// Nutzt parseTimeRangeToMs() und getUpdateTimestamp() wie Normal-Modus
+const timeRange = appliedChartSettings?.timeRange || 'first-last';
+// Custom calendar, D/H/M fields, oder preset ranges
+```
+
+### 12.4 Zeitfilter-Prioritäten
+1. Custom Calendar (customStartDate + customEndDate)
+2. D/H/M Felder (customDays, customHours, customMinutes)
+3. Preset Ranges (1h, 24h, 7 Days, 30 Days)
+4. First-Last Update (alle Updates)
+
+### 12.5 Dependencies
+`displayedUpdatesCount` braucht folgende Dependencies:
+- `alleEintraegeMode`, `allBotTypeUpdates`, `selectedChartBotTypes`
+- `analyzeMode`, `appliedUpdateId` (für isAnalyzeSingleMetricMode Guard)
+
+`compareChartData` braucht zusätzlich:
+- `appliedChartSettings`
+
+### 12.6 KRITISCH: Analyze Single Metric Mode Guard
+Wenn im Analyze Single Metric Mode (appliedUpdateId enthält `:` wie `{botTypeId}:u-{version}`):
+- displayedUpdatesCount MUSS auf Normal-Modus-Logik zurückfallen
+- NICHT aggregierte Werte aller Bot-Types zählen
+- Sonst Regression im Normal-Modus!
+
+---
+
 ## System Architecture
 
 ### UI/UX

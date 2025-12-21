@@ -834,7 +834,47 @@ export default function Dashboard() {
 
   // Berechne die Anzahl der angezeigten Updates basierend auf AKTUELLER Auswahl
   // Reagiert sofort auf Zeitraum-Änderung (vor Apply)
+  // COMPARE-MODUS: Zählt Updates aller ausgewählten Bot-Types
   const displayedUpdatesCount = useMemo(() => {
+    // COMPARE-MODUS inline berechnet (alleEintraegeMode === 'compare' && 2+ Bot-Types)
+    // WICHTIG: Nicht im Analyze Single Metric Mode (analyzeMode + appliedUpdateId enthält ":")
+    const isAnalyzeSingleMetricModeInline = analyzeMode && appliedUpdateId && appliedUpdateId.includes(':');
+    const isCompareMode = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2 && !isAnalyzeSingleMetricModeInline;
+    
+    // COMPARE-MODUS: Verwende Updates aller ausgewählten Bot-Types
+    if (isCompareMode && allBotTypeUpdates.length > 0) {
+      const selectedIds = selectedChartBotTypes.map(id => String(id));
+      let filteredUpdates = allBotTypeUpdates.filter(update => 
+        selectedIds.includes(String(update.botTypeId))
+      );
+      
+      // Zeitfilter anwenden (gleiche Logik wie Normal-Modus)
+      if (selectedTimeRange !== 'First-Last Update') {
+        const rangeMs = parseTimeRangeToMs(
+          selectedTimeRange,
+          customDays,
+          customHours,
+          customMinutes
+        );
+        
+        if (rangeMs !== null && rangeMs > 0) {
+          const now = Date.now();
+          const cutoffTimestamp = now - rangeMs;
+          
+          filteredUpdates = filteredUpdates.filter(update => {
+            const updateTimestamp = getUpdateTimestamp(update);
+            return updateTimestamp >= cutoffTimestamp;
+          });
+        }
+      }
+      
+      const updateMetrics = filteredUpdates.filter(u => u.status === 'Update Metrics').length;
+      const closedBots = filteredUpdates.filter(u => u.status === 'Closed Bots').length;
+      
+      return { total: filteredUpdates.length, updateMetrics, closedBots };
+    }
+    
+    // NORMAL-MODUS: Verwende sortedUpdates (einzelner Bot-Type)
     if (!sortedUpdates || sortedUpdates.length === 0) return { total: 0, updateMetrics: 0, closedBots: 0 };
     
     let filteredUpdates = sortedUpdates;
@@ -875,7 +915,7 @@ export default function Dashboard() {
     const closedBots = filteredUpdates.filter(u => u.status === 'Closed Bots').length;
     
     return { total: filteredUpdates.length, updateMetrics, closedBots };
-  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange, customDays, customHours, customMinutes]);
+  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange, customDays, customHours, customMinutes, alleEintraegeMode, allBotTypeUpdates, selectedChartBotTypes, analyzeMode, appliedUpdateId]);
 
   // Farben für die verschiedenen Metriken (passend zu den Card-Farben)
   const metricColors: Record<string, string> = {
@@ -1023,13 +1063,54 @@ export default function Dashboard() {
     const botTypeNames = selectedBotTypesInfo.map(bt => bt.name);
 
     // Filtere Updates für die ausgewählten Bot-Types
-    const relevantUpdates = allBotTypeUpdates.filter(update => 
+    let relevantUpdates = allBotTypeUpdates.filter(update => 
       selectedIds.includes(String(update.botTypeId))
     );
 
     if (relevantUpdates.length === 0) {
       return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
     }
+    
+    // ========== ZEITFILTER AUS GRAPH-EINSTELLUNGEN ==========
+    // Wende dieselben Zeitfilter an wie im Normal-Modus (wenn appliedChartSettings vorhanden)
+    if (appliedChartSettings && appliedChartSettings.timeRange !== 'First-Last Update') {
+      // Priorität 1: Custom mit Kalender-Auswahl
+      if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+        const fromTs = appliedChartSettings.customFromDate.getTime();
+        const toDate = new Date(appliedChartSettings.customToDate);
+        toDate.setHours(23, 59, 59, 999);
+        const untilTs = toDate.getTime();
+        
+        relevantUpdates = relevantUpdates.filter(update => {
+          const ts = getUpdateTimestamp(update);
+          return ts >= fromTs && ts <= untilTs;
+        });
+      }
+      // Priorität 2: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom mit D/H/M)
+      else {
+        const rangeMs = parseTimeRangeToMs(
+          appliedChartSettings.timeRange,
+          appliedChartSettings.customDays,
+          appliedChartSettings.customHours,
+          appliedChartSettings.customMinutes
+        );
+        
+        if (rangeMs !== null && rangeMs > 0) {
+          const now = Date.now();
+          const cutoffTimestamp = now - rangeMs;
+          
+          relevantUpdates = relevantUpdates.filter(update => {
+            const ts = getUpdateTimestamp(update);
+            return ts >= cutoffTimestamp;
+          });
+        }
+      }
+    }
+    
+    if (relevantUpdates.length === 0) {
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
+    }
+    // ========== ENDE ZEITFILTER ==========
 
     // Gruppiere Updates pro Bot-Type und sortiere jede Gruppe nach Zeit
     const updatesByBotType: Record<string, typeof relevantUpdates> = {};
@@ -1202,7 +1283,7 @@ export default function Dashboard() {
     dataPoints.sort((a, b) => a.timestamp - b.timestamp);
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase]);
+  }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
   // ========== ENDE COMPARE MODUS SECTION ==========
 
   // Chart-Daten für Multi-Bot-Type Modus
