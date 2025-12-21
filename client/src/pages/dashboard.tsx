@@ -4537,7 +4537,7 @@ export default function Dashboard() {
                       return true;
                     }) : undefined}
                     interval={0}
-                    minTickGap={isMultiSelectCompareMode ? 30 : 50}
+                    minTickGap={isMultiSelectCompareMode ? 50 : 50}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                     height={70}
@@ -4551,9 +4551,59 @@ export default function Dashboard() {
                       const date = new Date(payload.value);
                       const baseSequence = appliedChartSettings?.sequence || 'days';
                       
-                      // COMPARE MODUS: Einfache Datumsformatierung
-                      if (isMultiSelectCompareMode) {
-                        const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                      // COMPARE MODUS: Adaptive Formatierung basierend auf Zoom-Level
+                      if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0) {
+                        // Berechne sichtbare Zeitspanne basierend auf Zoom
+                        const totalRange = compareChartData.maxTimestamp - compareChartData.minTimestamp;
+                        const visibleRange = totalRange / chartZoomX;
+                        const visibleHours = visibleRange / (60 * 60 * 1000);
+                        const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+                        
+                        const hour = date.getHours();
+                        const isMidnight = hour === 0 && date.getMinutes() === 0;
+                        
+                        let label = '';
+                        let showTwoLines = false;
+                        
+                        if (visibleHours <= 36) {
+                          // Sehr eng gezoomt: Zeige Stunden + Datum bei Mitternacht
+                          if (isMidnight) {
+                            const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                            label = dateStr;
+                            showTwoLines = false;
+                          } else {
+                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            label = timeStr;
+                          }
+                        } else if (visibleDays <= 7) {
+                          // Mittel gezoomt: Datum + optionale Uhrzeit bei nicht-Mitternacht
+                          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          if (!isMidnight && visibleHours <= 72) {
+                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            label = `${dateStr}\n${timeStr}`;
+                            showTwoLines = true;
+                          } else {
+                            label = dateStr;
+                          }
+                        } else {
+                          // Weit rausgezoomt: Nur Datum
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        }
+                        
+                        if (showTwoLines && label.includes('\n')) {
+                          const lines = label.split('\n');
+                          return (
+                            <g transform={`translate(${x},${y})`}>
+                              <text x={0} y={12} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={10}>
+                                {lines[0]}
+                              </text>
+                              <text x={0} y={24} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={9}>
+                                {lines[1]}
+                              </text>
+                            </g>
+                          );
+                        }
+                        
                         return (
                           <g transform={`translate(${x},${y})`}>
                             <text
@@ -4563,7 +4613,7 @@ export default function Dashboard() {
                               fill="hsl(var(--muted-foreground))"
                               fontSize={10}
                             >
-                              {dateStr}
+                              {label}
                             </text>
                           </g>
                         );
