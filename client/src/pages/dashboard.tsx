@@ -5461,17 +5461,13 @@ export default function Dashboard() {
                       // Zeige ZWEI Boxen mit Bezeichnungen "End Runtime" und "Start Time"
                       if (isMultiSelectCompareMode && dataPoint._isAlsoStartOfNext === true) {
                         const botTypeName = dataPoint.botTypeName || '';
-                        const botTypeValue = dataPoint[botTypeName];
-                        const gesamtprofit = dataPoint['Gesamtprofit'] || botTypeValue || 0;
-                        const gesamtkapital = dataPoint['Gesamtkapital'] || 0;
+                        const botTypeValue = dataPoint[botTypeName] || 0;
                         const runtimeMs = dataPoint.runtimeMs || 0;
                         
                         // Finde Farbe für diesen Bot-Type
                         const botType = availableBotTypes.find(bt => bt.name === botTypeName);
                         const botTypeId = botType ? String(botType.id) : '';
                         const botTypeColor = compareColorMap[botTypeId] || '#16a34a';
-                        
-                        const investLabel = profitPercentBase === 'investitionsmenge' ? 'Investitionsmenge' : 'Gesamtkapital';
                         
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -5496,10 +5492,7 @@ export default function Dashboard() {
                                 End Runtime
                               </p>
                               <p style={{ color: botTypeColor, margin: '2px 0' }}>
-                                {botTypeName}: {gesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                              </p>
-                              <p style={{ color: '#2563eb', margin: '2px 0' }}>
-                                {investLabel}: {gesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
                               </p>
                               {runtimeMs > 0 && (
                                 <p style={{ color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
@@ -5528,10 +5521,7 @@ export default function Dashboard() {
                                 Start Time
                               </p>
                               <p style={{ color: botTypeColor, margin: '2px 0' }}>
-                                {botTypeName}: {gesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                              </p>
-                              <p style={{ color: '#2563eb', margin: '2px 0' }}>
-                                {investLabel}: {gesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
                               </p>
                               {/* KEINE Runtime bei START */}
                             </div>
@@ -5562,11 +5552,10 @@ export default function Dashboard() {
                       };
                       
                       // COMPARE MODUS: Einfache Box mit Bot-Type Name und Bezeichnung
+                      // Zeigt NUR die ausgewählte Metrik (Bot-Type Wert), KEINE zweite Zeile
                       if (isMultiSelectCompareMode) {
                         const botTypeName = dataPoint.botTypeName || '';
-                        const botTypeValue = dataPoint[botTypeName];
-                        const gesamtprofit = dataPoint['Gesamtprofit'] || botTypeValue || 0;
-                        const gesamtkapital = dataPoint['Gesamtkapital'] || 0;
+                        const botTypeValue = dataPoint[botTypeName] || 0;
                         const runtimeMs = dataPoint.runtimeMs || 0;
                         const isEndPoint = dataPoint.isStartPoint === false;
                         
@@ -5575,7 +5564,6 @@ export default function Dashboard() {
                         const botTypeId = botType ? String(botType.id) : '';
                         const botTypeColor = compareColorMap[botTypeId] || '#16a34a';
                         
-                        const investLabel = profitPercentBase === 'investitionsmenge' ? 'Investitionsmenge' : 'Gesamtkapital';
                         const borderColor = isEndPoint ? '#ef4444' : '#22c55e';
                         const typeLabel = isEndPoint ? 'End Runtime' : 'Start Time';
                         const typeLabelColor = isEndPoint ? '#ef4444' : '#22c55e';
@@ -5603,10 +5591,7 @@ export default function Dashboard() {
                               {typeLabel}
                             </p>
                             <p style={{ color: botTypeColor, margin: '2px 0' }}>
-                              {botTypeName}: {gesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                            </p>
-                            <p style={{ color: '#2563eb', margin: '2px 0' }}>
-                              {investLabel}: {gesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              {botTypeName}: {botTypeValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
                             </p>
                             {/* Runtime nur bei Endpunkten */}
                             {isEndPoint && runtimeMs > 0 && (
