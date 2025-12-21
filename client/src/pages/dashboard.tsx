@@ -5471,10 +5471,10 @@ export default function Dashboard() {
                         
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {/* END RUNTIME Box (rot) */}
+                            {/* END RUNTIME Box - Umrandung in Bot-Type Farbe */}
                             <div style={{ 
                               backgroundColor: 'hsl(var(--popover))',
-                              border: '2px solid #ef4444',
+                              border: `2px solid ${botTypeColor}`,
                               borderRadius: '6px',
                               fontSize: '14px',
                               color: 'hsl(var(--foreground))',
@@ -5500,10 +5500,10 @@ export default function Dashboard() {
                                 </p>
                               )}
                             </div>
-                            {/* START TIME Box (grün) */}
+                            {/* START TIME Box - Umrandung in Bot-Type Farbe */}
                             <div style={{ 
                               backgroundColor: 'hsl(var(--popover))',
-                              border: '2px solid #22c55e',
+                              border: `2px solid ${botTypeColor}`,
                               borderRadius: '6px',
                               fontSize: '14px',
                               color: 'hsl(var(--foreground))',
@@ -5553,18 +5553,19 @@ export default function Dashboard() {
                       
                       // COMPARE MODUS: Einfache Box mit Bot-Type Name und Bezeichnung
                       // Zeigt NUR die ausgewählte Metrik (Bot-Type Wert), KEINE zweite Zeile
+                      // Umrandung in Bot-Type Farbe, Schrift "END RUNTIME" rot / "START TIME" grün
                       if (isMultiSelectCompareMode) {
                         const botTypeName = dataPoint.botTypeName || '';
                         const botTypeValue = dataPoint[botTypeName] || 0;
                         const runtimeMs = dataPoint.runtimeMs || 0;
                         const isEndPoint = dataPoint.isStartPoint === false;
                         
-                        // Finde Farbe für diesen Bot-Type
+                        // Finde Farbe für diesen Bot-Type (für Umrandung)
                         const botType = availableBotTypes.find(bt => bt.name === botTypeName);
                         const botTypeId = botType ? String(botType.id) : '';
                         const botTypeColor = compareColorMap[botTypeId] || '#16a34a';
                         
-                        const borderColor = isEndPoint ? '#ef4444' : '#22c55e';
+                        // Umrandung = Bot-Type Farbe, Schrift = rot/grün je nach End/Start
                         const typeLabel = isEndPoint ? 'End Runtime' : 'Start Time';
                         const typeLabelColor = isEndPoint ? '#ef4444' : '#22c55e';
                         
@@ -5572,7 +5573,7 @@ export default function Dashboard() {
                           <div 
                             style={{ 
                               backgroundColor: 'hsl(var(--popover))',
-                              border: `2px solid ${borderColor}`,
+                              border: `2px solid ${botTypeColor}`,
                               borderRadius: '6px',
                               fontSize: '14px',
                               color: 'hsl(var(--foreground))',
