@@ -1294,6 +1294,38 @@ export default function Dashboard() {
 
     // Sortiere Datenpunkte nach Zeitstempel
     dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Zweiter Durchlauf: Markiere Endpunkte, die AUCH Startpunkte des nächsten Updates sind
+    // Dies passiert wenn lastUpload vom nächsten Update = thisUpload vom aktuellen Update
+    // Gruppiere nach Bot-Type für diese Prüfung
+    selectedBotTypesInfo.forEach(botType => {
+      const botTypePoints = dataPoints.filter(p => p.botTypeName === botType.name);
+      
+      for (let i = 0; i < botTypePoints.length; i++) {
+        const currentPoint = botTypePoints[i];
+        
+        // Nur Endpunkte prüfen
+        if (currentPoint.isStartPoint !== false) continue;
+        
+        // Suche nach dem nächsten Startpunkt desselben Bot-Types
+        // Der nächste Startpunkt hat einen Timestamp >= dem aktuellen Endpunkt
+        for (let j = i + 1; j < botTypePoints.length; j++) {
+          const nextPoint = botTypePoints[j];
+          
+          if (nextPoint.isStartPoint === true) {
+            // Prüfe ob der Startpunkt zeitlich nah genug ist (innerhalb 1 Minute = gleicher Punkt)
+            const timeDiff = Math.abs(nextPoint.timestamp - currentPoint.timestamp);
+            if (timeDiff < 60000) { // 1 Minute Toleranz
+              // Dieser Endpunkt ist AUCH der Startpunkt des nächsten Updates
+              currentPoint._isAlsoStartOfNext = true;
+              currentPoint._nextStartBotType = botType.name;
+              currentPoint._nextStartValue = nextPoint[botType.name] || 0;
+            }
+            break; // Nur den nächsten Startpunkt prüfen
+          }
+        }
+      }
+    });
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
   }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
@@ -5425,6 +5457,88 @@ export default function Dashboard() {
                         );
                       }
                       
+                      // COMPARE MODUS: Spezial-Fall wenn Endpunkt AUCH Startpunkt des nächsten ist
+                      // Zeige ZWEI Boxen mit Bezeichnungen "End Runtime" und "Start Time"
+                      if (isMultiSelectCompareMode && dataPoint._isAlsoStartOfNext === true) {
+                        const botTypeName = dataPoint.botTypeName || '';
+                        const botTypeValue = dataPoint[botTypeName];
+                        const gesamtprofit = dataPoint['Gesamtprofit'] || botTypeValue || 0;
+                        const gesamtkapital = dataPoint['Gesamtkapital'] || 0;
+                        const runtimeMs = dataPoint.runtimeMs || 0;
+                        
+                        // Finde Farbe für diesen Bot-Type
+                        const botType = availableBotTypes.find(bt => bt.name === botTypeName);
+                        const botTypeId = botType ? String(botType.id) : '';
+                        const botTypeColor = compareColorMap[botTypeId] || '#16a34a';
+                        
+                        const investLabel = profitPercentBase === 'investitionsmenge' ? 'Investitionsmenge' : 'Gesamtkapital';
+                        
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* END RUNTIME Box (rot) */}
+                            <div style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '2px solid #ef4444',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}>
+                              <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                              <p style={{ 
+                                fontWeight: 'bold', 
+                                marginBottom: '4px', 
+                                fontSize: '11px', 
+                                color: '#ef4444',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                End Runtime
+                              </p>
+                              <p style={{ color: botTypeColor, margin: '2px 0' }}>
+                                {botTypeName}: {gesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              <p style={{ color: '#2563eb', margin: '2px 0' }}>
+                                {investLabel}: {gesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              {runtimeMs > 0 && (
+                                <p style={{ color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
+                                  Runtime: {formatRuntimeFromMs(runtimeMs)}
+                                </p>
+                              )}
+                            </div>
+                            {/* START TIME Box (grün) */}
+                            <div style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '2px solid #22c55e',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}>
+                              <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                              <p style={{ 
+                                fontWeight: 'bold', 
+                                marginBottom: '4px', 
+                                fontSize: '11px', 
+                                color: '#22c55e',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                Start Time
+                              </p>
+                              <p style={{ color: botTypeColor, margin: '2px 0' }}>
+                                {botTypeName}: {gesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              <p style={{ color: '#2563eb', margin: '2px 0' }}>
+                                {investLabel}: {gesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </p>
+                              {/* KEINE Runtime bei START */}
+                            </div>
+                          </div>
+                        );
+                      }
+                      
                       // Standard: Eine Info-Box
                       // Helper: Hole den echten Wert (nicht offsetted) aus den _actual Feldern
                       const getActualValue = (metricName: string, displayValue: number): number => {
@@ -5446,6 +5560,63 @@ export default function Dashboard() {
                         // Fallback: Displaywert verwenden
                         return displayValue;
                       };
+                      
+                      // COMPARE MODUS: Einfache Box mit Bot-Type Name und Bezeichnung
+                      if (isMultiSelectCompareMode) {
+                        const botTypeName = dataPoint.botTypeName || '';
+                        const botTypeValue = dataPoint[botTypeName];
+                        const gesamtprofit = dataPoint['Gesamtprofit'] || botTypeValue || 0;
+                        const gesamtkapital = dataPoint['Gesamtkapital'] || 0;
+                        const runtimeMs = dataPoint.runtimeMs || 0;
+                        const isEndPoint = dataPoint.isStartPoint === false;
+                        
+                        // Finde Farbe für diesen Bot-Type
+                        const botType = availableBotTypes.find(bt => bt.name === botTypeName);
+                        const botTypeId = botType ? String(botType.id) : '';
+                        const botTypeColor = compareColorMap[botTypeId] || '#16a34a';
+                        
+                        const investLabel = profitPercentBase === 'investitionsmenge' ? 'Investitionsmenge' : 'Gesamtkapital';
+                        const borderColor = isEndPoint ? '#ef4444' : '#22c55e';
+                        const typeLabel = isEndPoint ? 'End Runtime' : 'Start Time';
+                        const typeLabelColor = isEndPoint ? '#ef4444' : '#22c55e';
+                        
+                        return (
+                          <div 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: `2px solid ${borderColor}`,
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}
+                          >
+                            <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                            <p style={{ 
+                              fontWeight: 'bold', 
+                              marginBottom: '4px', 
+                              fontSize: '11px', 
+                              color: typeLabelColor,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              {typeLabel}
+                            </p>
+                            <p style={{ color: botTypeColor, margin: '2px 0' }}>
+                              {botTypeName}: {gesamtprofit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                            </p>
+                            <p style={{ color: '#2563eb', margin: '2px 0' }}>
+                              {investLabel}: {gesamtkapital.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                            </p>
+                            {/* Runtime nur bei Endpunkten */}
+                            {isEndPoint && runtimeMs > 0 && (
+                              <p style={{ color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
+                                Runtime: {formatRuntimeFromMs(runtimeMs)}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
                       
                       return (
                         <div 
