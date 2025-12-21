@@ -1031,6 +1031,7 @@ export default function Dashboard() {
   }, [isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, availableBotTypes, selectedBotTypeData]);
 
   // Bei 2+ Bot-Types: Graph-Einstellungen auf Default setzen
+  // UND: activeMetricCards auf nur EINE Metrik zurücksetzen (Compare Mode erlaubt nur 1)
   useEffect(() => {
     if (isMultiSelectCompareMode) {
       setSelectedTimeRange('First-Last Update');
@@ -1039,6 +1040,15 @@ export default function Dashboard() {
       setChartSequence('days');
       setSelectedFromUpdate(null);
       setSelectedUntilUpdate(null);
+      
+      // WICHTIG: Wenn mehr als 1 Metrik-Card aktiv, auf nur die erste zurücksetzen
+      // Dies fixt den Bug: Analyze Mode erlaubt Multi-Select, Compare Mode nur Single-Select
+      setActiveMetricCards(prev => {
+        if (prev.length > 1) {
+          return [prev[0]]; // Nur die erste Metrik behalten
+        }
+        return prev;
+      });
     }
   }, [isMultiSelectCompareMode]);
 
