@@ -5665,6 +5665,46 @@ export default function Dashboard() {
                         return displayValue;
                       };
                       
+                      // ADDED/PORTFOLIO MODUS: Einfache Box mit "Gesamt"-Wert
+                      // Zeigt die aggregierte Summe aller aktiven Bot-Types
+                      if (isMultiBotChartMode) {
+                        const gesamtValue = dataPoint['Gesamt'];
+                        const selectedMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+                        const metricSuffix = selectedMetric === 'Gesamtprofit %' ? '%' : ' USDT';
+                        
+                        // Bestimme den Anzeigenamen basierend auf der Metrik
+                        let displayName = 'Gesamt';
+                        if (selectedMetric === 'Gesamtprofit %') {
+                          displayName = 'Gesamt %';
+                        } else if (selectedMetric === 'Gesamtkapital') {
+                          displayName = profitPercentBase === 'investitionsmenge' ? 'Gesamt Investition' : 'Gesamtkapital';
+                        } else if (selectedMetric === 'Ø Profit/Tag') {
+                          displayName = 'Gesamt Ø/Tag';
+                        } else if (selectedMetric === 'Real Profit/Tag') {
+                          displayName = 'Gesamt Real/Tag';
+                        }
+                        
+                        return (
+                          <div 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: '2px solid #06b6d4', // Cyan für Gesamt-Linie
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}
+                          >
+                            <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                            <p style={{ color: '#06b6d4', margin: '2px 0' }}>
+                              {displayName}: {typeof gesamtValue === 'number' 
+                                ? gesamtValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + metricSuffix
+                                : '0,00' + metricSuffix}
+                            </p>
+                          </div>
+                        );
+                      }
+                      
                       // COMPARE MODUS: Einfache Box mit Bot-Type Name und Bezeichnung
                       // Zeigt NUR die ausgewählte Metrik (Bot-Type Wert), KEINE zweite Zeile
                       // Umrandung in Bot-Type Farbe, Schrift "END RUNTIME" rot / "START TIME" grün
