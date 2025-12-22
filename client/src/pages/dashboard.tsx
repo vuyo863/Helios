@@ -1603,6 +1603,20 @@ export default function Dashboard() {
         });
       });
 
+      // Sammle Event-Infos für diesen Zeitpunkt
+      // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots?
+      const eventInfos = eventsAtTime.map(event => ({
+        botTypeName: event.botTypeName,
+        type: event.type as 'start' | 'end',
+        isClosedBot: event.isClosedBot,
+        updateVersion: event.updateVersion
+      }));
+      
+      // Bestimme ob dieser Punkt hauptsächlich Start- oder End-Events hat
+      const startEvents = eventInfos.filter(e => e.type === 'start');
+      const endEvents = eventInfos.filter(e => e.type === 'end');
+      const hasClosedBot = eventInfos.some(e => e.isClosedBot);
+      
       // Erstelle Datenpunkt mit allen Metrik-Summen
       const point: Record<string, any> = {
         time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
@@ -1615,7 +1629,14 @@ export default function Dashboard() {
         'Gesamt_Ø Profit/Tag': metricSums['Ø Profit/Tag'],
         'Gesamt_Real Profit/Tag': metricSums['Real Profit/Tag'],
         _breakdown: breakdown, // Für Tooltip: Aufschlüsselung pro Bot-Type
-        _activeBotCount: activeBots.size
+        _activeBotCount: activeBots.size,
+        // Event-Informationen für Tooltip
+        _eventInfos: eventInfos,
+        _startEvents: startEvents,
+        _endEvents: endEvents,
+        _hasClosedBot: hasClosedBot,
+        // Primärer Event-Typ (für Umrandung): End hat Priorität wenn beide vorhanden
+        _primaryEventType: endEvents.length > 0 ? 'end' : (startEvents.length > 0 ? 'start' : 'none')
       };
 
       // Speichere auch individuelle Bot-Werte (für potenzielle Aufschlüsselung)
@@ -6302,30 +6323,34 @@ export default function Dashboard() {
                         return displayValue;
                       };
                       
-                      // ADDED/PORTFOLIO MODUS: Einfache Box mit "Gesamt"-Wert
+                      // ADDED/PORTFOLIO MODUS: Box mit allen aktiven Metriken
                       // Zeigt die aggregierte Summe aller aktiven Bot-Types
+                      // Umrandung = Farbe der ersten aktiven Metrik
+                      // Zeigt Start/End-Markierung und Bot-Type Names
                       if (isMultiBotChartMode) {
-                        const gesamtValue = dataPoint['Gesamt'];
-                        const selectedMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
-                        const metricSuffix = selectedMetric === 'Gesamtprofit %' ? '%' : ' USDT';
+                        // Event-Infos aus dem Datenpunkt
+                        const startEvents = dataPoint._startEvents || [];
+                        const endEvents = dataPoint._endEvents || [];
+                        const hasClosedBot = dataPoint._hasClosedBot || false;
+                        const primaryEventType = dataPoint._primaryEventType || 'none';
                         
-                        // Bestimme den Anzeigenamen basierend auf der Metrik
-                        let displayName = 'Gesamt';
-                        if (selectedMetric === 'Gesamtprofit %') {
-                          displayName = 'Gesamt %';
-                        } else if (selectedMetric === 'Gesamtkapital') {
-                          displayName = profitPercentBase === 'investitionsmenge' ? 'Gesamt Investition' : 'Gesamtkapital';
-                        } else if (selectedMetric === 'Ø Profit/Tag') {
-                          displayName = 'Gesamt Ø/Tag';
-                        } else if (selectedMetric === 'Real Profit/Tag') {
-                          displayName = 'Gesamt Real/Tag';
-                        }
+                        // Farbe = erste aktive Metrik (wie im MainChart)
+                        const primaryMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+                        const borderColor = metricColors[primaryMetric] || '#22c55e';
+                        
+                        // Start/End Label mit Farbe
+                        const typeLabel = primaryEventType === 'end' ? 'END' : (primaryEventType === 'start' ? 'START' : '');
+                        const typeLabelColor = primaryEventType === 'end' ? '#ef4444' : '#22c55e';
+                        
+                        // Bot-Type Names die an diesem Punkt starten/enden
+                        const startBotNames = startEvents.map((e: any) => e.botTypeName).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+                        const endBotNames = endEvents.map((e: any) => e.botTypeName).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
                         
                         return (
                           <div 
                             style={{ 
                               backgroundColor: 'hsl(var(--popover))',
-                              border: '2px solid #06b6d4', // Cyan für Gesamt-Linie
+                              border: `2px solid ${borderColor}`,
                               borderRadius: '6px',
                               fontSize: '14px',
                               color: 'hsl(var(--foreground))',
@@ -6333,11 +6358,56 @@ export default function Dashboard() {
                             }}
                           >
                             <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
-                            <p style={{ color: '#06b6d4', margin: '2px 0' }}>
-                              {displayName}: {typeof gesamtValue === 'number' 
-                                ? gesamtValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + metricSuffix
-                                : '0,00' + metricSuffix}
-                            </p>
+                            
+                            {/* Start/End Label mit Bot-Type Names */}
+                            {typeLabel && (
+                              <p style={{ 
+                                fontWeight: 'bold', 
+                                marginBottom: '4px', 
+                                fontSize: '11px', 
+                                color: typeLabelColor,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                {typeLabel}{hasClosedBot ? ' (Closed Bot)' : ''}
+                              </p>
+                            )}
+                            
+                            {/* Bot-Type Names die starten */}
+                            {startBotNames.length > 0 && (
+                              <p style={{ fontSize: '11px', color: '#22c55e', margin: '2px 0' }}>
+                                Start: {startBotNames.join(', ')}
+                              </p>
+                            )}
+                            
+                            {/* Bot-Type Names die enden */}
+                            {endBotNames.length > 0 && (
+                              <p style={{ fontSize: '11px', color: '#ef4444', margin: '2px 0' }}>
+                                End: {endBotNames.join(', ')}
+                              </p>
+                            )}
+                            
+                            {/* Alle aktiven Metriken anzeigen */}
+                            {activeMetricCards.map((metricName, idx) => {
+                              const dataKey = `Gesamt_${metricName}`;
+                              const value = dataPoint[dataKey];
+                              const color = metricColors[metricName] || '#888888';
+                              const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
+                              
+                              // Display-Name für die Metrik
+                              let displayName = metricName;
+                              if (metricName === 'Gesamtkapital' && profitPercentBase === 'investitionsmenge') {
+                                displayName = 'Investitionsmenge';
+                              }
+                              
+                              return (
+                                <p key={idx} style={{ color, margin: '2px 0' }}>
+                                  {displayName}: {typeof value === 'number' 
+                                    ? value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
+                                    : '0,00' + suffix}
+                                </p>
+                              );
+                            })}
                           </div>
                         );
                       }
