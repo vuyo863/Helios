@@ -1467,6 +1467,7 @@ export default function Dashboard() {
       botTypeId: string;
       botTypeName: string;
       value: number;
+      metricValues: Record<string, number>; // Werte für alle Metriken
       type: 'start' | 'end';
       updateVersion: number;
       isClosedBot: boolean;
@@ -1503,6 +1504,7 @@ export default function Dashboard() {
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
             value,
+            metricValues,
             type: 'start',
             updateVersion: update.version,
             isClosedBot
@@ -1519,6 +1521,7 @@ export default function Dashboard() {
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
             value,
+            metricValues,
             type: 'end',
             updateVersion: update.version,
             isClosedBot
@@ -1541,6 +1544,7 @@ export default function Dashboard() {
       botTypeId: string;
       botTypeName: string;
       value: number;
+      metricValues: Record<string, number>;
       updateVersion: number;
     }
 
@@ -1570,6 +1574,7 @@ export default function Dashboard() {
             botTypeId: event.botTypeId,
             botTypeName: event.botTypeName,
             value: event.value,
+            metricValues: event.metricValues,
             updateVersion: event.updateVersion
           });
         } else if (event.type === 'end') {
@@ -1578,20 +1583,37 @@ export default function Dashboard() {
         }
       });
 
-      // Berechne Gesamtsumme aller aktiven Bots an diesem Zeitpunkt
-      let totalSum = 0;
+      // Berechne Gesamtsumme aller aktiven Bots an diesem Zeitpunkt - PRO METRIK
+      const metricSums: Record<string, number> = {
+        'Gesamtprofit': 0,
+        'Gesamtkapital': 0,
+        'Gesamtprofit %': 0,
+        'Ø Profit/Tag': 0,
+        'Real Profit/Tag': 0,
+      };
       const breakdown: Record<string, number> = {};
       
       activeBots.forEach(bot => {
-        totalSum += bot.value;
+        // Legacy: Summe für "Gesamt" (Profit-basiert)
         breakdown[bot.botTypeName] = (breakdown[bot.botTypeName] || 0) + bot.value;
+        
+        // Neue Logik: Summiere ALLE Metriken
+        Object.keys(metricSums).forEach(metricName => {
+          metricSums[metricName] += bot.metricValues[metricName] || 0;
+        });
       });
 
-      // Erstelle Datenpunkt
+      // Erstelle Datenpunkt mit allen Metrik-Summen
       const point: Record<string, any> = {
         time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         timestamp,
-        Gesamt: totalSum,
+        Gesamt: metricSums['Gesamtprofit'], // Legacy-Kompatibilität
+        // Speichere alle Metrik-Summen als separate Felder
+        'Gesamt_Gesamtprofit': metricSums['Gesamtprofit'],
+        'Gesamt_Gesamtkapital': metricSums['Gesamtkapital'],
+        'Gesamt_Gesamtprofit %': metricSums['Gesamtprofit %'],
+        'Gesamt_Ø Profit/Tag': metricSums['Ø Profit/Tag'],
+        'Gesamt_Real Profit/Tag': metricSums['Real Profit/Tag'],
         _breakdown: breakdown, // Für Tooltip: Aufschlüsselung pro Bot-Type
         _activeBotCount: activeBots.size
       };
@@ -2831,15 +2853,19 @@ export default function Dashboard() {
       return [zoomedLower, zoomedUpper];
     }
     
-    // ADDED MODUS: Berechne Y-Domain aus multiBotChartData (Gesamt-Werte)
+    // ADDED MODUS: Berechne Y-Domain aus multiBotChartData (alle aktiven Metriken)
     // WICHTIG: Gleiche Logik wie MainChart mit ausreichend Padding oben UND unten
     if (isMultiBotChartMode && multiBotChartData.data.length > 0) {
       const allValues: number[] = [];
-      multiBotChartData.data.forEach((point: any) => {
-        const val = point['Gesamt'];
-        if (typeof val === 'number' && !isNaN(val)) {
-          allValues.push(val);
-        }
+      // Sammle Werte von ALLEN aktiven Metriken (multi-metric support)
+      activeMetricCards.forEach(metricName => {
+        const dataKey = `Gesamt_${metricName}`;
+        multiBotChartData.data.forEach((point: any) => {
+          const val = point[dataKey];
+          if (typeof val === 'number' && !isNaN(val)) {
+            allValues.push(val);
+          }
+        });
       });
       
       if (allValues.length === 0) return ['auto', 'auto'];
@@ -6606,36 +6632,45 @@ export default function Dashboard() {
                       );
                     })
                   ) : isMultiBotChartMode ? (
-                    // Added-Modus: EINE Gesamtlinie (additive Summierung)
+                    // Added-Modus: Separate Linien für jede ausgewählte ContentCard
                     // stepAfter = 100% wertgetreu, harte Sprünge bei Wertänderungen
-                    <Line 
-                      key="Gesamt"
-                      type="stepAfter"
-                      dataKey="Gesamt"
-                      name="Gesamt"
-                      stroke="#0891b2" // Cyan-600 (konsistent mit Eye-Icon Farbe)
-                      strokeWidth={2.5}
-                      dot={(props: any) => {
-                        const { cx, cy, payload } = props;
-                        const activeBotCount = payload?._activeBotCount || 0;
-                        return (
-                          <circle
-                            key={`dot-gesamt-${payload?.timestamp}`}
-                            cx={cx}
-                            cy={cy}
-                            r={activeBotCount > 1 ? 5 : 4}
-                            fill="#0891b2"
-                            stroke={activeBotCount > 1 ? "#fff" : "none"}
-                            strokeWidth={activeBotCount > 1 ? 1.5 : 0}
-                          />
-                        );
-                      }}
-                      connectNulls
-                      isAnimationActive={true}
-                      animationDuration={1200}
-                      animationBegin={0}
-                      animationEasing="ease-out"
-                    />
+                    // Jede Linie hat die Farbe der entsprechenden ContentCard (wie im MainChart)
+                    activeMetricCards.map((metricName) => {
+                      // DataKey: Verwende "Gesamt_<MetrikName>" für aggregierte Werte
+                      const dataKey = `Gesamt_${metricName}`;
+                      const color = metricColors[metricName] || '#888888';
+                      
+                      return (
+                        <Line 
+                          key={`added-${metricName}`}
+                          type="stepAfter"
+                          dataKey={dataKey}
+                          name={metricName}
+                          stroke={color}
+                          strokeWidth={2.5}
+                          dot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            const activeBotCount = payload?._activeBotCount || 0;
+                            return (
+                              <circle
+                                key={`dot-added-${payload?.timestamp}-${metricName}`}
+                                cx={cx}
+                                cy={cy}
+                                r={activeBotCount > 1 ? 5 : 4}
+                                fill={color}
+                                stroke={activeBotCount > 1 ? "#fff" : "none"}
+                                strokeWidth={activeBotCount > 1 ? 1.5 : 0}
+                              />
+                            );
+                          }}
+                          connectNulls
+                          isAnimationActive={true}
+                          animationDuration={1200}
+                          animationBegin={0}
+                          animationEasing="ease-out"
+                        />
+                      );
+                    })
                   ) : (
                     // Single-Bot Modus: Lines für alle aktiven Metriken
                     activeMetricCards.map((metricName) => (
