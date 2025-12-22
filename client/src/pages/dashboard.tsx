@@ -424,12 +424,12 @@ export default function Dashboard() {
         if (state.activePayload[0]?.payload?.timestamp) {
           const hoveredTs = state.activePayload[0].payload.timestamp;
           
-          // COMPARE MODUS: Suche in allBotTypeUpdates für alle ausgewählten Bot-Types
+          // COMPARE/ADDED MODUS: Suche in allBotTypeUpdates für alle ausgewählten Bot-Types
           // Identifiziere den Bot-Type aus dem Tooltip-Namen
           let updatesToSearch: typeof sortedUpdates = [];
           let hoveredBotTypeName: string | null = null;
           
-          if (isMultiSelectCompareMode && selectedChartBotTypes.length >= 2) {
+          if ((isMultiSelectCompareMode || isMultiBotChartMode) && selectedChartBotTypes.length >= 2) {
             // Finde welcher Bot-Type im Tooltip angezeigt wird (der nächste Punkt)
             // activePayload enthält Einträge für alle Linien - finde den mit einem Wert
             for (const entry of state.activePayload) {
@@ -450,29 +450,41 @@ export default function Dashboard() {
           }
           
           // Find matching update by checking if this timestamp matches start or end
-          // In Compare mode: Auch den Bot-Type matchen wenn möglich
+          // In Compare/Added mode: Auch den Bot-Type matchen wenn möglich
           const matchingUpdate = updatesToSearch.find(u => {
             const endTs = u.thisUpload ? parseGermanDate(u.thisUpload)?.getTime() : null;
             const startTs = u.lastUpload ? parseGermanDate(u.lastUpload)?.getTime() : null;
             const timestampMatches = (endTs && Math.abs(endTs - hoveredTs) < 60000) || 
                                      (startTs && Math.abs(startTs - hoveredTs) < 60000);
             
-            // In Compare mode: Optional Bot-Type prüfen
-            if (isMultiSelectCompareMode && hoveredBotTypeName && timestampMatches) {
-              // Finde den Bot-Type-Namen für dieses Update
-              const botType = availableBotTypes.find(bt => bt.id === u.botTypeId);
-              return botType?.name === hoveredBotTypeName;
+            // In Compare/Added mode: Optional Bot-Type prüfen
+            // Im Added-Mode: "Gesamt" ist der Name im Tooltip - matche erstes Update am Timestamp
+            if ((isMultiSelectCompareMode || isMultiBotChartMode) && timestampMatches) {
+              // Im Added-Mode: "Gesamt" = aggregierte Linie
+              // Da nur EINE Linie existiert, nehmen wir den ersten Match
+              // (find() gibt sowieso nur den ersten zurück)
+              if (isMultiBotChartMode && hoveredBotTypeName === 'Gesamt') {
+                return timestampMatches; // Erstes Update am Timestamp
+              }
+              // Compare-Mode: Bot-Type explizit matchen
+              if (isMultiSelectCompareMode && hoveredBotTypeName) {
+                const botType = availableBotTypes.find(bt => bt.id === u.botTypeId);
+                return botType?.name === hoveredBotTypeName;
+              }
             }
             
             return timestampMatches;
           });
           
           if (matchingUpdate) {
-            // COMPARE MODUS: Key enthält botTypeId als Prefix
+            // COMPARE/ADDED MODUS: Key enthält botTypeId als Prefix
             // Format: "${botTypeId}:c-${version}" oder "${botTypeId}:u-${version}"
-            const keyPrefix = isMultiSelectCompareMode && matchingUpdate.botTypeId 
+            const keyPrefix = (isMultiSelectCompareMode || isMultiBotChartMode) && matchingUpdate.botTypeId 
               ? `${matchingUpdate.botTypeId}:` 
               : '';
+            
+            // Bestimme den Modus-Namen für Logging
+            const modeLabel = isMultiSelectCompareMode ? 'COMPARE' : (isMultiBotChartMode ? 'ADDED' : 'NORMAL');
             
             if (matchingUpdate.status === 'Closed Bots') {
               const newKey = `${keyPrefix}c-${matchingUpdate.version}`;
@@ -484,7 +496,7 @@ export default function Dashboard() {
                   key: newKey,
                   botTypeName: hoveredBotTypeName,
                   timestamp: hoveredTs,
-                  mode: isMultiSelectCompareMode ? 'COMPARE' : 'NORMAL',
+                  mode: modeLabel,
                   direction: 'Chart → Marker'
                 })
               }).catch(() => {});
@@ -499,7 +511,7 @@ export default function Dashboard() {
                   key: newKey,
                   botTypeName: hoveredBotTypeName,
                   timestamp: hoveredTs,
-                  mode: isMultiSelectCompareMode ? 'COMPARE' : 'NORMAL',
+                  mode: modeLabel,
                   direction: 'Chart → Marker'
                 })
               }).catch(() => {});
@@ -4764,6 +4776,73 @@ export default function Dashboard() {
                             return Math.max(100, (rawY / markerHeight) * 100);
                           }
                           
+                          // ADDED MODUS: Verwende multiBotChartData und "Gesamt"-Wert
+                          if (isMultiBotChartMode) {
+                            const chartDataArray = multiBotChartData.data || [];
+                            if (chartDataArray.length === 0) return null;
+                            
+                            // Im Added-Modus: Verwende "Gesamt" als Metrik (aggregierte Linie)
+                            const metricKey = 'Gesamt';
+                            
+                            // Find value at closed timestamp
+                            const targetTs = update.endTs;
+                            const sorted = [...chartDataArray].sort((a, b) => a.timestamp - b.timestamp);
+                            let before: any = null;
+                            let after: any = null;
+                            
+                            for (let j = 0; j < sorted.length; j++) {
+                              const val = sorted[j][metricKey];
+                              if (val !== null && val !== undefined) {
+                                if (sorted[j].timestamp <= targetTs) before = sorted[j];
+                                if (sorted[j].timestamp >= targetTs && !after) after = sorted[j];
+                              }
+                            }
+                            
+                            let endValue: number | null = null;
+                            if (before && before.timestamp === targetTs) {
+                              endValue = before[metricKey] as number;
+                            } else if (after && after.timestamp === targetTs) {
+                              endValue = after[metricKey] as number;
+                            } else if (before && after && before !== after) {
+                              const beforeVal = before[metricKey] as number;
+                              const afterVal = after[metricKey] as number;
+                              const t = (targetTs - before.timestamp) / (after.timestamp - before.timestamp);
+                              endValue = beforeVal + t * (afterVal - beforeVal);
+                            } else if (before) {
+                              endValue = before[metricKey] as number;
+                            } else if (after) {
+                              endValue = after[metricKey] as number;
+                            }
+                            
+                            if (endValue === null) return null;
+                            
+                            // Calculate Y position using yAxisDomain
+                            let yMinNum: number, yMaxNum: number;
+                            const [yMin, yMax] = yAxisDomain;
+                            if (typeof yMin === 'number' && typeof yMax === 'number') {
+                              yMinNum = yMin;
+                              yMaxNum = yMax;
+                            } else {
+                              // Fallback: Berechne aus Chart-Daten
+                              const allVals = chartDataArray.map(d => d[metricKey]).filter(v => typeof v === 'number') as number[];
+                              if (allVals.length === 0) return null;
+                              yMinNum = Math.min(...allVals);
+                              yMaxNum = Math.max(...allVals);
+                            }
+                            const yRange = yMaxNum - yMinNum;
+                            if (yRange === 0) return null;
+                            
+                            const markerHeight = 80;
+                            const gapHeight = 16;
+                            const chartTopMargin = 5;
+                            const plotHeight = 225;
+                            
+                            const relativeValue = (endValue - yMinNum) / yRange;
+                            const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
+                            const rawY = markerHeight + gapHeight + chartY;
+                            return Math.max(100, (rawY / markerHeight) * 100);
+                          }
+                          
                           // Single-Bot Modus: Verwende transformedChartData
                           const chartDataArray = transformedChartData || [];
                           if (chartDataArray.length === 0) return null;
@@ -5107,6 +5186,105 @@ export default function Dashboard() {
                               return (
                                 <g 
                                   key={shouldBlinkLine ? `blink-${compareBlinkKey}` : undefined}
+                                  className={shouldBlinkLine ? 'compare-eye-blink' : undefined}
+                                >
+                                  {startY2 !== null && (
+                                    <line
+                                      x1={`${clampedStartX}%`}
+                                      y1={`${yPercent + 4}%`}
+                                      x2={`${clampedStartX}%`}
+                                      y2={`${startY2}%`}
+                                      stroke="rgb(8, 145, 178)"
+                                      strokeWidth="1"
+                                      strokeDasharray="4 3"
+                                      style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                    />
+                                  )}
+                                  {endY2 !== null && (
+                                    <line
+                                      x1={`${clampedEndX}%`}
+                                      y1={`${yPercent + 4}%`}
+                                      x2={`${clampedEndX}%`}
+                                      y2={`${endY2}%`}
+                                      stroke="rgb(8, 145, 178)"
+                                      strokeWidth="1"
+                                      strokeDasharray="4 3"
+                                      style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                    />
+                                  )}
+                                </g>
+                              );
+                            }
+                            
+                            // ADDED MODUS: Verwende multiBotChartData und "Gesamt"-Wert
+                            if (isMultiBotChartMode) {
+                              const chartDataArray = multiBotChartData.data || [];
+                              if (chartDataArray.length === 0) return null;
+                              
+                              // Get Y domain
+                              let yMinNum: number, yMaxNum: number;
+                              const [yMin, yMax] = yAxisDomain;
+                              if (typeof yMin === 'number' && typeof yMax === 'number') {
+                                yMinNum = yMin;
+                                yMaxNum = yMax;
+                              } else {
+                                return null;
+                              }
+                              const yRange = yMaxNum - yMinNum;
+                              if (yRange === 0) return null;
+                              
+                              const markerHeight = 80;
+                              const gapHeight = 16;
+                              const chartTopMargin = 5;
+                              const plotHeight = 225;
+                              
+                              const calcChartY = (value: number) => {
+                                const relativeValue = (value - yMinNum) / yRange;
+                                const chartY = chartTopMargin + (1 - relativeValue) * plotHeight;
+                                return markerHeight + gapHeight + chartY;
+                              };
+                              
+                              // Im Added-Modus: Verwende "Gesamt" als Metrik (aggregierte Linie)
+                              const metricKey = 'Gesamt';
+                              
+                              // Finde den "Gesamt"-Wert am Start- und End-Timestamp
+                              const findValueAtTs = (targetTs: number): number | null => {
+                                let closestPoint = null;
+                                let closestDist = Infinity;
+                                
+                                for (const point of chartDataArray) {
+                                  const val = point[metricKey];
+                                  if (typeof val !== 'number' || isNaN(val)) continue;
+                                  
+                                  const dist = Math.abs(point.timestamp - targetTs);
+                                  if (dist < closestDist) {
+                                    closestDist = dist;
+                                    closestPoint = point;
+                                  }
+                                }
+                                
+                                if (!closestPoint) return null;
+                                return closestPoint[metricKey] as number;
+                              };
+                              
+                              const startValue = findValueAtTs(update.startTs);
+                              const endValue = findValueAtTs(update.endTs);
+                              
+                              // Berechne Y-Position nur wenn Werte gefunden wurden
+                              const startY2Raw = startValue !== null ? calcChartY(startValue) : null;
+                              const endY2Raw = endValue !== null ? calcChartY(endValue) : null;
+                              
+                              if (startY2Raw === null && endY2Raw === null) return null;
+                              
+                              const startY2 = startY2Raw !== null ? Math.max(100, (startY2Raw / markerHeight) * 100) : null;
+                              const endY2 = endY2Raw !== null ? Math.max(100, (endY2Raw / markerHeight) * 100) : null;
+                              
+                              // Added Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
+                              const shouldBlinkLine = blinkingUpdateKey === updateKey;
+                              
+                              return (
+                                <g 
+                                  key={shouldBlinkLine ? `added-blink-${compareBlinkKey}` : undefined}
                                   className={shouldBlinkLine ? 'compare-eye-blink' : undefined}
                                 >
                                   {startY2 !== null && (
