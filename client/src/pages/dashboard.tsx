@@ -1479,9 +1479,20 @@ export default function Dashboard() {
       if (!botType) return;
 
       const isClosedBot = update.status === 'Closed Bots';
-      const value = isClosedBot 
-        ? parseFloat(update.profit || '0') || 0
-        : parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      
+      // Berechne Werte für ALLE verfügbaren Metriken
+      const metricValues: Record<string, number> = {
+        'Gesamtprofit': isClosedBot 
+          ? parseFloat(update.profit || '0') || 0
+          : parseFloat(update.overallGridProfitUsdt || '0') || 0,
+        'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
+        'Gesamtprofit %': isClosedBot ? 0 : parseFloat(update.gridProfitPercent || '0') || 0,
+        'Ø Profit/Tag': isClosedBot ? 0 : parseFloat(update.avgGridProfitDay || '0') || 0,
+        'Real Profit/Tag': isClosedBot ? 0 : parseFloat(update.avgGridProfitDay || '0') || 0,
+      };
+      
+      // Legacy: Behalte "value" für Abwärtskompatibilität
+      const value = metricValues['Gesamtprofit'];
 
       // Start-Zeitpunkt (lastUpload) - nutze parseGermanDate für deutsches Format
       if (update.lastUpload) {
