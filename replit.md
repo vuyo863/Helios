@@ -33,6 +33,12 @@ Preferred communication style: Simple, everyday language (German).
     - **Pencil Mode (`markerEditActive`)**: Prioritizes single-selection for detailed editing of an update, overriding Eye Mode when active.
 - **Color System**: Utilizes `compareColorMap` for distinct bot-type specific coloring in Compare Mode, with a consistent neon-blue for active elements.
 - **Graph Settings**: Time-range filters and metric counting are dynamically applied, adjusting aggregation logic based on whether a single bot, multiple bots (added mode), or compare mode is active.
+- **Added Mode Features** (Dec 2025):
+    - Aggregated "Gesamt" line with cyan color (#06b6d4)
+    - Highest/Lowest markers (↑H/↓L) via `addedExtremeValues` useMemo
+    - Connection lines with bot-type-specific colors
+    - Tooltip shows "Gesamt:" with cyan border
+    - Anzahl Metriks counter shows preview (pre-Apply selection) - consistent with Compare/Normal modes
 
 ### External Dependencies
 - **Database**: Neon Serverless PostgreSQL
