@@ -2496,25 +2496,29 @@ export default function Dashboard() {
           tickInterval = 12 * 60 * 60 * 1000;
         }
       } else if (effectiveSequence === 'weeks') {
-        if (visibleWeeks <= 4) {
-          tickInterval = 7 * 24 * 60 * 60 * 1000;
-        } else if (visibleWeeks <= 8) {
-          tickInterval = 14 * 24 * 60 * 60 * 1000;
-        } else if (visibleWeeks <= 16) {
-          tickInterval = 28 * 24 * 60 * 60 * 1000;
+        // WOCHEN-MODUS - Optimiert für bessere Tick-Verteilung bei 30 Tagen
+        if (visibleWeeks <= 6) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche (alle 7 Tage)
+        } else if (visibleWeeks <= 12) {
+          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+        } else if (visibleWeeks <= 24) {
+          tickInterval = 28 * 24 * 60 * 60 * 1000; // 4 Wochen
         } else {
-          tickInterval = 56 * 24 * 60 * 60 * 1000;
+          tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
         }
       } else if (effectiveSequence === 'months') {
+        // MONATS-MODUS - Optimiert für bessere Tick-Verteilung
         const visibleMonths = visibleDays / 30;
-        if (visibleMonths <= 3) {
-          tickInterval = 30 * 24 * 60 * 60 * 1000;
-        } else if (visibleMonths <= 6) {
-          tickInterval = 60 * 24 * 60 * 60 * 1000;
+        if (visibleMonths <= 2) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche bei kurzen Zeiträumen
+        } else if (visibleMonths <= 4) {
+          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+        } else if (visibleMonths <= 8) {
+          tickInterval = 30 * 24 * 60 * 60 * 1000; // 1 Monat
         } else if (visibleMonths <= 12) {
-          tickInterval = 90 * 24 * 60 * 60 * 1000;
+          tickInterval = 60 * 24 * 60 * 60 * 1000; // 2 Monate
         } else {
-          tickInterval = 180 * 24 * 60 * 60 * 1000;
+          tickInterval = 90 * 24 * 60 * 60 * 1000; // 3 Monate
         }
       } else {
         // TAGES-MODUS (default) - EXAKT WIE COMPARE-MODUS
