@@ -2418,6 +2418,171 @@ export default function Dashboard() {
       return ticks;
     }
     
+    // ADDED MODUS: Tick-Generierung für den Gesamt-Modus (analog zu Compare)
+    // WICHTIG: Sequence-Einstellung berücksichtigen + automatische Downgrade beim Zoomen!
+    if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
+      const baseStartTs = multiBotChartData.minTimestamp;
+      const baseEndTs = multiBotChartData.maxTimestamp;
+      const totalRange = baseEndTs - baseStartTs;
+      
+      // Sequence-Einstellung aus Graph-Einstellungen (Basis-Einstellung)
+      const baseSequence = appliedChartSettings?.sequence || 'days';
+      
+      // Sichtbare Zeitspanne basierend auf Zoom berechnen
+      const visibleRange = totalRange / chartZoomX;
+      const visibleHours = visibleRange / (60 * 60 * 1000);
+      const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+      const visibleWeeks = visibleRange / (7 * 24 * 60 * 60 * 1000);
+      
+      // AUTOMATISCHE SEQUENCE-DOWNGRADE beim Zoomen
+      // Months → Weeks → Days → Hours basierend auf sichtbarer Zeitspanne
+      let effectiveSequence = baseSequence;
+      
+      if (baseSequence === 'months') {
+        if (visibleDays < 3) {
+          effectiveSequence = 'hours';
+        } else if (visibleDays < 14) {
+          effectiveSequence = 'days';
+        } else if (visibleDays < 56) {
+          effectiveSequence = 'weeks';
+        }
+      } else if (baseSequence === 'weeks') {
+        if (visibleDays < 3) {
+          effectiveSequence = 'hours';
+        } else if (visibleDays < 14) {
+          effectiveSequence = 'days';
+        }
+      } else if (baseSequence === 'days') {
+        if (visibleDays < 3) {
+          effectiveSequence = 'hours';
+        }
+      }
+      // Hours bleibt immer Hours (kleinste Einheit)
+      
+      // Berechne gezoomte Start/End-Zeitstempel
+      const padding = totalRange > 0 ? totalRange * 0.05 : 24 * 60 * 60 * 1000;
+      const baseMin = baseStartTs - padding;
+      const baseMax = baseEndTs + padding;
+      const baseRange = baseMax - baseMin;
+      
+      let startTs = baseStartTs;
+      let endTs = baseEndTs;
+      
+      if (chartZoomX > 1 || chartPanX !== 0) {
+        const zoomedRange = baseRange / chartZoomX;
+        const center = (baseMin + baseMax) / 2;
+        const chartWidth = 600;
+        const panOffset = -(chartPanX / chartWidth) * baseRange;
+        
+        startTs = center - zoomedRange / 2 + panOffset;
+        endTs = center + zoomedRange / 2 + panOffset;
+      }
+      
+      let tickInterval: number;
+      
+      // SEQUENCE-BASIERTE TICK-INTERVALLE
+      if (effectiveSequence === 'hours') {
+        if (visibleHours <= 6) {
+          tickInterval = 30 * 60 * 1000;
+        } else if (visibleHours <= 12) {
+          tickInterval = 60 * 60 * 1000;
+        } else if (visibleHours <= 24) {
+          tickInterval = 2 * 60 * 60 * 1000;
+        } else if (visibleHours <= 48) {
+          tickInterval = 4 * 60 * 60 * 1000;
+        } else if (visibleHours <= 96) {
+          tickInterval = 6 * 60 * 60 * 1000;
+        } else {
+          tickInterval = 12 * 60 * 60 * 1000;
+        }
+      } else if (effectiveSequence === 'weeks') {
+        if (visibleWeeks <= 4) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000;
+        } else if (visibleWeeks <= 8) {
+          tickInterval = 14 * 24 * 60 * 60 * 1000;
+        } else if (visibleWeeks <= 16) {
+          tickInterval = 28 * 24 * 60 * 60 * 1000;
+        } else {
+          tickInterval = 56 * 24 * 60 * 60 * 1000;
+        }
+      } else if (effectiveSequence === 'months') {
+        const visibleMonths = visibleDays / 30;
+        if (visibleMonths <= 3) {
+          tickInterval = 30 * 24 * 60 * 60 * 1000;
+        } else if (visibleMonths <= 6) {
+          tickInterval = 60 * 24 * 60 * 60 * 1000;
+        } else if (visibleMonths <= 12) {
+          tickInterval = 90 * 24 * 60 * 60 * 1000;
+        } else {
+          tickInterval = 180 * 24 * 60 * 60 * 1000;
+        }
+      } else {
+        // TAGES-MODUS (default)
+        if (visibleDays <= 7) {
+          tickInterval = 24 * 60 * 60 * 1000;
+        } else if (visibleDays <= 14) {
+          tickInterval = 2 * 24 * 60 * 60 * 1000;
+        } else if (visibleDays <= 30) {
+          tickInterval = 3 * 24 * 60 * 60 * 1000;
+        } else if (visibleDays <= 60) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000;
+        } else if (visibleDays <= 180) {
+          tickInterval = 14 * 24 * 60 * 60 * 1000;
+        } else {
+          tickInterval = 30 * 24 * 60 * 60 * 1000;
+        }
+      }
+      
+      const ticks: number[] = [];
+      ticks.push(startTs);
+      
+      // Rundung basierend auf effectiveSequence
+      const currentDate = new Date(startTs);
+      
+      if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+        currentDate.setMinutes(0, 0, 0);
+        if (currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 60 * 60 * 1000);
+        }
+      } else if (effectiveSequence === 'weeks') {
+        currentDate.setHours(0, 0, 0, 0);
+        const dayOfWeek = currentDate.getDay();
+        const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+        if (daysUntilMonday === 0 && currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        } else {
+          currentDate.setTime(currentDate.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+        }
+      } else if (effectiveSequence === 'months') {
+        currentDate.setHours(0, 0, 0, 0);
+        currentDate.setDate(1);
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      } else {
+        currentDate.setHours(0, 0, 0, 0);
+        if (currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 24 * 60 * 60 * 1000);
+        }
+      }
+      
+      let currentTs = currentDate.getTime();
+      const minGap = tickInterval * 0.3;
+      
+      while (currentTs < endTs - minGap) {
+        if (currentTs > startTs + minGap) {
+          ticks.push(currentTs);
+        }
+        currentTs += tickInterval;
+      }
+      
+      // End-Datum nur hinzufügen wenn mindestens minGap Abstand
+      const lastTick = ticks[ticks.length - 1];
+      if (lastTick !== endTs && (endTs - lastTick) >= minGap) {
+        ticks.push(endTs);
+      }
+      
+      return ticks;
+    }
+    
     // NORMALER MODUS: Originale Logik
     if (!chartData || chartData.length === 0) return [];
     
@@ -2591,7 +2756,7 @@ export default function Dashboard() {
     }
     
     return ticks;
-  }, [chartData, appliedChartSettings?.sequence, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData]);
+  }, [chartData, appliedChartSettings?.sequence, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
 
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
@@ -2607,6 +2772,47 @@ export default function Dashboard() {
             allValues.push(val);
           }
         });
+      });
+      
+      if (allValues.length === 0) return ['auto', 'auto'];
+      
+      const minVal = Math.min(...allValues);
+      const maxVal = Math.max(...allValues);
+      const dataRange = maxVal - minVal;
+      const padding = dataRange > 0 ? dataRange * 0.2 : Math.abs(maxVal) * 0.2 || 10;
+      
+      const baseLower = minVal - padding;
+      const baseUpper = maxVal + padding;
+      const baseRange = baseUpper - baseLower;
+      
+      // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich
+      if (chartZoomY === 1 && chartPanY === 0) {
+        return [baseLower, baseUpper];
+      }
+      
+      // Zoom und Pan anwenden
+      const zoomedRange = baseRange / chartZoomY;
+      const center = (baseLower + baseUpper) / 2;
+      const panOffset = chartPanY;
+      
+      let zoomedLower = center - zoomedRange / 2 + panOffset;
+      let zoomedUpper = center + zoomedRange / 2 + panOffset;
+      
+      // Extra Padding unten beim Zoomen
+      const zoomPadding = zoomedRange * 0.1;
+      zoomedLower = zoomedLower - zoomPadding;
+      
+      return [zoomedLower, zoomedUpper];
+    }
+    
+    // ADDED MODUS: Berechne Y-Domain aus multiBotChartData (Gesamt-Werte)
+    if (isMultiBotChartMode && multiBotChartData.data.length > 0) {
+      const allValues: number[] = [];
+      multiBotChartData.data.forEach((point: any) => {
+        const val = point['Gesamt'];
+        if (typeof val === 'number' && !isNaN(val)) {
+          allValues.push(val);
+        }
       });
       
       if (allValues.length === 0) return ['auto', 'auto'];
@@ -2720,7 +2926,7 @@ export default function Dashboard() {
     zoomedLower = zoomedLower - zoomPadding;
     
     return [zoomedLower, zoomedUpper];
-  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY, isMultiSelectCompareMode, compareChartData]);
+  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
 
   // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
@@ -2744,6 +2950,34 @@ export default function Dashboard() {
       
       const baseMin = compareChartData.minTimestamp - padding;
       const baseMax = compareChartData.maxTimestamp + padding;
+      const baseRange = baseMax - baseMin;
+      
+      // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
+      if (chartZoomX === 1 && chartPanX === 0) {
+        return [baseMin, baseMax];
+      }
+      
+      // Zoom anwenden (zoomedRange = kleinerer Bereich bei höherem Zoom)
+      const zoomedRange = baseRange / chartZoomX;
+      const center = (baseMin + baseMax) / 2;
+      
+      // Pan-Offset: chartPanX in Pixel, umrechnen auf Zeit-Einheiten
+      const chartWidth = 600;
+      const panOffset = -(chartPanX / chartWidth) * baseRange;
+      
+      const zoomedStart = center - zoomedRange / 2 + panOffset;
+      const zoomedEnd = center + zoomedRange / 2 + panOffset;
+      
+      return [zoomedStart, zoomedEnd];
+    }
+    
+    // ADDED MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types (analog zu Compare)
+    if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
+      const range = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
+      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
+      
+      const baseMin = multiBotChartData.minTimestamp - padding;
+      const baseMax = multiBotChartData.maxTimestamp + padding;
       const baseRange = baseMax - baseMin;
       
       // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
@@ -2808,7 +3042,7 @@ export default function Dashboard() {
     const zoomedEnd = center + zoomedRange / 2 + panOffset;
     
     return [zoomedStart, zoomedEnd];
-  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData]);
+  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
 
   // ===== ZEITFILTER FÜR STATCARDS =====
   // Diese gefilterten Updates werden in allen StatCard-Berechnungen verwendet
