@@ -7591,7 +7591,7 @@ export default function Dashboard() {
                 return newSelection;
               });
             }}
-            isCompareMode={isMultiSelectCompareMode}
+            isCompareMode={isMultiSelectCompareMode || isMultiBotChartMode}
             compareColors={compareColorMap}
             hoveredBotType={hoveredBotTypeId}
             onBotTypeHover={setHoveredBotTypeId}
