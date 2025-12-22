@@ -97,12 +97,14 @@ function formatRuntimeFromMs(ms: number): string {
   return parts.join(' ');
 }
 
-// Helper function to parse German date format (dd.MM.yyyy HH:mm:ss or dd.MM.yyyy HH:mm)
+// Helper function to parse German date format (d.M.yyyy HH:mm:ss or dd.MM.yyyy HH:mm)
+// WICHTIG: Erlaubt 1-2 Ziffern für Tag und Monat (z.B. "6.12.2025" oder "26.11.2025")
 function parseGermanDate(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null;
   
-  // Format: "24.11.2025 16:42:12" or "24.11.2025 16:42" or "08.12.2025 12:42"
-  const match = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+  // Format: "6.12.2025 21:27" or "24.11.2025 16:42:12" or "08.12.2025 12:42"
+  // \d{1,2} erlaubt 1 oder 2 Ziffern für Tag und Monat
+  const match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
   if (match) {
     const [, day, month, year, hour, minute, second = '0'] = match;
     const date = new Date(
@@ -1432,12 +1434,12 @@ export default function Dashboard() {
         ? parseFloat(update.profit || '0') || 0
         : parseFloat(update.overallGridProfitUsdt || '0') || 0;
 
-      // Start-Zeitpunkt (lastUpload)
+      // Start-Zeitpunkt (lastUpload) - nutze parseGermanDate für deutsches Format
       if (update.lastUpload) {
-        const startTs = new Date(update.lastUpload).getTime();
-        if (!isNaN(startTs)) {
+        const startDate = parseGermanDate(update.lastUpload);
+        if (startDate) {
           allEvents.push({
-            timestamp: startTs,
+            timestamp: startDate.getTime(),
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
             value,
@@ -1448,12 +1450,12 @@ export default function Dashboard() {
         }
       }
 
-      // End-Zeitpunkt (thisUpload)
+      // End-Zeitpunkt (thisUpload) - nutze parseGermanDate für deutsches Format
       if (update.thisUpload) {
-        const endTs = new Date(update.thisUpload).getTime();
-        if (!isNaN(endTs)) {
+        const endDate = parseGermanDate(update.thisUpload);
+        if (endDate) {
           allEvents.push({
-            timestamp: endTs,
+            timestamp: endDate.getTime(),
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
             value,
