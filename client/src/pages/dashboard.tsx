@@ -1471,6 +1471,7 @@ export default function Dashboard() {
       type: 'start' | 'end';
       updateVersion: number;
       isClosedBot: boolean;
+      runtimeMs?: number; // Runtime in Millisekunden (nur für End-Events)
     }
 
     const allEvents: BotEvent[] = [];
@@ -1516,6 +1517,15 @@ export default function Dashboard() {
       if (update.thisUpload) {
         const endDate = parseGermanDate(update.thisUpload);
         if (endDate) {
+          // Berechne Runtime (Differenz zwischen Start und End)
+          let runtimeMs: number | undefined = undefined;
+          if (update.lastUpload) {
+            const startDate = parseGermanDate(update.lastUpload);
+            if (startDate) {
+              runtimeMs = endDate.getTime() - startDate.getTime();
+            }
+          }
+          
           allEvents.push({
             timestamp: endDate.getTime(),
             botTypeId: String(update.botTypeId),
@@ -1524,7 +1534,8 @@ export default function Dashboard() {
             metricValues,
             type: 'end',
             updateVersion: update.version,
-            isClosedBot
+            isClosedBot,
+            runtimeMs
           });
         }
       }
@@ -1604,12 +1615,13 @@ export default function Dashboard() {
       });
 
       // Sammle Event-Infos für diesen Zeitpunkt
-      // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots?
+      // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots? Runtime?
       const eventInfos = eventsAtTime.map(event => ({
         botTypeName: event.botTypeName,
         type: event.type as 'start' | 'end',
         isClosedBot: event.isClosedBot,
-        updateVersion: event.updateVersion
+        updateVersion: event.updateVersion,
+        runtimeMs: event.runtimeMs // Runtime nur für End-Events vorhanden
       }));
       
       // Bestimme ob dieser Punkt hauptsächlich Start- oder End-Events hat
@@ -6380,12 +6392,24 @@ export default function Dashboard() {
                               </p>
                             )}
                             
-                            {/* Bot-Type Names die enden */}
-                            {endBotNames.length > 0 && (
-                              <p style={{ fontSize: '11px', color: '#ef4444', margin: '2px 0' }}>
-                                End: {endBotNames.join(', ')}
-                              </p>
-                            )}
+                            {/* Bot-Type Names die enden - MIT Runtime */}
+                            {endEvents.length > 0 && endEvents.map((event: any, idx: number) => {
+                              const runtimeStr = event.runtimeMs && event.runtimeMs > 0 
+                                ? formatRuntimeFromMs(event.runtimeMs)
+                                : null;
+                              return (
+                                <div key={`end-${idx}`} style={{ marginBottom: '4px' }}>
+                                  <p style={{ fontSize: '11px', color: '#ef4444', margin: '2px 0' }}>
+                                    End: {event.botTypeName}{event.isClosedBot ? ' (Closed)' : ''}
+                                  </p>
+                                  {runtimeStr && (
+                                    <p style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', margin: '0 0 0 8px' }}>
+                                      Runtime: {runtimeStr}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
                             
                             {/* Alle aktiven Metriken anzeigen */}
                             {activeMetricCards.map((metricName, idx) => {
