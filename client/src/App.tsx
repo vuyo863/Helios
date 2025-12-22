@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +12,8 @@ import BotTypesPage from "@/pages/bot-types";
 import BotTypeAnalyzer from "@/pages/bot-type-analyzer";
 import Notifications from "@/pages/notifications";
 import NotFound from "@/pages/not-found";
+import { useEffect, useState } from "react";
+import { Bell } from "lucide-react";
 
 function Router() {
   return (
@@ -27,12 +29,79 @@ function Router() {
   );
 }
 
+function GlobalNotificationToast() {
+  const [, setLocation] = useLocation();
+  const [showToast, setShowToast] = useState(false);
+  const [lastAlarmCount, setLastAlarmCount] = useState(0);
+
+  useEffect(() => {
+    // Poll for new alarms every 2 seconds
+    const checkForNewAlarms = () => {
+      const storedAlarms = localStorage.getItem('active-alarms');
+      if (!storedAlarms) {
+        setLastAlarmCount(0);
+        return;
+      }
+      
+      try {
+        const alarms = JSON.parse(storedAlarms);
+        const currentCount = Array.isArray(alarms) ? alarms.length : 0;
+        
+        // Show toast if alarm count increased
+        if (currentCount > lastAlarmCount && lastAlarmCount > 0) {
+          setShowToast(true);
+          
+          // Auto-hide after 4 seconds
+          setTimeout(() => {
+            setShowToast(false);
+          }, 4000);
+        }
+        
+        setLastAlarmCount(currentCount);
+      } catch {
+        // Ignore parse errors
+      }
+    };
+
+    // Initial check
+    checkForNewAlarms();
+
+    // Set up polling
+    const interval = setInterval(checkForNewAlarms, 2000);
+
+    return () => clearInterval(interval);
+  }, [lastAlarmCount]);
+
+  const handleToastClick = () => {
+    setShowToast(false);
+    setLocation('/notifications');
+  };
+
+  if (!showToast) return null;
+
+  return (
+    <div 
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] cursor-pointer animate-in slide-in-from-top-5 duration-300"
+      onClick={handleToastClick}
+    >
+      <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 hover:bg-red-600 transition-colors">
+        <Bell className="w-5 h-5 animate-pulse" />
+        <div>
+          <p className="font-semibold text-sm">Neue Notification!</p>
+          <p className="text-xs opacity-90">Klicken um Details zu sehen</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <UpdateNotificationProvider>
           <Navbar />
+          <GlobalNotificationToast />
           <Router />
           <Toaster />
         </UpdateNotificationProvider>

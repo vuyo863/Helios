@@ -362,8 +362,23 @@ export default function Notifications() {
     sehr_gefährlich: false
   });
   
-  // Aktive Alarmierungen - keine Mock-Daten mehr
-  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([]);
+  // Aktive Alarmierungen - mit localStorage Synchronisation
+  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>(() => {
+    const stored = localStorage.getItem('active-alarms');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  // Sync activeAlarms to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
+  }, [activeAlarms]);
 
   // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
   const filteredSuggestions = allBinancePairs
@@ -538,7 +553,12 @@ export default function Notifications() {
   };
 
   const approveAlarm = (alarmId: string) => {
-    setActiveAlarms(prev => prev.filter(alarm => alarm.id !== alarmId));
+    setActiveAlarms(prev => {
+      const updated = prev.filter(alarm => alarm.id !== alarmId);
+      // Update localStorage to reflect approved alarms
+      localStorage.setItem('active-alarms', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   // Test-Funktion: Mock-Alarm auslösen
