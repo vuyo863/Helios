@@ -2806,6 +2806,7 @@ export default function Dashboard() {
     }
     
     // ADDED MODUS: Berechne Y-Domain aus multiBotChartData (Gesamt-Werte)
+    // WICHTIG: Gleiche Logik wie MainChart mit ausreichend Padding oben UND unten
     if (isMultiBotChartMode && multiBotChartData.data.length > 0) {
       const allValues: number[] = [];
       multiBotChartData.data.forEach((point: any) => {
@@ -2819,11 +2820,29 @@ export default function Dashboard() {
       
       const minVal = Math.min(...allValues);
       const maxVal = Math.max(...allValues);
-      const dataRange = maxVal - minVal;
-      const padding = dataRange > 0 ? dataRange * 0.2 : Math.abs(maxVal) * 0.2 || 10;
       
-      const baseLower = minVal - padding;
-      const baseUpper = maxVal + padding;
+      let baseLower: number;
+      let baseUpper: number;
+      
+      // Berechne Basis-Domain mit ausreichend Padding (15% auf jeder Seite für mehr Puffer)
+      // GLEICHE LOGIK WIE MAINCHART für konsistente Darstellung
+      const dataRange = maxVal - minVal;
+      const padding = dataRange > 0 ? dataRange * 0.15 : Math.abs(maxVal) * 0.15 || 1;
+      
+      // IMMER Padding unten UND oben, damit Punkte nicht am Rand abgeschnitten werden
+      // Mindestens 10% des maxVal als unteres Padding, damit der Chart nicht "verpackt" aussieht
+      const minBottomPadding = Math.abs(maxVal) * 0.1;
+      
+      if (minVal < 0) {
+        // Negative Werte vorhanden: Padding nach unten UND nach oben
+        baseLower = minVal - Math.max(padding, minBottomPadding);
+        baseUpper = maxVal + padding;
+      } else {
+        // Nur positive Werte: Minimum bei 0 oder leicht darunter für bessere Optik
+        baseLower = Math.min(0, minVal - Math.max(padding, minBottomPadding));
+        baseUpper = maxVal + padding;
+      }
+      
       const baseRange = baseUpper - baseLower;
       
       // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich
