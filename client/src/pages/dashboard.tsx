@@ -4137,13 +4137,13 @@ export default function Dashboard() {
                     const domainRange = domainEnd - domainStart;
                     if (domainRange <= 0) return null;
                     
-                    // Get updates - Compare Mode: alle ausgewählten Bot-Types, sonst nur sortedUpdates
+                    // Get updates - Compare/Added Mode: alle ausgewählten Bot-Types, sonst nur sortedUpdates
                     const updateRanges: { version: number; status: string; startTs: number; endTs: number; botTypeName?: string; botTypeId?: string }[] = [];
                     
-                    // COMPARE MODUS: Alle Updates von allen ausgewählten Bot-Types
+                    // COMPARE/ADDED MODUS: Alle Updates von allen ausgewählten Bot-Types
                     let filteredUpdates: typeof sortedUpdates = [];
                     
-                    if (isMultiSelectCompareMode && selectedChartBotTypes.length > 0) {
+                    if ((isMultiSelectCompareMode || isMultiBotChartMode) && selectedChartBotTypes.length > 0) {
                       // Sammle Updates von allen ausgewählten Bot-Types
                       selectedChartBotTypes.forEach(botTypeId => {
                         const updates = allBotTypeUpdates.filter(u => u.botTypeId === botTypeId);
@@ -4247,8 +4247,8 @@ export default function Dashboard() {
                       
                       if (isClosedBot) {
                         // Closed Bot: Only end marker (circle) - positioned below label
-                        // Im Compare-Modus: BotTypeId in den Key aufnehmen für eindeutige Zuordnung
-                        const closedKey = isMultiSelectCompareMode && update.botTypeId 
+                        // Im Compare/Added-Modus: BotTypeId in den Key aufnehmen für eindeutige Zuordnung
+                        const closedKey = (isMultiSelectCompareMode || isMultiBotChartMode) && update.botTypeId 
                           ? `${update.botTypeId}:c-${update.version}` 
                           : `c-${update.version}`;
                         
@@ -4271,12 +4271,12 @@ export default function Dashboard() {
                           const isApplied = appliedUpdateId === closedKey;
                           if (isApplied) isClosedActive = true;
                         }
-                        // Farbe: Aktiv = neonblau, sonst grau ODER im Compare-Modus die Bot-Type-Farbe
+                        // Farbe: Aktiv = neonblau, sonst grau ODER im Compare/Added-Modus die Bot-Type-Farbe
                         let closedStrokeColor: string;
                         if (isClosedActive) {
                           closedStrokeColor = "rgb(8, 145, 178)"; // Neonblau wenn aktiv/gehoverd
-                        } else if (isMultiSelectCompareMode && update.botTypeId) {
-                          // Compare-Modus: Verwende die Farbe des Bot-Types
+                        } else if ((isMultiSelectCompareMode || isMultiBotChartMode) && update.botTypeId) {
+                          // Compare/Added-Modus: Verwende die Farbe des Bot-Types
                           closedStrokeColor = compareColorMap[update.botTypeId] || "hsl(var(--muted-foreground))";
                         } else {
                           closedStrokeColor = "hsl(var(--muted-foreground))"; // Grau als Default
@@ -4537,8 +4537,8 @@ export default function Dashboard() {
                       }
                       
                       // Update Metrics: Line from start to end with markers
-                      // Im Compare-Modus: BotTypeId in den Key aufnehmen für eindeutige Zuordnung
-                      const updateKey = isMultiSelectCompareMode && update.botTypeId 
+                      // Im Compare/Added-Modus: BotTypeId in den Key aufnehmen für eindeutige Zuordnung
+                      const updateKey = (isMultiSelectCompareMode || isMultiBotChartMode) && update.botTypeId 
                         ? `${update.botTypeId}:u-${update.version}` 
                         : `u-${update.version}`;
                       
@@ -4561,12 +4561,12 @@ export default function Dashboard() {
                         const isApplied = appliedUpdateId === updateKey;
                         if (isApplied) isActive = true;
                       }
-                      // Farbe: Aktiv = neonblau, sonst grau ODER im Compare-Modus die Bot-Type-Farbe
+                      // Farbe: Aktiv = neonblau, sonst grau ODER im Compare/Added-Modus die Bot-Type-Farbe
                       let strokeColor: string;
                       if (isActive) {
                         strokeColor = "rgb(8, 145, 178)"; // Neonblau wenn aktiv/gehoverd
-                      } else if (isMultiSelectCompareMode && update.botTypeId) {
-                        // Compare-Modus: Verwende die Farbe des Bot-Types
+                      } else if ((isMultiSelectCompareMode || isMultiBotChartMode) && update.botTypeId) {
+                        // Compare/Added-Modus: Verwende die Farbe des Bot-Types
                         strokeColor = compareColorMap[update.botTypeId] || "hsl(var(--muted-foreground))";
                       } else {
                         strokeColor = "hsl(var(--muted-foreground))"; // Grau als Default
