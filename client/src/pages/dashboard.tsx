@@ -6388,16 +6388,14 @@ export default function Dashboard() {
                     })
                   ) : isMultiBotChartMode ? (
                     // Added-Modus: EINE Gesamtlinie (additive Summierung)
-                    // Linear-Linie die 100% durch alle Punkte geht, mit abgerundeten Ecken
+                    // stepAfter = 100% wertgetreu, harte Sprünge bei Wertänderungen
                     <Line 
                       key="Gesamt"
-                      type="linear"
+                      type="stepAfter"
                       dataKey="Gesamt"
                       name="Gesamt"
                       stroke="#0891b2" // Cyan-600 (konsistent mit Eye-Icon Farbe)
                       strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                       dot={(props: any) => {
                         const { cx, cy, payload } = props;
                         const activeBotCount = payload?._activeBotCount || 0;

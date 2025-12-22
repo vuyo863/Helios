@@ -1,0 +1,161 @@
+Hey Assistant, alles gut? Also... Kurze Frage habe ich an dich kurz. Bitte informier dich auf der Notifications-Page in der Web-App, die wir gerade entwickeln. Was alles getan wurde, was gemacht wurde, guck auch in den vorherigen Chat, bitte. Ich summiere den auch gleich hier hin. Aber informier dich gerade dazu bitte 100 Prozent. Denn wir werden gleich die Funktionen einbauen, okay? Perfekt. Dankeschön.Umfassende Zusammenfassung: Notifications-Seite
+Gesamtübersicht
+Die Notifications-Seite ist eine Trading-Überwachungsseite für Kryptowährungs-Trading-Pairs von Binance. Sie ermöglicht es Nutzern, Preisschwellenwerte für verschiedene Trading-Pairs zu konfigurieren und bei Erreichen dieser Schwellenwerte Benachrichtigungen zu erhalten.
+
+Kernfunktionalität
+1. Trading Pairs Management
+Binance API Integration
+Die App lädt alle verfügbaren Trading-Pairs von Binance über die öffentliche API (https://api.binance.com/api/v3/exchangeInfo)
+Gefiltert werden nur USDT und USDC Pairs im Status "TRADING"
+Initial werden beliebte Pairs angezeigt (BTC, ETH, SOL, BNB, etc.)
+Alle ~2000+ Binance Pairs sind durchsuchbar
+Watchlist System
+Nutzer können Trading-Pairs zur Watchlist hinzufügen
+Watchlist wird in localStorage gespeichert (notifications-watchlist)
+Für jedes Pair in der Watchlist werden Live-Preise alle 2 Sekunden von Binance API abgerufen
+API Endpoint: https://api.binance.com/api/v3/ticker/24hr mit Symbol-Array
+Angezeigt werden:
+Aktueller Preis
+24h Preisänderung absolut
+24h Preisänderung in Prozent
+2. Schwellenwert (Threshold) System
+Datenstruktur
+Jedes Trading-Pair kann mehrere Schwellenwerte haben:
+
+interface ThresholdConfig {
+  id: string;                          // Unique ID
+  threshold: string;                   // Schwellenwert in USDT
+  notifyOnIncrease: boolean;          // Benachrichtigung bei Überschreitung
+  notifyOnDecrease: boolean;          // Benachrichtigung bei Unterschreitung
+  increaseFrequency: 'einmalig' | 'wiederholend';
+  decreaseFrequency: 'einmalig' | 'wiederholend';
+  alarmLevel: AlarmLevel;             // Alarmierungsstufe
+  note: string;                        // Optional: Notiz
+}
+Schwellenwert-Konfiguration
+Schwellenwert: Preis in USDT (z.B. 50000 für Bitcoin)
+Benachrichtigung bei Preiserhöhung: Trigger wenn Preis >= Schwellenwert
+Benachrichtigung bei Preissenkung: Trigger wenn Preis <= Schwellenwert
+Häufigkeit:
+"Einmalig": Benachrichtigung nur einmal pro Schwellenwert-Trigger
+"Wiederholend": Benachrichtigung mit 1-Minuten-Cooldown zwischen Wiederholungen
+Alarmierungsstufe: Harmlos, Achtung, Gefährlich, Sehr Gefährlich
+Notiz: Optionaler Text (z.B. "Wichtiger Widerstandslevel")
+Speicherung
+Alle Schwellenwert-Einstellungen werden in localStorage gespeichert (notifications-threshold-settings)
+Struktur: Record<trendPriceId, TrendPriceSettings> mit Array von Thresholds
+3. Live-Monitoring System
+Preis-Überwachung
+useEffect mit Dependencies: [availableTradingPairs, trendPriceSettings, triggeredThresholds, toast]
+Läuft bei jeder Preisaktualisierung (alle 2 Sekunden)
+Prüft für jedes Trading-Pair in der Watchlist alle konfigurierten Schwellenwerte
+Trigger-Logik
+// Unique Key für jeden Trigger
+const triggerKey = `${pair.id}-${threshold.id}-${thresholdValue}`;
+// Vermeidung von Duplikaten
+if (triggeredThresholds.has(triggerKey)) return;
+// Bei Überschreitung
+if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
+  // Trigger setzen
+  setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
+  
+  // Toast anzeigen
+  toast({ title: "Schwellenwert erreicht!", description: message });
+  
+  // Bei "wiederholend": Cooldown von 60 Sekunden
+  if (threshold.increaseFrequency === 'wiederholend') {
+    setTimeout(() => {
+      setTriggeredThresholds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(triggerKey);
+        return newSet;
+      });
+    }, 60000);
+  }
+}
+4. Alarmierungsstufen
+Vier Stufen-System
+type AlarmLevel = 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich';
+Konfiguration pro Stufe
+interface AlarmLevelConfig {
+  level: AlarmLevel;
+  channels: {
+    push: boolean;      // Push-Benachrichtigung
+    email: boolean;     // E-Mail
+    sms: boolean;       // SMS
+    webhook: boolean;   // Webhook
+  };
+  requiresApproval: boolean;          // Manuelle Bestätigung erforderlich
+  repeatCount: number | 'infinite';   // Anzahl Wiederholungen
+  sequenceHours: number;              // Pause zwischen Wiederholungen
+  sequenceMinutes: number;
+  sequenceSeconds: number;
+}
+Standardkonfigurationen
+Harmlos: Push only, kein Approval, 1x
+Achtung: Push + Email, kein Approval, 1x
+Gefährlich: Push + Email + Webhook, Approval erforderlich, 3x, 5min Pause
+Sehr Gefährlich: Alle Kanäle, Approval erforderlich, unendlich, 1min Pause
+Farbcodierung
+Harmlos: Blau (#3B82F6)
+Achtung: Gelb (#EAB308)
+Gefährlich: Orange (#F97316)
+Sehr Gefährlich: Rot (#EF4444)
+5. UI/UX Features
+Zwei-Spalten-Layout
+Linke Seite: Suchfunktion
+
+Search Input mit Echtzeit-Filterung
+Durchsucht alle ~2000+ Binance Pairs
+Zeigt max. 10 Vorschläge
+Klick auf Vorschlag → Hinzufügen zur Watchlist
+Rechte Seite: Watchlist
+
+Liste aller hinzugefügten Trading-Pairs
+Live-Preise mit 24h Änderung
+X-Button zum Entfernen
+Aktive Alarmierungen Karte
+Immer sichtbar oben
+Zeigt alle aktiven, nicht bestätigten Alarme
+Scrollbar bei >2 Alarmen
+Informationen pro Alarm:
+Trading-Pair Name
+Alarmierungsstufe (farbcodiert)
+Schwellenwert
+Nachricht
+Notiz (falls vorhanden)
+Zeitstempel ("vor X Min")
+"Approve" Button
+Benachrichtigungen-Liste
+Nur Trading-Pairs mit gespeicherten Schwellenwerten
+Eye-Icon (👁️): Alle Schwellenwerte ansehen (Read-Only Dialog)
+Pencil-Icon (✏️): Neuen Schwellenwert erstellen
+Schwellenwert-Dialoge
+View Dialog (Eye-Icon):
+
+Scrollable Liste aller Schwellenwerte
+Read-Only Ansicht
+Für jeden Schwellenwert:
+Edit Button (öffnet Edit Dialog)
+Delete Button
+Anzeige aller Konfigurationen
+Edit Dialog (Pencil/Edit Button):
+
+Bearbeitungsformular für einzelnen Schwellenwert
+Felder:
+Schwellenwert (USDT)
+Benachrichtigung bei Erhöhung (Checkbox + Häufigkeit)
+Benachrichtigung bei Senkung (Checkbox + Häufigkeit)
+Alarmierungsstufe (Select, farbcodiert)
+Notiz (Input)
+Validierung:
+Schwellenwert darf nicht leer sein
+Mindestens eine Benachrichtigungsoption muss aktiviert sein
+Speichern-Button mit Toast-Bestätigung
+Live-Update Toggle
+Anzeige des Status (grün pulsierend = aktiv, grau = pausiert)
+Start/Pause Button
+Bei Pause: Keine Preisupdates mehr
+6. Technische Details
+State Management
+// Trading Pairs
