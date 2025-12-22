@@ -7,6 +7,7 @@ import OpenAI from "openai";
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
+import nodemailer from "nodemailer";
 
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql);
@@ -2243,6 +2244,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
       results: testResults
     });
   });
+
+  // ============================================================================
+  // EMAIL/SMS NOTIFICATION ENDPOINTS
+  // ============================================================================
+
+  // Send notification (Email/SMS/Webhook)
+  app.post("/api/notifications/send", async (req, res) => {
+    try {
+      const { 
+        channels, // { email: boolean, sms: boolean, webhook: boolean }
+        recipient, // email address or phone number
+        subject,
+        message,
+        alarmLevel // 'harmlos', 'achtung', 'gefährlich', 'sehr_gefährlich'
+      } = req.body;
+
+      const results: any = {
+        email: null,
+        sms: null,
+        webhook: null
+      };
+
+      // EMAIL NOTIFICATION
+      if (channels?.email && recipient) {
+        try {
+          // Create nodemailer transporter (using Gmail as example)
+          // In production, use environment variables for credentials
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.EMAIL_USER || 'your-email@gmail.com',
+              pass: process.env.EMAIL_PASSWORD || 'your-app-password'
+            }
+          });
+
+          const mailOptions = {
+            from: process.env.EMAIL_USER || 'your-email@gmail.com',
+            to: recipient,
+            subject: subject || 'Pionex Trading Alert',
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <h2 style="color: ${getAlarmColor(alarmLevel)}; margin-bottom: 20px;">
+                    🔔 Trading Alert - ${getAlarmLevelLabel(alarmLevel)}
+                  </h2>
+                  <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid ${getAlarmColor(alarmLevel)}; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #333; font-size: 16px;">${message}</p>
+                  </div>
+                  <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                    <strong>Zeitpunkt:</strong> ${new Date().toLocaleString('de-DE')}
+                  </p>
+                  <p style="color: #666; font-size: 14px;">
+                    <strong>Alarmierungsstufe:</strong> 
+                    <span style="color: ${getAlarmColor(alarmLevel)}; font-weight: bold;">
+                      ${getAlarmLevelLabel(alarmLevel)}
+                    </span>
+                  </p>
+                  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                  <p style="color: #999; font-size: 12px; margin: 0;">
+                    Diese Benachrichtigung wurde automatisch von Ihrem Pionex Bot Profit Tracker gesendet.
+                  </p>
+                </div>
+              </div>
+            `
+          };
+
+          const info = await transporter.sendMail(mailOptions);
+          results.email = {
+            success: true,
+            messageId: info.messageId,
+            recipient
+          };
+        } catch (emailError: any) {
+          results.email = {
+            success: false,
+            error: emailError.message
+          };
+        }
+      }
+
+      // SMS NOTIFICATION (Placeholder - requires Twilio or similar service)
+      if (channels?.sms && recipient) {
+        results.sms = {
+          success: false,
+          error: "SMS service not configured. Please add Twilio credentials."
+        };
+        // TODO: Implement Twilio SMS
+        // const twilio = require('twilio')(accountSid, authToken);
+        // await twilio.messages.create({
+        //   body: message,
+        //   to: recipient,
+        //   from: twilioPhoneNumber
+        // });
+      }
+
+      // WEBHOOK NOTIFICATION
+      if (channels?.webhook && recipient) {
+        try {
+          const webhookResponse = await fetch(recipient, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              subject,
+              message,
+              alarmLevel,
+              timestamp: new Date().toISOString()
+            })
+          });
+
+          results.webhook = {
+            success: webhookResponse.ok,
+            status: webhookResponse.status
+          };
+        } catch (webhookError: any) {
+          results.webhook = {
+            success: false,
+            error: webhookError.message
+          };
+        }
+      }
+
+      res.json({
+        success: true,
+        results
+      });
+    } catch (error: any) {
+      console.error("Notification error:", error);
+      res.status(500).json({ 
+        error: "Failed to send notification", 
+        details: error.message 
+      });
+    }
+  });
+
+  // Helper functions
+  function getAlarmColor(level: string): string {
+    switch (level) {
+      case 'harmlos': return '#3B82F6';
+      case 'achtung': return '#EAB308';
+      case 'gefährlich': return '#F97316';
+      case 'sehr_gefährlich': return '#EF4444';
+      default: return '#3B82F6';
+    }
+  }
+
+  function getAlarmLevelLabel(level: string): string {
+    switch (level) {
+      case 'harmlos': return 'Harmlos';
+      case 'achtung': return 'Achtung';
+      case 'gefährlich': return 'Gefährlich';
+      case 'sehr_gefährlich': return 'Sehr Gefährlich';
+      default: return 'Harmlos';
+    }
+  }
 
   const httpServer = createServer(app);
 

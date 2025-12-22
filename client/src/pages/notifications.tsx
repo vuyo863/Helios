@@ -541,6 +541,75 @@ export default function Notifications() {
     setActiveAlarms(prev => prev.filter(alarm => alarm.id !== alarmId));
   };
 
+  // Test-Funktion: Mock-Alarm auslösen
+  const triggerMockAlarm = async () => {
+    // Mock-Alarm in activeAlarms hinzufügen
+    const mockAlarm: ActiveAlarm = {
+      id: crypto.randomUUID(),
+      trendPriceName: 'BTC/USDT',
+      threshold: '50000',
+      alarmLevel: 'sehr_gefährlich',
+      triggeredAt: new Date(),
+      message: 'Preis über 50000 USDT gestiegen',
+      note: 'TEST: Wichtiger Widerstandslevel durchbrochen!'
+    };
+
+    setActiveAlarms(prev => [...prev, mockAlarm]);
+
+    // Toast-Benachrichtigung
+    toast({
+      title: "🔔 MOCK-ALARM AUSGELÖST!",
+      description: `${mockAlarm.trendPriceName}: ${mockAlarm.message}`,
+      duration: 10000,
+    });
+
+    // Email-Benachrichtigung senden
+    try {
+      const response = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          channels: {
+            email: true,
+            sms: false,
+            webhook: false
+          },
+          recipient: 'hollvuyo@gmail.com',
+          subject: '🚨 Pionex Trading Alert - Sehr Gefährlich',
+          message: `${mockAlarm.trendPriceName}: ${mockAlarm.message}. ${mockAlarm.note}`,
+          alarmLevel: mockAlarm.alarmLevel
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success && result.results.email?.success) {
+        toast({
+          title: "✅ Email gesendet!",
+          description: `Benachrichtigung wurde an hollvuyo@gmail.com gesendet`,
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "⚠️ Email-Fehler",
+          description: result.results.email?.error || "Email konnte nicht gesendet werden",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Email notification error:', error);
+      toast({
+        title: "❌ Email-Fehler",
+        description: "Verbindung zum Server fehlgeschlagen",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
   const getTimeAgo = (date: Date): string => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -563,21 +632,31 @@ export default function Notifications() {
             <Bell className="w-8 h-8 text-primary" />
             <h1 className="text-2xl font-bold" data-testid="heading-notifications">Notifications</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Activity className={cn(
-              "w-5 h-5",
-              isLiveUpdating ? "text-green-500 animate-pulse" : "text-muted-foreground"
-            )} />
-            <span className="text-sm text-muted-foreground">
-              {isLiveUpdating ? "Live Updates aktiv" : "Updates pausiert"}
-            </span>
+          <div className="flex items-center gap-3">
             <Button
-              variant={isLiveUpdating ? "default" : "outline"}
+              variant="destructive"
               size="sm"
-              onClick={() => setIsLiveUpdating(!isLiveUpdating)}
+              onClick={triggerMockAlarm}
+              className="bg-red-500 hover:bg-red-600"
             >
-              {isLiveUpdating ? "Pause" : "Start"}
+              🧪 TEST ALARM
             </Button>
+            <div className="flex items-center gap-2">
+              <Activity className={cn(
+                "w-5 h-5",
+                isLiveUpdating ? "text-green-500 animate-pulse" : "text-muted-foreground"
+              )} />
+              <span className="text-sm text-muted-foreground">
+                {isLiveUpdating ? "Live Updates aktiv" : "Updates pausiert"}
+              </span>
+              <Button
+                variant={isLiveUpdating ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsLiveUpdating(!isLiveUpdating)}
+              >
+                {isLiveUpdating ? "Pause" : "Start"}
+              </Button>
+            </div>
           </div>
         </div>
 
