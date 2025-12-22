@@ -4605,15 +4605,6 @@ export default function Dashboard() {
                       const isClosedBot = update.status === 'Closed Bots';
                       const label = isClosedBot ? `C${update.version}` : `U${update.version}`;
                       
-                      // Bot-Type-Name für Added/Compare-Mode Labels
-                      const updateBotTypeName = update.botTypeId 
-                        ? availableBotTypes.find(bt => String(bt.id) === String(update.botTypeId))?.name 
-                        : null;
-                      // Kürze lange Bot-Type-Namen (max 8 Zeichen)
-                      const shortBotTypeName = updateBotTypeName 
-                        ? (updateBotTypeName.length > 8 ? updateBotTypeName.substring(0, 7) + '…' : updateBotTypeName)
-                        : null;
-                      
                       // Check if within visible range
                       if (endX < 0 || startX > 100) return null;
                       
@@ -4943,20 +4934,6 @@ export default function Dashboard() {
                             >
                               {label}
                             </text>
-                            {/* Bot-Type-Name im Added/Compare-Mode */}
-                            {(isMultiBotChartMode || isMultiSelectCompareMode) && shortBotTypeName && (
-                              <text
-                                x={`${clampedEndX}%`}
-                                y={`${yPercent - 10}%`}
-                                textAnchor="middle"
-                                fontSize={7}
-                                fill={closedStrokeColor}
-                                opacity={0.8}
-                                style={isClosedActive ? { filter: 'drop-shadow(0 0 3px rgba(8, 145, 178, 0.6))' } : {}}
-                              >
-                                {shortBotTypeName}
-                              </text>
-                            )}
                             <circle
                               cx={`${clampedEndX}%`}
                               cy={`${yPercent + 8}%`}
@@ -5098,31 +5075,6 @@ export default function Dashboard() {
                             fill="transparent"
                             style={{ pointerEvents: 'all' }}
                           />
-                          {/* Update label (e.g., "U3") */}
-                          <text
-                            x={`${clampedStartX}%`}
-                            y={`${yPercent - 6}%`}
-                            textAnchor="middle"
-                            fontSize={9}
-                            fill={strokeColor}
-                            style={isActive ? { filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.8))' } : {}}
-                          >
-                            {label}
-                          </text>
-                          {/* Bot-Type-Name im Added/Compare-Mode (über dem Label) */}
-                          {(isMultiBotChartMode || isMultiSelectCompareMode) && shortBotTypeName && (
-                            <text
-                              x={`${clampedStartX}%`}
-                              y={`${yPercent - 14}%`}
-                              textAnchor="middle"
-                              fontSize={7}
-                              fill={strokeColor}
-                              opacity={0.8}
-                              style={isActive ? { filter: 'drop-shadow(0 0 3px rgba(8, 145, 178, 0.6))' } : {}}
-                            >
-                              {shortBotTypeName}
-                            </text>
-                          )}
                           {/* Horizontal line */}
                           <line
                             x1={`${clampedStartX}%`}
