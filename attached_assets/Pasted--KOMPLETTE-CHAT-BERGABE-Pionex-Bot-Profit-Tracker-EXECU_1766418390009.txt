@@ -1,0 +1,176 @@
+🔄 KOMPLETTE CHAT-ÜBERGABE - Pionex Bot Profit Tracker
+📋 EXECUTIVE SUMMARY
+Dieser Chat war fokussiert auf die Erweiterung des Added-Modus (Portfolio-Modus) im Pionex Bot Profit Tracker Dashboard. Das Hauptziel war, alle Graph-Einstellungen (Sequence, Zeitfilter, Achsen-Berechnungen) für den Added-Modus zu implementieren, damit sie identisch zum Compare-Modus funktionieren.
+
+⛔ ABSOLUT VERBOTENE BEREICHE - NIEMALS ÄNDERN!
+🔒 COMPARE MODE = GOLDEN STATE (EINGEFROREN)
+KRITISCHE REGEL: Der Compare-Modus ist als GOLDEN STATE markiert und darf UNTER KEINEN UMSTÄNDEN verändert werden!
+
+Was ist Compare Mode?
+
+Aktiviert wenn selectedChartBotTypes.length >= 2 UND der "Compare" Toggle aktiv ist
+Zeigt mehrere Bot-Typen nebeneinander mit eigenen Farben (via compareColorMap)
+Jeder Bot-Typ hat eigene Start/End-Punkte pro Update
+Bidirektionale Hover-Interaktion zwischen Markers und Chart-Punkten
+Eye Blink Effekt für aktive Elemente
+Highest/Lowest Marker für jeden Bot-Typ
+Code-Bereiche die NICHT angefasst werden dürfen:
+
+// Diese Bedingungen NIEMALS ändern:
+if (isMultiSelectCompareMode && compareChartData.data.length > 0) {
+  // GESAMTER CODE HIER IST TABU
+}
+Betroffene useMemo-Hooks im Compare-Modus:
+
+xAxisDomain - Compare-Modus Branch
+xAxisTicks - Compare-Modus Branch
+yAxisDomain - Compare-Modus Branch
+compareChartData - Komplett
+compareExtremeValues - Komplett
+Alle Rendering-Logik für Compare
+✅ ARBEITSBEREICH: ADDED-MODUS (Portfolio-Modus)
+Was ist Added Mode?
+Aktiviert wenn selectedChartBotTypes.length >= 2 UND der "Added" Toggle aktiv ist
+Zeigt eine aggregierte "Gesamt"-Linie in Cyan (#06b6d4)
+Additive Summation aller aktiven Bot-Werte pro Zeitpunkt
+KEINE Durchschnitte, KEINE Normalisierung - nur echte historische Werte addiert
+Uses stepAfter line type und event-timeline mit Start/End-Punkten
+Fertiggestellte Features in diesem Chat:
+xAxisDomain für Added-Modus
+
+Berechnet Domain aus multiBotChartData.minTimestamp und multiBotChartData.maxTimestamp
+Zoom/Pan-Unterstützung mit Padding-Logik
+Automatische Bereichsberechnung
+xAxisTicks für Added-Modus
+
+Dynamische Tick-Generierung basierend auf Sequence-Einstellung
+Unterstützt: Hours, Days, Weeks, Months
+Automatischer Sequence-Downgrade beim Zoomen:
+Months → Weeks → Days → Hours (je nach sichtbarem Zeitbereich)
+Fallback-Ticks wenn keine gültigen Daten
+yAxisDomain für Added-Modus
+
+Berechnet Y-Domain aus den "Gesamt"-Werten in multiBotChartData
+20% Padding oben und unten
+Zoom/Pan mit Extra-Padding beim Zoomen
+Bereits vorher implementierte Added-Mode Features:
+Aggregierte "Gesamt" Linie mit Cyan-Farbe (#06b6d4)
+Highest/Lowest Marker (↑H/↓L) via addedExtremeValues useMemo
+Connection Lines mit Bot-Typ-spezifischen Farben
+Tooltip zeigt "Gesamt:" mit Cyan-Border
+Anzahl Metriks Counter zeigt Preview (pre-Apply Auswahl)
+🏗️ ARCHITEKTUR & CODE-STRUKTUR
+Hauptdatei: client/src/pages/dashboard.tsx (~8000+ Zeilen)
+Wichtige State-Variablen:
+// Mode-Detection
+const isMultiSelectCompareMode = selectedChartBotTypes.length >= 2 && isCompareMode;
+const isMultiBotChartMode = selectedChartBotTypes.length >= 2 && !isCompareMode;
+// Chart Data
+const compareChartData = useMemo(...);  // Für Compare-Modus
+const multiBotChartData = useMemo(...); // Für Added-Modus
+Wichtige useMemo-Hooks (Reihenfolge beachten!):
+Hook	Compare-Modus	Added-Modus	Normal-Modus
+xAxisDomain	✅ Vorhanden	✅ NEU hinzugefügt	✅ Vorhanden
+xAxisTicks	✅ Vorhanden	✅ NEU hinzugefügt	✅ Vorhanden
+yAxisDomain	✅ Vorhanden	✅ NEU hinzugefügt	✅ Vorhanden
+Dependencies der useMemos (WICHTIG!):
+// xAxisTicks Dependencies:
+[chartData, appliedChartSettings?.sequence, chartZoomX, chartPanX, 
+ analyzeModeBounds, isMultiSelectCompareMode, compareChartData, 
+ isMultiBotChartMode, multiBotChartData]
+// yAxisDomain Dependencies:
+[transformedChartData, activeMetricCards, hasGesamtkapitalActive, 
+ chartZoomY, chartPanY, isMultiSelectCompareMode, compareChartData, 
+ isMultiBotChartMode, multiBotChartData]
+📊 DATENSTRUKTUREN
+multiBotChartData (Added-Modus):
+{
+  data: [
+    {
+      timestamp: number,
+      Gesamt: number,      // Aggregierte Summe aller Bot-Werte
+      // ... weitere Felder pro Bot-Typ
+    }
+  ],
+  minTimestamp: number,
+  maxTimestamp: number
+}
+compareChartData (Compare-Modus - NICHT ÄNDERN!):
+{
+  data: [
+    {
+      timestamp: number,
+      [botTypeName]: number,  // Wert pro Bot-Typ
+      // ... ein Feld pro aktivem Bot-Typ
+    }
+  ],
+  minTimestamp: number,
+  maxTimestamp: number
+}
+🎨 FARB-SYSTEM
+Added-Modus:
+Gesamt-Linie: Cyan #06b6d4
+Highest/Lowest Marker: Cyan #06b6d4
+Tooltip-Border: Cyan
+Connection Lines: Bot-Typ-spezifische Farben aus compareColorMap
+Compare-Modus (NICHT ÄNDERN!):
+Bot-Typ-spezifische Farben aus compareColorMap
+Neon-Blue für aktive Elemente
+📈 GRAPH-EINSTELLUNGEN (Beide Modi)
+Sequence (Zeitintervall):
+Hours: Stündliche Ticks
+Days: Tägliche Ticks
+Weeks: Wöchentliche Ticks
+Months: Monatliche Ticks
+Automatischer Sequence-Downgrade (beim Zoomen):
+Sichtbarer Bereich < 7 Tage → Hours
+Sichtbarer Bereich < 60 Tage → Days
+Sichtbarer Bereich < 365 Tage → Weeks
+Sonst → Months
+Zeitfilter ("Letzten"):
+First-Last Update
+1h, 24h, 7 Days, 30 Days
+Custom
+Marker:
+Highest Value Toggle: Zeigt ↑H Marker
+Lowest Value Toggle: Zeigt ↓L Marker
+🔧 INTERAKTIVE MODI
+Eye Mode (markerViewActive):
+Multi-Selection von Markern
+Bidirektionale Interaktion zwischen Markern und Chart-Punkten
+Pencil Mode (markerEditActive):
+Single-Selection für detailliertes Editieren
+Überschreibt Eye Mode wenn aktiv
+📁 WICHTIGE DATEIEN
+Datei	Beschreibung
+client/src/pages/dashboard.tsx	Hauptdashboard (~8000 Zeilen)
+replit.md	Projektdokumentation
+shared/schema.ts	Datenbank-Schema
+server/routes.ts	API-Routen
+server/storage.ts	Storage-Interface
+✅ ABGESCHLOSSENE TASKS (dieser Chat)
+✅ xAxisDomain für Added-Modus erweitern (analog zu Compare)
+✅ xAxisTicks für Added-Modus erweitern (analog zu Compare)
+✅ yAxisDomain für Added-Modus erweitern (analog zu Compare)
+✅ Architect Review bestanden
+🎯 DESIGN-PRINZIPIEN
+Added-Modus spiegelt Compare-Modus-Logik - Nur mit multiBotChartData statt compareChartData
+Additive Summation - Keine Durchschnitte, nur echte Werte addiert
+displayedUpdatesCount - Zeigt aktuelle Auswahl (pre-Apply) für sofortiges Feedback
+Konsistenz - Alle Graph-Einstellungen funktionieren identisch in beiden Modi
+⚠️ BEKANNTE EINSCHRÄNKUNGEN
+Architect Review empfiehlt: E2E-Tests für Added-Mode nach Deployment
+Sanity-Check mit Einzelzeitstempel-Datasets empfohlen
+Runtime-Logs überwachen für unerwartete Achsen-Neuberechnungen
+📌 FÜR DEN NÄCHSTEN CHAT
+IMMER ZUERST:
+
+Diese Zusammenfassung lesen
+replit.md lesen für aktuellen Stand
+Compare-Modus = GOLDEN STATE - NIEMALS ÄNDERN!
+Added-Modus = Arbeitsbereich
+BEI ÄNDERUNGEN:
+
+Dependencies der useMemos prüfen und aktualisieren
+Beide Modi testen (Compare UND Added)
+Architect Review vor Abschluss
