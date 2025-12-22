@@ -1615,13 +1615,14 @@ export default function Dashboard() {
       });
 
       // Sammle Event-Infos für diesen Zeitpunkt
-      // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots? Runtime?
+      // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots? Runtime? Metrik-Werte?
       const eventInfos = eventsAtTime.map(event => ({
         botTypeName: event.botTypeName,
         type: event.type as 'start' | 'end',
         isClosedBot: event.isClosedBot,
         updateVersion: event.updateVersion,
-        runtimeMs: event.runtimeMs // Runtime nur für End-Events vorhanden
+        runtimeMs: event.runtimeMs, // Runtime nur für End-Events vorhanden
+        metricValues: event.metricValues // Metrik-Werte für dieses Event
       }));
       
       // Bestimme ob dieser Punkt hauptsächlich Start- oder End-Events hat
@@ -6385,25 +6386,52 @@ export default function Dashboard() {
                               </p>
                             )}
                             
-                            {/* Bot-Type Names die starten */}
-                            {startBotNames.length > 0 && (
-                              <p style={{ fontSize: '11px', color: '#22c55e', margin: '2px 0' }}>
-                                Start: {startBotNames.join(', ')}
-                              </p>
-                            )}
+                            {/* Bot-Type Names die starten - MIT Metrik-Werten */}
+                            {startEvents.length > 0 && startEvents.map((event: any, idx: number) => {
+                              // Zeige alle aktiven Metriken für diesen Start-Event
+                              const metricValues = event.metricValues || {};
+                              return (
+                                <div key={`start-${idx}`} style={{ marginBottom: '4px' }}>
+                                  <p style={{ fontSize: '11px', color: '#22c55e', margin: '2px 0', fontWeight: 'bold' }}>
+                                    Start: {event.botTypeName}
+                                  </p>
+                                  {activeMetricCards.map((metricName, mIdx) => {
+                                    const value = metricValues[metricName] || 0;
+                                    const color = metricColors[metricName] || '#888888';
+                                    const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
+                                    return (
+                                      <p key={`start-metric-${mIdx}`} style={{ fontSize: '11px', color, margin: '0 0 0 8px' }}>
+                                        {metricName}: {value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
+                                      </p>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
                             
-                            {/* Bot-Type Names die enden - MIT Runtime */}
+                            {/* Bot-Type Names die enden - MIT Metrik-Werten und Runtime */}
                             {endEvents.length > 0 && endEvents.map((event: any, idx: number) => {
                               const runtimeStr = event.runtimeMs && event.runtimeMs > 0 
                                 ? formatRuntimeFromMs(event.runtimeMs)
                                 : null;
+                              const metricValues = event.metricValues || {};
                               return (
                                 <div key={`end-${idx}`} style={{ marginBottom: '4px' }}>
-                                  <p style={{ fontSize: '11px', color: '#ef4444', margin: '2px 0' }}>
+                                  <p style={{ fontSize: '11px', color: '#ef4444', margin: '2px 0', fontWeight: 'bold' }}>
                                     End: {event.botTypeName}{event.isClosedBot ? ' (Closed)' : ''}
                                   </p>
+                                  {activeMetricCards.map((metricName, mIdx) => {
+                                    const value = metricValues[metricName] || 0;
+                                    const color = metricColors[metricName] || '#888888';
+                                    const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
+                                    return (
+                                      <p key={`end-metric-${mIdx}`} style={{ fontSize: '11px', color, margin: '0 0 0 8px' }}>
+                                        {metricName}: {value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
+                                      </p>
+                                    );
+                                  })}
                                   {runtimeStr && (
-                                    <p style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', margin: '0 0 0 8px' }}>
+                                    <p style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', margin: '2px 0 0 8px' }}>
                                       Runtime: {runtimeStr}
                                     </p>
                                   )}
