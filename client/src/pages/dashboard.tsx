@@ -1052,6 +1052,22 @@ export default function Dashboard() {
     }
   }, [isMultiSelectCompareMode]);
 
+  // Added Modus: "Gesamt" wenn ALLE aktiven Bot-Types ausgewählt, sonst "Custom"
+  // Compare Modus: immer "Custom" bei 2+ Selection
+  useEffect(() => {
+    if (selectedChartBotTypes.length >= 2) {
+      if (alleEintraegeMode === 'added') {
+        const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+        const allActiveSelected = activeBotTypes.length > 0 && 
+          activeBotTypes.every(bt => selectedChartBotTypes.includes(String(bt.id)));
+        setSelectedBotName(allActiveSelected ? "Gesamt" : "Custom");
+      } else {
+        // Compare Modus: immer "Custom"
+        setSelectedBotName("Custom");
+      }
+    }
+  }, [alleEintraegeMode, selectedChartBotTypes, availableBotTypes]);
+
   // ========== COMPARE MODUS - SEPARATE SECTION ==========
   // Diese Logik ist komplett unabhängig von den Graph-Einstellungen (Golden State)
   // Linien werden GRAU angezeigt (nicht von Content Cards bestimmt)
@@ -6783,9 +6799,18 @@ export default function Dashboard() {
                     setSelectedBotName(botType.name);
                   }
                 }
-                // Wenn 2+ ausgewählt → "Custom" anzeigen
+                // Wenn 2+ ausgewählt → "Gesamt" oder "Custom" je nach Added Modus
                 else if (newSelection.length >= 2) {
-                  setSelectedBotName("Custom");
+                  // Added Modus: "Gesamt" wenn ALLE aktiven Bot-Types ausgewählt, sonst "Custom"
+                  if (alleEintraegeMode === 'added') {
+                    const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
+                    const allActiveSelected = activeBotTypes.length > 0 && 
+                      activeBotTypes.every(bt => newSelection.includes(String(bt.id)));
+                    setSelectedBotName(allActiveSelected ? "Gesamt" : "Custom");
+                  } else {
+                    // Compare Modus: immer "Custom"
+                    setSelectedBotName("Custom");
+                  }
                 }
                 
                 return newSelection;
