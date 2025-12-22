@@ -6388,10 +6388,10 @@ export default function Dashboard() {
                     })
                   ) : isMultiBotChartMode ? (
                     // Added-Modus: EINE Gesamtlinie (additive Summierung)
-                    // Step-Line für exakte Wertdarstellung an jedem Zeitpunkt
+                    // Sanfte monotone Linie wie im Compare-Modus und MainChart
                     <Line 
                       key="Gesamt"
-                      type="stepAfter"
+                      type="monotone"
                       dataKey="Gesamt"
                       name="Gesamt"
                       stroke="#0891b2" // Cyan-600 (konsistent mit Eye-Icon Farbe)
