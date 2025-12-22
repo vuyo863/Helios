@@ -836,12 +836,48 @@ export default function Dashboard() {
 
   // Berechne die Anzahl der angezeigten Updates basierend auf AKTUELLER Auswahl
   // Reagiert sofort auf Zeitraum-Änderung (vor Apply)
-  // COMPARE-MODUS: Zählt Updates aller ausgewählten Bot-Types
+  // COMPARE-MODUS und ADDED-MODUS: Zählt Updates aller ausgewählten Bot-Types
   const displayedUpdatesCount = useMemo(() => {
     // COMPARE-MODUS inline berechnet (alleEintraegeMode === 'compare' && 2+ Bot-Types)
     // WICHTIG: Nicht im Analyze Single Metric Mode (analyzeMode + appliedUpdateId enthält ":")
     const isAnalyzeSingleMetricModeInline = analyzeMode && appliedUpdateId && appliedUpdateId.includes(':');
     const isCompareMode = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2 && !isAnalyzeSingleMetricModeInline;
+    
+    // ADDED-MODUS: alleEintraegeMode === 'added' && 2+ Bot-Types
+    const isAddedMode = alleEintraegeMode === 'added' && selectedChartBotTypes.length >= 2;
+    
+    // ADDED-MODUS: Verwende Updates aller ausgewählten Bot-Types
+    if (isAddedMode && allBotTypeUpdates.length > 0) {
+      const selectedIds = selectedChartBotTypes.map(id => String(id));
+      let filteredUpdates = allBotTypeUpdates.filter(update => 
+        selectedIds.includes(String(update.botTypeId))
+      );
+      
+      // Zeitfilter anwenden (gleiche Logik wie Normal-Modus)
+      if (selectedTimeRange !== 'First-Last Update') {
+        const rangeMs = parseTimeRangeToMs(
+          selectedTimeRange,
+          customDays,
+          customHours,
+          customMinutes
+        );
+        
+        if (rangeMs !== null && rangeMs > 0) {
+          const now = Date.now();
+          const cutoffTimestamp = now - rangeMs;
+          
+          filteredUpdates = filteredUpdates.filter(update => {
+            const updateTimestamp = getUpdateTimestamp(update);
+            return updateTimestamp >= cutoffTimestamp;
+          });
+        }
+      }
+      
+      const updateMetrics = filteredUpdates.filter(u => u.status === 'Update Metrics').length;
+      const closedBots = filteredUpdates.filter(u => u.status === 'Closed Bots').length;
+      
+      return { total: filteredUpdates.length, updateMetrics, closedBots };
+    }
     
     // COMPARE-MODUS: Verwende Updates aller ausgewählten Bot-Types
     if (isCompareMode && allBotTypeUpdates.length > 0) {
@@ -1557,6 +1593,38 @@ export default function Dashboard() {
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
   }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings]);
+
+  // ADDED MODE: Berechne Highest und Lowest Value für die "Gesamt"-Linie
+  // Im Added-Modus gibt es nur eine aggregierte Linie
+  const addedExtremeValues = useMemo(() => {
+    if (!isMultiBotChartMode || !multiBotChartData.data || multiBotChartData.data.length === 0) {
+      return { 
+        highest: null as { timestamp: number; value: number } | null, 
+        lowest: null as { timestamp: number; value: number } | null 
+      };
+    }
+    
+    let maxVal = -Infinity;
+    let minVal = Infinity;
+    let maxPoint: { timestamp: number; value: number } | null = null;
+    let minPoint: { timestamp: number; value: number } | null = null;
+    
+    multiBotChartData.data.forEach((point: any) => {
+      const value = point['Gesamt'];
+      if (typeof value === 'number' && !isNaN(value)) {
+        if (value > maxVal) {
+          maxVal = value;
+          maxPoint = { timestamp: point.timestamp, value };
+        }
+        if (value < minVal) {
+          minVal = value;
+          minPoint = { timestamp: point.timestamp, value };
+        }
+      }
+    });
+    
+    return { highest: maxPoint, lowest: minPoint };
+  }, [isMultiBotChartMode, multiBotChartData.data]);
   // ========== ENDE ADDED MODUS SECTION ==========
 
   // Chart-Daten basierend auf appliedChartSettings generieren
@@ -2121,6 +2189,7 @@ export default function Dashboard() {
     
     return { highest, lowest };
   }, [isMultiSelectCompareMode, compareChartData.data, compareChartData.botTypeNames]);
+
 
   // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
   // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
@@ -6342,6 +6411,44 @@ export default function Dashboard() {
                       />
                     ));
                   })()}
+                  
+                  {/* ========== ADDED MODE: Highest Value Marker ========== */}
+                  {/* Zeigt ↑H Marker für die "Gesamt"-Linie im Added-Modus */}
+                  {showHighestValue && isMultiBotChartMode && addedExtremeValues.highest && (
+                    <ReferenceDot
+                      key="added-highest-gesamt"
+                      x={addedExtremeValues.highest.timestamp}
+                      y={addedExtremeValues.highest.value}
+                      r={0}
+                      label={{
+                        value: '↑H',
+                        position: 'bottom',
+                        fill: '#06b6d4', // Cyan für Gesamt-Linie
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        offset: 8,
+                      }}
+                    />
+                  )}
+                  
+                  {/* ========== ADDED MODE: Lowest Value Marker ========== */}
+                  {/* Zeigt ↓L Marker für die "Gesamt"-Linie im Added-Modus */}
+                  {showLowestValue && isMultiBotChartMode && addedExtremeValues.lowest && (
+                    <ReferenceDot
+                      key="added-lowest-gesamt"
+                      x={addedExtremeValues.lowest.timestamp}
+                      y={addedExtremeValues.lowest.value}
+                      r={0}
+                      label={{
+                        value: '↓L',
+                        position: 'top',
+                        fill: '#06b6d4', // Cyan für Gesamt-Linie
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        offset: 8,
+                      }}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
               </div>
