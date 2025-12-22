@@ -2517,26 +2517,24 @@ export default function Dashboard() {
           tickInterval = 180 * 24 * 60 * 60 * 1000;
         }
       } else {
-        // TAGES-MODUS (default)
+        // TAGES-MODUS (default) - EXAKT WIE COMPARE-MODUS
         if (visibleDays <= 7) {
-          tickInterval = 24 * 60 * 60 * 1000;
+          tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
         } else if (visibleDays <= 14) {
-          tickInterval = 2 * 24 * 60 * 60 * 1000;
+          tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
         } else if (visibleDays <= 30) {
-          tickInterval = 3 * 24 * 60 * 60 * 1000;
+          tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
         } else if (visibleDays <= 60) {
-          tickInterval = 7 * 24 * 60 * 60 * 1000;
-        } else if (visibleDays <= 180) {
-          tickInterval = 14 * 24 * 60 * 60 * 1000;
+          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
         } else {
-          tickInterval = 30 * 24 * 60 * 60 * 1000;
+          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
         }
       }
       
       const ticks: number[] = [];
       ticks.push(startTs);
       
-      // Rundung basierend auf effectiveSequence
+      // Rundung basierend auf effectiveSequence (angepasst an Zoom-Level) - EXAKT WIE COMPARE-MODUS
       const currentDate = new Date(startTs);
       
       if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
