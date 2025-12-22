@@ -975,10 +975,9 @@ export default function Dashboard() {
     return colorMap;
   }, [selectedChartBotTypes]);
 
-  // Multi-Bot-Type Chart Modus DEAKTIVIERT
-  // selectedChartBotTypes wird nur noch für UI-Toggle (blau/grau) in Alle Einträge genutzt
-  // Chart-Funktionalität wird später separat implementiert
-  const isMultiBotChartMode = false;
+  // Added-Modus: 2+ Bot-Types ausgewählt + Toggle auf "Added"
+  // Zeigt eine Gesamtlinie mit additiver Summierung aller aktiven Bot-Werte
+  const isMultiBotChartMode = alleEintraegeMode === 'added' && selectedChartBotTypes.length >= 2;
 
   // Compare/Added Modus: 2+ Bot-Types ausgewählt
   // Bei 2+ werden From/Until deaktiviert, Content Cards zeigen "--"
@@ -1357,18 +1356,16 @@ export default function Dashboard() {
   }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
   // ========== ENDE COMPARE MODUS SECTION ==========
 
-  // Chart-Daten für Multi-Bot-Type Modus
-  // Zeigt Gesamtprofit für jeden ausgewählten Bot-Type als separate Linie
-  // Respektiert dieselben Filter wie der Single-Bot Modus (Zeitraum, From/Until)
+  // ========== ADDED MODUS - ADDITIVE SUMMIERUNG ==========
+  // Zeigt eine GESAMTLINIE mit additiver Summierung aller aktiven Bot-Werte pro Zeitpunkt
+  // Grundprinzip: An jedem Zeitpunkt werden alle AKTIVEN Bot-Werte addiert
+  // Keine Durchschnitte, keine Normalisierung - nur reale Werte
   const multiBotChartData = useMemo(() => {
-    if (!isMultiBotChartMode || allBotTypeUpdates.length === 0 || !appliedChartSettings) {
-      return { data: [], botTypeNames: [] as string[] };
+    if (!isMultiBotChartMode || allBotTypeUpdates.length === 0) {
+      return { data: [], botTypeNames: [] as string[], minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    // Normalisiere IDs zu Strings für konsistente Vergleiche
     const selectedIds = selectedChartBotTypes.map(id => String(id));
-
-    // Finde die Namen der ausgewählten Bot-Types
     const selectedBotTypesInfo = availableBotTypes.filter(bt => 
       selectedIds.includes(String(bt.id))
     );
@@ -1380,100 +1377,185 @@ export default function Dashboard() {
     );
 
     if (relevantUpdates.length === 0) {
-      return { data: [], botTypeNames };
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    // WICHTIG: Wende dieselben Filter an wie im Single-Bot Modus
-    // Priorität 1: From/Until manuell ausgewählt
-    if (appliedChartSettings.fromUpdate && appliedChartSettings.untilUpdate) {
-      const fromTimestamp = getUpdateTimestamp(appliedChartSettings.fromUpdate);
-      const untilTimestamp = getUpdateTimestamp(appliedChartSettings.untilUpdate);
-      
-      relevantUpdates = relevantUpdates.filter(update => {
-        const updateTimestamp = getUpdateTimestamp(update);
-        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
-      });
-    } 
-    // Priorität 2: Custom mit Kalender-Auswahl
-    else if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
-      const fromTimestamp = appliedChartSettings.customFromDate.getTime();
-      const toDate = new Date(appliedChartSettings.customToDate);
-      toDate.setHours(23, 59, 59, 999);
-      const untilTimestamp = toDate.getTime();
-      
-      relevantUpdates = relevantUpdates.filter(update => {
-        const updateTimestamp = getUpdateTimestamp(update);
-        return updateTimestamp >= fromTimestamp && updateTimestamp <= untilTimestamp;
-      });
-    }
-    // Priorität 3: "Letzten"-Zeitraum Filter
-    else if (appliedChartSettings.timeRange !== 'First-Last Update') {
-      const rangeMs = parseTimeRangeToMs(
-        appliedChartSettings.timeRange,
-        appliedChartSettings.customDays,
-        appliedChartSettings.customHours,
-        appliedChartSettings.customMinutes
-      );
-      
-      if (rangeMs !== null && rangeMs > 0) {
-        const now = Date.now();
-        const cutoffTimestamp = now - rangeMs;
-        
+    // Wende Zeitfilter an (wie im Compare-Modus)
+    if (appliedChartSettings && appliedChartSettings.timeRange !== 'First-Last Update') {
+      if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+        const fromTs = appliedChartSettings.customFromDate.getTime();
+        const toDate = new Date(appliedChartSettings.customToDate);
+        toDate.setHours(23, 59, 59, 999);
+        const untilTs = toDate.getTime();
         relevantUpdates = relevantUpdates.filter(update => {
-          const updateTimestamp = getUpdateTimestamp(update);
-          return updateTimestamp >= cutoffTimestamp;
+          const ts = getUpdateTimestamp(update);
+          return ts >= fromTs && ts <= untilTs;
         });
+      } else {
+        const rangeMs = parseTimeRangeToMs(
+          appliedChartSettings.timeRange,
+          appliedChartSettings.customDays,
+          appliedChartSettings.customHours,
+          appliedChartSettings.customMinutes
+        );
+        if (rangeMs !== null && rangeMs > 0) {
+          const cutoff = Date.now() - rangeMs;
+          relevantUpdates = relevantUpdates.filter(update => getUpdateTimestamp(update) >= cutoff);
+        }
       }
     }
-    // Priorität 4: First-Last Update = Alle Updates (keine zusätzliche Filterung)
 
     if (relevantUpdates.length === 0) {
-      return { data: [], botTypeNames };
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    // Sortiere nach Zeitstempel
-    relevantUpdates.sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+    // ========== EVENT-TIMELINE ERSTELLEN ==========
+    // Sammle ALLE Event-Zeitpunkte (Start + Ende) aller Bot-Types
+    interface BotEvent {
+      timestamp: number;
+      botTypeId: string;
+      botTypeName: string;
+      value: number;
+      type: 'start' | 'end';
+      updateVersion: number;
+      isClosedBot: boolean;
+    }
 
-    // Generiere Chart-Daten: Ein Datenpunkt pro Update
-    // WICHTIG: Keine kumulative Summierung - overallGridProfitUsdt ist bereits der Gesamtwert
-    const dataPoints: Array<Record<string, any>> = [];
+    const allEvents: BotEvent[] = [];
 
     relevantUpdates.forEach(update => {
-      const timestamp = getUpdateTimestamp(update);
       const botType = selectedBotTypesInfo.find(bt => String(bt.id) === String(update.botTypeId));
       if (!botType) return;
 
-      // Finde oder erstelle Datenpunkt für diesen Zeitstempel
-      let point = dataPoints.find(p => p.timestamp === timestamp);
-      if (!point) {
-        point = {
-          time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
-          timestamp,
-        };
-        // Initialisiere alle Bot-Types mit null (wird zu 0 wenn kein Wert)
-        selectedBotTypesInfo.forEach(bt => {
-          point![bt.name] = null;
-        });
-        dataPoints.push(point);
+      const isClosedBot = update.status === 'Closed Bots';
+      const value = isClosedBot 
+        ? parseFloat(update.profit || '0') || 0
+        : parseFloat(update.overallGridProfitUsdt || '0') || 0;
+
+      // Start-Zeitpunkt (lastUpload)
+      if (update.lastUpload) {
+        const startTs = new Date(update.lastUpload).getTime();
+        if (!isNaN(startTs)) {
+          allEvents.push({
+            timestamp: startTs,
+            botTypeId: String(update.botTypeId),
+            botTypeName: botType.name,
+            value,
+            type: 'start',
+            updateVersion: update.version,
+            isClosedBot
+          });
+        }
       }
 
-      // Profit für diesen Bot-Type an diesem Zeitpunkt
-      // overallGridProfitUsdt ist bereits der aktuelle Gesamtwert, nicht Delta
-      let profit = 0;
-      if (update.status === 'Closed Bots') {
-        profit = parseFloat(update.profit || '0') || 0;
-      } else {
-        profit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      // End-Zeitpunkt (thisUpload)
+      if (update.thisUpload) {
+        const endTs = new Date(update.thisUpload).getTime();
+        if (!isNaN(endTs)) {
+          allEvents.push({
+            timestamp: endTs,
+            botTypeId: String(update.botTypeId),
+            botTypeName: botType.name,
+            value,
+            type: 'end',
+            updateVersion: update.version,
+            isClosedBot
+          });
+        }
       }
-
-      point[botType.name] = profit;
     });
 
-    // Sortiere Datenpunkte nach Zeitstempel
-    dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+    if (allEvents.length === 0) {
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
+    }
 
-    return { data: dataPoints, botTypeNames };
-  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, chartApplied]);
+    // Sortiere Events chronologisch
+    allEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+    // ========== ADDITIVE SUMMIERUNG ==========
+    // Für jeden Zeitpunkt: Tracke welche Bots aktiv sind und ihren aktuellen Wert
+    // Aktiv = zwischen Start und Ende eines Updates
+    interface ActiveBot {
+      botTypeId: string;
+      botTypeName: string;
+      value: number;
+      updateVersion: number;
+    }
+
+    const activeBots: Map<string, ActiveBot> = new Map();
+    const dataPoints: Array<Record<string, any>> = [];
+
+    // Gruppiere Events nach Zeitstempel für gleichzeitige Verarbeitung
+    const eventsByTimestamp: Map<number, BotEvent[]> = new Map();
+    allEvents.forEach(event => {
+      const existing = eventsByTimestamp.get(event.timestamp) || [];
+      existing.push(event);
+      eventsByTimestamp.set(event.timestamp, existing);
+    });
+
+    const sortedTimestamps = Array.from(eventsByTimestamp.keys()).sort((a, b) => a - b);
+
+    sortedTimestamps.forEach(timestamp => {
+      const eventsAtTime = eventsByTimestamp.get(timestamp) || [];
+      
+      // Verarbeite alle Events an diesem Zeitpunkt
+      eventsAtTime.forEach(event => {
+        const key = `${event.botTypeId}:${event.updateVersion}`;
+        
+        if (event.type === 'start') {
+          // Bot startet → Wert hinzufügen
+          activeBots.set(key, {
+            botTypeId: event.botTypeId,
+            botTypeName: event.botTypeName,
+            value: event.value,
+            updateVersion: event.updateVersion
+          });
+        } else if (event.type === 'end') {
+          // Bot endet → Wert entfernen (KEINE Carry-Forward)
+          // Aber erst den End-Punkt mit dem Wert erstellen, dann entfernen
+        }
+      });
+
+      // Berechne Gesamtsumme aller aktiven Bots an diesem Zeitpunkt
+      let totalSum = 0;
+      const breakdown: Record<string, number> = {};
+      
+      activeBots.forEach(bot => {
+        totalSum += bot.value;
+        breakdown[bot.botTypeName] = (breakdown[bot.botTypeName] || 0) + bot.value;
+      });
+
+      // Erstelle Datenpunkt
+      const point: Record<string, any> = {
+        time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        timestamp,
+        Gesamt: totalSum,
+        _breakdown: breakdown, // Für Tooltip: Aufschlüsselung pro Bot-Type
+        _activeBotCount: activeBots.size
+      };
+
+      // Speichere auch individuelle Bot-Werte (für potenzielle Aufschlüsselung)
+      botTypeNames.forEach(name => {
+        point[name] = breakdown[name] || 0;
+      });
+
+      dataPoints.push(point);
+
+      // NACH dem Datenpunkt: Beende Bots die an diesem Zeitpunkt enden
+      eventsAtTime.forEach(event => {
+        if (event.type === 'end') {
+          const key = `${event.botTypeId}:${event.updateVersion}`;
+          activeBots.delete(key);
+        }
+      });
+    });
+
+    const minTimestamp = sortedTimestamps[0] || 0;
+    const maxTimestamp = sortedTimestamps[sortedTimestamps.length - 1] || 0;
+
+    return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
+  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings]);
+  // ========== ENDE ADDED MODUS SECTION ==========
 
   // Chart-Daten basierend auf appliedChartSettings generieren
   // Unterstützt mehrere Metriken gleichzeitig
@@ -5871,23 +5953,36 @@ export default function Dashboard() {
                       );
                     })
                   ) : isMultiBotChartMode ? (
-                    // Multi-Bot-Type Modus: Eine Linie pro Bot-Type (zeigt Gesamtprofit)
-                    multiBotChartData.botTypeNames.map((botTypeName, index) => (
-                      <Line 
-                        key={botTypeName}
-                        type="monotone" 
-                        dataKey={botTypeName}
-                        name={botTypeName}
-                        stroke={getBotTypeColor(index)}
-                        strokeWidth={2}
-                        dot={{ fill: getBotTypeColor(index), r: 4 }}
-                        connectNulls
-                        isAnimationActive={true}
-                        animationDuration={1200}
-                        animationBegin={0}
-                        animationEasing="ease-out"
-                      />
-                    ))
+                    // Added-Modus: EINE Gesamtlinie (additive Summierung)
+                    // Step-Line für exakte Wertdarstellung an jedem Zeitpunkt
+                    <Line 
+                      key="Gesamt"
+                      type="stepAfter"
+                      dataKey="Gesamt"
+                      name="Gesamt"
+                      stroke="#0891b2" // Cyan-600 (konsistent mit Eye-Icon Farbe)
+                      strokeWidth={2.5}
+                      dot={(props: any) => {
+                        const { cx, cy, payload } = props;
+                        const activeBotCount = payload?._activeBotCount || 0;
+                        return (
+                          <circle
+                            key={`dot-gesamt-${payload?.timestamp}`}
+                            cx={cx}
+                            cy={cy}
+                            r={activeBotCount > 1 ? 5 : 4}
+                            fill="#0891b2"
+                            stroke={activeBotCount > 1 ? "#fff" : "none"}
+                            strokeWidth={activeBotCount > 1 ? 1.5 : 0}
+                          />
+                        );
+                      }}
+                      connectNulls
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                      animationBegin={0}
+                      animationEasing="ease-out"
+                    />
                   ) : (
                     // Single-Bot Modus: Lines für alle aktiven Metriken
                     activeMetricCards.map((metricName) => (
