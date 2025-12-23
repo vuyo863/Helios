@@ -1616,6 +1616,17 @@ export default function Dashboard() {
           metricSums[metricName] += bot.metricValues[metricName] || 0;
         });
       });
+      
+      // Berechne DOT-Position: Wert INKLUSIVE der endenden Bots (für Punkt an oberer Ecke)
+      // Dies ist nur für die visuelle Position des Punktes, nicht für die Linie
+      const dotMetricSums: Record<string, number> = { ...metricSums };
+      const endEventsAtTime = eventsAtTime.filter(e => e.type === 'end');
+      endEventsAtTime.forEach(event => {
+        // Addiere die Werte der endenden Bots zur Dot-Position
+        Object.keys(dotMetricSums).forEach(metricName => {
+          dotMetricSums[metricName] += event.metricValues[metricName] || 0;
+        });
+      });
 
       // Sammle Event-Infos für diesen Zeitpunkt
       // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots? Runtime? Metrik-Werte?
@@ -1644,6 +1655,12 @@ export default function Dashboard() {
         'Gesamt_Gesamtprofit %': metricSums['Gesamtprofit %'],
         'Gesamt_Ø Profit/Tag': metricSums['Ø Profit/Tag'],
         'Gesamt_Real Profit/Tag': metricSums['Real Profit/Tag'],
+        // DOT-Position Werte (inklusive endender Bots) für Punkt an oberer Ecke
+        '_dot_Gesamt_Gesamtprofit': dotMetricSums['Gesamtprofit'],
+        '_dot_Gesamt_Gesamtkapital': dotMetricSums['Gesamtkapital'],
+        '_dot_Gesamt_Gesamtprofit %': dotMetricSums['Gesamtprofit %'],
+        '_dot_Gesamt_Ø Profit/Tag': dotMetricSums['Ø Profit/Tag'],
+        '_dot_Gesamt_Real Profit/Tag': dotMetricSums['Real Profit/Tag'],
         _breakdown: breakdown, // Für Tooltip: Aufschlüsselung pro Bot-Type
         _activeBotCount: activeBots.size,
         // Event-Informationen für Tooltip
@@ -2895,12 +2912,19 @@ export default function Dashboard() {
     if (isMultiBotChartMode && multiBotChartData.data.length > 0) {
       const allValues: number[] = [];
       // Sammle Werte von ALLEN aktiven Metriken (multi-metric support)
+      // WICHTIG: Auch _dot_Gesamt_* Werte berücksichtigen für korrekte Y-Domain bei End-Events
       activeMetricCards.forEach(metricName => {
         const dataKey = `Gesamt_${metricName}`;
+        const dotDataKey = `_dot_Gesamt_${metricName}`;
         multiBotChartData.data.forEach((point: any) => {
           const val = point[dataKey];
           if (typeof val === 'number' && !isNaN(val)) {
             allValues.push(val);
+          }
+          // Auch den höheren Dot-Wert berücksichtigen
+          const dotVal = point[dotDataKey];
+          if (typeof dotVal === 'number' && !isNaN(dotVal)) {
+            allValues.push(dotVal);
           }
         });
       });
@@ -6757,13 +6781,26 @@ export default function Dashboard() {
                           stroke={color}
                           strokeWidth={2.5}
                           dot={(props: any) => {
-                            const { cx, cy, payload } = props;
+                            const { cx, cy, payload, yAxis } = props;
                             const activeBotCount = payload?._activeBotCount || 0;
+                            
+                            // Berechne adjustierte Y-Position für Punkt an oberer Ecke
+                            // Verwende _dot_Gesamt_* Wert (inkl. endender Bots) statt Gesamt_* (ohne)
+                            const dotDataKey = `_dot_Gesamt_${metricName}`;
+                            const dotValue = payload?.[dotDataKey];
+                            const lineValue = payload?.[dataKey];
+                            
+                            // Berechne cy basierend auf dotValue wenn verfügbar und yAxis vorhanden
+                            let adjustedCy = cy;
+                            if (yAxis?.scale && typeof dotValue === 'number' && dotValue !== lineValue) {
+                              adjustedCy = yAxis.scale(dotValue);
+                            }
+                            
                             return (
                               <circle
                                 key={`dot-added-${payload?.timestamp}-${metricName}`}
                                 cx={cx}
-                                cy={cy}
+                                cy={adjustedCy}
                                 r={activeBotCount > 1 ? 5 : 4}
                                 fill={color}
                                 stroke={activeBotCount > 1 ? "#fff" : "none"}
