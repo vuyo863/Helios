@@ -298,7 +298,10 @@ export default function Dashboard() {
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartPanY, setDragStartPanY] = useState(0);
   const [dragStartPanX, setDragStartPanX] = useState(0);
+  const [mouseDownPos, setMouseDownPos] = useState<{ x: number; y: number } | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  // Threshold für Drag vs Click - unter diesem Wert ist es ein Click
+  const DRAG_THRESHOLD = 5;
   
   // Tooltip Aktivierungsradius - nur anzeigen wenn Maus nah am Datenpunkt
   // Speichert die letzte Mausposition relativ zum Chart für Distanzprüfung
@@ -360,7 +363,9 @@ export default function Dashboard() {
   const handleChartMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Nur linke Maustaste für Pan
     if (e.button !== 0) return;
-    setIsDragging(true);
+    // Speichere Startposition, aber setze isDragging noch NICHT auf true
+    // isDragging wird erst bei Bewegung über Threshold gesetzt
+    setMouseDownPos({ x: e.clientX, y: e.clientY });
     setDragStartY(e.clientY);
     setDragStartX(e.clientX);
     setDragStartPanY(chartPanY);
@@ -368,23 +373,35 @@ export default function Dashboard() {
   };
   
   const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    // Pan: Mausbewegung in Y/X-Offset umrechnen
-    const deltaY = e.clientY - dragStartY;
-    const deltaX = e.clientX - dragStartX;
-    // Je größer der Zoom, desto empfindlicher die Pan-Bewegung
-    const sensitivityY = 2 / chartZoomY;
-    const sensitivityX = 2 / chartZoomX;
-    setChartPanY(dragStartPanY + deltaY * sensitivityY);
-    setChartPanX(dragStartPanX + deltaX * sensitivityX);
+    // Prüfe ob Maus gedrückt ist
+    if (!mouseDownPos) return;
+    
+    // Berechne Bewegung seit MouseDown
+    const deltaY = e.clientY - mouseDownPos.y;
+    const deltaX = e.clientX - mouseDownPos.x;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // Erst ab Threshold ist es ein Drag (nicht nur Click)
+    if (distance > DRAG_THRESHOLD) {
+      setIsDragging(true);
+      // Pan: Mausbewegung in Y/X-Offset umrechnen
+      const panDeltaY = e.clientY - dragStartY;
+      const panDeltaX = e.clientX - dragStartX;
+      const sensitivityY = 2 / chartZoomY;
+      const sensitivityX = 2 / chartZoomX;
+      setChartPanY(dragStartPanY + panDeltaY * sensitivityY);
+      setChartPanX(dragStartPanX + panDeltaX * sensitivityX);
+    }
   };
   
   const handleChartMouseUp = () => {
     setIsDragging(false);
+    setMouseDownPos(null);
   };
   
   const handleChartMouseLeave = () => {
     setIsDragging(false);
+    setMouseDownPos(null);
   };
   
   const handleResetZoomPan = () => {
