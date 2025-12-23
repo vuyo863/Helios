@@ -2373,9 +2373,9 @@ export default function Dashboard() {
       }
       
       // AUTOMATISCHE SEQUENCE-DOWNGRADE basierend auf sichtbarer Zeitspanne
-      // (identisch wie Compare-Mode)
+      // FRÜHER auf Stunden umschalten für bessere Lesbarkeit!
       let effectiveSequence = 'days';
-      if (visibleDays < 3) {
+      if (visibleDays < 7) {
         effectiveSequence = 'hours';
       }
       
@@ -6013,24 +6013,18 @@ export default function Dashboard() {
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           label = `${dateStr}\n${timeStr}`;
                           isMajor = true;
-                        } else if (visibleHours <= 36) {
-                          // Sehr eng gezoomt (< 1.5 Tage): Stunden-Format
+                        } else if (visibleDays <= 7) {
+                          // Bei ≤7 Tagen sichtbar: IMMER Uhrzeiten anzeigen!
+                          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           if (isMidnight) {
-                            label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                            // Bei Mitternacht: Nur Datum (ist schon 00:00)
+                            label = dateStr;
                             isMajor = true;
                           } else {
-                            label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                          }
-                        } else if (visibleDays <= 7) {
-                          // Mittel gezoomt (≤7 Tage): Datum + optionale Uhrzeit
-                          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                          if (!isMidnight && visibleHours <= 72) {
-                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            // Sonst: Datum + Uhrzeit
                             label = `${dateStr}\n${timeStr}`;
-                          } else {
-                            label = dateStr;
                           }
-                          isMajor = isMidnight;
                         } else if (visibleDays <= 60) {
                           // Bei 1-8 Wochen: Tages-Format
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
