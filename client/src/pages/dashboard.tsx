@@ -2851,15 +2851,17 @@ export default function Dashboard() {
         return [baseLower, baseUpper];
       }
       
-      // Zoom und Pan anwenden
+      // Zoom & Pan anwenden (gleiche Logik wie MainChart)
       const zoomedRange = baseRange / chartZoomY;
       const center = (baseLower + baseUpper) / 2;
-      const panOffset = chartPanY;
+      
+      // Pan-Offset (gleiche Skalierung wie MainChart)
+      const panOffset = (chartPanY / 300) * baseRange;
       
       let zoomedLower = center - zoomedRange / 2 + panOffset;
       let zoomedUpper = center + zoomedRange / 2 + panOffset;
       
-      // Extra Padding unten beim Zoomen
+      // Extra Padding unten beim Zoomen (10% der sichtbaren Range)
       const zoomPadding = zoomedRange * 0.1;
       zoomedLower = zoomedLower - zoomPadding;
       
@@ -2922,15 +2924,17 @@ export default function Dashboard() {
         return [baseLower, baseUpper];
       }
       
-      // Zoom und Pan anwenden
+      // Zoom & Pan anwenden (gleiche Logik wie MainChart)
       const zoomedRange = baseRange / chartZoomY;
       const center = (baseLower + baseUpper) / 2;
-      const panOffset = chartPanY;
+      
+      // Pan-Offset (gleiche Skalierung wie MainChart)
+      const panOffset = (chartPanY / 300) * baseRange;
       
       let zoomedLower = center - zoomedRange / 2 + panOffset;
       let zoomedUpper = center + zoomedRange / 2 + panOffset;
       
-      // Extra Padding unten beim Zoomen
+      // Extra Padding unten beim Zoomen (10% der sichtbaren Range)
       const zoomPadding = zoomedRange * 0.1;
       zoomedLower = zoomedLower - zoomPadding;
       
