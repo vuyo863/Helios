@@ -6875,17 +6875,22 @@ export default function Dashboard() {
                           stroke={color}
                           strokeWidth={2}
                           dot={(props: any) => {
-                            const { cx, cy, payload } = props;
+                            const { cx, cy, payload, value } = props;
                             const isClosedBot = payload?._isClosedBot;
-                            const botTypeName = payload?._botTypeName || '';
                             const dotTimestamp = payload?.timestamp || 0;
-                            const eventIndex = payload?._eventIndex || 0;
+                            const eventIndex = payload?._eventIndex ?? 0;
                             
-                            // Eindeutige ID für diesen Punkt: metricName + eventIndex + timestamp
-                            // Damit können Punkte auf demselben Timestamp unterschieden werden
-                            const pointId = `${metricName}-${eventIndex}-${dotTimestamp}`;
+                            // WICHTIG: Wenn kein gültiger Y-Wert vorhanden, keinen Punkt rendern
+                            // Das passiert z.B. bei Closed Bots die keine Ø Profit/Tag haben
+                            if (value === undefined || value === null || isNaN(cy) || isNaN(cx)) {
+                              return <g key={`dot-added-empty-${metricName}-${eventIndex}`} />;
+                            }
                             
-                            // Prüfe ob DIESER spezifische Punkt gepinnt ist (exakter ID-Match)
+                            // Eindeutige ID: eventIndex ist der primäre Identifikator
+                            // metricName nur zur Unterscheidung welche Linie angeklickt wurde
+                            const pointId = `${metricName}-${eventIndex}`;
+                            
+                            // Prüfe ob DIESER spezifische Punkt gepinnt ist
                             const isPinned = pinnedTooltipData?.id === pointId;
                             
                             // Click-Handler für Tooltip-Pinning
