@@ -1497,8 +1497,9 @@ export default function Dashboard() {
       const value = metricValues['Gesamtprofit'];
 
       // Start-Zeitpunkt (lastUpload) - nutze parseGermanDate für deutsches Format
-      // WICHTIG: Start-Events haben KEINE Profit-Werte! Der Profit wird erst am Ende generiert.
-      if (update.lastUpload) {
+      // WICHTIG: Closed Bots haben KEINEN Start-Event - nur ein Enddatum!
+      // Normale Updates haben Start + End, Closed Bots nur End.
+      if (update.lastUpload && !isClosedBot) {
         const startDate = parseGermanDate(update.lastUpload);
         if (startDate) {
           allEvents.push({
@@ -1509,7 +1510,7 @@ export default function Dashboard() {
             metricValues: {}, // Start hat KEINE Metrik-Werte - nur ein Marker
             type: 'start',
             updateVersion: update.version,
-            isClosedBot
+            isClosedBot: false
           });
         }
       }
