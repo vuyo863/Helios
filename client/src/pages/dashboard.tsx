@@ -6724,45 +6724,31 @@ export default function Dashboard() {
                         const borderColor = metricColors[primaryMetric] || '#22c55e';
                         
                         // Berechne echte Metrik-Werte (nicht offsetted)
-                        // WICHTIG: Ø Profit/Tag = Gesamtprofit / Tage (exakt wie MainChart)
-                        // Real Profit/Tag = wenn Runtime < 24h dann Gesamtprofit, sonst Profit/Tag
+                        // WICHTIG: Verwende analyzeSingleMetricValues für korrekte Werte (wie Content Card)
+                        // Diese Werte sind bereits vorberechnet und konsistent mit der Content Card
                         const getAnalyzeMetricValue = (metricName: string): number => {
                           // Für Startpunkte: zeige 0 (oder Gesamtkapital wenn aktiv)
                           if (isStartPoint) {
                             if (metricName === 'Gesamtkapital') return gesamtkapital;
                             return 0;
                           }
-                          // Für Endpunkte: zeige echte Werte
+                          // Für Endpunkte: Verwende vorberechnete Werte aus analyzeSingleMetricValues
+                          // Dies stellt sicher dass Tooltip und Content Card dieselben Werte zeigen
                           switch (metricName) {
                             case 'Gesamtkapital':
-                              return gesamtkapital;
+                              return analyzeSingleMetricValues?.investment || gesamtkapital;
                             case 'Gesamtprofit':
-                              return gesamtprofit;
+                              return analyzeSingleMetricValues?.profit || gesamtprofit;
                             case 'Gesamtprofit %':
-                              return gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
+                              return analyzeSingleMetricValues?.profitPercent || (gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0);
                             case 'Ø Profit/Tag':
-                              // Ø Profit/Tag = Gesamtprofit / Laufzeit in Tagen
-                              if (runtimeMs && runtimeMs > 0) {
-                                const days = runtimeMs / (24 * 60 * 60 * 1000);
-                                // Mindestens 1 Tag für die Berechnung
-                                const effectiveDays = Math.max(days, 1);
-                                return gesamtprofit / effectiveDays;
-                              }
-                              // Fallback: Gesamtprofit (entspricht 1 Tag)
-                              return gesamtprofit;
+                              // WICHTIG: Verwende vorberechneten avgDailyProfit aus Update (avgGridProfitDay)
+                              // Dieser Wert ist konsistent mit der Content Card
+                              return analyzeSingleMetricValues?.avgDailyProfit || 0;
                             case 'Real Profit/Tag':
-                              // Real Profit/Tag: Wenn Runtime < 24h → Gesamtprofit
-                              // Ansonsten → Profit pro Tag berechnet
-                              if (runtimeMs && runtimeMs > 0) {
-                                const days = runtimeMs / (24 * 60 * 60 * 1000);
-                                if (days < 1) {
-                                  // Runtime < 24h: Zeige Gesamtprofit (der Tag ist noch nicht voll)
-                                  return gesamtprofit;
-                                }
-                                // Runtime >= 24h: Berechne echten Profit/Tag
-                                return gesamtprofit / days;
-                              }
-                              return gesamtprofit;
+                              // WICHTIG: Verwende vorberechneten realDailyProfit aus Update
+                              // Dieser Wert ist konsistent mit der Content Card
+                              return analyzeSingleMetricValues?.realDailyProfit || gesamtprofit;
                             default:
                               return 0;
                           }
