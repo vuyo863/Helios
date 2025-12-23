@@ -3829,8 +3829,11 @@ export default function Dashboard() {
       ? parseFloat(update.profit || '0') || 0
       : parseFloat(update.overallGridProfitUsdt || '0') || 0;
     
-    // Profit %: Berechne basierend auf Investment
-    const profitPercent = investment > 0 ? (profit / investment) * 100 : 0;
+    // Profit %: Berechne basierend auf profitPercentBase Auswahl
+    // - 'gesamtinvestment': Verwende totalInvestment (investment)
+    // - 'investitionsmenge': Verwende baseInvestment
+    const profitBase = profitPercentBase === 'investitionsmenge' ? baseInvestment : investment;
+    const profitPercent = profitBase > 0 ? (profit / profitBase) * 100 : 0;
     
     // Ø Profit/Tag: avgGridProfitDay (korrekter Feldname!)
     const avgDaily = parseFloat(update.avgGridProfitDay || '0') || 0;
@@ -3851,7 +3854,7 @@ export default function Dashboard() {
       updateName: update.name || `Update ${version}`,
       botTypeName: analyzeSingleMetricInfo.botTypeName
     };
-  }, [isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, allBotTypeUpdates]);
+  }, [isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, allBotTypeUpdates, profitPercentBase]);
 
   // COMPARE MODE: Berechne höchste Werte aller Bot-Types im Chart-Zeitraum
   // Diese Werte werden in den Content Cards angezeigt
