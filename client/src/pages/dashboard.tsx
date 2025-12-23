@@ -3075,9 +3075,10 @@ export default function Dashboard() {
     }
     
     // ADDED MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types (analog zu Compare)
+    // WICHTIG: 10% Padding damit äußerste Punkte nicht am Rand abgeschnitten werden und klickbar bleiben
     if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
       const range = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
-      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
+      const padding = range > 0 ? range * 0.10 : 24 * 60 * 60 * 1000; // 10% oder 1 Tag - erhöht für bessere Klickbarkeit
       
       const baseMin = multiBotChartData.minTimestamp - padding;
       const baseMax = multiBotChartData.maxTimestamp + padding;
@@ -6892,28 +6893,34 @@ export default function Dashboard() {
                           stroke={color}
                           strokeWidth={2}
                           dot={(props: any) => {
-                            const { cx, cy, payload, value } = props;
+                            const { cx, cy, payload, value, index } = props;
                             const isClosedBot = payload?._isClosedBot;
-                            const dotTimestamp = payload?.timestamp || 0;
                             const eventIndex = payload?._eventIndex ?? 0;
                             
                             // WICHTIG: Wenn kein gültiger Y-Wert vorhanden, keinen Punkt rendern
-                            // Das passiert z.B. bei Closed Bots die keine Ø Profit/Tag haben
                             if (value === undefined || value === null || isNaN(cy) || isNaN(cx)) {
                               return <g key={`dot-added-empty-${metricName}-${eventIndex}`} />;
                             }
                             
                             // Eindeutige ID: eventIndex ist der primäre Identifikator
-                            // metricName nur zur Unterscheidung welche Linie angeklickt wurde
                             const pointId = `${metricName}-${eventIndex}`;
                             
                             // Prüfe ob DIESER spezifische Punkt gepinnt ist
                             const isPinned = pinnedTooltipData?.id === pointId;
                             
                             // Click-Handler für Tooltip-Pinning
-                            const handleDotClick = (e: React.MouseEvent) => {
+                            // Verwendet onPointerDown für zuverlässigere Klick-Erkennung auf SVG
+                            const handleDotPointerDown = (e: React.PointerEvent) => {
+                              // Capture den Pointer um sicherzustellen dass wir alle Events erhalten
+                              (e.target as Element).setPointerCapture?.(e.pointerId);
+                            };
+                            
+                            const handleDotPointerUp = (e: React.PointerEvent) => {
                               e.stopPropagation();
                               e.preventDefault();
+                              
+                              // Release den Pointer
+                              (e.target as Element).releasePointerCapture?.(e.pointerId);
                               
                               if (isPinned) {
                                 // Nochmal auf gepinnten Punkt geklickt → entpinnen
@@ -6930,30 +6937,42 @@ export default function Dashboard() {
                               }
                             };
                             
-                            // Jeder End-Event ist ein separater Punkt
-                            // Closed Bots: Hohler Kreis, normale Updates: Gefüllter Kreis
-                            // Gepinnte Punkte haben Glow-Effekt
+                            // Größerer Klickbereich für bessere Interaktion
+                            // Gepinnte Punkte sind noch größer und haben Glow-Effekt
+                            const dotRadius = isPinned ? 8 : 6;
+                            const hitAreaRadius = 12; // Größerer unsichtbarer Klickbereich
+                            
                             const glowStyle = isPinned ? {
                               filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.8))',
-                              cursor: 'pointer',
-                              pointerEvents: 'all' as const
+                              cursor: 'pointer'
                             } : {
-                              cursor: 'pointer',
-                              pointerEvents: 'all' as const
+                              cursor: 'pointer'
                             };
                             
                             return (
-                              <circle
-                                key={`dot-added-${pointId}`}
-                                cx={cx}
-                                cy={cy}
-                                r={isPinned ? 7 : 5}
-                                fill={isClosedBot ? "hsl(var(--background))" : color}
-                                stroke={isPinned ? '#22c55e' : color}
-                                strokeWidth={isPinned ? 3 : (isClosedBot ? 2 : 0)}
-                                style={glowStyle}
-                                onClick={handleDotClick}
-                              />
+                              <g key={`dot-added-${pointId}`}>
+                                {/* Unsichtbarer größerer Klickbereich */}
+                                <circle
+                                  cx={cx}
+                                  cy={cy}
+                                  r={hitAreaRadius}
+                                  fill="transparent"
+                                  stroke="none"
+                                  style={{ cursor: 'pointer', pointerEvents: 'all' }}
+                                  onPointerDown={handleDotPointerDown}
+                                  onPointerUp={handleDotPointerUp}
+                                />
+                                {/* Sichtbarer Punkt */}
+                                <circle
+                                  cx={cx}
+                                  cy={cy}
+                                  r={dotRadius}
+                                  fill={isClosedBot ? "hsl(var(--background))" : color}
+                                  stroke={isPinned ? '#22c55e' : color}
+                                  strokeWidth={isPinned ? 3 : (isClosedBot ? 2 : 0)}
+                                  style={{ ...glowStyle, pointerEvents: 'none' }}
+                                />
+                              </g>
                             );
                           }}
                           connectNulls
