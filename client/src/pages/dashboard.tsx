@@ -2908,19 +2908,25 @@ export default function Dashboard() {
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   const yAxisDomain = useMemo((): [number | string, number | string] => {
     // ANALYZE SINGLE METRIC MODE hat PRIORITÄT
-    // Berechne Y-Domain nur aus den Werten des ausgewählten Bot-Types im Zeitraum
+    // Berechne Y-Domain aus ALLEN aktiven Metrik-Schlüsseln (Multi-Metrik-Unterstützung)
     if (isAnalyzeSingleMetricMode && analyzeSingleMetricInfo && analyzeModeBounds && compareChartData.data.length > 0) {
       const { startTs, endTs } = analyzeModeBounds;
       const botTypeName = analyzeSingleMetricInfo.botTypeName;
       
       const allValues: number[] = [];
       compareChartData.data.forEach(point => {
-        // Nur Punkte im Zeitraum des Updates
-        if (point.timestamp >= startTs && point.timestamp <= endTs) {
-          const val = point[botTypeName];
-          if (typeof val === 'number' && !isNaN(val)) {
-            allValues.push(val);
-          }
+        // Nur Punkte im Zeitraum des Updates und vom richtigen Bot-Type
+        if (point.timestamp >= startTs && point.timestamp <= endTs && point.botTypeName === botTypeName) {
+          // WICHTIG: Sammle Werte von ALLEN aktiven Metrik-Schlüsseln (Multi-Metrik!)
+          activeMetricCards.forEach(metricName => {
+            const safeKey = metricToSafeKey[metricName];
+            if (safeKey) {
+              const val = point[safeKey];
+              if (typeof val === 'number' && !isNaN(val)) {
+                allValues.push(val);
+              }
+            }
+          });
         }
       });
       
@@ -2929,7 +2935,8 @@ export default function Dashboard() {
       const minVal = Math.min(...allValues);
       const maxVal = Math.max(...allValues);
       const dataRange = maxVal - minVal;
-      const padding = dataRange > 0 ? dataRange * 0.2 : Math.abs(maxVal) * 0.2 || 10;
+      // Mehr Padding für bessere Sichtbarkeit (25%)
+      const padding = dataRange > 0 ? dataRange * 0.25 : Math.abs(maxVal) * 0.25 || 100;
       
       const baseLower = minVal - padding;
       const baseUpper = maxVal + padding;
