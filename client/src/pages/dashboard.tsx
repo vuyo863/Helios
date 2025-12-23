@@ -5729,7 +5729,7 @@ export default function Dashboard() {
                 <LineChart
                   key={investmentBaseKey}
                   data={
-                    // ANALYZE SINGLE METRIC MODE: Verwende compareChartData aber gefiltert auf analyzeModeBounds
+                    // ANALYZE SINGLE METRIC MODE (Compare): Verwende compareChartData aber gefiltert auf analyzeModeBounds
                     isAnalyzeSingleMetricMode && analyzeSingleMetricInfo && analyzeModeBounds
                       ? (() => {
                           // Filtere compareChartData auf den Zeitraum des ausgewählten Updates
@@ -5748,9 +5748,18 @@ export default function Dashboard() {
                         ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
                         : isMultiBotChartMode 
                           ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
-                          : (transformedChartData.length > 0 ? transformedChartData : [
-                              { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
-                            ])
+                          // NORMAL MODE: Wenn analyzeModeBounds aktiv, filtere transformedChartData
+                          : analyzeModeBounds
+                            ? (() => {
+                                const { startTs, endTs } = analyzeModeBounds;
+                                const filteredData = transformedChartData.filter(point => 
+                                  point.timestamp >= startTs && point.timestamp <= endTs
+                                );
+                                return filteredData.length > 0 ? filteredData : [{ time: '-', timestamp: 0 }];
+                              })()
+                            : (transformedChartData.length > 0 ? transformedChartData : [
+                                { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
+                              ])
                   }
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleLineChartMouseMove}
