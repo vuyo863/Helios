@@ -1551,15 +1551,28 @@ export default function Dashboard() {
     // Jeder End-Event bekommt seinen eigenen Datenpunkt mit individuellem Profit
     const dataPoints: Array<Record<string, any>> = [];
 
+    // Prüfe ob Gesamtkapital als Metrik-Karte aktiv ist (inline, da hasGesamtkapitalActive erst später definiert wird)
+    const isGesamtkapitalSelected = activeMetricCards.includes('Gesamtkapital');
+    
     endEvents.forEach((event, index) => {
+      // Hole die Kapital- und Profit-Werte
+      const kapital = event.metricValues['Gesamtkapital'] ?? 0;
+      const rawProfit = event.profit;
+      
+      // WICHTIG: Wenn Gesamtkapital aktiv ist, soll die Profit-Linie bei (Kapital + Profit) sein
+      // Das bedeutet positive Profits erscheinen ÜBER der Kapital-Linie
+      // Der rohe Profit-Wert wird separat gespeichert für den Tooltip
+      const adjustedProfit = isGesamtkapitalSelected ? (kapital + rawProfit) : rawProfit;
+      
       // Erstelle Datenpunkt für diesen einzelnen End-Event
       const point: Record<string, any> = {
         time: new Date(event.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         timestamp: event.timestamp,
         // Y-Wert ist der individuelle Profit dieses Bots
-        Gesamt: event.profit,
-        'Gesamt_Gesamtprofit': event.profit,
-        'Gesamt_Gesamtkapital': event.metricValues['Gesamtkapital'],
+        Gesamt: adjustedProfit,
+        'Gesamt_Gesamtprofit': adjustedProfit, // Adjusted für Chart-Position
+        '_raw_Gesamtprofit': rawProfit, // Roh-Wert für Tooltip
+        'Gesamt_Gesamtkapital': kapital,
         'Gesamt_Gesamtprofit %': event.metricValues['Gesamtprofit %'],
         'Gesamt_Ø Profit/Tag': event.metricValues['Ø Profit/Tag'],
         'Gesamt_Real Profit/Tag': event.metricValues['Real Profit/Tag'],
@@ -1603,7 +1616,7 @@ export default function Dashboard() {
     const maxTimestamp = endEvents[endEvents.length - 1]?.timestamp || 0;
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings]);
+  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards]);
 
   // ADDED MODE: Berechne Highest und Lowest Value für die "Gesamt"-Linie
   // Im Added-Modus gibt es nur eine aggregierte Linie
