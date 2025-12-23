@@ -5937,12 +5937,14 @@ export default function Dashboard() {
                       }
                       
                       // ANALYSIEREN-MODUS: Adaptive Time Axis mit dynamischer Zeitauflösung
-                      // Formatierung basiert auf Zeitspanne, nicht auf sequence-Einstellung
+                      // Formatierung basiert auf SICHTBARER Zeitspanne (mit Zoom), nicht auf sequence-Einstellung
                       if (analyzeModeBounds) {
                         const { startTs, endTs } = analyzeModeBounds;
-                        const durationMs = endTs - startTs;
-                        const durationHours = durationMs / (1000 * 60 * 60);
-                        const durationDays = durationHours / 24;
+                        const totalDurationMs = endTs - startTs;
+                        // WICHTIG: Sichtbare Zeitspanne = Gesamtspanne / Zoom-Faktor
+                        const visibleDurationMs = totalDurationMs / chartZoomX;
+                        const visibleHours = visibleDurationMs / (1000 * 60 * 60);
+                        const visibleDays = visibleHours / 24;
                         
                         const currentTs = payload.value;
                         const isFirst = currentTs === startTs;
@@ -5959,15 +5961,25 @@ export default function Dashboard() {
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           label = `${dateStr}\n${timeStr}`;
                           isMajor = true;
-                        } else if (durationDays <= 7) {
-                          // Bei ≤7 Tagen: Stunden-Format mit Datum bei Mitternacht
+                        } else if (visibleHours <= 36) {
+                          // Sehr eng gezoomt (< 1.5 Tage): Stunden-Format
                           if (isMidnight) {
                             label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                             isMajor = true;
                           } else {
                             label = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           }
-                        } else if (durationDays <= 60) {
+                        } else if (visibleDays <= 7) {
+                          // Mittel gezoomt (≤7 Tage): Datum + optionale Uhrzeit
+                          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          if (!isMidnight && visibleHours <= 72) {
+                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            label = `${dateStr}\n${timeStr}`;
+                          } else {
+                            label = dateStr;
+                          }
+                          isMajor = isMidnight;
+                        } else if (visibleDays <= 60) {
                           // Bei 1-8 Wochen: Tages-Format
                           label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           isMajor = isMidnight;
