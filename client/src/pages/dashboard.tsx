@@ -1499,6 +1499,7 @@ export default function Dashboard() {
       // Start-Zeitpunkt (lastUpload) - nutze parseGermanDate für deutsches Format
       // WICHTIG: Closed Bots haben KEINEN Start-Event - nur ein Enddatum!
       // Normale Updates haben Start + End, Closed Bots nur End.
+      // Der Bot trägt seinen END-Wert während der gesamten Laufzeit bei (für Überlappungs-Addition)
       if (update.lastUpload && !isClosedBot) {
         const startDate = parseGermanDate(update.lastUpload);
         if (startDate) {
@@ -1506,8 +1507,8 @@ export default function Dashboard() {
             timestamp: startDate.getTime(),
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
-            value: 0, // Start hat keinen Profit-Wert
-            metricValues: {}, // Start hat KEINE Metrik-Werte - nur ein Marker
+            value, // Der END-Wert wird ab Start zur Summe addiert
+            metricValues, // END-Werte für Aggregation (nicht im Tooltip angezeigt bei Start)
             type: 'start',
             updateVersion: update.version,
             isClosedBot: false
@@ -1582,12 +1583,13 @@ export default function Dashboard() {
         const key = `${event.botTypeId}:${event.updateVersion}`;
         
         if (event.type === 'start') {
-          // Bot startet → als aktiv markieren, aber mit Wert 0 (Profit kommt erst am Ende)
+          // Bot startet → mit END-Wert zur Summe hinzufügen (Überlappungs-Addition)
+          // Der Bot trägt seinen Profit während der gesamten Laufzeit bei
           activeBots.set(key, {
             botTypeId: event.botTypeId,
             botTypeName: event.botTypeName,
-            value: 0, // Start hat keinen Profit
-            metricValues: {}, // Keine Metrik-Werte am Start
+            value: event.value, // END-Wert ab Start zur Summe
+            metricValues: event.metricValues, // END-Werte für Aggregation
             updateVersion: event.updateVersion
           });
         } else if (event.type === 'end') {
