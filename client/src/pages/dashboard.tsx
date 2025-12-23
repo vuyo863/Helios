@@ -2414,13 +2414,37 @@ export default function Dashboard() {
       const ticks: number[] = [];
       ticks.push(startTs);
       
-      let currentTs = startTs + tickInterval;
-      while (currentTs < endTs) {
-        ticks.push(currentTs);
+      // RUNDUNG basierend auf effectiveSequence (1:1 wie Compare-Mode!)
+      const currentDate = new Date(startTs);
+      
+      if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+        // STUNDEN: Runde auf volle Stunde
+        currentDate.setMinutes(0, 0, 0);
+        if (currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 60 * 60 * 1000);
+        }
+      } else {
+        // TAGE: Runde auf Mitternacht
+        currentDate.setHours(0, 0, 0, 0);
+        if (currentDate.getTime() <= startTs) {
+          currentDate.setTime(currentDate.getTime() + 24 * 60 * 60 * 1000);
+        }
+      }
+      
+      let currentTs = currentDate.getTime();
+      const minGap = tickInterval * 0.3;
+      
+      // Nur Ticks mit genug Abstand hinzufügen (1:1 wie Compare-Mode!)
+      while (currentTs < endTs - minGap) {
+        if (currentTs > startTs + minGap) {
+          ticks.push(currentTs);
+        }
         currentTs += tickInterval;
       }
       
-      if (ticks[ticks.length - 1] !== endTs) {
+      // End-Datum nur hinzufügen wenn mindestens minGap Abstand zum letzten Tick
+      const lastTick = ticks[ticks.length - 1];
+      if (lastTick !== endTs && (endTs - lastTick) >= minGap) {
         ticks.push(endTs);
       }
       
