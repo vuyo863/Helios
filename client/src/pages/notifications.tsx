@@ -224,30 +224,66 @@ export default function Notifications() {
         // Check if this threshold was already triggered
         if (triggeredThresholds.has(triggerKey)) return;
 
+        // Get alarm level config
+        const alarmConfig = alarmLevelConfigs[threshold.alarmLevel];
+
         // Check for price increase above threshold
         if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
 
-          // Show in-app notification
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
-          toast({
-            title: "Schwellenwert erreicht!",
-            description: message,
-            duration: 7000,
-          });
+          // Create active alarm
+          const newAlarm: ActiveAlarm = {
+            id: crypto.randomUUID(),
+            trendPriceName: pair.name,
+            threshold: thresholdValue.toString(),
+            alarmLevel: threshold.alarmLevel,
+            triggeredAt: new Date(),
+            message: `Preis über ${thresholdValue} USDT gestiegen`,
+            note: threshold.note
+          };
 
-          // If it's "wiederholend", allow re-triggering after a cooldown
+          setActiveAlarms(prev => [...prev, newAlarm]);
+
+          // Show in-app notification (Push)
+          if (alarmConfig.channels.push) {
+            toast({
+              title: `🔔 ${getAlarmLevelLabel(threshold.alarmLevel)} - Schwellenwert erreicht!`,
+              description: message,
+              duration: 10000,
+            });
+          }
+
+          // Send email notification
+          if (alarmConfig.channels.email) {
+            fetch('/api/notifications/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                channels: { email: true, sms: false, webhook: false },
+                recipient: 'hollvuyo@gmail.com',
+                subject: `🚨 Pionex Alert - ${getAlarmLevelLabel(threshold.alarmLevel)}`,
+                message: message,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('Email notification error:', err));
+          }
+
+          // Handle repeating notifications
           if (threshold.increaseFrequency === 'wiederholend') {
+            const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+            const cooldown = sequenceMs > 0 ? sequenceMs : 60000; // Default 1 minute
+
             setTimeout(() => {
               setTriggeredThresholds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(triggerKey);
                 return newSet;
               });
-            }, 60000); // 1 minute cooldown for repeating notifications
+            }, cooldown);
           }
         }
 
@@ -255,31 +291,64 @@ export default function Notifications() {
         if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
 
-          // Show in-app notification
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
-          toast({
-            title: "Schwellenwert unterschritten!",
-            description: message,
-            duration: 7000,
-          });
+          // Create active alarm
+          const newAlarm: ActiveAlarm = {
+            id: crypto.randomUUID(),
+            trendPriceName: pair.name,
+            threshold: thresholdValue.toString(),
+            alarmLevel: threshold.alarmLevel,
+            triggeredAt: new Date(),
+            message: `Preis unter ${thresholdValue} USDT gefallen`,
+            note: threshold.note
+          };
 
-          // If it's "wiederholend", allow re-triggering after a cooldown
+          setActiveAlarms(prev => [...prev, newAlarm]);
+
+          // Show in-app notification (Push)
+          if (alarmConfig.channels.push) {
+            toast({
+              title: `🔔 ${getAlarmLevelLabel(threshold.alarmLevel)} - Schwellenwert unterschritten!`,
+              description: message,
+              duration: 10000,
+            });
+          }
+
+          // Send email notification
+          if (alarmConfig.channels.email) {
+            fetch('/api/notifications/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                channels: { email: true, sms: false, webhook: false },
+                recipient: 'hollvuyo@gmail.com',
+                subject: `🚨 Pionex Alert - ${getAlarmLevelLabel(threshold.alarmLevel)}`,
+                message: message,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('Email notification error:', err));
+          }
+
+          // Handle repeating notifications
           if (threshold.decreaseFrequency === 'wiederholend') {
+            const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+            const cooldown = sequenceMs > 0 ? sequenceMs : 60000; // Default 1 minute
+
             setTimeout(() => {
               setTriggeredThresholds(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(triggerKey);
                 return newSet;
               });
-            }, 60000); // 1 minute cooldown for repeating notifications
+            }, cooldown);
           }
         }
       });
     });
-  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, toast]);
+  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast]);
 
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
