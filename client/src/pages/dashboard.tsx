@@ -6340,15 +6340,35 @@ export default function Dashboard() {
                       };
                       
                       // ADDED/PORTFOLIO MODUS: Jeder Punkt ist ein einzelner End-Event
-                      // Zeigt: Datum, End, Bot-Type Name, Gesamtprofit, Runtime
+                      // Zeigt: Datum, End, Bot-Type Name, ALLE ausgewählten Metriken mit Farben, Runtime
                       if (isMultiBotChartMode) {
                         // Individuelle Bot-Infos aus dem Datenpunkt
                         const botTypeName = dataPoint._botTypeName || '';
-                        const profit = dataPoint._profit || 0;
                         const runtimeMs = dataPoint._runtimeMs;
                         const isClosedBot = dataPoint._isClosedBot || false;
                         
-                        // Farbe = erste aktive Metrik (wie im MainChart)
+                        // Hole alle Metrik-Werte aus den _endEvents (für alle ausgewählten Metriken)
+                        const eventMetricValues = dataPoint._endEvents?.[0]?.metricValues || {};
+                        
+                        // Fallback auf direkte Datenpunkt-Werte
+                        const getMetricValue = (metricName: string): number | undefined => {
+                          // Erst aus metricValues versuchen
+                          if (eventMetricValues[metricName] !== undefined) {
+                            return eventMetricValues[metricName];
+                          }
+                          // Dann aus Gesamt_-prefixed Feldern
+                          const gesamtKey = `Gesamt_${metricName}`;
+                          if (dataPoint[gesamtKey] !== undefined) {
+                            return dataPoint[gesamtKey];
+                          }
+                          // Fallback für Gesamtprofit
+                          if (metricName === 'Gesamtprofit') {
+                            return dataPoint._profit || dataPoint['Gesamt'] || 0;
+                          }
+                          return undefined;
+                        };
+                        
+                        // Umrandungsfarbe = erste aktive Metrik (oder grün als Fallback)
                         const primaryMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
                         const borderColor = metricColors[primaryMetric] || '#22c55e';
                         
@@ -6388,10 +6408,21 @@ export default function Dashboard() {
                               {botTypeName}
                             </p>
                             
-                            {/* Gesamtprofit */}
-                            <p style={{ fontSize: '12px', color: borderColor, margin: '4px 0' }}>
-                              Gesamtprofit: {profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                            </p>
+                            {/* Alle ausgewählten Metriken mit ihren jeweiligen Farben */}
+                            {activeMetricCards.map((metricName, idx) => {
+                              const value = getMetricValue(metricName);
+                              // Closed Bots haben keine %, Ø Profit/Tag, Real Profit/Tag Werte
+                              if (value === undefined) return null;
+                              
+                              const color = metricColors[metricName] || '#888888';
+                              const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
+                              
+                              return (
+                                <p key={idx} style={{ fontSize: '12px', color, margin: '4px 0' }}>
+                                  {metricName}: {value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
+                                </p>
+                              );
+                            })}
                             
                             {/* Runtime */}
                             {runtimeStr && (
