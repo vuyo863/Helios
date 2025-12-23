@@ -5883,7 +5883,8 @@ export default function Dashboard() {
                       const baseSequence = appliedChartSettings?.sequence || 'days';
                       
                       // COMPARE MODUS: Adaptive Formatierung basierend auf Zoom-Level
-                      if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0) {
+                      // WICHTIG: Nur wenn KEIN analyzeModeBounds aktiv ist! Sonst übernimmt der Analyze Status Block
+                      if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && !analyzeModeBounds) {
                         // Berechne sichtbare Zeitspanne basierend auf Zoom
                         const totalRange = compareChartData.maxTimestamp - compareChartData.minTimestamp;
                         const visibleRange = totalRange / chartZoomX;
@@ -5951,7 +5952,8 @@ export default function Dashboard() {
                       }
                       
                       // ADDED MODUS: Adaptive Formatierung basierend auf Zoom-Level (1:1 wie Compare-Modus)
-                      if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0) {
+                      // WICHTIG: Nur wenn KEIN analyzeModeBounds aktiv ist! Sonst übernimmt der Analyze Status Block
+                      if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && !analyzeModeBounds) {
                         // Berechne sichtbare Zeitspanne basierend auf Zoom
                         const totalRange = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
                         const visibleRange = totalRange / chartZoomX;

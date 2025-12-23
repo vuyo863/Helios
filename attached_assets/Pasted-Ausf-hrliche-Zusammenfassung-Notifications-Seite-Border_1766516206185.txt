@@ -1,0 +1,74 @@
+Ausführliche Zusammenfassung: Notifications-Seite - Border-Clipping-Fix
+Was wir bearbeitet haben
+Wir haben an der Notifications-Seite (client/src/pages/notifications.tsx) gearbeitet und ein visuelles Problem mit den Umrandungen (borders) von Content Cards behoben.
+
+Das Problem
+Die Content Cards auf der Notifications-Seite hatten eine cyan-farbige Umrandung (ring-2 ring-cyan-600), die oben und unten abgeschnitten wurde. Der User hat mir ein Bild gezeigt, wo man sehen konnte, dass die Umrandung nicht vollständig sichtbar war - sie wurde an den oberen und unteren Rändern der Cards "geclipped".
+
+Die Lösung
+Ich habe drei spezifische Content Cards identifiziert und bearbeitet:
+
+1. Trendpreise & Watchlist Content Card (Zeile ~682)
+Vorher: <Card className="mb-8 ring-2 ring-cyan-600">
+Nachher: <Card className="mb-8 ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
+2. Benachrichtigungen konfigurieren Section (Zeile ~799)
+Vorher: <Card className="ring-2 ring-cyan-600 mb-8">
+Nachher: <Card className="ring-2 ring-cyan-600 mb-8" style={{ overflow: 'visible' }}>
+3. Alarmierungsstufen konfigurieren Section (Zeile ~1288)
+Vorher: <Card className="ring-2 ring-cyan-600">
+Nachher: <Card className="ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
+Technische Erklärung
+Das Problem entstand durch CSS overflow: hidden, das standardmäßig auf den Card-Komponenten angewendet wird. Wenn eine Umrandung (ring/border) auf ein Element mit overflow: hidden angewendet wird, kann sie an den Rändern abgeschnitten werden, besonders wenn das Element in einem Container mit bestimmten Layout-Eigenschaften liegt.
+
+Durch das Hinzufügen von style={{ overflow: 'visible' }} wird der Overflow explizit auf visible gesetzt, sodass die Umrandung vollständig angezeigt wird und nicht mehr geclipped wird.
+
+Was bereits auf der Notifications-Seite funktioniert
+Die Notifications-Seite ist eine umfangreiche Funktionalität mit folgenden Features:
+
+1. Live Price Updates (Binance API)
+Echtzeitdaten von Binance für Kryptowährungen (alle 2 Sekunden)
+Unterstützt USDT und USDC Trading Pairs
+Zeigt Preis, 24h-Änderung und Prozent-Änderung an
+2. Trading Pairs Watchlist
+Suchfunktion für alle Binance Trading Pairs
+Hinzufügen/Entfernen von Pairs zur Watchlist
+Persistente Speicherung in localStorage
+3. Schwellenwert-Benachrichtigungen
+Definierung von Preisschwellenwerten für jedes Trading Pair
+Benachrichtigung bei Preiserhöhung ÜBER Schwellenwert
+Benachrichtigung bei Preissenkung UNTER Schwellenwert
+Einmalige oder wiederholende Benachrichtigungen
+Notizfeld für jeden Schwellenwert
+4. Alarmierungsstufen (4 Stufen)
+Harmlos (Blau)
+Achtung (Gelb)
+Gefährlich (Orange)
+Sehr Gefährlich (Rot)
+Jede Stufe hat konfigurierbare:
+
+Benachrichtigungskanäle (Push, E-Mail, SMS, Webhook)
+Approval-Erfordernis
+Wiederholungsanzahl (1x bis Unendlich)
+Sequenz-Timing (Pause zwischen Wiederholungen in Stunden/Minuten/Sekunden)
+5. E-Mail-Benachrichtigungen
+FUNKTIONIERT BEREITS! ✅
+Sendet E-Mails über /api/notifications/send an hollvuyo@gmail.com
+Inkludiert Alarmierungsstufe, Trading Pair, Schwellenwert und Notiz
+6. Aktive Alarmierungen
+Dashboard oben zeigt alle ausgelösten Alarme
+Approval-Button zum Bestätigen/Entfernen von Alarmen
+Time-ago-Anzeige (vor X Minuten/Stunden)
+Persistente Speicherung in localStorage
+7. Test-Alarm-Funktion
+Roter "TEST ALARM" Button
+Sendet Mock-Alarm und E-Mail zur Testung
+Datenpersistenz
+Alles wird in localStorage gespeichert:
+
+notifications-watchlist: Watchlist der Trading Pairs
+notifications-threshold-settings: Alle Schwellenwert-Konfigurationen
+active-alarms: Aktive Alarmierungen
+Status der Änderungen
+Die Änderungen wurden VORGESCHLAGEN aber noch NICHT ANGEWENDET. Der User muss noch auf "Apply" klicken, damit die Änderungen in die Datei übernommen werden.
+
+Zusammengefasst: Wir haben ein visuelles Border-Clipping-Problem auf der Notifications-Seite behoben, indem wir overflow: 'visible' zu drei Content Cards hinzugefügt haben. Die E-Mail-Funktionalität existiert bereits und funktioniert.
