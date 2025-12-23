@@ -6028,17 +6028,15 @@ export default function Dashboard() {
                         let label = '';
                         let isMajor = false;
                         
-                        // REGEL: Wenn Ticks am selben Tag liegen → Uhrzeiten anzeigen!
-                        const showTime = analyzeTicksHaveDuplicateDays;
-                        
+                        // 1:1 WIE COMPARE-MODE! Basierend auf visibleHours/visibleDays
                         // Start und End immer mit Datum + Uhrzeit
                         if (isFirst || isLast) {
                           const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           label = `${dateStr}\n${timeStr}`;
                           isMajor = true;
-                        } else if (showTime) {
-                          // DOPPELTE TAGE ERKANNT: Zeige Uhrzeiten!
+                        } else if (visibleDays <= 7) {
+                          // Bei ≤7 Tagen sichtbar: IMMER Datum + Uhrzeit anzeigen!
                           const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           if (isMidnight) {
@@ -6046,7 +6044,7 @@ export default function Dashboard() {
                             label = dateStr;
                             isMajor = true;
                           } else {
-                            // Sonst: Datum + Uhrzeit
+                            // Sonst: Datum + Uhrzeit (wie im Compare-Mode Screenshot!)
                             label = `${dateStr}\n${timeStr}`;
                           }
                         } else if (visibleDays <= 60) {
