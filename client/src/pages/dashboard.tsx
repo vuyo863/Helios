@@ -5295,12 +5295,15 @@ export default function Dashboard() {
                               // Compare Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
+                              // Im Auge-Modus: NUR die END-Linie anzeigen (keine START-Linie)
+                              const showStartLine = !markerViewActive || markerEditActive;
+                              
                               return (
                                 <g 
                                   key={shouldBlinkLine ? `blink-${compareBlinkKey}` : undefined}
                                   className={shouldBlinkLine ? 'compare-eye-blink' : undefined}
                                 >
-                                  {startY2 !== null && (
+                                  {showStartLine && startY2 !== null && (
                                     <line
                                       x1={`${clampedStartX}%`}
                                       y1={`${yPercent + 4}%`}
@@ -5394,12 +5397,15 @@ export default function Dashboard() {
                               // Added Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
+                              // Im Auge-Modus: NUR die END-Linie anzeigen (keine START-Linie)
+                              const showStartLine = !markerViewActive || markerEditActive;
+                              
                               return (
                                 <g 
                                   key={shouldBlinkLine ? `added-blink-${compareBlinkKey}` : undefined}
                                   className={shouldBlinkLine ? 'compare-eye-blink' : undefined}
                                 >
-                                  {startY2 !== null && (
+                                  {showStartLine && startY2 !== null && (
                                     <line
                                       x1={`${clampedStartX}%`}
                                       y1={`${yPercent + 4}%`}
@@ -5507,18 +5513,23 @@ export default function Dashboard() {
                             const startY2 = Math.max(100, startY2Raw);
                             const endY2 = Math.max(100, endY2Raw);
                             
+                            // Im Auge-Modus: NUR die END-Linie anzeigen (keine START-Linie)
+                            const showStartLine = !markerViewActive || markerEditActive;
+                            
                             return (
                               <>
-                                <line
-                                  x1={`${clampedStartX}%`}
-                                  y1={`${yPercent + 4}%`}
-                                  x2={`${clampedStartX}%`}
-                                  y2={`${startY2}%`}
-                                  stroke="rgb(8, 145, 178)"
-                                  strokeWidth="1"
-                                  strokeDasharray="4 3"
-                                  style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                                />
+                                {showStartLine && (
+                                  <line
+                                    x1={`${clampedStartX}%`}
+                                    y1={`${yPercent + 4}%`}
+                                    x2={`${clampedStartX}%`}
+                                    y2={`${startY2}%`}
+                                    stroke="rgb(8, 145, 178)"
+                                    strokeWidth="1"
+                                    strokeDasharray="4 3"
+                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                  />
+                                )}
                                 <line
                                   x1={`${clampedEndX}%`}
                                   y1={`${yPercent + 4}%`}
