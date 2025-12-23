@@ -826,19 +826,78 @@ export default function Dashboard() {
     });
   }, [selectedBotTypeUpdates, updateSortBy, updateSortDirection]);
 
+  // Sortierte Updates für From/Until Dialoge: ALLE Updates von allen ausgewählten Bot-Types
+  // Im Compare/Added-Modus zeigt der Dialog Updates aller ausgewählten Bot-Types
+  const sortedUpdatesForDialogs = useMemo(() => {
+    // Bestimme welche Bot-Type IDs wir zeigen sollen
+    let idsToShow: string[] = [];
+    
+    if (selectedChartBotTypes.length >= 2) {
+      // Compare/Added Modus: Alle ausgewählten Bot-Types
+      idsToShow = selectedChartBotTypes.map(id => String(id));
+    } else if (selectedChartBotTypes.length === 1) {
+      // Ein einzelner Bot-Type aus der Auswahl
+      idsToShow = [String(selectedChartBotTypes[0])];
+    } else if (selectedBotTypeData?.id) {
+      // MainChart Modus: Nur der aktuell ausgewählte Bot-Type
+      idsToShow = [String(selectedBotTypeData.id)];
+    }
+    
+    let updatesToShow: any[] = [];
+    
+    if (idsToShow.length > 0 && allBotTypeUpdates.length > 0) {
+      // Filtere Updates basierend auf den ausgewählten Bot-Type IDs
+      updatesToShow = allBotTypeUpdates.filter(update => 
+        idsToShow.includes(String(update.botTypeId))
+      );
+    } else if (selectedBotTypeUpdates.length > 0) {
+      // Fallback: Verwende die einzelne Query
+      updatesToShow = selectedBotTypeUpdates;
+    }
+    
+    if (!updatesToShow.length) return [];
+    
+    // Sortieren nach gewähltem Kriterium
+    return [...updatesToShow].sort((a, b) => {
+      let valueA: number = 0;
+      let valueB: number = 0;
+      
+      switch (updateSortBy) {
+        case 'datum':
+          valueA = a.createdAt ? new Date(a.createdAt as Date).getTime() : 0;
+          valueB = b.createdAt ? new Date(b.createdAt as Date).getTime() : 0;
+          break;
+        case 'gridProfit':
+          valueA = parseFloat(a.overallGridProfitUsdt || '0') || 0;
+          valueB = parseFloat(b.overallGridProfitUsdt || '0') || 0;
+          break;
+        case 'gridProfit24h':
+          valueA = parseFloat(a.avgGridProfitDay || '0') || 0;
+          valueB = parseFloat(b.avgGridProfitDay || '0') || 0;
+          break;
+        case 'gesInvest':
+          valueA = parseFloat(a.totalInvestment || '0') || 0;
+          valueB = parseFloat(b.totalInvestment || '0') || 0;
+          break;
+      }
+      
+      return updateSortDirection === 'desc' ? valueB - valueA : valueA - valueB;
+    });
+  }, [selectedChartBotTypes, allBotTypeUpdates, selectedBotTypeUpdates, selectedBotTypeData?.id, updateSortBy, updateSortDirection]);
+
   // Gefilterte Updates für Until-Dialog: Nur Updates die NACH dem From-Update-Datum liegen
   const filteredUpdatesForUntil = useMemo(() => {
-    if (!selectedFromUpdate) return sortedUpdates;
+    if (!selectedFromUpdate) return sortedUpdatesForDialogs;
     
     const fromTimestamp = getUpdateTimestamp(selectedFromUpdate);
-    if (fromTimestamp === 0) return sortedUpdates;
+    if (fromTimestamp === 0) return sortedUpdatesForDialogs;
     
     // Nur Updates mit späterem Datum als das From-Update anzeigen
-    return sortedUpdates.filter(update => {
+    return sortedUpdatesForDialogs.filter(update => {
       const updateTimestamp = getUpdateTimestamp(update);
       return updateTimestamp > fromTimestamp;
     });
-  }, [sortedUpdates, selectedFromUpdate]);
+  }, [sortedUpdatesForDialogs, selectedFromUpdate]);
 
   // Helper: Berechne Millisekunden für "Letzten"-Zeitraum
   const parseTimeRangeToMs = (timeRange: string, customDays?: string, customHours?: string, customMinutes?: string): number | null => {
@@ -8493,7 +8552,9 @@ export default function Dashboard() {
         <Dialog open={fromUpdateDialogOpen} onOpenChange={setFromUpdateDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-6">
             <DialogHeader>
-              <DialogTitle>From Update auswählen - {selectedBotName}</DialogTitle>
+              <DialogTitle>From Update auswählen - {selectedChartBotTypes.length >= 2 
+                ? `${selectedChartBotTypes.length} Bot-Types` 
+                : selectedBotName}</DialogTitle>
             </DialogHeader>
 
             <div className="flex items-center justify-between py-2 border-b">
@@ -8531,17 +8592,18 @@ export default function Dashboard() {
             </div>
             
             <div className="flex-1 overflow-y-auto py-2 space-y-3 px-1">
-              {sortedUpdates.length === 0 ? (
+              {sortedUpdatesForDialogs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Keine Updates vorhanden
                 </div>
               ) : (
-                sortedUpdates.map((update) => {
+                sortedUpdatesForDialogs.map((update) => {
                   const profitValue = parseFloat(update.profit || '0') || 0;
                   const closedBotsTitleColor = update.status === 'Closed Bots' 
                     ? (profitValue > 0 ? 'text-green-600' : profitValue < 0 ? 'text-red-600' : '')
                     : '';
                   const gridProfit24h = update.avgGridProfitDay || '0.00';
+                  const updateBotTypeName = availableBotTypes.find(bt => String(bt.id) === String(update.botTypeId))?.name || '';
                   
                   return (
                   <Card 
@@ -8554,9 +8616,14 @@ export default function Dashboard() {
                   >
                     <CardContent className="p-4">
                       <div className="flex-1 min-w-0">
-                        <p className={`font-semibold text-sm mb-2 ${closedBotsTitleColor}`}>
-                          {update.status} #{update.version}
-                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className={`font-semibold text-sm ${closedBotsTitleColor}`}>
+                            {update.status} #{update.version}
+                          </p>
+                          {selectedChartBotTypes.length >= 2 && updateBotTypeName && (
+                            <Badge variant="outline" className="text-xs">{updateBotTypeName}</Badge>
+                          )}
+                        </div>
                         <div className="flex flex-col gap-y-1 text-xs">
                           {/* Zeile 1: Datum (Start/End Date für Closed Bots, From/Until für Update Metrics) */}
                           <div className="flex items-center flex-wrap gap-x-6">
@@ -8658,7 +8725,9 @@ export default function Dashboard() {
         <Dialog open={untilUpdateDialogOpen} onOpenChange={setUntilUpdateDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-6">
             <DialogHeader>
-              <DialogTitle>Until Update auswählen - {selectedBotName}</DialogTitle>
+              <DialogTitle>Until Update auswählen - {selectedChartBotTypes.length >= 2 
+                ? `${selectedChartBotTypes.length} Bot-Types` 
+                : selectedBotName}</DialogTitle>
             </DialogHeader>
 
             <div className="flex items-center justify-between py-2 border-b">
@@ -8709,6 +8778,7 @@ export default function Dashboard() {
                     ? (profitValue > 0 ? 'text-green-600' : profitValue < 0 ? 'text-red-600' : '')
                     : '';
                   const gridProfit24h = update.avgGridProfitDay || '0.00';
+                  const updateBotTypeName = availableBotTypes.find(bt => String(bt.id) === String(update.botTypeId))?.name || '';
                   
                   return (
                   <Card 
@@ -8721,9 +8791,14 @@ export default function Dashboard() {
                   >
                     <CardContent className="p-4">
                       <div className="flex-1 min-w-0">
-                        <p className={`font-semibold text-sm mb-2 ${closedBotsTitleColor}`}>
-                          {update.status} #{update.version}
-                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className={`font-semibold text-sm ${closedBotsTitleColor}`}>
+                            {update.status} #{update.version}
+                          </p>
+                          {selectedChartBotTypes.length >= 2 && updateBotTypeName && (
+                            <Badge variant="outline" className="text-xs">{updateBotTypeName}</Badge>
+                          )}
+                        </div>
                         <div className="flex flex-col gap-y-1 text-xs">
                           {/* Zeile 1: Datum (Start/End Date für Closed Bots, From/Until für Update Metrics) */}
                           <div className="flex items-center flex-wrap gap-x-6">
