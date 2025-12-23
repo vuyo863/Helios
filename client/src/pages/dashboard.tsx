@@ -5524,15 +5524,15 @@ export default function Dashboard() {
                               // Compare Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
-                              // Im Auge-Modus UND Stift-Modus: NUR die END-Linie anzeigen (keine START-Linie)
-                              const showStartLine = !markerViewActive && !markerEditActive;
+                              // GOLDEN STATE: Compare Mode zeigt IMMER beide Linien (Start + End)
+                              // (Im Added-Modus wird nur End angezeigt - siehe separater Block)
                               
                               return (
                                 <g 
                                   key={shouldBlinkLine ? `blink-${compareBlinkKey}` : undefined}
                                   className={shouldBlinkLine ? 'compare-eye-blink' : undefined}
                                 >
-                                  {showStartLine && startY2 !== null && (
+                                  {startY2 !== null && (
                                     <line
                                       x1={`${clampedStartX}%`}
                                       y1={`${yPercent + 4}%`}
@@ -5742,23 +5742,21 @@ export default function Dashboard() {
                             const startY2 = Math.max(100, startY2Raw);
                             const endY2 = Math.max(100, endY2Raw);
                             
-                            // Im Auge-Modus UND Stift-Modus: NUR die END-Linie anzeigen (keine START-Linie)
-                            const showStartLine = !markerViewActive && !markerEditActive;
+                            // GOLDEN STATE: MainChart zeigt IMMER beide Linien (Start + End)
+                            // (Im Added-Modus wird nur End angezeigt - siehe separater Block)
                             
                             return (
                               <>
-                                {showStartLine && (
-                                  <line
-                                    x1={`${clampedStartX}%`}
-                                    y1={`${yPercent + 4}%`}
-                                    x2={`${clampedStartX}%`}
-                                    y2={`${startY2}%`}
-                                    stroke="rgb(8, 145, 178)"
-                                    strokeWidth="1"
-                                    strokeDasharray="4 3"
-                                    style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
-                                  />
-                                )}
+                                <line
+                                  x1={`${clampedStartX}%`}
+                                  y1={`${yPercent + 4}%`}
+                                  x2={`${clampedStartX}%`}
+                                  y2={`${startY2}%`}
+                                  stroke="rgb(8, 145, 178)"
+                                  strokeWidth="1"
+                                  strokeDasharray="4 3"
+                                  style={{ filter: 'drop-shadow(0 0 4px rgba(8, 145, 178, 0.6))', pointerEvents: 'none' }}
+                                />
                                 <line
                                   x1={`${clampedEndX}%`}
                                   y1={`${yPercent + 4}%`}
