@@ -309,17 +309,11 @@ export default function Dashboard() {
   const [tooltipCoordinate, setTooltipCoordinate] = useState<{ x: number; y: number } | null>(null);
   const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
   
-  // Click-to-Pin Tooltip: Gepinnter Datenpunkt bleibt sichtbar bis erneuter Klick
-  // pinnedTooltipData enthält: { id, payload, cx, cy, metricName } für eindeutige Identifikation
-  // id = `${metricName}-${eventIndex}-${timestamp}` für eindeutige Zuordnung jedes Punktes
-  // cx/cy = SVG-Koordinaten des Punktes für feste Positionierung
-  const [pinnedTooltipData, setPinnedTooltipData] = useState<{
-    id: string;
-    payload: any;
-    cx: number;
-    cy: number;
-    metricName: string;
-  } | null>(null);
+  // Click-to-Pin Tooltip: Bei Klick auf Punkt wird der Hover-Tooltip "eingefroren"
+  // Speichert den kompletten Tooltip-Payload der dann statt dem Hover-Payload angezeigt wird
+  // Der Tooltip bleibt an der gleichen Position wie im Hover-Modus
+  const [frozenTooltipPayload, setFrozenTooltipPayload] = useState<any>(null);
+  const [frozenPointId, setFrozenPointId] = useState<string | null>(null);
   
   // Chart Zoom & Pan Event-Handler
   // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
@@ -3075,10 +3069,9 @@ export default function Dashboard() {
     }
     
     // ADDED MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types (analog zu Compare)
-    // WICHTIG: 10% Padding damit äußerste Punkte nicht am Rand abgeschnitten werden und klickbar bleiben
     if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
       const range = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
-      const padding = range > 0 ? range * 0.10 : 24 * 60 * 60 * 1000; // 10% oder 1 Tag - erhöht für bessere Klickbarkeit
+      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
       
       const baseMin = multiBotChartData.minTimestamp - padding;
       const baseMax = multiBotChartData.maxTimestamp + padding;
@@ -6060,24 +6053,24 @@ export default function Dashboard() {
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   <Tooltip 
-                    active={tooltipIsNearPoint}
+                    active={tooltipIsNearPoint || (isMultiBotChartMode && frozenTooltipPayload !== null)}
                     content={(props) => {
-                      // ADDED MODE: Hover-Tooltip (gepinntes Tooltip wird separat gerendert)
-                      // Bei gepinntem Punkt: Kein Hover-Tooltip anzeigen
-                      if (isMultiBotChartMode && pinnedTooltipData) {
-                        return null;
+                      // ADDED MODE: Wenn Tooltip eingefroren ist, zeige den eingefrorenen Payload
+                      // Ansonsten zeige den normalen Hover-Payload
+                      let dataPoint: any;
+                      
+                      if (isMultiBotChartMode && frozenTooltipPayload !== null) {
+                        // Eingefrorener Tooltip - zeige den gespeicherten Payload
+                        dataPoint = frozenTooltipPayload;
+                      } else {
+                        // Normaler Hover-Modus
+                        if (!tooltipIsNearPoint || !props.active || !props.payload || props.payload.length === 0) {
+                          return null;
+                        }
+                        dataPoint = props.payload[0]?.payload;
                       }
                       
-                      // Nur anzeigen wenn Maus nah genug am Datenpunkt
-                      if (!tooltipIsNearPoint || !props.active || !props.payload || props.payload.length === 0) {
-                        return null;
-                      }
-                      
-                      const dataPoint = props.payload[0]?.payload;
                       if (!dataPoint) return null;
-                      
-                      // showPinned = false für Hover-Tooltip
-                      const showPinned = false;
                       
                       const date = new Date(dataPoint.timestamp);
                       const sequence = appliedChartSettings?.sequence || 'days';
@@ -6252,7 +6245,7 @@ export default function Dashboard() {
                         const prevEndBoxValues: { name: string; value: number; color: string }[] = [];
                         const currentStartBoxValues: { name: string; value: number; color: string }[] = [];
                         
-                        props.payload.forEach((entry: any) => {
+                        props.payload?.forEach((entry: any) => {
                           const name = entry.name;
                           const currentValue = entry.value;
                           
@@ -6416,34 +6409,17 @@ export default function Dashboard() {
                           ? formatRuntimeFromMs(runtimeMs)
                           : null;
                         
-                        // Gepinntes Tooltip: Extra visueller Hinweis
-                        const isPinnedTooltip = showPinned;
-                        
                         return (
                           <div 
                             style={{ 
                               backgroundColor: 'hsl(var(--popover))',
-                              border: `2px solid ${isPinnedTooltip ? '#22c55e' : borderColor}`,
+                              border: `2px solid ${borderColor}`,
                               borderRadius: '6px',
                               fontSize: '14px',
                               color: 'hsl(var(--foreground))',
-                              padding: '8px 12px',
-                              boxShadow: isPinnedTooltip ? '0 0 12px rgba(34, 197, 94, 0.4)' : 'none'
+                              padding: '8px 12px'
                             }}
                           >
-                            {/* Gepinnt-Indikator */}
-                            {isPinnedTooltip && (
-                              <p style={{ 
-                                fontSize: '10px', 
-                                color: '#22c55e', 
-                                marginBottom: '4px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '1px',
-                                fontWeight: 'bold'
-                              }}>
-                                GEPINNT
-                              </p>
-                            )}
                             
                             {/* Datum */}
                             <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
@@ -6656,7 +6632,7 @@ export default function Dashboard() {
                           }}
                         >
                           <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
-                          {props.payload.map((entry: any, index: number) => {
+                          {props.payload?.map((entry: any, index: number) => {
                             const name = entry.name;
                             // Hole den echten Wert (nicht offsetted) für den Tooltip
                             const displayValue = getActualValue(name, entry.value);
@@ -6905,74 +6881,40 @@ export default function Dashboard() {
                             // Eindeutige ID: eventIndex ist der primäre Identifikator
                             const pointId = `${metricName}-${eventIndex}`;
                             
-                            // Prüfe ob DIESER spezifische Punkt gepinnt ist
-                            const isPinned = pinnedTooltipData?.id === pointId;
+                            // Prüfe ob DIESER spezifische Punkt eingefroren ist
+                            const isFrozen = frozenPointId === pointId;
                             
-                            // Click-Handler für Tooltip-Pinning
-                            // Verwendet onPointerDown für zuverlässigere Klick-Erkennung auf SVG
-                            const handleDotPointerDown = (e: React.PointerEvent) => {
-                              // Capture den Pointer um sicherzustellen dass wir alle Events erhalten
-                              (e.target as Element).setPointerCapture?.(e.pointerId);
-                            };
-                            
-                            const handleDotPointerUp = (e: React.PointerEvent) => {
+                            // Click-Handler für Tooltip-Freeze
+                            const handleDotClick = (e: React.MouseEvent) => {
                               e.stopPropagation();
                               e.preventDefault();
                               
-                              // Release den Pointer
-                              (e.target as Element).releasePointerCapture?.(e.pointerId);
-                              
-                              if (isPinned) {
-                                // Nochmal auf gepinnten Punkt geklickt → entpinnen
-                                setPinnedTooltipData(null);
+                              if (isFrozen) {
+                                // Nochmal auf eingefrorenen Punkt geklickt → auftauen
+                                setFrozenTooltipPayload(null);
+                                setFrozenPointId(null);
                               } else {
-                                // Auf neuen Punkt geklickt → pinnen mit allen Daten inkl. cx/cy
-                                setPinnedTooltipData({
-                                  id: pointId,
-                                  payload: payload,
-                                  cx: cx,
-                                  cy: cy,
-                                  metricName: metricName
-                                });
+                                // Auf neuen Punkt geklickt → einfrieren
+                                setFrozenTooltipPayload(payload);
+                                setFrozenPointId(pointId);
                               }
                             };
                             
-                            // Größerer Klickbereich für bessere Interaktion
-                            // Gepinnte Punkte sind noch größer und haben Glow-Effekt
-                            const dotRadius = isPinned ? 8 : 6;
-                            const hitAreaRadius = 12; // Größerer unsichtbarer Klickbereich
-                            
-                            const glowStyle = isPinned ? {
-                              filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.8))',
-                              cursor: 'pointer'
-                            } : {
-                              cursor: 'pointer'
-                            };
+                            // Normale Punkt-Größe - eingefrorene Punkte leicht größer
+                            const dotRadius = isFrozen ? 7 : 5;
                             
                             return (
-                              <g key={`dot-added-${pointId}`}>
-                                {/* Unsichtbarer größerer Klickbereich */}
-                                <circle
-                                  cx={cx}
-                                  cy={cy}
-                                  r={hitAreaRadius}
-                                  fill="transparent"
-                                  stroke="none"
-                                  style={{ cursor: 'pointer', pointerEvents: 'all' }}
-                                  onPointerDown={handleDotPointerDown}
-                                  onPointerUp={handleDotPointerUp}
-                                />
-                                {/* Sichtbarer Punkt */}
-                                <circle
-                                  cx={cx}
-                                  cy={cy}
-                                  r={dotRadius}
-                                  fill={isClosedBot ? "hsl(var(--background))" : color}
-                                  stroke={isPinned ? '#22c55e' : color}
-                                  strokeWidth={isPinned ? 3 : (isClosedBot ? 2 : 0)}
-                                  style={{ ...glowStyle, pointerEvents: 'none' }}
-                                />
-                              </g>
+                              <circle
+                                key={`dot-added-${pointId}`}
+                                cx={cx}
+                                cy={cy}
+                                r={dotRadius}
+                                fill={isClosedBot ? "hsl(var(--background))" : color}
+                                stroke={color}
+                                strokeWidth={isClosedBot ? 2 : 0}
+                                style={{ cursor: 'pointer', pointerEvents: 'all' }}
+                                onClick={handleDotClick}
+                              />
                             );
                           }}
                           connectNulls
@@ -7340,134 +7282,6 @@ export default function Dashboard() {
                   )}
                 </LineChart>
               </ResponsiveContainer>
-              
-              {/* ADDED MODE: Fixed-Position Tooltip Overlay für gepinnte Punkte */}
-              {/* Wird separat vom Recharts Tooltip gerendert und bleibt an fester Position */}
-              {isMultiBotChartMode && pinnedTooltipData && (() => {
-                const payload = pinnedTooltipData.payload;
-                const botTypeName = payload?._botTypeName || '';
-                const runtimeMs = payload?._runtimeMs;
-                const isClosedBot = payload?._isClosedBot || false;
-                const eventMetricValues = payload?._endEvents?.[0]?.metricValues || {};
-                
-                // Datum formatieren
-                const date = new Date(payload?.timestamp || 0);
-                const sequence = appliedChartSettings?.sequence || 'days';
-                let dateLabel = '';
-                if (sequence === 'hours') {
-                  dateLabel = date.toLocaleString('de-DE', { 
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                  });
-                } else if (sequence === 'days') {
-                  dateLabel = date.toLocaleString('de-DE', { 
-                    weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                  });
-                } else {
-                  dateLabel = date.toLocaleString('de-DE', { 
-                    day: '2-digit', month: '2-digit', year: 'numeric'
-                  });
-                }
-                
-                // Metrik-Wert Helper
-                const getMetricValue = (metricName: string): number | undefined => {
-                  if (eventMetricValues[metricName] !== undefined) {
-                    return eventMetricValues[metricName];
-                  }
-                  const gesamtKey = `Gesamt_${metricName}`;
-                  if (payload[gesamtKey] !== undefined) {
-                    return payload[gesamtKey];
-                  }
-                  if (metricName === 'Gesamtprofit') {
-                    return payload._profit || payload['Gesamt'] || 0;
-                  }
-                  return undefined;
-                };
-                
-                // Runtime formatieren
-                const runtimeStr = runtimeMs && runtimeMs > 0 
-                  ? formatRuntimeFromMs(runtimeMs)
-                  : null;
-                
-                // Position: cx/cy sind SVG-Koordinaten, wir positionieren relativ zum Chart-Container
-                // Offset nach rechts und oben vom Punkt
-                const tooltipLeft = pinnedTooltipData.cx + 15;
-                const tooltipTop = pinnedTooltipData.cy - 80;
-                
-                return (
-                  <div 
-                    style={{ 
-                      position: 'absolute',
-                      left: `${tooltipLeft}px`,
-                      top: `${tooltipTop}px`,
-                      backgroundColor: 'hsl(var(--popover))',
-                      border: '2px solid #22c55e',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      color: 'hsl(var(--foreground))',
-                      padding: '8px 12px',
-                      boxShadow: '0 0 12px rgba(34, 197, 94, 0.4)',
-                      zIndex: 1000,
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    {/* Gepinnt-Indikator */}
-                    <p style={{ 
-                      fontSize: '10px', 
-                      color: '#22c55e', 
-                      marginBottom: '4px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      fontWeight: 'bold'
-                    }}>
-                      GEPINNT
-                    </p>
-                    
-                    {/* Datum */}
-                    <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
-                    
-                    {/* END Label */}
-                    <p style={{ 
-                      fontWeight: 'bold', 
-                      marginBottom: '4px', 
-                      fontSize: '12px', 
-                      color: '#ef4444',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      END{isClosedBot ? ' (Closed Bot)' : ''}
-                    </p>
-                    
-                    {/* Bot-Type Name */}
-                    <p style={{ fontSize: '12px', color: 'hsl(var(--foreground))', margin: '2px 0', fontWeight: 'bold' }}>
-                      {botTypeName}
-                    </p>
-                    
-                    {/* Alle ausgewählten Metriken mit ihren jeweiligen Farben */}
-                    {activeMetricCards.map((metricName, idx) => {
-                      const value = getMetricValue(metricName);
-                      if (value === undefined) return null;
-                      
-                      const color = metricColors[metricName] || '#888888';
-                      const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
-                      
-                      return (
-                        <p key={idx} style={{ fontSize: '12px', color, margin: '4px 0' }}>
-                          {metricName}: {value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
-                        </p>
-                      );
-                    })}
-                    
-                    {/* Runtime */}
-                    {runtimeStr && (
-                      <p style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
-                        Runtime: {runtimeStr}
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
               </div>
               )}
             </Card>
