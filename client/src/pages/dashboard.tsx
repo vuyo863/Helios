@@ -1143,7 +1143,9 @@ export default function Dashboard() {
   // WICHTIG: Gleiche Logik wie chartData - ZWEI Punkte pro Update (Start + Ende)
   // Findet automatisch das früheste und späteste Datum aller Bot-Types
   const compareChartData = useMemo(() => {
-    if (!isMultiSelectCompareMode || allBotTypeUpdates.length === 0) {
+    // WICHTIG: Auch im Analyze-Mode müssen wir Daten berechnen
+    // isMultiSelectCompareMode ist false im Analyze-Mode, aber wir brauchen die Daten trotzdem
+    if ((!isMultiSelectCompareMode && !isAnalyzeSingleMetricMode) || allBotTypeUpdates.length === 0) {
       return { data: [], botTypeNames: [] as string[], minTimestamp: 0, maxTimestamp: 0 };
     }
 
@@ -1421,7 +1423,7 @@ export default function Dashboard() {
     });
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
+  }, [isMultiSelectCompareMode, isAnalyzeSingleMetricMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
   // ========== ENDE COMPARE MODUS SECTION ==========
 
   // ========== ADDED MODUS - NUR END-EVENTS ==========
