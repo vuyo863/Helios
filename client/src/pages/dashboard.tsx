@@ -1467,7 +1467,7 @@ export default function Dashboard() {
       botTypeId: string;
       botTypeName: string;
       profit: number; // Gesamtprofit dieses Bots
-      metricValues: Record<string, number>;
+      metricValues: Record<string, number | undefined>;
       updateVersion: number;
       isClosedBot: boolean;
       runtimeMs?: number;
@@ -1487,12 +1487,13 @@ export default function Dashboard() {
         : parseFloat(update.overallGridProfitUsdt || '0') || 0;
       
       // Berechne Werte für ALLE verfügbaren Metriken
-      const metricValues: Record<string, number> = {
+      // Closed Bots haben keine täglichen Profit-Werte - undefined damit kein Punkt gerendert wird
+      const metricValues: Record<string, number | undefined> = {
         'Gesamtprofit': profit,
         'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
-        'Gesamtprofit %': isClosedBot ? 0 : parseFloat(update.gridProfitPercent || '0') || 0,
-        'Ø Profit/Tag': isClosedBot ? 0 : parseFloat(update.avgGridProfitDay || '0') || 0,
-        'Real Profit/Tag': isClosedBot ? 0 : parseFloat(update.avgGridProfitDay || '0') || 0,
+        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.gridProfitPercent || '0') || 0,
+        'Ø Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
+        'Real Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
       };
 
       // NUR End-Zeitpunkt (thisUpload) - keine Start-Events mehr!
