@@ -198,6 +198,46 @@ export default function Notifications() {
 
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
 
+  // Alarmierungsstufen Konfiguration - moved up before useEffect
+  const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
+    harmlos: {
+      level: 'harmlos',
+      channels: { push: true, email: false, sms: false, webhook: false },
+      requiresApproval: false,
+      repeatCount: 1,
+      sequenceHours: 0,
+      sequenceMinutes: 0,
+      sequenceSeconds: 0
+    },
+    achtung: {
+      level: 'achtung',
+      channels: { push: true, email: true, sms: false, webhook: false },
+      requiresApproval: false,
+      repeatCount: 1,
+      sequenceHours: 0,
+      sequenceMinutes: 0,
+      sequenceSeconds: 0
+    },
+    gefährlich: {
+      level: 'gefährlich',
+      channels: { push: true, email: true, sms: false, webhook: true },
+      requiresApproval: true,
+      repeatCount: 3,
+      sequenceHours: 0,
+      sequenceMinutes: 5,
+      sequenceSeconds: 0
+    },
+    sehr_gefährlich: {
+      level: 'sehr_gefährlich',
+      channels: { push: true, email: true, sms: true, webhook: true },
+      requiresApproval: true,
+      repeatCount: 'infinite',
+      sequenceHours: 0,
+      sequenceMinutes: 1,
+      sequenceSeconds: 0
+    }
+  });
+
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
     // Check all trading pairs with thresholds
@@ -383,46 +423,6 @@ export default function Notifications() {
   useEffect(() => {
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
   }, [trendPriceSettings]);
-
-  // Alarmierungsstufen Konfiguration
-  const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
-    harmlos: {
-      level: 'harmlos',
-      channels: { push: true, email: false, sms: false, webhook: false },
-      requiresApproval: false,
-      repeatCount: 1,
-      sequenceHours: 0,
-      sequenceMinutes: 0,
-      sequenceSeconds: 0
-    },
-    achtung: {
-      level: 'achtung',
-      channels: { push: true, email: true, sms: false, webhook: false },
-      requiresApproval: false,
-      repeatCount: 1,
-      sequenceHours: 0,
-      sequenceMinutes: 0,
-      sequenceSeconds: 0
-    },
-    gefährlich: {
-      level: 'gefährlich',
-      channels: { push: true, email: true, sms: false, webhook: true },
-      requiresApproval: true,
-      repeatCount: 3,
-      sequenceHours: 0,
-      sequenceMinutes: 5,
-      sequenceSeconds: 0
-    },
-    sehr_gefährlich: {
-      level: 'sehr_gefährlich',
-      channels: { push: true, email: true, sms: true, webhook: true },
-      requiresApproval: true,
-      repeatCount: 'infinite',
-      sequenceHours: 0,
-      sequenceMinutes: 1,
-      sequenceSeconds: 0
-    }
-  });
 
   const [alarmLevelEditMode, setAlarmLevelEditMode] = useState<Record<AlarmLevel, boolean>>({
     harmlos: false,
