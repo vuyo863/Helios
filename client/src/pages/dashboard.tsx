@@ -3159,13 +3159,34 @@ export default function Dashboard() {
   // Bei analyzeMode: Nur den Zeitraum des ausgewählten Updates zeigen
   const xAxisDomain = useMemo((): [number | string, number | string] => {
     // ANALYSIEREN-MODUS hat PRIORITÄT - auch im Compare-Modus!
-    // Nur das ausgewählte Update anzeigen
+    // Nur das ausgewählte Update anzeigen - MIT Zoom & Pan Unterstützung!
     if (analyzeModeBounds) {
       const { startTs, endTs } = analyzeModeBounds;
       // 5% Padding auf jeder Seite für schöne Darstellung
       const range = endTs - startTs;
       const padding = range * 0.05;
-      return [startTs - padding, endTs + padding];
+      
+      const baseMin = startTs - padding;
+      const baseMax = endTs + padding;
+      const baseRange = baseMax - baseMin;
+      
+      // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
+      if (chartZoomX === 1 && chartPanX === 0) {
+        return [baseMin, baseMax];
+      }
+      
+      // Zoom anwenden (zoomedRange = kleinerer Bereich bei höherem Zoom)
+      const zoomedRange = baseRange / chartZoomX;
+      const center = (baseMin + baseMax) / 2;
+      
+      // Pan-Offset: chartPanX in Pixel, umrechnen auf Zeit-Einheiten
+      const chartWidth = 600;
+      const panOffset = -(chartPanX / chartWidth) * baseRange;
+      
+      const zoomedStart = center - zoomedRange / 2 + panOffset;
+      const zoomedEnd = center + zoomedRange / 2 + panOffset;
+      
+      return [zoomedStart, zoomedEnd];
     }
     
     // COMPARE MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types
