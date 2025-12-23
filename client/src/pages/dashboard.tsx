@@ -2911,9 +2911,18 @@ export default function Dashboard() {
         // Negative Werte vorhanden: Padding nach unten UND nach oben
         baseLower = minVal - Math.max(padding, minBottomPadding);
         baseUpper = maxVal + padding;
+      } else if (hasGesamtkapitalActive) {
+        // Gesamtkapital aktiv: Immer etwas Puffer unten lassen (nicht bei 0 abschneiden)
+        // Wenn Werte nahe beieinander, mehr Puffer nach unten für bessere Visualisierung
+        // GLEICHE LOGIK WIE MAINCHART
+        const bottomPadding = Math.max(padding, minBottomPadding);
+        baseLower = Math.max(-bottomPadding * 0.5, minVal - bottomPadding);
+        baseUpper = maxVal + padding;
       } else {
-        // Nur positive Werte: Minimum bei 0 oder leicht darunter für bessere Optik
-        baseLower = Math.min(0, minVal - Math.max(padding, minBottomPadding));
+        // Profit-Metriken ohne negative Werte: bei 0 oder leicht darunter starten
+        // GLEICHE LOGIK WIE MAINCHART
+        const bottomPadding = Math.max(padding, minBottomPadding);
+        baseLower = -bottomPadding * 0.5;
         baseUpper = maxVal + padding;
       }
       
