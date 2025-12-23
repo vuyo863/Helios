@@ -946,8 +946,19 @@ export default function Dashboard() {
         selectedIds.includes(String(update.botTypeId))
       );
       
-      // Zeitfilter anwenden (gleiche Logik wie Normal-Modus)
-      if (selectedTimeRange !== 'First-Last Update') {
+      // Zeitfilter anwenden - Custom-Kalender hat Priorität
+      if (selectedTimeRange === 'Custom' && dateRange.from && dateRange.to) {
+        // Kalender-Custom: Filtere nach Datumsbereich
+        const fromTs = dateRange.from.getTime();
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        const toTs = toDate.getTime();
+        
+        filteredUpdates = filteredUpdates.filter(update => {
+          const updateTimestamp = getUpdateTimestamp(update);
+          return updateTimestamp >= fromTs && updateTimestamp <= toTs;
+        });
+      } else if (selectedTimeRange !== 'First-Last Update') {
         const rangeMs = parseTimeRangeToMs(
           selectedTimeRange,
           customDays,
@@ -979,8 +990,19 @@ export default function Dashboard() {
         selectedIds.includes(String(update.botTypeId))
       );
       
-      // Zeitfilter anwenden (gleiche Logik wie Normal-Modus)
-      if (selectedTimeRange !== 'First-Last Update') {
+      // Zeitfilter anwenden - Custom-Kalender hat Priorität
+      if (selectedTimeRange === 'Custom' && dateRange.from && dateRange.to) {
+        // Kalender-Custom: Filtere nach Datumsbereich
+        const fromTs = dateRange.from.getTime();
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        const toTs = toDate.getTime();
+        
+        filteredUpdates = filteredUpdates.filter(update => {
+          const updateTimestamp = getUpdateTimestamp(update);
+          return updateTimestamp >= fromTs && updateTimestamp <= toTs;
+        });
+      } else if (selectedTimeRange !== 'First-Last Update') {
         const rangeMs = parseTimeRangeToMs(
           selectedTimeRange,
           customDays,
@@ -1022,7 +1044,18 @@ export default function Dashboard() {
       });
     } 
     // Priorität 2: Aktueller selectedTimeRange (reagiert sofort auf Dropdown-Auswahl)
-    else if (selectedTimeRange !== 'First-Last Update') {
+    else if (selectedTimeRange === 'Custom' && dateRange.from && dateRange.to) {
+      // Kalender-Custom: Filtere nach Datumsbereich
+      const fromTs = dateRange.from.getTime();
+      const toDate = new Date(dateRange.to);
+      toDate.setHours(23, 59, 59, 999);
+      const toTs = toDate.getTime();
+      
+      filteredUpdates = sortedUpdates.filter(update => {
+        const updateTimestamp = getUpdateTimestamp(update);
+        return updateTimestamp >= fromTs && updateTimestamp <= toTs;
+      });
+    } else if (selectedTimeRange !== 'First-Last Update') {
       const rangeMs = parseTimeRangeToMs(
         selectedTimeRange,
         customDays,
@@ -1046,7 +1079,7 @@ export default function Dashboard() {
     const closedBots = filteredUpdates.filter(u => u.status === 'Closed Bots').length;
     
     return { total: filteredUpdates.length, updateMetrics, closedBots };
-  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange, customDays, customHours, customMinutes, alleEintraegeMode, allBotTypeUpdates, selectedChartBotTypes, analyzeMode, appliedUpdateId]);
+  }, [sortedUpdates, selectedFromUpdate, selectedUntilUpdate, selectedTimeRange, customDays, customHours, customMinutes, alleEintraegeMode, allBotTypeUpdates, selectedChartBotTypes, analyzeMode, appliedUpdateId, dateRange]);
 
   // Farben für die verschiedenen Metriken (passend zu den Card-Farben)
   const metricColors: Record<string, string> = {
