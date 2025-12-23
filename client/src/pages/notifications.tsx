@@ -630,9 +630,10 @@ export default function Notifications() {
     }
   };
 
-  const getTimeAgo = (date: Date): string => {
+  const getTimeAgo = (date: Date | string): string => {
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const alarmDate = typeof date === 'string' ? new Date(date) : date;
+    const diffMs = now.getTime() - alarmDate.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
