@@ -892,7 +892,7 @@ export default function Notifications() {
         {/* Benachrichtigungen konfigurieren Section */}
         <Card className="ring-2 ring-cyan-600 mb-8">
           <CardHeader>
-            <div className="space-y-4">
+            <div className="flex items-start justify-between">
               <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
               {watchlist.length > 0 && (
                 <Dialog>
@@ -902,27 +902,29 @@ export default function Notifications() {
                       Benachrichtigung hinzufügen
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
+                  <DialogContent className="max-w-2xl max-h-[80vh]">
                     <DialogHeader>
                       <DialogTitle>Benachrichtigung hinzufügen</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                      {watchlist.map((trendPriceId) => {
-                        const pair = getTrendPrice(trendPriceId);
-                        const settings = trendPriceSettings[trendPriceId];
-                        
-                        // Check if any thresholds are already configured for this pair
-                        const hasExistingThresholds = settings && settings.thresholds && settings.thresholds.length > 0;
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                      <div className="space-y-4">
+                        {watchlist.map((trendPriceId) => {
+                          const pair = getTrendPrice(trendPriceId);
 
-                        return (
-                          <Card key={trendPriceId} className="p-4">
-                            <CardTitle className="text-lg mb-3">{pair?.name || trendPriceId}</CardTitle>
-                            <div className="space-y-3">
-                              {/* Button to add a new threshold for this specific pair */}
+                          return (
+                            <Card key={trendPriceId} className="p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                                <span className="text-sm text-muted-foreground">
+                                  ${pair?.price || 'Loading...'}
+                                </span>
+                              </div>
                               <Button
                                 variant="outline"
-                                className="w-full flex items-center gap-1"
-                                onClick={() => {
+                                className="w-full flex items-center justify-center gap-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  
                                   // Initialize settings if they don't exist
                                   if (!trendPriceSettings[trendPriceId]) {
                                     setTrendPriceSettings(prev => ({
@@ -957,16 +959,21 @@ export default function Notifications() {
                                   // Open edit dialog for the new threshold
                                   setEditingThresholdId(newThreshold.id);
                                   setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
+                                  
+                                  toast({
+                                    title: "Schwellenwert erstellt",
+                                    description: `Neuer Schwellenwert für ${pair?.name || trendPriceId} erstellt. Bitte konfigurieren Sie die Details.`,
+                                  });
                                 }}
                               >
                                 <Plus className="w-4 h-4" />
-                                Schwellenwert für {pair?.name || trendPriceId} hinzufügen
+                                Schwellenwert hinzufügen
                               </Button>
-                            </div>
-                          </Card>
-                        );
-                      })}
-                    </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
                   </DialogContent>
                 </Dialog>
               )}
