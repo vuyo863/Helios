@@ -6788,24 +6788,27 @@ export default function Dashboard() {
                             const { cx, cy, payload } = props;
                             const activeBotCount = payload?._activeBotCount || 0;
                             
-                            // Berechne adjustierte Y-Position für Punkt an oberer Ecke bei End-Events
-                            // Verwende _dot_Gesamt_* Wert (inkl. endender Bots) statt Gesamt_* (ohne)
-                            const dotDataKey = `_dot_Gesamt_${metricName}`;
-                            const dotValue = payload?.[dotDataKey];
-                            const lineValue = payload?.[dataKey];
+                            // NUR bei MEHREREN gleichzeitigen End-Events: Punkt an oberer Ecke (Gesamtwert)
+                            // Beispiel: teshh (63,77) + bhj (109,54) = Gesamtwert 173,31 → Punkt bei 173,31
+                            const endEventsCount = payload?._endEvents?.length || 0;
+                            const hasMultipleEndEvents = endEventsCount > 1;
                             
-                            // Berechne neue cy-Position wenn dotValue > lineValue (End-Events)
                             let adjustedCy = cy;
-                            if (typeof dotValue === 'number' && typeof lineValue === 'number' && 
-                                dotValue !== lineValue && typeof yMin === 'number' && typeof yMax === 'number') {
-                              // Berechne Pixel pro Wert-Einheit (Y-Achse ist invertiert: höherer Wert = niedrigere cy)
-                              const yRange = yMax - yMin;
-                              if (yRange > 0) {
-                                const pixelPerValue = chartHeight / yRange;
-                                // Differenz zwischen dot-Wert und line-Wert
-                                const valueDiff = dotValue - lineValue;
-                                // Verschiebe cy nach oben (negativer Offset, da höhere Werte = niedrigere cy)
-                                adjustedCy = cy - (valueDiff * pixelPerValue);
+                            
+                            // Verschiebe Punkt NUR wenn mehrere End-Events am gleichen Zeitpunkt enden
+                            if (hasMultipleEndEvents) {
+                              const dotDataKey = `_dot_Gesamt_${metricName}`;
+                              const dotValue = payload?.[dotDataKey];
+                              const lineValue = payload?.[dataKey];
+                              
+                              if (typeof dotValue === 'number' && typeof lineValue === 'number' && 
+                                  dotValue !== lineValue && typeof yMin === 'number' && typeof yMax === 'number') {
+                                const yRange = yMax - yMin;
+                                if (yRange > 0) {
+                                  const pixelPerValue = chartHeight / yRange;
+                                  const valueDiff = dotValue - lineValue;
+                                  adjustedCy = cy - (valueDiff * pixelPerValue);
+                                }
                               }
                             }
                             
@@ -6814,10 +6817,10 @@ export default function Dashboard() {
                                 key={`dot-added-${payload?.timestamp}-${metricName}`}
                                 cx={cx}
                                 cy={adjustedCy}
-                                r={activeBotCount > 1 ? 5 : 4}
+                                r={hasMultipleEndEvents ? 6 : (activeBotCount > 1 ? 5 : 4)}
                                 fill={color}
-                                stroke={activeBotCount > 1 ? "#fff" : "none"}
-                                strokeWidth={activeBotCount > 1 ? 1.5 : 0}
+                                stroke={hasMultipleEndEvents ? "#fff" : (activeBotCount > 1 ? "#fff" : "none")}
+                                strokeWidth={hasMultipleEndEvents ? 2 : (activeBotCount > 1 ? 1.5 : 0)}
                               />
                             );
                           }}
