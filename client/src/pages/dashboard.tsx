@@ -993,6 +993,19 @@ export default function Dashboard() {
     'Ø Profit/Tag': '#ea580c',       // Orange
     'Real Profit/Tag': '#ca8a04',    // Gelb/Gold
   };
+  
+  // SAFE KEY MAPPING: Konvertiert Metrik-Namen in sichere dataKey-Schlüssel für Recharts
+  // Recharts interpretiert Leerzeichen und % als Pfad-Delimiter, daher brauchen wir sichere Schlüssel
+  const metricToSafeKey: Record<string, string> = {
+    'Gesamtkapital': 'metric_gesamtkapital',
+    'Gesamtprofit': 'metric_gesamtprofit',
+    'Gesamtprofit %': 'metric_gesamtprofitPercent',
+    'Ø Profit/Tag': 'metric_avgProfitDay',
+    'Real Profit/Tag': 'metric_realProfitDay',
+  };
+  
+  // Alle Metrik-Namen als Array (für Iteration)
+  const ALL_METRICS = ['Gesamtkapital', 'Gesamtprofit', 'Gesamtprofit %', 'Ø Profit/Tag', 'Real Profit/Tag'];
 
   // Farben für Multi-Bot-Type Chart (verschiedene Farben pro Bot-Type)
   const BOT_TYPE_COLORS = [
@@ -1254,54 +1267,57 @@ export default function Dashboard() {
         const baseInvestment = parseFloat(update.investment || '0') || 0;
         const relevantInvestment = profitPercentBase === 'gesamtinvestment' ? investment : baseInvestment;
         
-        if (update.status === 'Closed Bots') {
-          // Closed Bots: Verwende 'profit' Feld
-          const profit = parseFloat(update.profit || '0') || 0;
-          switch (selectedMetric) {
-            case 'Gesamtkapital':
-              metricValue = relevantInvestment;
-              break;
-            case 'Gesamtprofit':
-              metricValue = profit;
-              break;
-            case 'Gesamtprofit %':
-              metricValue = relevantInvestment > 0 ? (profit / relevantInvestment) * 100 : 0;
-              break;
-            case 'Ø Profit/Tag':
-              metricValue = parseFloat(update.avgGridProfitDay || '0') || 0;
-              break;
-            case 'Real Profit/Tag':
-              const runtimeStr = update.avgRuntime || '';
-              const runtimeHours = parseRuntimeToHours(runtimeStr);
-              metricValue = runtimeHours < 24 ? profit : parseFloat(update.avgGridProfitDay || '0') || 0;
-              break;
-            default:
-              metricValue = profit;
+        // Helper: Berechne Wert für eine spezifische Metrik
+        const calculateMetricValue = (metric: string): number => {
+          if (update.status === 'Closed Bots') {
+            const profit = parseFloat(update.profit || '0') || 0;
+            switch (metric) {
+              case 'Gesamtkapital':
+                return relevantInvestment;
+              case 'Gesamtprofit':
+                return profit;
+              case 'Gesamtprofit %':
+                return relevantInvestment > 0 ? (profit / relevantInvestment) * 100 : 0;
+              case 'Ø Profit/Tag':
+                return parseFloat(update.avgGridProfitDay || '0') || 0;
+              case 'Real Profit/Tag':
+                const runtimeStr = update.avgRuntime || '';
+                const runtimeHours = parseRuntimeToHours(runtimeStr);
+                return runtimeHours < 24 ? profit : parseFloat(update.avgGridProfitDay || '0') || 0;
+              default:
+                return profit;
+            }
+          } else {
+            const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+            switch (metric) {
+              case 'Gesamtkapital':
+                return relevantInvestment;
+              case 'Gesamtprofit':
+                return gridProfit;
+              case 'Gesamtprofit %':
+                return relevantInvestment > 0 ? (gridProfit / relevantInvestment) * 100 : 0;
+              case 'Ø Profit/Tag':
+                return parseFloat(update.avgGridProfitDay || '0') || 0;
+              case 'Real Profit/Tag':
+                const runtimeStr = update.avgRuntime || '';
+                const runtimeHours = parseRuntimeToHours(runtimeStr);
+                return runtimeHours < 24 ? gridProfit : parseFloat(update.avgGridProfitDay || '0') || 0;
+              default:
+                return gridProfit;
+            }
           }
-        } else {
-          // Update Metrics: Verwende Grid Profit Felder
-          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-          switch (selectedMetric) {
-            case 'Gesamtkapital':
-              metricValue = relevantInvestment;
-              break;
-            case 'Gesamtprofit':
-              metricValue = gridProfit;
-              break;
-            case 'Gesamtprofit %':
-              metricValue = relevantInvestment > 0 ? (gridProfit / relevantInvestment) * 100 : 0;
-              break;
-            case 'Ø Profit/Tag':
-              metricValue = parseFloat(update.avgGridProfitDay || '0') || 0;
-              break;
-            case 'Real Profit/Tag':
-              const runtimeStr = update.avgRuntime || '';
-              const runtimeHours = parseRuntimeToHours(runtimeStr);
-              metricValue = runtimeHours < 24 ? gridProfit : parseFloat(update.avgGridProfitDay || '0') || 0;
-              break;
-            default:
-              metricValue = gridProfit;
-          }
+        };
+        
+        // Berechne den primären Metrik-Wert
+        metricValue = calculateMetricValue(selectedMetric);
+        
+        // ANALYZE MODE: Berechne ALLE Metrik-Werte für Multi-Metrik-Unterstützung
+        const allMetricValues: Record<string, number> = {};
+        if (isAnalyzeSingleMetricMode) {
+          const allMetrics = ['Gesamtkapital', 'Gesamtprofit', 'Gesamtprofit %', 'Ø Profit/Tag', 'Real Profit/Tag'];
+          allMetrics.forEach(metric => {
+            allMetricValues[metric] = calculateMetricValue(metric);
+          });
         }
         
         // Fallback für alte Variable
@@ -1345,6 +1361,17 @@ export default function Dashboard() {
           // Start-Punkt IMMER mit 0 (wie MainChart) - nicht mit previousEndValue!
           startPoint[botType.name] = 0;
           startPoint[`${botType.name}_status`] = update.status;
+          
+          // ANALYZE MODE: Füge alle Metrik-Werte mit 0 als Startpunkt hinzu (sichere Schlüssel)
+          if (isAnalyzeSingleMetricMode) {
+            ALL_METRICS.forEach(metric => {
+              const safeKey = metricToSafeKey[metric];
+              if (safeKey) {
+                startPoint[safeKey] = 0;
+              }
+            });
+          }
+          
           dataPoints.push(startPoint);
         }
         
@@ -1376,6 +1403,17 @@ export default function Dashboard() {
         // Setze den Wert für diesen Bot-Type
         endPoint[botType.name] = profitValue;
         endPoint[`${botType.name}_status`] = update.status;
+        
+        // ANALYZE MODE: Füge alle Metrik-Werte als separate Felder hinzu (sichere Schlüssel)
+        if (isAnalyzeSingleMetricMode && Object.keys(allMetricValues).length > 0) {
+          Object.entries(allMetricValues).forEach(([metric, value]) => {
+            const safeKey = metricToSafeKey[metric];
+            if (safeKey) {
+              endPoint[safeKey] = value;
+            }
+          });
+        }
+        
         dataPoints.push(endPoint);
         
         // Speichere End-Timestamp für nächste Iteration
@@ -5641,10 +5679,11 @@ export default function Dashboard() {
                           const { startTs, endTs } = analyzeModeBounds;
                           const botTypeName = analyzeSingleMetricInfo.botTypeName;
                           // Filtere Daten: Nur Punkte die zum ausgewählten Bot-Type gehören UND im Zeitraum liegen
+                          // Prüfe auf metric_* Felder (für Multi-Metrik-Support)
                           const filteredData = compareChartData.data.filter(point => 
                             point.timestamp >= startTs && 
                             point.timestamp <= endTs &&
-                            point[botTypeName] !== undefined && point[botTypeName] !== null
+                            point.botTypeName === botTypeName
                           );
                           return filteredData.length > 0 ? filteredData : [{ time: '-', timestamp: 0 }];
                         })()
@@ -6749,61 +6788,70 @@ export default function Dashboard() {
                   {/* Dynamisch Lines rendern - Compare-Mode, Multi-Bot-Mode oder Single-Bot mit Metriken */}
                   {/* ANALYZE SINGLE METRIC MODE: Verwende Compare-Modus Rendering aber NUR für den ausgewählten Bot-Type */}
                   {isAnalyzeSingleMetricMode && analyzeSingleMetricInfo ? (
-                    // ANALYZE MODE: NUR die eine ausgewählte Metrik/Bot-Type anzeigen
+                    // ANALYZE MODE: Zeige Linien für alle aktiven Metriken mit Metrik-Farben
+                    // Jede aktivierte Content-Card bekommt eine eigene Linie
                     (() => {
                       const { botTypeId, botTypeName } = analyzeSingleMetricInfo;
-                      const lineColor = compareColorMap[botTypeId] || getCompareColor(0);
                       
-                      return (
-                        <Line 
-                          key={`analyze-${botTypeName}`}
-                          type="monotone" 
-                          dataKey={botTypeName}
-                          name={botTypeName}
-                          stroke={lineColor}
-                          strokeWidth={2}
-                          dot={(props: any) => {
-                            const { cx, cy, payload } = props;
-                            const closedStatusKey = `${botTypeName}_status`;
-                            const isClosedBot = payload?.[closedStatusKey] === 'Closed Bots';
-                            const pointValue = payload?.[botTypeName];
-                            
-                            // Wenn kein Wert vorhanden, keinen Kreis rendern
-                            if (pointValue === null || pointValue === undefined) {
-                              return <g key={`dot-analyze-empty-${payload?.timestamp}`} />;
-                            }
-                            
-                            if (isClosedBot) {
+                      // Rendere eine Linie pro aktiver Metrik-Card
+                      return activeMetricCards.map((metricName, metricIndex) => {
+                        // Linienfarbe = Metrik-Farbe (passend zur Content-Card)
+                        const lineColor = metricColors[metricName] || '#16a34a'; // Default grün
+                        
+                        // dataKey: Verwende den sicheren Schlüssel für Recharts (keine Sonderzeichen)
+                        const safeKey = metricToSafeKey[metricName] || 'metric_gesamtprofit';
+                        
+                        return (
+                          <Line 
+                            key={`analyze-${metricName}-${botTypeName}`}
+                            type="monotone" 
+                            dataKey={safeKey}
+                            name={metricName}
+                            stroke={lineColor}
+                            strokeWidth={2}
+                            dot={(props: any) => {
+                              const { cx, cy, payload } = props;
+                              const closedStatusKey = `${botTypeName}_status`;
+                              const isClosedBot = payload?.[closedStatusKey] === 'Closed Bots';
+                              const pointValue = payload?.[safeKey];
+                              
+                              // Wenn kein Wert vorhanden, keinen Kreis rendern
+                              if (pointValue === null || pointValue === undefined) {
+                                return <g key={`dot-analyze-empty-${metricName}-${payload?.timestamp}`} />;
+                              }
+                              
+                              if (isClosedBot) {
+                                return (
+                                  <circle
+                                    key={`dot-analyze-closed-${metricName}-${payload?.timestamp}`}
+                                    cx={cx}
+                                    cy={cy}
+                                    r={5}
+                                    fill="hsl(var(--background))"
+                                    stroke={lineColor}
+                                    strokeWidth={2}
+                                  />
+                                );
+                              }
+                              
                               return (
                                 <circle
-                                  key={`dot-analyze-closed-${payload?.timestamp}`}
+                                  key={`dot-analyze-${metricName}-${payload?.timestamp}`}
                                   cx={cx}
                                   cy={cy}
-                                  r={5}
-                                  fill="hsl(var(--background))"
-                                  stroke={lineColor}
-                                  strokeWidth={2}
+                                  r={4}
+                                  fill={lineColor}
                                 />
                               );
-                            }
-                            
-                            return (
-                              <circle
-                                key={`dot-analyze-${payload?.timestamp}`}
-                                cx={cx}
-                                cy={cy}
-                                r={4}
-                                fill={lineColor}
-                              />
-                            );
-                          }}
-                          connectNulls
-                          isAnimationActive={true}
-                          animationDuration={1200}
-                          animationBegin={0}
-                          animationEasing="ease-out"
-                        />
-                      );
+                            }}
+                            connectNulls
+                            isAnimationActive={true}
+                            animationDuration={1200}
+                            animationBegin={metricIndex * 100}
+                            animationEasing="ease-out"
+                          />
+                        );
+                      });
                     })()
                   ) : isMultiSelectCompareMode ? (
                     // COMPARE MODUS: Farbige Linien für jeden ausgewählten Bot-Type
