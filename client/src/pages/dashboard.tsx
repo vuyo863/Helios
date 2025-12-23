@@ -6426,27 +6426,6 @@ export default function Dashboard() {
                               );
                             })}
                             
-                            {/* Alle aktiven Metriken anzeigen */}
-                            {activeMetricCards.map((metricName, idx) => {
-                              const dataKey = `Gesamt_${metricName}`;
-                              const value = dataPoint[dataKey];
-                              const color = metricColors[metricName] || '#888888';
-                              const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
-                              
-                              // Display-Name für die Metrik
-                              let displayName = metricName;
-                              if (metricName === 'Gesamtkapital' && profitPercentBase === 'investitionsmenge') {
-                                displayName = 'Investitionsmenge';
-                              }
-                              
-                              return (
-                                <p key={idx} style={{ color, margin: '2px 0' }}>
-                                  {displayName}: {typeof value === 'number' 
-                                    ? value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
-                                    : '0,00' + suffix}
-                                </p>
-                              );
-                            })}
                           </div>
                         );
                       }
