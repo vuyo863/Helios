@@ -1676,11 +1676,12 @@ export default function Dashboard() {
     
     multiBotChartData.data.forEach((point: any) => {
       // Jeder Punkt repräsentiert ein End-Event mit individuellen Metriken
-      const profit = point['Gesamt_Gesamtprofit'] || point['Gesamt'] || 0;
-      const investment = point['Gesamt_Gesamtkapital'] || 0;
-      const profitPercent = point['Gesamt_Gesamtprofit %'] || 0;
-      const avgDaily = point['Gesamt_Ø Profit/Tag'] || 0;
-      const realDaily = point['Gesamt_Real Profit/Tag'] || 0;
+      // WICHTIG: Verwende die ROHEN Werte (_raw_*) für die Content Cards, nicht die adjustierten Chart-Positionen
+      const profit = point['_raw_Gesamtprofit'] ?? point._profit ?? 0;
+      const investment = point['Gesamt_Gesamtkapital'] || 0; // Kapital bleibt unverändert
+      const profitPercent = point['_raw_Gesamtprofit %'] ?? 0;
+      const avgDaily = point['_raw_Ø Profit/Tag'] ?? 0;
+      const realDaily = point['_raw_Real Profit/Tag'] ?? 0;
       
       totalProfit += profit;
       totalInvestment += investment;
