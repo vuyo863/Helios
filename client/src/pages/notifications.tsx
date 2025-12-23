@@ -889,19 +889,21 @@ export default function Notifications() {
           </CardContent>
         </Card>
 
-        {/* Benachrichtigungen Liste */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">Benachrichtigungen konfigurieren</h2>
-
-          {watchlist.length === 0 ? (
-            <Card className="p-8 text-center">
-              <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                <Bell className="w-12 h-12 opacity-50" />
-                <p>Keine Trendpreise in der Watchlist.</p>
-                <p className="text-sm">Fügen Sie Trendpreise zur Watchlist hinzu, um Benachrichtigungen zu konfigurieren.</p>
+        {/* Benachrichtigungen konfigurieren Section */}
+        <Card className="ring-2 ring-cyan-600 mb-8">
+          <CardHeader>
+            <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {watchlist.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                  <Bell className="w-12 h-12 opacity-50" />
+                  <p>Keine Trendpreise in der Watchlist.</p>
+                  <p className="text-sm">Fügen Sie Trendpreise zur Watchlist hinzu, um Benachrichtigungen zu konfigurieren.</p>
+                </div>
               </div>
-            </Card>
-          ) : (
+            ) : (
             <div className={cn(
               "space-y-4",
               watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
@@ -1411,13 +1413,14 @@ export default function Notifications() {
                 );
               })}
             </div>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Alarmierungsstufen konfigurieren Section */}
-        <Card className="mt-8">
+        <Card className="ring-2 ring-cyan-600">
           <CardHeader>
-            <CardTitle>Alarmierungsstufen konfigurieren</CardTitle>
+            <CardTitle className="text-xl">Alarmierungsstufen konfigurieren</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
