@@ -5295,8 +5295,8 @@ export default function Dashboard() {
                               // Compare Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
-                              // Im Auge-Modus: NUR die END-Linie anzeigen (keine START-Linie)
-                              const showStartLine = !markerViewActive || markerEditActive;
+                              // Im Auge-Modus UND Stift-Modus: NUR die END-Linie anzeigen (keine START-Linie)
+                              const showStartLine = !markerViewActive && !markerEditActive;
                               
                               return (
                                 <g 
@@ -5397,8 +5397,8 @@ export default function Dashboard() {
                               // Added Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
-                              // Im Auge-Modus: NUR die END-Linie anzeigen (keine START-Linie)
-                              const showStartLine = !markerViewActive || markerEditActive;
+                              // Im Auge-Modus UND Stift-Modus: NUR die END-Linie anzeigen (keine START-Linie)
+                              const showStartLine = !markerViewActive && !markerEditActive;
                               
                               return (
                                 <g 
@@ -5513,8 +5513,8 @@ export default function Dashboard() {
                             const startY2 = Math.max(100, startY2Raw);
                             const endY2 = Math.max(100, endY2Raw);
                             
-                            // Im Auge-Modus: NUR die END-Linie anzeigen (keine START-Linie)
-                            const showStartLine = !markerViewActive || markerEditActive;
+                            // Im Auge-Modus UND Stift-Modus: NUR die END-Linie anzeigen (keine START-Linie)
+                            const showStartLine = !markerViewActive && !markerEditActive;
                             
                             return (
                               <>
