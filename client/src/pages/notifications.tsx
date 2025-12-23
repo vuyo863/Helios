@@ -829,7 +829,7 @@ export default function Notifications() {
         </Card>
 
         {/* Trendpreis Suche & Watchlist Content Card */}
-        <Card className="mb-8 ring-2 ring-cyan-600">
+        <Card className="mb-8 ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
           <CardHeader>
             <CardTitle>Trendpreise & Watchlist</CardTitle>
           </CardHeader>
@@ -959,7 +959,7 @@ export default function Notifications() {
         </Card>
 
         {/* Benachrichtigungen konfigurieren Section */}
-        <Card className="ring-2 ring-cyan-600 mb-8">
+        <Card className="ring-2 ring-cyan-600 mb-8" style={{ overflow: 'visible' }}>
           <CardHeader>
             <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
           </CardHeader>
@@ -1722,7 +1722,7 @@ export default function Notifications() {
         </Card>
 
         {/* Alarmierungsstufen konfigurieren Section */}
-        <Card className="ring-2 ring-cyan-600">
+        <Card className="ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
           <CardHeader>
             <CardTitle className="text-xl">Alarmierungsstufen konfigurieren</CardTitle>
           </CardHeader>
