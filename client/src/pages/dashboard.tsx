@@ -1538,8 +1538,6 @@ export default function Dashboard() {
       const point: Record<string, any> = {
         time: new Date(event.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         timestamp: event.timestamp,
-        // Ordinaler Index für gleichmäßige X-Achsen-Verteilung
-        ordinal: index,
         // Y-Wert ist der individuelle Profit dieses Bots
         Gesamt: event.profit,
         'Gesamt_Gesamtprofit': event.profit,
@@ -5470,61 +5468,26 @@ export default function Dashboard() {
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
-                    dataKey={isMultiBotChartMode ? "ordinal" : "timestamp"}
+                    dataKey="timestamp"
                     type="number"
-                    domain={isMultiBotChartMode 
-                      ? [0, Math.max(0, multiBotChartData.data.length - 1)]
-                      : xAxisDomain
-                    }
+                    domain={xAxisDomain}
                     allowDataOverflow={true}
-                    ticks={isMultiBotChartMode 
-                      ? multiBotChartData.data.map((_: any, i: number) => i)
-                      : (xAxisTicks.length > 0 ? xAxisTicks.filter(t => {
-                          // Nur Ticks innerhalb der gezoomten Domain anzeigen
-                          const [domainStart, domainEnd] = xAxisDomain;
-                          if (typeof domainStart === 'number' && typeof domainEnd === 'number') {
-                            return t >= domainStart && t <= domainEnd;
-                          }
-                          return true;
-                        }) : undefined)
-                    }
+                    ticks={xAxisTicks.length > 0 ? xAxisTicks.filter(t => {
+                      // Nur Ticks innerhalb der gezoomten Domain anzeigen
+                      const [domainStart, domainEnd] = xAxisDomain;
+                      if (typeof domainStart === 'number' && typeof domainEnd === 'number') {
+                        return t >= domainStart && t <= domainEnd;
+                      }
+                      return true;
+                    }) : undefined}
                     interval={0}
-                    minTickGap={isMultiBotChartMode ? 30 : (isMultiSelectCompareMode ? 50 : 50)}
+                    minTickGap={isMultiSelectCompareMode ? 50 : 50}
                     tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                     axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                     height={70}
                     tickSize={8}
                     tick={(props: any) => {
                       const { x, y, payload, index } = props;
-                      
-                      // ADDED MODUS: Hole timestamp aus den Daten basierend auf ordinalem Index
-                      if (isMultiBotChartMode && multiBotChartData.data.length > 0) {
-                        const ordinalIndex = payload?.value;
-                        if (ordinalIndex === undefined || ordinalIndex < 0 || ordinalIndex >= multiBotChartData.data.length) {
-                          return <g />;
-                        }
-                        const dataPoint = multiBotChartData.data[ordinalIndex];
-                        if (!dataPoint || !dataPoint.timestamp) {
-                          return <g />;
-                        }
-                        const date = new Date(dataPoint.timestamp);
-                        const label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                        
-                        return (
-                          <g transform={`translate(${x},${y})`}>
-                            <text
-                              x={0}
-                              y={12}
-                              textAnchor="middle"
-                              fill="hsl(var(--muted-foreground))"
-                              fontSize={10}
-                            >
-                              {label}
-                            </text>
-                          </g>
-                        );
-                      }
-                      
                       if (!payload || !payload.value || payload.value === 0) {
                         return <g />;
                       }
@@ -5591,6 +5554,89 @@ export default function Dashboard() {
                               x={0}
                               y={12}
                               textAnchor="middle"
+                              fill="hsl(var(--muted-foreground))"
+                              fontSize={10}
+                            >
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      }
+                      
+                      // ADDED MODUS: Adaptive Formatierung basierend auf Zoom-Level (1:1 wie Compare-Modus)
+                      if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0) {
+                        // Berechne sichtbare Zeitspanne basierend auf Zoom
+                        const totalRange = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
+                        const visibleRange = totalRange / chartZoomX;
+                        const visibleHours = visibleRange / (60 * 60 * 1000);
+                        const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+                        
+                        const hour = date.getHours();
+                        const isMidnight = hour === 0 && date.getMinutes() === 0;
+                        
+                        // Dynamische Textausrichtung basierend auf Timestamp-Position
+                        // Erster Datenpunkt: start (nach rechts ausgerichtet)
+                        // Letzter Datenpunkt: end (nach links ausgerichtet)
+                        // Alles dazwischen: middle (zentriert)
+                        const currentTs = payload.value;
+                        const isFirstDataPoint = currentTs === multiBotChartData.minTimestamp;
+                        const isLastDataPoint = currentTs === multiBotChartData.maxTimestamp;
+                        
+                        let textAnchor: "start" | "middle" | "end" = "middle";
+                        if (isFirstDataPoint) {
+                          textAnchor = "start";
+                        } else if (isLastDataPoint) {
+                          textAnchor = "end";
+                        }
+                        
+                        let label = '';
+                        let showTwoLines = false;
+                        
+                        if (visibleHours <= 36) {
+                          // Sehr eng gezoomt: Zeige Stunden + Datum bei Mitternacht
+                          if (isMidnight) {
+                            const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                            label = dateStr;
+                            showTwoLines = false;
+                          } else {
+                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            label = timeStr;
+                          }
+                        } else if (visibleDays <= 7) {
+                          // Mittel gezoomt: Datum + optionale Uhrzeit bei nicht-Mitternacht
+                          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                          if (!isMidnight && visibleHours <= 72) {
+                            const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            label = `${dateStr}\n${timeStr}`;
+                            showTwoLines = true;
+                          } else {
+                            label = dateStr;
+                          }
+                        } else {
+                          // Weit rausgezoomt: Nur Datum
+                          label = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                        }
+                        
+                        if (showTwoLines && label.includes('\n')) {
+                          const lines = label.split('\n');
+                          return (
+                            <g transform={`translate(${x},${y})`}>
+                              <text x={0} y={12} textAnchor={textAnchor} fill="hsl(var(--muted-foreground))" fontSize={10}>
+                                {lines[0]}
+                              </text>
+                              <text x={0} y={24} textAnchor={textAnchor} fill="hsl(var(--muted-foreground))" fontSize={9}>
+                                {lines[1]}
+                              </text>
+                            </g>
+                          );
+                        }
+                        
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <text
+                              x={0}
+                              y={12}
+                              textAnchor={textAnchor}
                               fill="hsl(var(--muted-foreground))"
                               fontSize={10}
                             >
