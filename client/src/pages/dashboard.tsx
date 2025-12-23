@@ -1555,14 +1555,20 @@ export default function Dashboard() {
     const isGesamtkapitalSelected = activeMetricCards.includes('Gesamtkapital');
     
     endEvents.forEach((event, index) => {
-      // Hole die Kapital- und Profit-Werte
+      // Hole die Kapital- und alle Metrik-Werte
       const kapital = event.metricValues['Gesamtkapital'] ?? 0;
       const rawProfit = event.profit;
+      const rawProfitPercent = event.metricValues['Gesamtprofit %'];
+      const rawAvgDaily = event.metricValues['Ø Profit/Tag'];
+      const rawRealDaily = event.metricValues['Real Profit/Tag'];
       
-      // WICHTIG: Wenn Gesamtkapital aktiv ist, soll die Profit-Linie bei (Kapital + Profit) sein
-      // Das bedeutet positive Profits erscheinen ÜBER der Kapital-Linie
-      // Der rohe Profit-Wert wird separat gespeichert für den Tooltip
+      // WICHTIG: Wenn Gesamtkapital aktiv ist, werden ALLE Metriken bei (Kapital + Wert) angezeigt
+      // So erscheinen positive Werte ÜBER der Kapital-Linie, negative UNTER
+      // Die rohen Werte werden separat für den Tooltip gespeichert
       const adjustedProfit = isGesamtkapitalSelected ? (kapital + rawProfit) : rawProfit;
+      const adjustedProfitPercent = isGesamtkapitalSelected && rawProfitPercent !== undefined ? (kapital + rawProfitPercent) : rawProfitPercent;
+      const adjustedAvgDaily = isGesamtkapitalSelected && rawAvgDaily !== undefined ? (kapital + rawAvgDaily) : rawAvgDaily;
+      const adjustedRealDaily = isGesamtkapitalSelected && rawRealDaily !== undefined ? (kapital + rawRealDaily) : rawRealDaily;
       
       // Erstelle Datenpunkt für diesen einzelnen End-Event
       const point: Record<string, any> = {
@@ -1573,9 +1579,12 @@ export default function Dashboard() {
         'Gesamt_Gesamtprofit': adjustedProfit, // Adjusted für Chart-Position
         '_raw_Gesamtprofit': rawProfit, // Roh-Wert für Tooltip
         'Gesamt_Gesamtkapital': kapital,
-        'Gesamt_Gesamtprofit %': event.metricValues['Gesamtprofit %'],
-        'Gesamt_Ø Profit/Tag': event.metricValues['Ø Profit/Tag'],
-        'Gesamt_Real Profit/Tag': event.metricValues['Real Profit/Tag'],
+        'Gesamt_Gesamtprofit %': adjustedProfitPercent, // Adjusted für Chart-Position
+        '_raw_Gesamtprofit %': rawProfitPercent, // Roh-Wert für Tooltip
+        'Gesamt_Ø Profit/Tag': adjustedAvgDaily, // Adjusted für Chart-Position
+        '_raw_Ø Profit/Tag': rawAvgDaily, // Roh-Wert für Tooltip
+        'Gesamt_Real Profit/Tag': adjustedRealDaily, // Adjusted für Chart-Position
+        '_raw_Real Profit/Tag': rawRealDaily, // Roh-Wert für Tooltip
         // Individuelle Bot-Infos für Tooltip
         _botTypeName: event.botTypeName,
         _profit: event.profit,
