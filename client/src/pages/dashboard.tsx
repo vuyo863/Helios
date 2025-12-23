@@ -6892,21 +6892,43 @@ export default function Dashboard() {
                             const { cx, cy, payload, value, index } = props;
                             const isClosedBot = payload?._isClosedBot;
                             const eventIndex = payload?._eventIndex ?? 0;
+                            const updateVersion = payload?._updateVersion;
+                            const botTypeName = payload?._botTypeName;
                             
                             // WICHTIG: Wenn kein gültiger Y-Wert vorhanden, keinen Punkt rendern
                             if (value === undefined || value === null || isNaN(cy) || isNaN(cx)) {
                               return <g key={`dot-added-empty-${metricName}-${eventIndex}`} />;
                             }
                             
+                            // Prüfe ob dieser Punkt aktiv ist (gestrichelte Linie zeigt darauf)
+                            // Finde botTypeId aus botTypeName
+                            const botType = availableBotTypes.find(bt => bt.name === botTypeName);
+                            const botTypeId = botType ? String(botType.id) : '';
+                            const pointUpdateKey = botTypeId && updateVersion !== undefined
+                              ? (isClosedBot ? `${botTypeId}:c-${updateVersion}` : `${botTypeId}:u-${updateVersion}`)
+                              : null;
+                            
+                            // Punkt ist aktiv wenn hoveredUpdateId oder lockedUpdateIds den Key enthält
+                            const isPointActive = markerViewActive && pointUpdateKey !== null && 
+                              (hoveredUpdateId === pointUpdateKey || lockedUpdateIds.has(pointUpdateKey));
+                            
+                            // Neon-Blau Styling wenn aktiv
+                            const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : color;
+                            const activeStrokeWidth = isPointActive ? 3 : (isClosedBot ? 2 : 0);
+                            const activeStyle = isPointActive ? { 
+                              filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))'
+                            } : {};
+                            
                             return (
                               <circle
                                 key={`dot-added-${metricName}-${eventIndex}`}
                                 cx={cx}
                                 cy={cy}
-                                r={5}
-                                fill={isClosedBot ? "hsl(var(--background))" : color}
-                                stroke={color}
-                                strokeWidth={isClosedBot ? 2 : 0}
+                                r={isPointActive ? 6 : 5}
+                                fill={isClosedBot ? "hsl(var(--background))" : (isPointActive ? 'rgb(8, 145, 178)' : color)}
+                                stroke={activeStroke}
+                                strokeWidth={activeStrokeWidth}
+                                style={activeStyle}
                               />
                             );
                           }}
