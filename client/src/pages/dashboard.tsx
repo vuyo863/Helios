@@ -2560,7 +2560,9 @@ export default function Dashboard() {
       }
       
       let currentTs = currentDate.getTime();
-      const minGap = tickInterval * 0.3;
+      // ADDED MODUS: Größerer minGap (50% statt 30%) um Überlappung bei nahen Datenpunkten zu verhindern
+      // Im Compare-Modus sind die Daten regelmäßiger verteilt, hier können Bot-Ends sehr nahe beieinander sein
+      const minGap = tickInterval * 0.5;
       
       while (currentTs < endTs - minGap) {
         if (currentTs > startTs + minGap) {
