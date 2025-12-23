@@ -2999,11 +2999,10 @@ export default function Dashboard() {
     // ADDED MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types (analog zu Compare)
     if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
       const range = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
-      const paddingRight = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% rechts
-      const paddingLeft = range > 0 ? range * 0.08 : 24 * 60 * 60 * 1000; // 8% links für bessere Datum-Anzeige
+      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
       
-      const baseMin = multiBotChartData.minTimestamp - paddingLeft;
-      const baseMax = multiBotChartData.maxTimestamp + paddingRight;
+      const baseMin = multiBotChartData.minTimestamp - padding;
+      const baseMax = multiBotChartData.maxTimestamp + padding;
       const baseRange = baseMax - baseMin;
       
       // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
@@ -5575,6 +5574,21 @@ export default function Dashboard() {
                         const hour = date.getHours();
                         const isMidnight = hour === 0 && date.getMinutes() === 0;
                         
+                        // Dynamische Textausrichtung basierend auf Timestamp-Position
+                        // Erster Datenpunkt: start (nach rechts ausgerichtet)
+                        // Letzter Datenpunkt: end (nach links ausgerichtet)
+                        // Alles dazwischen: middle (zentriert)
+                        const currentTs = payload.value;
+                        const isFirstDataPoint = currentTs === multiBotChartData.minTimestamp;
+                        const isLastDataPoint = currentTs === multiBotChartData.maxTimestamp;
+                        
+                        let textAnchor: "start" | "middle" | "end" = "middle";
+                        if (isFirstDataPoint) {
+                          textAnchor = "start";
+                        } else if (isLastDataPoint) {
+                          textAnchor = "end";
+                        }
+                        
                         let label = '';
                         let showTwoLines = false;
                         
@@ -5607,10 +5621,10 @@ export default function Dashboard() {
                           const lines = label.split('\n');
                           return (
                             <g transform={`translate(${x},${y})`}>
-                              <text x={0} y={12} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={10}>
+                              <text x={0} y={12} textAnchor={textAnchor} fill="hsl(var(--muted-foreground))" fontSize={10}>
                                 {lines[0]}
                               </text>
-                              <text x={0} y={24} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={9}>
+                              <text x={0} y={24} textAnchor={textAnchor} fill="hsl(var(--muted-foreground))" fontSize={9}>
                                 {lines[1]}
                               </text>
                             </g>
@@ -5622,7 +5636,7 @@ export default function Dashboard() {
                             <text
                               x={0}
                               y={12}
-                              textAnchor="middle"
+                              textAnchor={textAnchor}
                               fill="hsl(var(--muted-foreground))"
                               fontSize={10}
                             >
