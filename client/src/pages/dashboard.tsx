@@ -6613,18 +6613,6 @@ export default function Dashboard() {
                             {/* Datum */}
                             <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
                             
-                            {/* Start/End Label */}
-                            <p style={{ 
-                              fontWeight: 'bold', 
-                              marginBottom: '4px', 
-                              fontSize: '11px', 
-                              color: isStartPoint ? '#22c55e' : '#ef4444',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px'
-                            }}>
-                              {isStartPoint ? 'Start' : 'End'}
-                            </p>
-                            
                             {/* Bot-Type Name */}
                             <p style={{ fontSize: '12px', color: 'hsl(var(--foreground))', margin: '2px 0', fontWeight: 'bold' }}>
                               {botTypeName}
