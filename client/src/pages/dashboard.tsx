@@ -1363,11 +1363,23 @@ export default function Dashboard() {
           startPoint[`${botType.name}_status`] = update.status;
           
           // ANALYZE MODE: Füge alle Metrik-Werte mit 0 als Startpunkt hinzu (sichere Schlüssel)
+          // WICHTIG: Wenn Gesamtkapital aktiv ist, Startpunkt = Gesamtkapital (nicht 0)
           if (isAnalyzeSingleMetricMode) {
+            const gesamtkapitalActive = activeMetricCards.includes('Gesamtkapital');
+            const gesamtkapitalValue = gesamtkapitalActive ? relevantInvestment : 0;
+            
             ALL_METRICS.forEach(metric => {
               const safeKey = metricToSafeKey[metric];
               if (safeKey) {
-                startPoint[safeKey] = 0;
+                // Wenn Gesamtkapital aktiv ist, andere Metriken starten bei Gesamtkapital
+                if (gesamtkapitalActive && metric !== 'Gesamtkapital' && metric !== 'Gesamtprofit %') {
+                  startPoint[safeKey] = gesamtkapitalValue;
+                } else if (metric === 'Gesamtkapital') {
+                  // Gesamtkapital selbst startet bei seinem eigenen Wert
+                  startPoint[safeKey] = gesamtkapitalActive ? gesamtkapitalValue : 0;
+                } else {
+                  startPoint[safeKey] = 0;
+                }
               }
             });
           }
@@ -1405,11 +1417,21 @@ export default function Dashboard() {
         endPoint[`${botType.name}_status`] = update.status;
         
         // ANALYZE MODE: Füge alle Metrik-Werte als separate Felder hinzu (sichere Schlüssel)
+        // WICHTIG: Wenn Gesamtkapital aktiv ist, andere Metriken auf Gesamtkapital basieren lassen
         if (isAnalyzeSingleMetricMode && Object.keys(allMetricValues).length > 0) {
+          const gesamtkapitalActive = activeMetricCards.includes('Gesamtkapital');
+          const gesamtkapitalValue = allMetricValues['Gesamtkapital'] || 0;
+          
           Object.entries(allMetricValues).forEach(([metric, value]) => {
             const safeKey = metricToSafeKey[metric];
             if (safeKey) {
-              endPoint[safeKey] = value;
+              // Wenn Gesamtkapital aktiv ist UND dies NICHT Gesamtkapital selbst ist,
+              // dann addiere Gesamtkapital als Basis (wie im MainChart)
+              if (gesamtkapitalActive && metric !== 'Gesamtkapital' && metric !== 'Gesamtprofit %') {
+                endPoint[safeKey] = gesamtkapitalValue + value;
+              } else {
+                endPoint[safeKey] = value;
+              }
             }
           });
         }
