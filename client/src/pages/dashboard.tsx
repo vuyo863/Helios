@@ -6780,8 +6780,13 @@ export default function Dashboard() {
                             
                             // Matching Key auch im Stift-Modus berechnen
                             const matchingKey = (markerViewActive || markerEditActive) ? findMatchingUpdateKey() : null;
-                            // Punkt ist nur aktiv wenn gehoverd ODER gelockt - nicht per Default
-                            const isPointActive = matchingKey !== null && (hoveredUpdateId === matchingKey || lockedUpdateIds.has(matchingKey));
+                            // Punkt ist aktiv basierend auf dem aktuellen Modus:
+                            // - Auge-Modus: hoveredUpdateId oder lockedUpdateIds
+                            // - Stift-Modus: editHoveredUpdateId oder editSelectedUpdateId
+                            const isPointActive = matchingKey !== null && (
+                              (markerViewActive && (hoveredUpdateId === matchingKey || lockedUpdateIds.has(matchingKey))) ||
+                              (markerEditActive && (editHoveredUpdateId === matchingKey || editSelectedUpdateId === matchingKey))
+                            );
                             
                             // Hover-Handler für bidirektionale Interaktion (Auge UND Stift Modus)
                             const handleDotMouseEnter = () => {
@@ -6909,9 +6914,13 @@ export default function Dashboard() {
                               ? (isClosedBot ? `${botTypeId}:c-${updateVersion}` : `${botTypeId}:u-${updateVersion}`)
                               : null;
                             
-                            // Punkt ist aktiv wenn hoveredUpdateId oder lockedUpdateIds den Key enthält
-                            const isPointActive = markerViewActive && pointUpdateKey !== null && 
-                              (hoveredUpdateId === pointUpdateKey || lockedUpdateIds.has(pointUpdateKey));
+                            // Punkt ist aktiv basierend auf dem aktuellen Modus:
+                            // - Auge-Modus: hoveredUpdateId oder lockedUpdateIds
+                            // - Stift-Modus: editHoveredUpdateId oder editSelectedUpdateId
+                            const isPointActive = pointUpdateKey !== null && (
+                              (markerViewActive && (hoveredUpdateId === pointUpdateKey || lockedUpdateIds.has(pointUpdateKey))) ||
+                              (markerEditActive && (editHoveredUpdateId === pointUpdateKey || editSelectedUpdateId === pointUpdateKey))
+                            );
                             
                             // Neon-Blau Styling wenn aktiv
                             const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : color;
