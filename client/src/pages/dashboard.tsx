@@ -1592,20 +1592,9 @@ export default function Dashboard() {
             metricValues: event.metricValues, // END-Werte für Aggregation
             updateVersion: event.updateVersion
           });
-        } else if (event.type === 'end') {
-          // End-Event: Bot zur Summe hinzufügen falls noch nicht vorhanden
-          // Dies ist wichtig für Closed Bots (die keinen Start-Event haben)
-          // und stellt sicher dass der Wert AM höchsten Punkt angezeigt wird
-          if (!activeBots.has(key)) {
-            activeBots.set(key, {
-              botTypeId: event.botTypeId,
-              botTypeName: event.botTypeName,
-              value: event.value,
-              metricValues: event.metricValues,
-              updateVersion: event.updateVersion
-            });
-          }
         }
+        // End-Events werden NICHT zu activeBots hinzugefügt - sie werden nur nach 
+        // dem Datenpunkt entfernt. Dies erhält die korrekte Stufenform der Linie.
       });
 
       // Berechne Gesamtsumme aller aktiven Bots an diesem Zeitpunkt - PRO METRIK
