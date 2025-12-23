@@ -66,7 +66,7 @@ interface TrendPriceSettings {
 
 export default function Notifications() {
   const { toast } = useToast();
-  
+
   // Verfügbare Trading Pairs für Suche - werden dynamisch von Binance geladen
   const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([]);
   const [allBinancePairs, setAllBinancePairs] = useState<TrendPrice[]>([]);
@@ -86,9 +86,9 @@ export default function Notifications() {
     try {
       const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
       if (!response.ok) return;
-      
+
       const data = await response.json();
-      
+
       // Filter für USDT und USDC Pairs
       const pairs: TrendPrice[] = data.symbols
         .filter((s: any) => 
@@ -101,19 +101,19 @@ export default function Notifications() {
           symbol: s.symbol,
           price: 'Loading...'
         }));
-      
+
       setAllBinancePairs(pairs);
-      
+
       // Initialize availableTradingPairs with popular pairs
       const popularSymbols = [
         'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
         'DOGEUSDT', 'MATICUSDT', 'ICPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
         'BTCUSDC', 'ETHUSDC', 'SOLUSDC', 'BNBUSDC' // USDC pairs
       ];
-      
+
       const popularPairs = pairs.filter(p => popularSymbols.includes(p.symbol));
       setAvailableTradingPairs(popularPairs);
-      
+
     } catch (error) {
       console.error('Error fetching Binance pairs:', error);
     }
@@ -167,7 +167,7 @@ export default function Notifications() {
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
     if (allBinancePairs.length === 0) return;
-    
+
     // Get symbols from watchlist
     const watchlistSymbols = watchlist
       .map(id => allBinancePairs.find(p => p.id === id)?.symbol)
@@ -204,35 +204,35 @@ export default function Notifications() {
     availableTradingPairs.forEach((pair) => {
       const settings = trendPriceSettings[pair.id];
       if (!settings || !settings.thresholds || settings.thresholds.length === 0) return;
-      
+
       // Only check if we have a valid price
       if (!pair.price || pair.price === 'Loading...') return;
-      
+
       const currentPrice = parseFloat(pair.price.replace(/\./g, '').replace(',', '.'));
       if (isNaN(currentPrice)) return;
 
       settings.thresholds.forEach((threshold) => {
         // Skip if threshold value is empty
         if (!threshold.threshold || threshold.threshold.trim() === '') return;
-        
+
         const thresholdValue = parseFloat(threshold.threshold);
         if (isNaN(thresholdValue)) return;
 
         // Create unique key for this threshold trigger
         const triggerKey = `${pair.id}-${threshold.id}-${thresholdValue}`;
-        
+
         // Check if this threshold was already triggered
         if (triggeredThresholds.has(triggerKey)) return;
 
         // Check for price increase above threshold
         if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
-          
+
           // Show in-app notification
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT)`;
-          
+
           toast({
             title: "Schwellenwert erreicht!",
             description: message,
@@ -254,12 +254,12 @@ export default function Notifications() {
         // Check for price decrease below threshold
         if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
-          
+
           // Show in-app notification
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT)`;
-          
+
           toast({
             title: "Schwellenwert unterschritten!",
             description: message,
@@ -304,7 +304,7 @@ export default function Notifications() {
   const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
-  
+
   // Save watchlist to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('notifications-watchlist', JSON.stringify(watchlist));
@@ -314,7 +314,7 @@ export default function Notifications() {
   useEffect(() => {
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
   }, [trendPriceSettings]);
-  
+
   // Alarmierungsstufen Konfiguration
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
     harmlos: {
@@ -354,14 +354,14 @@ export default function Notifications() {
       sequenceSeconds: 0
     }
   });
-  
+
   const [alarmLevelEditMode, setAlarmLevelEditMode] = useState<Record<AlarmLevel, boolean>>({
     harmlos: false,
     achtung: false,
     gefährlich: false,
     sehr_gefährlich: false
   });
-  
+
   // Aktive Alarmierungen - mit localStorage Synchronisation
   const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>(() => {
     const stored = localStorage.getItem('active-alarms');
@@ -453,12 +453,12 @@ export default function Notifications() {
 
   const removeThreshold = (trendPriceId: string, thresholdId: string) => {
     const currentSettings = trendPriceSettings[trendPriceId];
-    
+
     if (!currentSettings) return;
 
     // Lösche den Schwellenwert
     const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
-    
+
     setTrendPriceSettings(prev => ({
       ...prev,
       [trendPriceId]: {
@@ -466,7 +466,7 @@ export default function Notifications() {
         thresholds: updatedThresholds
       }
     }));
-    
+
     toast({
       title: "Schwellenwert gelöscht",
       description: "Der Schwellenwert wurde erfolgreich entfernt.",
@@ -604,7 +604,7 @@ export default function Notifications() {
       });
 
       const result = await response.json();
-      
+
       if (result.success && result.results.email?.success) {
         toast({
           title: "✅ Email gesendet!",
@@ -760,7 +760,7 @@ export default function Notifications() {
         </Card>
 
         {/* Trendpreis Suche & Watchlist Content Card */}
-        <Card className="mb-8">
+        <Card className="mb-8 ring-2 ring-cyan-600">
           <CardHeader>
             <CardTitle>Trendpreise & Watchlist</CardTitle>
           </CardHeader>
@@ -904,32 +904,106 @@ export default function Notifications() {
                 </div>
               </div>
             ) : (
+            <>
+              {/* Add Notification Button */}
+              <div className="flex justify-end mb-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-1">
+                      <Plus className="w-4 h-4" />
+                      Benachrichtigung hinzufügen
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Benachrichtigung hinzufügen</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                      {watchlist.map((trendPriceId) => {
+                        const pair = getTrendPrice(trendPriceId);
+                        const settings = trendPriceSettings[trendPriceId];
+                        
+                        // Check if any thresholds are already configured for this pair
+                        const hasExistingThresholds = settings && settings.thresholds && settings.thresholds.length > 0;
+
+                        return (
+                          <Card key={trendPriceId} className="p-4">
+                            <CardTitle className="text-lg mb-3">{pair?.name || trendPriceId}</CardTitle>
+                            <div className="space-y-3">
+                              {/* Button to add a new threshold for this specific pair */}
+                              <Button
+                                variant="outline"
+                                className="w-full flex items-center gap-1"
+                                onClick={() => {
+                                  // Initialize settings if they don't exist
+                                  if (!trendPriceSettings[trendPriceId]) {
+                                    setTrendPriceSettings(prev => ({
+                                      ...prev,
+                                      [trendPriceId]: {
+                                        trendPriceId,
+                                        thresholds: []
+                                      }
+                                    }));
+                                  }
+
+                                  // Create a new threshold
+                                  const newThreshold: ThresholdConfig = {
+                                    id: crypto.randomUUID(),
+                                    threshold: '',
+                                    notifyOnIncrease: false,
+                                    notifyOnDecrease: false,
+                                    increaseFrequency: 'einmalig',
+                                    decreaseFrequency: 'einmalig',
+                                    alarmLevel: 'harmlos',
+                                    note: ''
+                                  };
+
+                                  setTrendPriceSettings(prev => ({
+                                    ...prev,
+                                    [trendPriceId]: {
+                                      ...prev[trendPriceId],
+                                      thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
+                                    }
+                                  }));
+
+                                  // Open edit dialog for the new threshold
+                                  setEditingThresholdId(newThreshold.id);
+                                  setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
+                                }}
+                              >
+                                <Plus className="w-4 h-4" />
+                                Schwellenwert für {pair?.name || trendPriceId} hinzufügen
+                              </Button>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
             <div className={cn(
               "space-y-4",
               watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
             )}>
               {watchlist.map((trendPriceId) => {
                 const settings = trendPriceSettings[trendPriceId];
-                
-                // Nur anzeigen, wenn gespeicherte Schwellenwerte existieren
-                if (!settings || !settings.thresholds || settings.thresholds.length === 0) {
-                  return null;
-                }
-                
-                // Filter nur gespeicherte Schwellenwerte (mit Wert und mindestens einer Benachrichtigungsoption)
-                const savedThresholds = settings.thresholds.filter(t => 
+
+                // Only show if there are saved thresholds that are active
+                const savedThresholds = settings?.thresholds.filter(t => 
                   t.threshold && 
                   t.threshold.trim() !== '' && 
                   (t.notifyOnIncrease || t.notifyOnDecrease)
-                );
-                
-                // Wenn keine gespeicherten Schwellenwerte, nichts anzeigen
+                ) || [];
+
+                // If no active saved thresholds, don't render this card
                 if (savedThresholds.length === 0) {
                   return null;
                 }
 
                 return (
-                  <Card key={trendPriceId} className="overflow-hidden">
+                  <Card key={trendPriceId} className="overflow-hidden ring-2 ring-cyan-600">
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-lg">{getTrendPriceName(trendPriceId)}</CardTitle>
@@ -997,7 +1071,7 @@ export default function Notifications() {
 
                                               <div className="space-y-3">
                                                 <Label>Benachrichtigungen bei:</Label>
-                                                
+
                                                 <div className="space-y-2 p-3 rounded-lg border">
                                                   <div className="flex items-center space-x-2">
                                                     <Checkbox
@@ -1106,7 +1180,7 @@ export default function Notifications() {
                                                       });
                                                       return;
                                                     }
-                                                    
+
                                                     if (!threshold.notifyOnIncrease && !threshold.notifyOnDecrease) {
                                                       toast({
                                                         title: "Fehler",
@@ -1115,7 +1189,7 @@ export default function Notifications() {
                                                       });
                                                       return;
                                                     }
-                                                    
+
                                                     setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
                                                     toast({
                                                       title: "Gespeichert",
@@ -1195,7 +1269,7 @@ export default function Notifications() {
                                 }
                               }));
                             }
-                            
+
                             // Erstelle neuen Schwellenwert
                             const newThreshold: ThresholdConfig = {
                               id: crypto.randomUUID(),
@@ -1207,7 +1281,7 @@ export default function Notifications() {
                               alarmLevel: 'harmlos',
                               note: ''
                             };
-                            
+
                             setTrendPriceSettings(prev => ({
                               ...prev,
                               [trendPriceId]: {
@@ -1215,7 +1289,7 @@ export default function Notifications() {
                                 thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
                               }
                             }));
-                            
+
                             // Öffne Edit-Dialog für den neuen Schwellenwert
                             setEditingThresholdId(newThreshold.id);
                             setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
@@ -1274,7 +1348,7 @@ export default function Notifications() {
 
                               <div className="space-y-3">
                                 <Label>Benachrichtigungen bei:</Label>
-                                
+
                                 {/* Preiserhöhung über Schwellenwert */}
                                 <div className="space-y-2 p-3 rounded-lg border">
                                   <div className="flex items-center space-x-2">
@@ -1413,6 +1487,7 @@ export default function Notifications() {
                 );
               })}
             </div>
+            </>
             )}
           </CardContent>
         </Card>
