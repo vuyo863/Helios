@@ -2342,30 +2342,73 @@ export default function Dashboard() {
   // - Monate → TAGES-Ticks (!), Labels = Datum + ab und zu Monat
   const xAxisTicks = useMemo(() => {
     // ANALYSIEREN-MODUS hat PRIORITÄT - auch im Compare-Modus!
-    // Spezielle Tick-Generierung für 10-12 Ticks
+    // WICHTIG: 1:1 wie Compare-Mode mit Zoom & Pan Unterstützung!
     if (analyzeModeBounds) {
-      const { startTs, endTs } = analyzeModeBounds;
-      const durationMs = endTs - startTs;
-      const durationHours = durationMs / (1000 * 60 * 60);
-      const durationDays = durationHours / 24;
+      const { startTs: baseStartTs, endTs: baseEndTs } = analyzeModeBounds;
+      const totalRange = baseEndTs - baseStartTs;
       
-      // Ziel: 10-12 Ticks
+      // Sichtbare Zeitspanne basierend auf Zoom berechnen (wie Compare-Mode!)
+      const visibleRange = totalRange / chartZoomX;
+      const visibleHours = visibleRange / (60 * 60 * 1000);
+      const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+      const visibleWeeks = visibleRange / (7 * 24 * 60 * 60 * 1000);
+      
+      // Berechne gezoomte Start/End-Zeitstempel (wie Compare-Mode!)
+      const padding = totalRange > 0 ? totalRange * 0.05 : 24 * 60 * 60 * 1000;
+      const baseMin = baseStartTs - padding;
+      const baseMax = baseEndTs + padding;
+      const baseRange = baseMax - baseMin;
+      
+      let startTs = baseStartTs;
+      let endTs = baseEndTs;
+      
+      if (chartZoomX > 1 || chartPanX !== 0) {
+        const zoomedRange = baseRange / chartZoomX;
+        const center = (baseMin + baseMax) / 2;
+        const chartWidth = 600;
+        const panOffset = -(chartPanX / chartWidth) * baseRange;
+        
+        startTs = center - zoomedRange / 2 + panOffset;
+        endTs = center + zoomedRange / 2 + panOffset;
+      }
+      
+      // AUTOMATISCHE SEQUENCE-DOWNGRADE basierend auf sichtbarer Zeitspanne
+      // (identisch wie Compare-Mode)
+      let effectiveSequence = 'days';
+      if (visibleDays < 3) {
+        effectiveSequence = 'hours';
+      }
+      
+      // ZOOM-ANGEPASSTE TICK-INTERVALLE (wie Compare-Mode!)
       let tickInterval: number;
       
-      if (durationHours <= 6) {
-        tickInterval = 30 * 60 * 1000;
-      } else if (durationHours <= 24) {
-        tickInterval = 2 * 60 * 60 * 1000;
-      } else if (durationDays <= 3) {
-        tickInterval = 6 * 60 * 60 * 1000;
-      } else if (durationDays <= 7) {
-        tickInterval = 12 * 60 * 60 * 1000;
-      } else if (durationDays <= 14) {
-        tickInterval = 24 * 60 * 60 * 1000;
-      } else if (durationDays <= 60) {
-        tickInterval = 2 * 24 * 60 * 60 * 1000;
+      if (effectiveSequence === 'hours') {
+        if (visibleHours <= 6) {
+          tickInterval = 30 * 60 * 1000; // 30 Minuten
+        } else if (visibleHours <= 12) {
+          tickInterval = 60 * 60 * 1000; // 1 Stunde
+        } else if (visibleHours <= 24) {
+          tickInterval = 2 * 60 * 60 * 1000; // 2 Stunden
+        } else if (visibleHours <= 48) {
+          tickInterval = 4 * 60 * 60 * 1000; // 4 Stunden
+        } else if (visibleHours <= 96) {
+          tickInterval = 6 * 60 * 60 * 1000; // 6 Stunden
+        } else {
+          tickInterval = 12 * 60 * 60 * 1000; // 12 Stunden
+        }
       } else {
-        tickInterval = 7 * 24 * 60 * 60 * 1000;
+        // TAGES-MODUS
+        if (visibleDays <= 7) {
+          tickInterval = 24 * 60 * 60 * 1000; // 1 Tag
+        } else if (visibleDays <= 14) {
+          tickInterval = 2 * 24 * 60 * 60 * 1000; // 2 Tage
+        } else if (visibleDays <= 30) {
+          tickInterval = 3 * 24 * 60 * 60 * 1000; // 3 Tage
+        } else if (visibleDays <= 60) {
+          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche
+        } else {
+          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
+        }
       }
       
       const ticks: number[] = [];
