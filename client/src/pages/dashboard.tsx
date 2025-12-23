@@ -2999,10 +2999,11 @@ export default function Dashboard() {
     // ADDED MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types (analog zu Compare)
     if (isMultiBotChartMode && multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
       const range = multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp;
-      const padding = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% oder 1 Tag
+      const paddingRight = range > 0 ? range * 0.05 : 24 * 60 * 60 * 1000; // 5% rechts
+      const paddingLeft = range > 0 ? range * 0.08 : 24 * 60 * 60 * 1000; // 8% links für bessere Datum-Anzeige
       
-      const baseMin = multiBotChartData.minTimestamp - padding;
-      const baseMax = multiBotChartData.maxTimestamp + padding;
+      const baseMin = multiBotChartData.minTimestamp - paddingLeft;
+      const baseMax = multiBotChartData.maxTimestamp + paddingRight;
       const baseRange = baseMax - baseMin;
       
       // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
