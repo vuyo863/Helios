@@ -1001,11 +1001,11 @@ export default function Notifications() {
                             Benachrichtigung hinzufügen
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[80vh]">
+                        <DialogContent className="max-w-2xl max-h-[80vh]" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                           <DialogHeader>
                             <DialogTitle>Benachrichtigung hinzufügen</DialogTitle>
                           </DialogHeader>
-                          <ScrollArea className="max-h-[60vh] pr-4">
+                          <ScrollArea className="max-h-[60vh] pr-4 pl-2">
                             <div className="space-y-4">
                               {watchlist.map((trendPriceId) => {
                                 const pair = getTrendPrice(trendPriceId);
@@ -1071,11 +1071,11 @@ export default function Notifications() {
                                           Schwellenwert hinzufügen
                                         </Button>
                                       </DialogTrigger>
-                                      <DialogContent className="max-w-2xl">
+                                      <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                                         <DialogHeader>
                                           <DialogTitle>Neuen Schwellenwert konfigurieren</DialogTitle>
                                         </DialogHeader>
-                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 pl-2">
                                           {editingThresholdId && trendPriceSettings[trendPriceId]?.thresholds.find(t => t.id === editingThresholdId) && (() => {
                                             const threshold = trendPriceSettings[trendPriceId].thresholds.find(t => t.id === editingThresholdId)!;
                                             return (
@@ -1254,10 +1254,11 @@ export default function Notifications() {
               }
 
               return (
-                <div className={cn(
-                  "space-y-4",
-                  watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
+                <ScrollArea className={cn(
+                  "w-full",
+                  watchlist.length > 3 ? "h-[600px]" : ""
                 )}>
+                  <div className="space-y-4 pr-4 pl-2">
                   {watchlist.map((trendPriceId) => {
                     const settings = trendPriceSettings[trendPriceId];
 
@@ -1293,15 +1294,15 @@ export default function Notifications() {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
+                          <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                             <DialogHeader>
                               <DialogTitle>Schwellenwerte für {getTrendPriceName(trendPriceId)}</DialogTitle>
                             </DialogHeader>
                             <ScrollArea className={cn(
                               "w-full",
-                              savedThresholds.length > 4 ? "h-[500px]" : ""
+                              savedThresholds.length > 3 ? "h-[500px]" : ""
                             )}>
-                              <div className="space-y-3 pr-4">
+                              <div className="space-y-3 pr-4 pl-2">
                                 {savedThresholds.map((threshold, index) => (
                                   <Card key={threshold.id} className="p-4">
                                     <div className="flex items-start justify-between mb-3">
@@ -1323,11 +1324,11 @@ export default function Notifications() {
                                               <Pencil className="w-4 h-4" />
                                             </Button>
                                           </DialogTrigger>
-                                          <DialogContent className="max-w-2xl">
+                                          <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                                             <DialogHeader>
                                               <DialogTitle>Schwellenwert {index + 1} bearbeiten</DialogTitle>
                                             </DialogHeader>
-                                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 pl-2">
                                               <div>
                                                 <Label htmlFor={`edit-threshold-${threshold.id}`}>Schwellenwert (USDT)</Label>
                                                 <Input
@@ -1757,7 +1758,8 @@ export default function Notifications() {
                   </Card>
                 );
               })}
-            </div>
+                  </div>
+                </ScrollArea>
               );
             })()}
             </>
