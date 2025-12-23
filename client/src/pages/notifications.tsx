@@ -959,11 +959,11 @@ export default function Notifications() {
         </Card>
 
         {/* Benachrichtigungen konfigurieren Section */}
-        <Card className="ring-2 ring-cyan-600 mb-8">
+        <Card className="ring-2 ring-cyan-600 mb-8 overflow-visible">
           <CardHeader>
             <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-visible">
             {watchlist.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="flex flex-col items-center gap-4 text-muted-foreground">
@@ -1275,23 +1275,23 @@ export default function Notifications() {
                     }
 
                     return (
-                  <Card key={trendPriceId} className="overflow-hidden ring-2 ring-cyan-600">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <CardTitle className="text-lg">{getTrendPriceName(trendPriceId)}</CardTitle>
-                        <span className="text-sm text-muted-foreground">
+                  <Card key={trendPriceId} className="overflow-visible ring-2 ring-cyan-600">
+                    <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 pt-4">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">{getTrendPriceName(trendPriceId)}</CardTitle>
+                        <span className="text-xs text-muted-foreground">
                           {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         {/* View Dialog - Eye Icon */}
                         <Dialog 
                           open={viewDialogOpen[trendPriceId]} 
                           onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
                         >
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Eye className="w-4 h-4" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <Eye className="w-3.5 h-3.5" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
@@ -1530,6 +1530,7 @@ export default function Notifications() {
                         <Button 
                           variant="ghost" 
                           size="icon"
+                          className="h-7 w-7"
                           onClick={() => {
                             // Initialisiere Settings falls nicht vorhanden
                             if (!trendPriceSettings[trendPriceId]) {
@@ -1567,7 +1568,7 @@ export default function Notifications() {
                             setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
                           }}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </CardHeader>
