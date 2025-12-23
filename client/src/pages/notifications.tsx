@@ -959,11 +959,11 @@ export default function Notifications() {
         </Card>
 
         {/* Benachrichtigungen konfigurieren Section */}
-        <Card className="ring-2 ring-cyan-600 mb-8 overflow-visible">
+        <Card className="ring-2 ring-cyan-600 mb-8">
           <CardHeader>
             <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
           </CardHeader>
-          <CardContent className="overflow-visible">
+          <CardContent>
             {watchlist.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="flex flex-col items-center gap-4 text-muted-foreground">
@@ -1275,7 +1275,7 @@ export default function Notifications() {
                     }
 
                     return (
-                  <Card key={trendPriceId} className="overflow-visible ring-2 ring-cyan-600">
+                  <Card key={trendPriceId} className="ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
                     <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 pt-4">
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-base">{getTrendPriceName(trendPriceId)}</CardTitle>
@@ -1283,18 +1283,17 @@ export default function Notifications() {
                           {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {/* View Dialog - Eye Icon */}
-                        <Dialog 
-                          open={viewDialogOpen[trendPriceId]} 
-                          onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
-                        >
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <Eye className="w-3.5 h-3.5" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+                      {/* View Dialog - Eye Icon */}
+                      <Dialog 
+                        open={viewDialogOpen[trendPriceId]} 
+                        onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
+                      >
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                             <DialogHeader>
                               <DialogTitle>Schwellenwerte für {getTrendPriceName(trendPriceId)}</DialogTitle>
                             </DialogHeader>
@@ -1525,52 +1524,6 @@ export default function Notifications() {
                             </ScrollArea>
                           </DialogContent>
                         </Dialog>
-
-                        {/* Create New Threshold - Pencil Icon */}
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            // Initialisiere Settings falls nicht vorhanden
-                            if (!trendPriceSettings[trendPriceId]) {
-                              setTrendPriceSettings(prev => ({
-                                ...prev,
-                                [trendPriceId]: {
-                                  trendPriceId,
-                                  thresholds: []
-                                }
-                              }));
-                            }
-
-                            // Erstelle neuen Schwellenwert
-                            const newThreshold: ThresholdConfig = {
-                              id: crypto.randomUUID(),
-                              threshold: '',
-                              notifyOnIncrease: false,
-                              notifyOnDecrease: false,
-                              increaseFrequency: 'einmalig',
-                              decreaseFrequency: 'einmalig',
-                              alarmLevel: 'harmlos',
-                              note: ''
-                            };
-
-                            setTrendPriceSettings(prev => ({
-                              ...prev,
-                              [trendPriceId]: {
-                                ...prev[trendPriceId],
-                                thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
-                              }
-                            }));
-
-                            // Öffne Edit-Dialog für den neuen Schwellenwert
-                            setEditingThresholdId(newThreshold.id);
-                            setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
-                          }}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
                     </CardHeader>
 
                     {false && (
