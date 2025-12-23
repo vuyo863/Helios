@@ -6772,6 +6772,10 @@ export default function Dashboard() {
                       const dataKey = `Gesamt_${metricName}`;
                       const color = metricColors[metricName] || '#888888';
                       
+                      // Berechne Y-Domain für manuelle Skalierung
+                      const [yMin, yMax] = yAxisDomain;
+                      const chartHeight = 300 - 5 - 20; // Höhe minus margins (top: 5, bottom: 20)
+                      
                       return (
                         <Line 
                           key={`added-${metricName}`}
@@ -6781,19 +6785,28 @@ export default function Dashboard() {
                           stroke={color}
                           strokeWidth={2.5}
                           dot={(props: any) => {
-                            const { cx, cy, payload, yAxis } = props;
+                            const { cx, cy, payload } = props;
                             const activeBotCount = payload?._activeBotCount || 0;
                             
-                            // Berechne adjustierte Y-Position für Punkt an oberer Ecke
+                            // Berechne adjustierte Y-Position für Punkt an oberer Ecke bei End-Events
                             // Verwende _dot_Gesamt_* Wert (inkl. endender Bots) statt Gesamt_* (ohne)
                             const dotDataKey = `_dot_Gesamt_${metricName}`;
                             const dotValue = payload?.[dotDataKey];
                             const lineValue = payload?.[dataKey];
                             
-                            // Berechne cy basierend auf dotValue wenn verfügbar und yAxis vorhanden
+                            // Berechne neue cy-Position wenn dotValue > lineValue (End-Events)
                             let adjustedCy = cy;
-                            if (yAxis?.scale && typeof dotValue === 'number' && dotValue !== lineValue) {
-                              adjustedCy = yAxis.scale(dotValue);
+                            if (typeof dotValue === 'number' && typeof lineValue === 'number' && 
+                                dotValue !== lineValue && typeof yMin === 'number' && typeof yMax === 'number') {
+                              // Berechne Pixel pro Wert-Einheit (Y-Achse ist invertiert: höherer Wert = niedrigere cy)
+                              const yRange = yMax - yMin;
+                              if (yRange > 0) {
+                                const pixelPerValue = chartHeight / yRange;
+                                // Differenz zwischen dot-Wert und line-Wert
+                                const valueDiff = dotValue - lineValue;
+                                // Verschiebe cy nach oben (negativer Offset, da höhere Werte = niedrigere cy)
+                                adjustedCy = cy - (valueDiff * pixelPerValue);
+                              }
                             }
                             
                             return (
