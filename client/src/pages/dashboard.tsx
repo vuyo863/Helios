@@ -1618,6 +1618,52 @@ export default function Dashboard() {
     
     return { highest: maxPoint, lowest: minPoint };
   }, [isMultiBotChartMode, multiBotChartData.data]);
+
+  // ADDED MODE: Aggregierte Werte für Content Cards
+  // Berechnet die SUMME aller Metriken, die im Graph angezeigt werden
+  const addedModeAggregatedValues = useMemo(() => {
+    if (!isMultiBotChartMode || !multiBotChartData.data || multiBotChartData.data.length === 0) {
+      return null;
+    }
+    
+    // Summiere alle Werte aus den angezeigten Metriken
+    let totalProfit = 0;
+    let totalInvestment = 0;
+    let totalProfitPercent = 0;
+    let totalAvgDailyProfit = 0;
+    let totalRealDailyProfit = 0;
+    let count = 0;
+    
+    multiBotChartData.data.forEach((point: any) => {
+      // Jeder Punkt repräsentiert ein End-Event mit individuellen Metriken
+      const profit = point['Gesamt_Gesamtprofit'] || point['Gesamt'] || 0;
+      const investment = point['Gesamt_Gesamtkapital'] || 0;
+      const profitPercent = point['Gesamt_Gesamtprofit %'] || 0;
+      const avgDaily = point['Gesamt_Ø Profit/Tag'] || 0;
+      const realDaily = point['Gesamt_Real Profit/Tag'] || 0;
+      
+      totalProfit += profit;
+      totalInvestment += investment;
+      totalProfitPercent += profitPercent;
+      totalAvgDailyProfit += avgDaily;
+      totalRealDailyProfit += realDaily;
+      count++;
+    });
+    
+    // Durchschnittswerte für Prozent und tägliche Profite
+    const avgProfitPercent = count > 0 ? totalProfitPercent / count : 0;
+    const avgDailyProfit = count > 0 ? totalAvgDailyProfit / count : 0;
+    const avgRealDailyProfit = count > 0 ? totalRealDailyProfit / count : 0;
+    
+    return {
+      profit: totalProfit,
+      investment: totalInvestment,
+      profitPercent: avgProfitPercent,
+      avgDailyProfit: avgDailyProfit,
+      realDailyProfit: avgRealDailyProfit,
+      metricCount: count
+    };
+  }, [isMultiBotChartMode, multiBotChartData.data]);
   // ========== ENDE ADDED MODUS SECTION ==========
 
   // Chart-Daten basierend auf appliedChartSettings generieren
@@ -4034,6 +4080,24 @@ export default function Dashboard() {
                         return `${compareHighestValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
                       case 'Real Profit/Tag':
                         return `${compareHighestValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      default:
+                        return '--';
+                    }
+                  }
+                  
+                  // ADDED MODE: Zeige aggregierte Werte aus den im Graph angezeigten Metriken
+                  if (isMultiBotChartMode && addedModeAggregatedValues) {
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        return `${addedModeAggregatedValues.investment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit':
+                        return `${addedModeAggregatedValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit %':
+                        return `${addedModeAggregatedValues.profitPercent.toFixed(2)}%`;
+                      case 'Ø Profit/Tag':
+                        return `${addedModeAggregatedValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Real Profit/Tag':
+                        return `${addedModeAggregatedValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
                       default:
                         return '--';
                     }
