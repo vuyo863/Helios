@@ -1497,6 +1497,7 @@ export default function Dashboard() {
       const value = metricValues['Gesamtprofit'];
 
       // Start-Zeitpunkt (lastUpload) - nutze parseGermanDate für deutsches Format
+      // WICHTIG: Start-Events haben KEINE Profit-Werte! Der Profit wird erst am Ende generiert.
       if (update.lastUpload) {
         const startDate = parseGermanDate(update.lastUpload);
         if (startDate) {
@@ -1504,8 +1505,8 @@ export default function Dashboard() {
             timestamp: startDate.getTime(),
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
-            value,
-            metricValues,
+            value: 0, // Start hat keinen Profit-Wert
+            metricValues: {}, // Start hat KEINE Metrik-Werte - nur ein Marker
             type: 'start',
             updateVersion: update.version,
             isClosedBot
@@ -1580,12 +1581,12 @@ export default function Dashboard() {
         const key = `${event.botTypeId}:${event.updateVersion}`;
         
         if (event.type === 'start') {
-          // Bot startet → Wert hinzufügen
+          // Bot startet → als aktiv markieren, aber mit Wert 0 (Profit kommt erst am Ende)
           activeBots.set(key, {
             botTypeId: event.botTypeId,
             botTypeName: event.botTypeName,
-            value: event.value,
-            metricValues: event.metricValues,
+            value: 0, // Start hat keinen Profit
+            metricValues: {}, // Keine Metrik-Werte am Start
             updateVersion: event.updateVersion
           });
         } else if (event.type === 'end') {
@@ -6386,28 +6387,14 @@ export default function Dashboard() {
                               </p>
                             )}
                             
-                            {/* Bot-Type Names die starten - MIT Metrik-Werten */}
-                            {startEvents.length > 0 && startEvents.map((event: any, idx: number) => {
-                              // Zeige alle aktiven Metriken für diesen Start-Event
-                              const metricValues = event.metricValues || {};
-                              return (
-                                <div key={`start-${idx}`} style={{ marginBottom: '4px' }}>
-                                  <p style={{ fontSize: '11px', color: '#22c55e', margin: '2px 0', fontWeight: 'bold' }}>
-                                    Start: {event.botTypeName}
-                                  </p>
-                                  {activeMetricCards.map((metricName, mIdx) => {
-                                    const value = metricValues[metricName] || 0;
-                                    const color = metricColors[metricName] || '#888888';
-                                    const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
-                                    return (
-                                      <p key={`start-metric-${mIdx}`} style={{ fontSize: '11px', color, margin: '0 0 0 8px' }}>
-                                        {metricName}: {value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
-                                      </p>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })}
+                            {/* Bot-Type Names die starten - KEINE Metrik-Werte (Profit existiert noch nicht) */}
+                            {startEvents.length > 0 && startEvents.map((event: any, idx: number) => (
+                              <div key={`start-${idx}`} style={{ marginBottom: '4px' }}>
+                                <p style={{ fontSize: '11px', color: '#22c55e', margin: '2px 0', fontWeight: 'bold' }}>
+                                  Start: {event.botTypeName}
+                                </p>
+                              </div>
+                            ))}
                             
                             {/* Bot-Type Names die enden - MIT Metrik-Werten und Runtime */}
                             {endEvents.length > 0 && endEvents.map((event: any, idx: number) => {
