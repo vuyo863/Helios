@@ -1593,8 +1593,18 @@ export default function Dashboard() {
             updateVersion: event.updateVersion
           });
         } else if (event.type === 'end') {
-          // Bot endet → Wert entfernen (KEINE Carry-Forward)
-          // Aber erst den End-Punkt mit dem Wert erstellen, dann entfernen
+          // End-Event: Bot zur Summe hinzufügen falls noch nicht vorhanden
+          // Dies ist wichtig für Closed Bots (die keinen Start-Event haben)
+          // und stellt sicher dass der Wert AM höchsten Punkt angezeigt wird
+          if (!activeBots.has(key)) {
+            activeBots.set(key, {
+              botTypeId: event.botTypeId,
+              botTypeName: event.botTypeName,
+              value: event.value,
+              metricValues: event.metricValues,
+              updateVersion: event.updateVersion
+            });
+          }
         }
       });
 
@@ -6428,6 +6438,24 @@ export default function Dashboard() {
                                 </div>
                               );
                             })}
+                            
+                            {/* Gesamtwert wenn mehrere End-Events vorhanden sind */}
+                            {endEvents.length > 1 && (
+                              <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid hsl(var(--border))' }}>
+                                {activeMetricCards.map((metricName, mIdx) => {
+                                  const totalValue = endEvents.reduce((sum: number, event: any) => {
+                                    return sum + (event.metricValues?.[metricName] || 0);
+                                  }, 0);
+                                  const color = metricColors[metricName] || '#888888';
+                                  const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
+                                  return (
+                                    <p key={`total-${mIdx}`} style={{ fontSize: '12px', color, margin: '2px 0', fontWeight: 'bold' }}>
+                                      Gesamtwert: {totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
+                                    </p>
+                                  );
+                                })}
+                              </div>
+                            )}
                             
                           </div>
                         );
