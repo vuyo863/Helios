@@ -6778,23 +6778,24 @@ export default function Dashboard() {
                               return null;
                             };
                             
-                            const matchingKey = markerViewActive ? findMatchingUpdateKey() : null;
+                            // Matching Key auch im Stift-Modus berechnen
+                            const matchingKey = (markerViewActive || markerEditActive) ? findMatchingUpdateKey() : null;
                             // Punkt ist nur aktiv wenn gehoverd ODER gelockt - nicht per Default
                             const isPointActive = matchingKey !== null && (hoveredUpdateId === matchingKey || lockedUpdateIds.has(matchingKey));
                             
-                            // Hover-Handler für bidirektionale Interaktion
+                            // Hover-Handler für bidirektionale Interaktion (Auge UND Stift Modus)
                             const handleDotMouseEnter = () => {
-                              if (markerViewActive && matchingKey) {
+                              if ((markerViewActive || markerEditActive) && matchingKey) {
                                 setHoveredUpdateId(matchingKey);
                               }
                             };
                             const handleDotMouseLeave = () => {
-                              if (markerViewActive) {
+                              if (markerViewActive || markerEditActive) {
                                 setHoveredUpdateId(null);
                               }
                             };
                             const handleDotClick = () => {
-                              if (markerViewActive && matchingKey) {
+                              if ((markerViewActive || markerEditActive) && matchingKey) {
                                 setLockedUpdateIds(prev => {
                                   const newSet = new Set(prev);
                                   if (newSet.has(matchingKey)) {
@@ -6820,7 +6821,7 @@ export default function Dashboard() {
                               cursor: 'pointer',
                               pointerEvents: 'all' as const
                             } : { 
-                              cursor: markerViewActive ? 'pointer' : 'default',
+                              cursor: (markerViewActive || markerEditActive) ? 'pointer' : 'default',
                               pointerEvents: 'all' as const
                             };
                             const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : lineColor;
