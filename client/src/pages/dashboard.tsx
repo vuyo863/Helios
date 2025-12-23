@@ -309,12 +309,6 @@ export default function Dashboard() {
   const [tooltipCoordinate, setTooltipCoordinate] = useState<{ x: number; y: number } | null>(null);
   const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
   
-  // Click-to-Pin Tooltip: Bei Klick auf Punkt wird der Hover-Tooltip "eingefroren"
-  // Speichert den kompletten Tooltip-Payload der dann statt dem Hover-Payload angezeigt wird
-  // Der Tooltip bleibt an der gleichen Position wie im Hover-Modus
-  const [frozenTooltipPayload, setFrozenTooltipPayload] = useState<any>(null);
-  const [frozenPointId, setFrozenPointId] = useState<string | null>(null);
-  
   // Chart Zoom & Pan Event-Handler
   // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
   // WICHTIG: Nativer Event-Listener mit passive: false, damit preventDefault() funktioniert
@@ -6053,22 +6047,13 @@ export default function Dashboard() {
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   <Tooltip 
-                    active={tooltipIsNearPoint || (isMultiBotChartMode && frozenTooltipPayload !== null)}
+                    active={tooltipIsNearPoint}
                     content={(props) => {
-                      // ADDED MODE: Wenn Tooltip eingefroren ist, zeige den eingefrorenen Payload
-                      // Ansonsten zeige den normalen Hover-Payload
-                      let dataPoint: any;
-                      
-                      if (isMultiBotChartMode && frozenTooltipPayload !== null) {
-                        // Eingefrorener Tooltip - zeige den gespeicherten Payload
-                        dataPoint = frozenTooltipPayload;
-                      } else {
-                        // Normaler Hover-Modus
-                        if (!tooltipIsNearPoint || !props.active || !props.payload || props.payload.length === 0) {
-                          return null;
-                        }
-                        dataPoint = props.payload[0]?.payload;
+                      // Normaler Hover-Modus
+                      if (!tooltipIsNearPoint || !props.active || !props.payload || props.payload.length === 0) {
+                        return null;
                       }
+                      const dataPoint = props.payload[0]?.payload;
                       
                       if (!dataPoint) return null;
                       
@@ -6423,18 +6408,6 @@ export default function Dashboard() {
                             
                             {/* Datum */}
                             <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
-                            
-                            {/* END Label */}
-                            <p style={{ 
-                              fontWeight: 'bold', 
-                              marginBottom: '4px', 
-                              fontSize: '12px', 
-                              color: '#ef4444',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px'
-                            }}>
-                              END{isClosedBot ? ' (Closed Bot)' : ''}
-                            </p>
                             
                             {/* Bot-Type Name */}
                             <p style={{ fontSize: '12px', color: 'hsl(var(--foreground))', margin: '2px 0', fontWeight: 'bold' }}>
@@ -6878,42 +6851,15 @@ export default function Dashboard() {
                               return <g key={`dot-added-empty-${metricName}-${eventIndex}`} />;
                             }
                             
-                            // Eindeutige ID: eventIndex ist der primäre Identifikator
-                            const pointId = `${metricName}-${eventIndex}`;
-                            
-                            // Prüfe ob DIESER spezifische Punkt eingefroren ist
-                            const isFrozen = frozenPointId === pointId;
-                            
-                            // Click-Handler für Tooltip-Freeze
-                            const handleDotClick = (e: React.MouseEvent) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              
-                              if (isFrozen) {
-                                // Nochmal auf eingefrorenen Punkt geklickt → auftauen
-                                setFrozenTooltipPayload(null);
-                                setFrozenPointId(null);
-                              } else {
-                                // Auf neuen Punkt geklickt → einfrieren
-                                setFrozenTooltipPayload(payload);
-                                setFrozenPointId(pointId);
-                              }
-                            };
-                            
-                            // Normale Punkt-Größe - eingefrorene Punkte leicht größer
-                            const dotRadius = isFrozen ? 7 : 5;
-                            
                             return (
                               <circle
-                                key={`dot-added-${pointId}`}
+                                key={`dot-added-${metricName}-${eventIndex}`}
                                 cx={cx}
                                 cy={cy}
-                                r={dotRadius}
+                                r={5}
                                 fill={isClosedBot ? "hsl(var(--background))" : color}
                                 stroke={color}
                                 strokeWidth={isClosedBot ? 2 : 0}
-                                style={{ cursor: 'pointer', pointerEvents: 'all' }}
-                                onClick={handleDotClick}
                               />
                             );
                           }}
