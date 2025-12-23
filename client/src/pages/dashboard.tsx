@@ -262,6 +262,9 @@ export default function Dashboard() {
   const [appliedUpdateId, setAppliedUpdateId] = useState<string | null>(null);
   // Analysieren-Modus: zeigt nur das eine ausgewählte Update im Graph
   const [analyzeMode, setAnalyzeMode] = useState(false);
+  // Snapshot der activeMetricCards VOR dem Analyze-Modus
+  // Wird beim Verlassen des Analyze-Modus wiederhergestellt
+  const [preAnalyzeActiveMetricCards, setPreAnalyzeActiveMetricCards] = useState<string[] | null>(null);
   // Such-Dialog für Metrik-Auswahl
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   // Detail-Dialog für angewandte Metrik (Auge-Button)
@@ -7946,7 +7949,19 @@ export default function Dashboard() {
                     )}
                     title="Analysieren"
                     disabled={!appliedUpdateId}
-                    onClick={() => setAnalyzeMode(!analyzeMode)}
+                    onClick={() => {
+                      if (!analyzeMode) {
+                        // Analyze-Modus EINSCHALTEN: Snapshot der activeMetricCards speichern
+                        setPreAnalyzeActiveMetricCards([...activeMetricCards]);
+                      } else {
+                        // Analyze-Modus AUSSCHALTEN: Gespeicherte activeMetricCards wiederherstellen
+                        if (preAnalyzeActiveMetricCards) {
+                          setActiveMetricCards(preAnalyzeActiveMetricCards);
+                          setPreAnalyzeActiveMetricCards(null);
+                        }
+                      }
+                      setAnalyzeMode(!analyzeMode);
+                    }}
                     data-testid="button-analyze-metric"
                   >
                     <LineChartIcon className="h-4 w-4" />
