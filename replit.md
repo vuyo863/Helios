@@ -300,6 +300,24 @@ compareChartData            // Compare Mode Daten (2+ Bots mit Compare)
 
 ## CHANGELOG
 
+### Dezember 2025 - Analyze Mode Multi-Metrik Unterstützung
+**Was wurde gemacht:**
+1. Analyze Mode unterstützt jetzt **mehrere Metriken gleichzeitig**
+2. Jede aktivierte Content-Card wird als separate Linie im Chart angezeigt
+3. **Metrik-Farbcodierung**: Linien haben die Farbe ihrer Content-Card:
+   - Gesamtkapital: Blau (#2563eb)
+   - Gesamtprofit: Grün (#16a34a)
+   - Gesamtprofit %: Lila (#9333ea)
+   - Ø Profit/Tag: Orange (#ea580c)
+   - Real Profit/Tag: Gelb/Gold (#ca8a04)
+4. **Safe Key Mapping**: `metricToSafeKey` konvertiert Metrik-Namen in sichere Schlüssel für Recharts (keine Leerzeichen/Sonderzeichen)
+
+**Technische Details:**
+- `metricToSafeKey`: Mapping von Metrik-Namen zu sicheren dataKey-Schlüsseln
+- `ALL_METRICS`: Array aller verfügbaren Metriken
+- Daten werden mit sicheren Schlüsseln gespeichert: `metric_gesamtprofit`, `metric_gesamtprofitPercent`, etc.
+- `allowMultiSelect = true` im Analyze Mode (Zeile ~3980)
+
 ### Dezember 2025 - Added Mode Redesign
 **Was wurde gemacht:**
 1. `multiBotChartData` useMemo komplett überarbeitet
