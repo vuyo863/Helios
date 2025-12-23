@@ -7984,14 +7984,18 @@ export default function Dashboard() {
             </Card>
             
             {/* Settings Container - Graph-Einstellungen (Golden State - 300px height, aligned with chart) */}
-            <div className="flex ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg" style={{ height: '300px' }}>
+            {/* Im Analyze-Status komplett ausgegraut und nicht anklickbar */}
+            <div className={cn(
+              "flex ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg",
+              analyzeMode && "opacity-50 pointer-events-none"
+            )} style={{ height: '300px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
               className={cn(
                 "flex flex-col items-center justify-start pt-3 w-10 bg-muted/30 cursor-pointer hover-elevate border",
                 settingsCollapsed ? "rounded-md" : "rounded-l-md border-r-0"
               )}
-              onClick={() => setSettingsCollapsed(!settingsCollapsed)}
+              onClick={() => !analyzeMode && setSettingsCollapsed(!settingsCollapsed)}
               title={settingsCollapsed ? "Graph-Einstellungen ausklappen" : "Graph-Einstellungen einklappen"}
             >
               {settingsCollapsed ? (
@@ -8299,31 +8303,38 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mb-8">
+        {/* Alle Einträge Bereich - im Analyze-Status komplett ausgegraut */}
+        <div className={cn("mb-8", analyzeMode && "opacity-50 pointer-events-none")}>
           <div className="flex items-center gap-4 mb-4">
             <h2 className="text-xl font-bold">
               Alle Einträge
             </h2>
             <div className="flex items-center bg-muted rounded-lg p-1 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]" data-testid="toggle-alle-eintraege-mode">
               <button
-                onClick={() => setAlleEintraegeMode('compare')}
+                onClick={() => !analyzeMode && setAlleEintraegeMode('compare')}
+                disabled={analyzeMode}
                 className={cn(
                   "px-3 py-1 text-sm font-medium rounded-md transition-colors",
-                  alleEintraegeMode === 'compare' 
-                    ? "bg-background text-foreground shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
+                  analyzeMode 
+                    ? "cursor-not-allowed"
+                    : alleEintraegeMode === 'compare' 
+                      ? "bg-background text-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
                 )}
                 data-testid="button-mode-compare"
               >
                 Compare
               </button>
               <button
-                onClick={() => setAlleEintraegeMode('added')}
+                onClick={() => !analyzeMode && setAlleEintraegeMode('added')}
+                disabled={analyzeMode}
                 className={cn(
                   "px-3 py-1 text-sm font-medium rounded-md transition-colors",
-                  alleEintraegeMode === 'added' 
-                    ? "bg-background text-foreground shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
+                  analyzeMode 
+                    ? "cursor-not-allowed"
+                    : alleEintraegeMode === 'added' 
+                      ? "bg-background text-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
                 )}
                 data-testid="button-mode-added"
               >
