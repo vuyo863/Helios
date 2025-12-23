@@ -5338,7 +5338,8 @@ export default function Dashboard() {
                           />
                           {/* Dashed lines down to chart points when hovered OR when Eye blink is active for THIS update */}
                           {/* WICHTIG: Eye Blink nur wenn blinkingUpdateKey === dieser updateKey */}
-                          {(isActive || (blinkingUpdateKey === updateKey)) && (() => {
+                          {/* ANALYZE MODE: Keine gestrichelten Linien, da der Chart anders funktioniert */}
+                          {!isAnalyzeSingleMetricMode && (isActive || (blinkingUpdateKey === updateKey)) && (() => {
                             // COMPARE MODUS: Verwende compareChartData - Linie nur bis zum Datenpunkt
                             if (isMultiSelectCompareMode) {
                               const chartDataArray = compareChartData.data || [];
@@ -6538,6 +6539,119 @@ export default function Dashboard() {
                         // Fallback: Displaywert verwenden
                         return displayValue;
                       };
+                      
+                      // ANALYZE MODE TOOLTIP: Zeige alle aktiven Metriken mit echten Werten und Farben
+                      if (isAnalyzeSingleMetricMode && analyzeSingleMetricInfo) {
+                        const botTypeName = analyzeSingleMetricInfo.botTypeName;
+                        const isStartPoint = dataPoint.isStartPoint === true;
+                        const runtimeMs = dataPoint.runtimeMs;
+                        
+                        // Hole echte Werte aus den Datenpunkt-Feldern (Gesamtprofit, Gesamtkapital)
+                        const gesamtprofit = dataPoint['Gesamtprofit'] || 0;
+                        const gesamtkapital = dataPoint['Gesamtkapital'] || 0;
+                        
+                        // Umrandungsfarbe = erste aktive Metrik
+                        const primaryMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+                        const borderColor = metricColors[primaryMetric] || '#22c55e';
+                        
+                        // Berechne echte Metrik-Werte (nicht offsetted)
+                        // WICHTIG: Ø Profit/Tag = Gesamtprofit / Tage (exakt wie MainChart)
+                        // Real Profit/Tag = wenn Runtime < 24h dann Gesamtprofit, sonst Profit/Tag
+                        const getAnalyzeMetricValue = (metricName: string): number => {
+                          // Für Startpunkte: zeige 0 (oder Gesamtkapital wenn aktiv)
+                          if (isStartPoint) {
+                            if (metricName === 'Gesamtkapital') return gesamtkapital;
+                            return 0;
+                          }
+                          // Für Endpunkte: zeige echte Werte
+                          switch (metricName) {
+                            case 'Gesamtkapital':
+                              return gesamtkapital;
+                            case 'Gesamtprofit':
+                              return gesamtprofit;
+                            case 'Gesamtprofit %':
+                              return gesamtkapital > 0 ? (gesamtprofit / gesamtkapital) * 100 : 0;
+                            case 'Ø Profit/Tag':
+                              // Ø Profit/Tag = Gesamtprofit / Laufzeit in Tagen
+                              if (runtimeMs && runtimeMs > 0) {
+                                const days = runtimeMs / (24 * 60 * 60 * 1000);
+                                // Mindestens 1 Tag für die Berechnung
+                                const effectiveDays = Math.max(days, 1);
+                                return gesamtprofit / effectiveDays;
+                              }
+                              // Fallback: Gesamtprofit (entspricht 1 Tag)
+                              return gesamtprofit;
+                            case 'Real Profit/Tag':
+                              // Real Profit/Tag: Wenn Runtime < 24h → Gesamtprofit
+                              // Ansonsten → Profit pro Tag berechnet
+                              if (runtimeMs && runtimeMs > 0) {
+                                const days = runtimeMs / (24 * 60 * 60 * 1000);
+                                if (days < 1) {
+                                  // Runtime < 24h: Zeige Gesamtprofit (der Tag ist noch nicht voll)
+                                  return gesamtprofit;
+                                }
+                                // Runtime >= 24h: Berechne echten Profit/Tag
+                                return gesamtprofit / days;
+                              }
+                              return gesamtprofit;
+                            default:
+                              return 0;
+                          }
+                        };
+                        
+                        return (
+                          <div 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: `2px solid ${borderColor}`,
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}
+                          >
+                            {/* Datum */}
+                            <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                            
+                            {/* Start/End Label */}
+                            <p style={{ 
+                              fontWeight: 'bold', 
+                              marginBottom: '4px', 
+                              fontSize: '11px', 
+                              color: isStartPoint ? '#22c55e' : '#ef4444',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              {isStartPoint ? 'Start' : 'End'}
+                            </p>
+                            
+                            {/* Bot-Type Name */}
+                            <p style={{ fontSize: '12px', color: 'hsl(var(--foreground))', margin: '2px 0', fontWeight: 'bold' }}>
+                              {botTypeName}
+                            </p>
+                            
+                            {/* Alle aktiven Metriken mit ihren Farben */}
+                            {activeMetricCards.map((metricName, idx) => {
+                              const value = getAnalyzeMetricValue(metricName);
+                              const color = metricColors[metricName] || '#888888';
+                              const suffix = metricName === 'Gesamtprofit %' ? '%' : ' USDT';
+                              
+                              return (
+                                <p key={idx} style={{ fontSize: '12px', color, margin: '4px 0' }}>
+                                  {metricName}: {value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
+                                </p>
+                              );
+                            })}
+                            
+                            {/* Runtime nur bei Endpunkten */}
+                            {!isStartPoint && runtimeMs && runtimeMs > 0 && (
+                              <p style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', margin: '4px 0 0 0' }}>
+                                Runtime: {formatRuntimeFromMs(runtimeMs)}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
                       
                       // ADDED/PORTFOLIO MODUS: Jeder Punkt ist ein einzelner End-Event
                       // Zeigt: Datum, End, Bot-Type Name, ALLE ausgewählten Metriken mit Farben, Runtime
