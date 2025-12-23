@@ -6052,6 +6052,10 @@ export default function Dashboard() {
                         let label = '';
                         let isMajor = false;
                         
+                        // WICHTIG: Wenn Duplikat-Tage existieren → IMMER Uhrzeit anzeigen!
+                        // analyzeTicksHaveDuplicateDays prüft ob ein Datum mehrfach vorkommt
+                        const needsTimeLabels = analyzeTicksHaveDuplicateDays || visibleDays <= 3;
+                        
                         // 1:1 WIE COMPARE-MODE! Basierend auf visibleHours/visibleDays
                         // Start und End immer mit Datum + Uhrzeit
                         if (isFirst || isLast) {
@@ -6059,16 +6063,16 @@ export default function Dashboard() {
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           label = `${dateStr}\n${timeStr}`;
                           isMajor = true;
-                        } else if (visibleDays <= 7) {
-                          // Bei ≤7 Tagen sichtbar: IMMER Datum + Uhrzeit anzeigen!
+                        } else if (needsTimeLabels || visibleDays <= 7) {
+                          // Bei Duplikat-Tagen oder ≤7 Tagen sichtbar: IMMER Datum + Uhrzeit anzeigen!
                           const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                          if (isMidnight) {
-                            // Bei Mitternacht: Nur Datum (markiert den Tageswechsel)
+                          if (isMidnight && !needsTimeLabels) {
+                            // Bei Mitternacht ohne Duplikate: Nur Datum (markiert den Tageswechsel)
                             label = dateStr;
                             isMajor = true;
                           } else {
-                            // Sonst: Datum + Uhrzeit (wie im Compare-Mode Screenshot!)
+                            // Bei Duplikaten ODER nicht-Mitternacht: Datum + Uhrzeit!
                             label = `${dateStr}\n${timeStr}`;
                           }
                         } else if (visibleDays <= 60) {
