@@ -4248,14 +4248,16 @@ export default function Dashboard() {
         <div className="flex items-center gap-4 mb-8 flex-wrap">
           <h1 className="text-2xl font-bold" data-testid="heading-dashboard">Dashboard</h1>
           
-          <div className="flex items-center gap-2">
-            <Popover open={open} onOpenChange={setOpen}>
+          {/* Suchleiste + Stift-Button - im Analyze-Status ausgegraut */}
+          <div className={cn("flex items-center gap-2", analyzeMode && "opacity-50 pointer-events-none")}>
+            <Popover open={open} onOpenChange={(o) => !analyzeMode && setOpen(o)}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
                   className="w-[300px] justify-between"
+                  disabled={analyzeMode}
                   data-testid="button-bot-filter"
                 >
                   {selectedBotName}
