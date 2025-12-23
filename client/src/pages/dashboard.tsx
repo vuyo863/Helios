@@ -1162,7 +1162,15 @@ export default function Dashboard() {
       return { data: [], botTypeNames: [] as string[], minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    const selectedIds = selectedChartBotTypes.map(id => String(id));
+    // Im Analyze-Modus: Verwende den Bot-Type des analysierten Updates
+    // Auch wenn er nicht in selectedChartBotTypes ist (z.B. bei Closed Bots)
+    let selectedIds = selectedChartBotTypes.map(id => String(id));
+    if (isAnalyzeSingleMetricMode && analyzeSingleMetricInfo) {
+      const analyzeBotTypeId = analyzeSingleMetricInfo.botTypeId;
+      if (!selectedIds.includes(analyzeBotTypeId)) {
+        selectedIds = [...selectedIds, analyzeBotTypeId];
+      }
+    }
     
     // Finde die Namen der ausgewählten Bot-Types
     const selectedBotTypesInfo = availableBotTypes.filter(bt => 
@@ -1483,7 +1491,7 @@ export default function Dashboard() {
     });
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isMultiSelectCompareMode, isAnalyzeSingleMetricMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
+  }, [isMultiSelectCompareMode, isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
   // ========== ENDE COMPARE MODUS SECTION ==========
 
   // ========== ADDED MODUS - NUR END-EVENTS ==========
@@ -2189,18 +2197,16 @@ export default function Dashboard() {
       return parsed ? parsed.getTime() : null;
     };
     
-    // Für Closed Bots: startDate und endDate verwenden
+    // WICHTIG: Konsistent mit getUpdateTimestamp() bleiben!
+    // compareChartData verwendet thisUpload für alle Updates (auch Closed Bots)
+    // Für Closed Bots: lastUpload (Start) und thisUpload (End) - NICHT startDate/endDate!
     // Für Update Metrics: lastUpload (Start) und thisUpload (End)
     let startTs: number | null;
     let endTs: number | null;
     
-    if (isClosedBot) {
-      startTs = parseTs(update.startDate);
-      endTs = parseTs(update.endDate);
-    } else {
-      startTs = parseTs(update.lastUpload);
-      endTs = parseTs(update.thisUpload);
-    }
+    // Beide Typen verwenden lastUpload/thisUpload für Konsistenz mit Chart-Daten
+    startTs = parseTs(update.lastUpload);
+    endTs = parseTs(update.thisUpload);
     
     // Mindestens ein Zeitstempel muss vorhanden sein
     if (startTs === null && endTs === null) {
