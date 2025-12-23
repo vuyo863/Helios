@@ -2947,6 +2947,27 @@ export default function Dashboard() {
     return ticks;
   }, [chartData, appliedChartSettings?.sequence, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
 
+  // Prüfe ob Ticks am selben Tag liegen → dann Uhrzeiten anzeigen
+  // REGEL: Sobald ein Datum auf der X-Achse WIEDERHOLT wird, müssen Uhrzeiten erscheinen!
+  const analyzeTicksHaveDuplicateDays = useMemo(() => {
+    if (!analyzeModeBounds || xAxisTicks.length < 2) return false;
+    
+    // Gruppiere Ticks nach Datum (YYYY-MM-DD)
+    const dateGroups = new Map<string, number>();
+    xAxisTicks.forEach(ts => {
+      const date = new Date(ts);
+      const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      dateGroups.set(dateKey, (dateGroups.get(dateKey) || 0) + 1);
+    });
+    
+    // Prüfe ob irgendein Tag mehr als 1x vorkommt
+    let hasDuplicates = false;
+    dateGroups.forEach(count => {
+      if (count > 1) hasDuplicates = true;
+    });
+    return hasDuplicates;
+  }, [analyzeModeBounds, xAxisTicks]);
+
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   const yAxisDomain = useMemo((): [number | string, number | string] => {
@@ -6007,18 +6028,21 @@ export default function Dashboard() {
                         let label = '';
                         let isMajor = false;
                         
+                        // REGEL: Wenn Ticks am selben Tag liegen → Uhrzeiten anzeigen!
+                        const showTime = analyzeTicksHaveDuplicateDays;
+                        
                         // Start und End immer mit Datum + Uhrzeit
                         if (isFirst || isLast) {
                           const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           label = `${dateStr}\n${timeStr}`;
                           isMajor = true;
-                        } else if (visibleDays <= 7) {
-                          // Bei ≤7 Tagen sichtbar: IMMER Uhrzeiten anzeigen!
+                        } else if (showTime) {
+                          // DOPPELTE TAGE ERKANNT: Zeige Uhrzeiten!
                           const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
                           const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                           if (isMidnight) {
-                            // Bei Mitternacht: Nur Datum (ist schon 00:00)
+                            // Bei Mitternacht: Nur Datum (markiert den Tageswechsel)
                             label = dateStr;
                             isMajor = true;
                           } else {
