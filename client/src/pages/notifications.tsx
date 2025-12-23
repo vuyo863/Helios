@@ -961,92 +961,7 @@ export default function Notifications() {
         {/* Benachrichtigungen konfigurieren Section */}
         <Card className="ring-2 ring-cyan-600 mb-8">
           <CardHeader>
-            <div className="flex items-start justify-between">
-              <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
-              {watchlist.length > 0 && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      Benachrichtigung hinzufügen
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh]">
-                    <DialogHeader>
-                      <DialogTitle>Benachrichtigung hinzufügen</DialogTitle>
-                    </DialogHeader>
-                    <ScrollArea className="max-h-[60vh] pr-4">
-                      <div className="space-y-4">
-                        {watchlist.map((trendPriceId) => {
-                          const pair = getTrendPrice(trendPriceId);
-
-                          return (
-                            <Card key={trendPriceId} className="p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
-                                <span className="text-sm text-muted-foreground">
-                                  ${pair?.price || 'Loading...'}
-                                </span>
-                              </div>
-                              <Button
-                                variant="outline"
-                                className="w-full flex items-center justify-center gap-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  
-                                  // Initialize settings if they don't exist
-                                  if (!trendPriceSettings[trendPriceId]) {
-                                    setTrendPriceSettings(prev => ({
-                                      ...prev,
-                                      [trendPriceId]: {
-                                        trendPriceId,
-                                        thresholds: []
-                                      }
-                                    }));
-                                  }
-
-                                  // Create a new threshold
-                                  const newThreshold: ThresholdConfig = {
-                                    id: crypto.randomUUID(),
-                                    threshold: '',
-                                    notifyOnIncrease: false,
-                                    notifyOnDecrease: false,
-                                    increaseFrequency: 'einmalig',
-                                    decreaseFrequency: 'einmalig',
-                                    alarmLevel: 'harmlos',
-                                    note: ''
-                                  };
-
-                                  setTrendPriceSettings(prev => ({
-                                    ...prev,
-                                    [trendPriceId]: {
-                                      ...prev[trendPriceId],
-                                      thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
-                                    }
-                                  }));
-
-                                  // Open edit dialog for the new threshold
-                                  setEditingThresholdId(newThreshold.id);
-                                  setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
-                                  
-                                  toast({
-                                    title: "Schwellenwert erstellt",
-                                    description: `Neuer Schwellenwert für ${pair?.name || trendPriceId} erstellt. Bitte konfigurieren Sie die Details.`,
-                                  });
-                                }}
-                              >
-                                <Plus className="w-4 h-4" />
-                                Schwellenwert hinzufügen
-                              </Button>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
+            <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
           </CardHeader>
           <CardContent>
             {watchlist.length === 0 ? (
@@ -1060,26 +975,134 @@ export default function Notifications() {
             ) : (
             <>
 
-            <div className={cn(
-              "space-y-4",
-              watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
-            )}>
-              {watchlist.map((trendPriceId) => {
+            {/* Check if there are any saved thresholds across all watchlist items */}
+            {(() => {
+              const hasAnyThresholds = watchlist.some(trendPriceId => {
                 const settings = trendPriceSettings[trendPriceId];
-
-                // Only show if there are saved thresholds that are active
                 const savedThresholds = settings?.thresholds.filter(t => 
                   t.threshold && 
                   t.threshold.trim() !== '' && 
                   (t.notifyOnIncrease || t.notifyOnDecrease)
                 ) || [];
+                return savedThresholds.length > 0;
+              });
 
-                // If no active saved thresholds, don't render this card
-                if (savedThresholds.length === 0) {
-                  return null;
-                }
-
+              if (!hasAnyThresholds) {
                 return (
+                  <div className="p-8 text-center">
+                    <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                      <Bell className="w-12 h-12 opacity-50" />
+                      <p>Keine Benachrichtigungen konfiguriert.</p>
+                      <p className="text-sm">Klicken Sie auf den Button unten, um Benachrichtigungen hinzuzufügen.</p>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="flex items-center gap-2 mt-2">
+                            <Plus className="w-4 h-4" />
+                            Benachrichtigung hinzufügen
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[80vh]">
+                          <DialogHeader>
+                            <DialogTitle>Benachrichtigung hinzufügen</DialogTitle>
+                          </DialogHeader>
+                          <ScrollArea className="max-h-[60vh] pr-4">
+                            <div className="space-y-4">
+                              {watchlist.map((trendPriceId) => {
+                                const pair = getTrendPrice(trendPriceId);
+
+                                return (
+                                  <Card key={trendPriceId} className="p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                                      <span className="text-sm text-muted-foreground">
+                                        ${pair?.price || 'Loading...'}
+                                      </span>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full flex items-center justify-center gap-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        
+                                        // Initialize settings if they don't exist
+                                        if (!trendPriceSettings[trendPriceId]) {
+                                          setTrendPriceSettings(prev => ({
+                                            ...prev,
+                                            [trendPriceId]: {
+                                              trendPriceId,
+                                              thresholds: []
+                                            }
+                                          }));
+                                        }
+
+                                        // Create a new threshold
+                                        const newThreshold: ThresholdConfig = {
+                                          id: crypto.randomUUID(),
+                                          threshold: '',
+                                          notifyOnIncrease: false,
+                                          notifyOnDecrease: false,
+                                          increaseFrequency: 'einmalig',
+                                          decreaseFrequency: 'einmalig',
+                                          alarmLevel: 'harmlos',
+                                          note: ''
+                                        };
+
+                                        setTrendPriceSettings(prev => ({
+                                          ...prev,
+                                          [trendPriceId]: {
+                                            ...prev[trendPriceId],
+                                            thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
+                                          }
+                                        }));
+
+                                        // Open edit dialog for the new threshold immediately
+                                        setTimeout(() => {
+                                          setEditingThresholdId(newThreshold.id);
+                                          setEditDialogOpen(prev => ({ ...prev, [newThreshold.id]: true }));
+                                        }, 100);
+                                        
+                                        toast({
+                                          title: "Schwellenwert erstellt",
+                                          description: `Neuer Schwellenwert für ${pair?.name || trendPriceId} erstellt. Bitte konfigurieren Sie die Details.`,
+                                        });
+                                      }}
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      Schwellenwert hinzufügen
+                                    </Button>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </ScrollArea>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className={cn(
+                  "space-y-4",
+                  watchlist.length > 3 && "max-h-[600px] overflow-y-auto pr-2"
+                )}>
+                  {watchlist.map((trendPriceId) => {
+                    const settings = trendPriceSettings[trendPriceId];
+
+                    // Only show if there are saved thresholds that are active
+                    const savedThresholds = settings?.thresholds.filter(t => 
+                      t.threshold && 
+                      t.threshold.trim() !== '' && 
+                      (t.notifyOnIncrease || t.notifyOnDecrease)
+                    ) || [];
+
+                    // If no active saved thresholds, don't render this card
+                    if (savedThresholds.length === 0) {
+                      return null;
+                    }
+
+                    return (
                   <Card key={trendPriceId} className="overflow-hidden ring-2 ring-cyan-600">
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1564,6 +1587,8 @@ export default function Notifications() {
                 );
               })}
             </div>
+              );
+            })()}
             </>
             )}
           </CardContent>
