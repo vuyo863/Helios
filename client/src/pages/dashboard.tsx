@@ -3276,12 +3276,19 @@ export default function Dashboard() {
     // Nur das ausgewählte Update anzeigen - MIT Zoom & Pan Unterstützung!
     if (analyzeModeBounds) {
       const { startTs, endTs } = analyzeModeBounds;
-      // 5% Padding auf jeder Seite für schöne Darstellung
-      const range = endTs - startTs;
+      // CLOSED BOTS: startTs = endTs, also range = 0
+      // In diesem Fall: Zeige den Punkt in der Mitte mit angemessener Padding
+      const rawRange = endTs - startTs;
+      
+      // Wenn range = 0 (Closed Bot), verwende 1 Tag als Mindest-Range
+      // damit der Punkt in der Mitte erscheint
+      const range = rawRange > 0 ? rawRange : 24 * 60 * 60 * 1000;
       const padding = range * 0.05;
       
-      const baseMin = startTs - padding;
-      const baseMax = endTs + padding;
+      // Wenn es ein Closed Bot ist (rawRange = 0), zentriere den Punkt
+      const center = rawRange > 0 ? (startTs + endTs) / 2 : startTs;
+      const baseMin = center - range / 2 - padding;
+      const baseMax = center + range / 2 + padding;
       const baseRange = baseMax - baseMin;
       
       // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
@@ -3291,14 +3298,14 @@ export default function Dashboard() {
       
       // Zoom anwenden (zoomedRange = kleinerer Bereich bei höherem Zoom)
       const zoomedRange = baseRange / chartZoomX;
-      const center = (baseMin + baseMax) / 2;
+      const zoomCenter = (baseMin + baseMax) / 2;
       
       // Pan-Offset: chartPanX in Pixel, umrechnen auf Zeit-Einheiten
       const chartWidth = 600;
       const panOffset = -(chartPanX / chartWidth) * baseRange;
       
-      const zoomedStart = center - zoomedRange / 2 + panOffset;
-      const zoomedEnd = center + zoomedRange / 2 + panOffset;
+      const zoomedStart = zoomCenter - zoomedRange / 2 + panOffset;
+      const zoomedEnd = zoomCenter + zoomedRange / 2 + panOffset;
       
       return [zoomedStart, zoomedEnd];
     }
@@ -5315,7 +5322,8 @@ export default function Dashboard() {
                             {/* Dashed line to chart when active OR when Eye blink is active for THIS specific update */}
                             {/* KEIN zusätzlicher Kreis hier - die Line-Komponente rendert bereits den Kreis */}
                             {/* Eye Blink nur wenn blinkingUpdateKey === dieser closedKey! */}
-                            {(isClosedActive || (blinkingUpdateKey === closedKey)) && closedY2 !== null && (() => {
+                            {/* ANALYZE MODE: Keine gestrichelte Linie für Closed Bots (wie bei anderen Metriken) */}
+                            {!isAnalyzeSingleMetricMode && (isClosedActive || (blinkingUpdateKey === closedKey)) && closedY2 !== null && (() => {
                               // Compare Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkClosedLine = blinkingUpdateKey === closedKey;
                               return (
