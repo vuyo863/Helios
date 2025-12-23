@@ -892,24 +892,12 @@ export default function Notifications() {
         {/* Benachrichtigungen konfigurieren Section */}
         <Card className="ring-2 ring-cyan-600 mb-8">
           <CardHeader>
-            <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {watchlist.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                  <Bell className="w-12 h-12 opacity-50" />
-                  <p>Keine Trendpreise in der Watchlist.</p>
-                  <p className="text-sm">Fügen Sie Trendpreise zur Watchlist hinzu, um Benachrichtigungen zu konfigurieren.</p>
-                </div>
-              </div>
-            ) : (
-            <>
-              {/* Add Notification Button */}
-              <div className="flex justify-end mb-4">
+            <div className="space-y-4">
+              <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
+              {watchlist.length > 0 && (
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-1">
+                    <Button variant="outline" className="flex items-center gap-2">
                       <Plus className="w-4 h-4" />
                       Benachrichtigung hinzufügen
                     </Button>
@@ -981,7 +969,20 @@ export default function Notifications() {
                     </div>
                   </DialogContent>
                 </Dialog>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {watchlist.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                  <Bell className="w-12 h-12 opacity-50" />
+                  <p>Keine Trendpreise in der Watchlist.</p>
+                  <p className="text-sm">Fügen Sie Trendpreise zur Watchlist hinzu, um Benachrichtigungen zu konfigurieren.</p>
+                </div>
               </div>
+            ) : (
+            <>
 
             <div className={cn(
               "space-y-4",
