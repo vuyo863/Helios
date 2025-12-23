@@ -306,6 +306,11 @@ export default function Dashboard() {
   const [tooltipCoordinate, setTooltipCoordinate] = useState<{ x: number; y: number } | null>(null);
   const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
   
+  // Click-to-Pin Tooltip: Gepinnter Datenpunkt bleibt sichtbar bis erneuter Klick
+  // pinnedTooltipData = null bedeutet kein gepinnter Tooltip (nur Hover-Effekt)
+  // pinnedTooltipData = { payload, timestamp, ... } bedeutet dieser Punkt ist gepinnt
+  const [pinnedTooltipData, setPinnedTooltipData] = useState<any | null>(null);
+  
   // Chart Zoom & Pan Event-Handler
   // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
   // WICHTIG: Nativer Event-Listener mit passive: false, damit preventDefault() funktioniert
@@ -6030,14 +6035,25 @@ export default function Dashboard() {
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
                   <Tooltip 
-                    active={tooltipIsNearPoint}
+                    active={tooltipIsNearPoint || pinnedTooltipData !== null}
                     content={(props) => {
-                      // Nur anzeigen wenn Maus nah genug am Datenpunkt (15px Radius)
-                      if (!tooltipIsNearPoint || !props.active || !props.payload || props.payload.length === 0) {
-                        return null;
+                      // ADDED MODE: Click-to-Pin Tooltip Logik
+                      // 1. Gepinnter Datenpunkt: Zeige immer das gepinnte Tooltip
+                      // 2. Hover: Zeige temporäres Tooltip (nur wenn kein gepinntes aktiv)
+                      
+                      // Bestimme welchen Datenpunkt wir anzeigen
+                      let dataPoint: any = null;
+                      let showPinned = false;
+                      
+                      if (isMultiBotChartMode && pinnedTooltipData) {
+                        // Gepinnter Punkt hat Priorität im Added Mode
+                        dataPoint = pinnedTooltipData;
+                        showPinned = true;
+                      } else if (tooltipIsNearPoint && props.active && props.payload && props.payload.length > 0) {
+                        // Normaler Hover-Modus
+                        dataPoint = props.payload[0]?.payload;
                       }
                       
-                      const dataPoint = props.payload[0]?.payload;
                       if (!dataPoint) return null;
                       
                       const date = new Date(dataPoint.timestamp);
@@ -6377,17 +6393,35 @@ export default function Dashboard() {
                           ? formatRuntimeFromMs(runtimeMs)
                           : null;
                         
+                        // Gepinntes Tooltip: Extra visueller Hinweis
+                        const isPinnedTooltip = showPinned;
+                        
                         return (
                           <div 
                             style={{ 
                               backgroundColor: 'hsl(var(--popover))',
-                              border: `2px solid ${borderColor}`,
+                              border: `2px solid ${isPinnedTooltip ? '#22c55e' : borderColor}`,
                               borderRadius: '6px',
                               fontSize: '14px',
                               color: 'hsl(var(--foreground))',
-                              padding: '8px 12px'
+                              padding: '8px 12px',
+                              boxShadow: isPinnedTooltip ? '0 0 12px rgba(34, 197, 94, 0.4)' : 'none'
                             }}
                           >
+                            {/* Gepinnt-Indikator */}
+                            {isPinnedTooltip && (
+                              <p style={{ 
+                                fontSize: '10px', 
+                                color: '#22c55e', 
+                                marginBottom: '4px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px',
+                                fontWeight: 'bold'
+                              }}>
+                                GEPINNT
+                              </p>
+                            )}
+                            
                             {/* Datum */}
                             <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
                             
@@ -6839,18 +6873,44 @@ export default function Dashboard() {
                             const { cx, cy, payload } = props;
                             const isClosedBot = payload?._isClosedBot;
                             const botTypeName = payload?._botTypeName || '';
+                            const dotTimestamp = payload?.timestamp;
+                            
+                            // Prüfe ob dieser Punkt gepinnt ist
+                            const isPinned = pinnedTooltipData && pinnedTooltipData.timestamp === dotTimestamp;
+                            
+                            // Click-Handler für Tooltip-Pinning
+                            const handleDotClick = (e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              if (isPinned) {
+                                // Nochmal auf gepinnten Punkt geklickt → entpinnen
+                                setPinnedTooltipData(null);
+                              } else {
+                                // Auf neuen Punkt geklickt → pinnen
+                                setPinnedTooltipData(payload);
+                              }
+                            };
                             
                             // Jeder End-Event ist ein separater Punkt
                             // Closed Bots: Hohler Kreis, normale Updates: Gefüllter Kreis
+                            // Gepinnte Punkte haben Glow-Effekt
+                            const glowStyle = isPinned ? {
+                              filter: 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.8))',
+                              cursor: 'pointer'
+                            } : {
+                              cursor: 'pointer'
+                            };
+                            
                             return (
                               <circle
                                 key={`dot-added-${payload?.timestamp}-${payload?._eventIndex}-${metricName}`}
                                 cx={cx}
                                 cy={cy}
-                                r={5}
+                                r={isPinned ? 7 : 5}
                                 fill={isClosedBot ? "hsl(var(--background))" : color}
-                                stroke={color}
-                                strokeWidth={isClosedBot ? 2 : 0}
+                                stroke={isPinned ? '#22c55e' : color}
+                                strokeWidth={isPinned ? 3 : (isClosedBot ? 2 : 0)}
+                                style={glowStyle}
+                                onClick={handleDotClick}
                               />
                             );
                           }}
