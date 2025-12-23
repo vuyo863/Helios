@@ -3868,9 +3868,10 @@ export default function Dashboard() {
 
   const toggleMetricCard = (cardName: string) => {
     // ANALYZE SINGLE METRIC MODE: Multi-Select erlaubt!
+    // ADDED MODE (isMultiBotChartMode): Multi-Select erlaubt!
     // Im Compare-Mode ohne Analyze: Nur EINE Metrik-Card erlauben
     // Single-Bot Mode: Multi-Select erlaubt
-    const allowMultiSelect = isAnalyzeSingleMetricMode || selectedChartBotTypes.length <= 1;
+    const allowMultiSelect = isAnalyzeSingleMetricMode || selectedChartBotTypes.length <= 1 || isMultiBotChartMode;
     
     if (allowMultiSelect) {
       // Multi-Select erlaubt: Normales Toggle-Verhalten
