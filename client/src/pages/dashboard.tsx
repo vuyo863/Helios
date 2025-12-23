@@ -3028,8 +3028,28 @@ export default function Dashboard() {
       
       const baseLower = minVal - padding;
       const baseUpper = maxVal + padding;
+      const baseRange = baseUpper - baseLower;
       
-      return [baseLower, baseUpper];
+      // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich
+      if (chartZoomY === 1 && chartPanY === 0) {
+        return [baseLower, baseUpper];
+      }
+      
+      // Zoom & Pan anwenden (gleiche Logik wie Compare Mode)
+      const zoomedRange = baseRange / chartZoomY;
+      const center = (baseLower + baseUpper) / 2;
+      
+      // Pan-Offset (gleiche Skalierung wie Compare Mode)
+      const panOffset = (chartPanY / 300) * baseRange;
+      
+      let zoomedLower = center - zoomedRange / 2 + panOffset;
+      let zoomedUpper = center + zoomedRange / 2 + panOffset;
+      
+      // Extra Padding unten beim Zoomen (10% der sichtbaren Range)
+      const zoomPadding = zoomedRange * 0.1;
+      zoomedLower = zoomedLower - zoomPadding;
+      
+      return [zoomedLower, zoomedUpper];
     }
     
     // COMPARE MODUS: Berechne Y-Domain aus compareChartData
