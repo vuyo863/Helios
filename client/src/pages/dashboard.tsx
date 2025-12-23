@@ -4448,26 +4448,32 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-bold">Update Verlauf</h3>
-                  {/* Toggle für Added-Mode: Analysis vs Overlay */}
+                  {/* Toggle für Added-Mode: Analysis vs Overlay - deaktiviert im Analyze-Mode */}
                   {isMultiBotChartMode && (
-                    <div className="flex items-center bg-muted rounded-md p-0.5">
+                    <div className={`flex items-center bg-muted rounded-md p-0.5 ${analyzeMode ? 'opacity-50' : ''}`}>
                       <button
-                        onClick={() => setAddedModeView('analysis')}
+                        onClick={() => !analyzeMode && setAddedModeView('analysis')}
+                        disabled={analyzeMode}
                         className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          addedModeView === 'analysis'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                          analyzeMode 
+                            ? 'cursor-not-allowed text-muted-foreground'
+                            : addedModeView === 'analysis'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
                         }`}
                         data-testid="toggle-analysis-mode"
                       >
                         Analysis
                       </button>
                       <button
-                        onClick={() => setAddedModeView('overlay')}
+                        onClick={() => !analyzeMode && setAddedModeView('overlay')}
+                        disabled={analyzeMode}
                         className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          addedModeView === 'overlay'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
+                          analyzeMode 
+                            ? 'cursor-not-allowed text-muted-foreground'
+                            : addedModeView === 'overlay'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
                         }`}
                         data-testid="toggle-overlay-mode"
                       >
