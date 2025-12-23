@@ -1,369 +1,296 @@
-### Overview
-The Pionex Bot Profit Tracker is a full-stack web application designed to track and analyze profits from Pionex trading bots. It features a comprehensive dashboard, a flexible data upload interface, and generates detailed, filterable financial reports. The primary goal is to provide clear, professional financial insights to users through a React frontend and an Express backend.
+# Pionex Bot Profit Tracker
 
-### User Preferences
-Preferred communication style: Simple, everyday language (German).
+## Overview
+Full-stack web application to track and analyze profits from Pionex trading bots. React frontend + Express backend.
 
----
-
-## GOLDEN STATE DOKUMENTATION
-
-### Was bedeutet "GoldenState"?
-
-**GoldenState** bezeichnet einen Zustand von Code/Features, der:
-- **Vollständig fertig entwickelt** ist
-- **Getestet und stabil** funktioniert
-- **NIEMALS mehr verändert werden darf**
-- Als "Gold wert" betrachtet wird - daher der Name
-
-**WICHTIG**: Alle GoldenState-Bereiche sind TABU für Änderungen. Diese Regel ist absolut und ohne Ausnahme!
+## User Preferences
+- **Sprache**: Deutsch (einfache Alltagssprache)
+- **Kommunikation**: Direkt, ohne Umschweife
 
 ---
 
-## DASHBOARD-PAGE ARCHITEKTUR
+# ⚠️ AKTUELLE ARBEITSPOSITION (WICHTIG!)
 
-Die Dashboard-Page (`client/src/pages/dashboard.tsx`) ist die Hauptseite der Anwendung und enthält verschiedene **Sections/Modi**, die unterschiedliche Status haben:
+## Wo arbeiten wir gerade?
+**Edit-Modus → Stift-Button → Analyze-Funktion**
 
-### Datei-Location
-- **Hauptdatei**: `client/src/pages/dashboard.tsx` (ca. 8500+ Zeilen)
-- **Schema**: `shared/schema.ts`
-- **Storage**: `server/storage.ts`
-- **Routes**: `server/routes.ts`
+### Der Pfad zur aktuellen Arbeit:
+1. **Dashboard** → Bot-Type auswählen (1 Bot-Type)
+2. **Stift-Button klicken** (`markerEditActive = true`)
+3. **Update-Marker auswählen** (z.B. U1, U2, C1...)
+4. **"Analyse" Button klicken** für einzelne Metrik-Betrachtung
 
----
-
-## SECTION 1: MainChart (GOLDEN STATE)
-
-### Was ist MainChart?
-Der MainChart ist der **Haupt-Chart-Bereich** der Dashboard-Page. Er zeigt die Profit-Entwicklung für einen **einzelnen ausgewählten Bot-Type** an.
-
-### MainChart Features (alle GOLDEN STATE):
-- **Einzelner Bot-Type Visualisierung**: Zeigt Gesamtprofit, Ø Profit/Tag, Real Profit/Tag, Gesamtkapital, Gesamtprofit %
-- **Metrik-Karten**: Aktivierbare Metriken über Klick auf die Karten
-- **Marker-System**: U1, U2, U3... für Updates, C1, C2... für Closed Bots
-- **Eye-Mode (`markerViewActive`)**: Multi-Selection von Markern für Chart-Interaktion
-- **Pencil-Mode (`markerEditActive`)**: Single-Selection für Detail-Editing
-- **Zeit-Range Filter**: Von/Bis Datum-Filter mit Graph Settings
-- **Zoom**: X/Y-Achsen Zoom-Funktionalität
-- **Tooltip**: Zeigt Datum, Metrik-Werte, Runtime
-
-### MainChart Activation Condition:
+### Aktive State-Variablen:
 ```typescript
-// Aktiviert wenn NUR EIN Bot-Type ausgewählt ist
+markerEditActive = true           // Stift-Modus aktiv
+appliedUpdateId = "updateId"      // Ausgewähltes Update
+analyzeModeBounds = { startTs, endTs }  // Zeitraum des Updates
+isAnalyzeSingleMetricMode = true  // Analyze-Funktion aktiv (im Compare)
+```
+
+### Was wir hier machen:
+- **Zoom & Pan** für die X/Y-Achse (wie im Compare-Mode)
+- **X-Achsen-Labels**: Datum + Uhrzeit bei kurzen Zeiträumen (≤7 Tage)
+- **Einzelne Metriken analysieren** mit farbcodierten Linien
+
+---
+
+# 🔒 GOLDEN STATE DOKTRIN
+
+## Was ist "Golden State"?
+**Golden State** = Code der **NIEMALS WIEDER ANGEFASST** werden darf.
+
+- ✅ Vollständig fertig entwickelt
+- ✅ Getestet und stabil
+- ❌ **ABSOLUTES ÄNDERUNGSVERBOT**
+
+**REGEL**: Vor JEDER Code-Änderung prüfen: Ist das Golden State? Wenn ja → **STOPP!**
+
+---
+
+# 🚫 GOLDEN STATE BEREICHE (TABU!)
+
+## 1. MainChart (GOLDEN STATE)
+**Was ist das?** Haupt-Chart für **EINEN** ausgewählten Bot-Type.
+
+**Features:**
+- Gesamtprofit, Ø Profit/Tag, Real Profit/Tag, Gesamtkapital, Gesamtprofit %
+- Metrik-Karten (klickbar)
+- Marker-System (U1, U2, U3... / C1, C2, C3...)
+- Eye-Mode & Pencil-Mode
+- Zoom & Pan
+- Tooltip mit Datum, Werten, Runtime
+
+**Aktivierung:**
+```typescript
 selectedChartBotTypes.length === 1 && !compareActive
 ```
 
-### CODE-BEREICHE (NICHT ANFASSEN):
-- Zeilen ca. 800-1200: MainChart useMemo (`chartData`)
-- Zeilen ca. 5800-6500: MainChart Rendering im JSX
-- Alle Single-Bot-Type spezifischen Logiken
+**CODE (NICHT ANFASSEN!):**
+- `chartData` useMemo: Zeilen ~800-1200
+- MainChart Rendering: Zeilen ~5800-6500
+- Alle Single-Bot-Type Logiken
 
 ---
 
-## SECTION 2: Compare Mode (GOLDEN STATE)
+## 2. Compare Mode (GOLDEN STATE)
+**Was ist das?** Vergleich von **2+ Bot-Types** mit farbcodierten Linien.
 
-### Was ist Compare Mode?
-Der Compare Mode ermöglicht den **Vergleich von 2+ Bot-Types** auf demselben Chart mit farbcodierten Linien.
+**Features:**
+- Multi-Bot-Type Vergleich
+- compareColorMap (Farben pro Bot-Type)
+- Start/End Punkte pro Update
+- Grüne Start-Box, Rote End-Box im Tooltip
+- Runtime bei End-Punkten
 
-### Compare Mode Features (alle GOLDEN STATE):
-- **Multi-Bot-Type Vergleich**: Mehrere Bot-Types werden mit unterschiedlichen Farben dargestellt
-- **compareColorMap**: Dedizierte Farbzuordnung pro Bot-Type
-- **Zwei Punkte pro Update**: Jedes Update zeigt Start-Punkt und End-Punkt
-- **Start/End Markers**: Grüne Start-Box, Rote End-Box im Tooltip
-- **Runtime-Anzeige**: Nur bei End-Punkten
-- **Analyze Single Metric Mode**: Ausnahme-Zustand für Detail-Analyse einer einzelnen Metrik
-
-### Compare Mode Activation Condition:
+**Aktivierung:**
 ```typescript
-// Aktiviert wenn 2+ Bot-Types UND Compare-Toggle aktiv
 selectedChartBotTypes.length >= 2 && compareActive === true
 ```
 
-### CODE-BEREICHE (NICHT ANFASSEN):
-- Zeilen ca. 1200-1400: Compare Mode useMemo
-- `isMultiSelectCompareMode` Flag und alle zugehörigen Logiken
-- compareColorMap Definition und Verwendung
-- Alle Tooltip-Logiken für Compare Mode (Zeilen ca. 6050-6240)
+**CODE (NICHT ANFASSEN!):**
+- Compare Mode useMemo: Zeilen ~1200-1400
+- `isMultiSelectCompareMode` Flag
+- compareColorMap
+- Compare Tooltip: Zeilen ~5840-5906, ~6050-6240
 
 ---
 
-## SECTION 3: Added/Portfolio Mode (ARBEITSBEREICH - NICHT Golden State)
+## 3. Bot-Type Verwaltung (GOLDEN STATE)
+**Was ist das?** CRUD für Bot-Types.
 
-### Was ist Added/Portfolio Mode?
-Der Added Mode (auch "Portfolio Mode" genannt) zeigt **mehrere Bot-Types aggregiert** an - aber OHNE den Compare-Toggle aktiv zu haben.
+**Features:**
+- Bot-Type erstellen/bearbeiten/löschen
+- CSV/Excel Upload
+- Update-History
 
-### AKTUELLER STAND (Dezember 2025 - Überarbeitet):
-
-#### Was wurde überarbeitet:
-1. **Nur End-Events werden angezeigt**: Keine Start-Events mehr, nur die End-Werte (thisUpload)
-2. **Jeder End-Event ist ein separater Punkt**: Nicht mehr aggregiert, sondern individuell
-3. **Individuelle Y-Werte**: Jeder Punkt zeigt den Profit des einzelnen Bots
-4. **Neuer Tooltip-Format**:
-   - Datum/Uhrzeit
-   - "END" Label (mit "Closed Bot" falls zutreffend)
-   - Bot-Type Name
-   - Gesamtprofit (individueller Wert)
-   - Runtime
-
-#### Datenstruktur (multiBotChartData):
-```typescript
-// Jeder Datenpunkt enthält:
-{
-  timestamp: number,           // X-Achse Zeitpunkt
-  Gesamtprofit: number,        // Y-Achse Wert (individueller Profit)
-  _botTypeName: string,        // Name des Bot-Types
-  _profit: number,             // Der individuelle Profit-Wert
-  _runtimeMs: number,          // Runtime in Millisekunden
-  _isClosedBot: boolean,       // true wenn status === "Closed Bots"
-  _botTypeId: string           // ID für Farbzuordnung
-}
-```
-
-#### Added Mode Activation Condition:
-```typescript
-// Aktiviert wenn 2+ Bot-Types OHNE Compare-Toggle
-selectedChartBotTypes.length >= 2 && compareActive === false
-// ODER via isMultiBotChartMode Flag
-```
-
-### CODE-BEREICHE (ARBEITSBEREICH):
-- **Zeilen ca. 1413-1591**: `multiBotChartData` useMemo - ÜBERARBEITET
-- **Zeilen ca. 6262-6324**: Added Mode Tooltip - ÜBERARBEITET
-- **Zeilen ca. 6662-6704**: Dot-Renderer für Added Mode
-
----
-
-## SECTION 4: Bot-Type Verwaltung (GOLDEN STATE)
-
-### Features (alle GOLDEN STATE):
-- **Bot-Type erstellen**: Name, Status, Investitionsmenge
-- **Bot-Type bearbeiten**: Inline-Editing
-- **Bot-Type löschen**: Mit Bestätigung
-- **Bot-Type Updates hochladen**: CSV/Excel Import
-- **Update-History**: Alle historischen Updates pro Bot-Type
-
-### CODE-BEREICHE (NICHT ANFASSEN):
-- Bot-Type CRUD Operationen
+**CODE (NICHT ANFASSEN!):**
+- Alle CRUD Operationen
 - Upload-Funktionalität
-- Update-Liste und Verwaltung
+- Update-Liste
 
 ---
 
-## SECTION 5: AI-Analysis Page (GOLDEN STATE)
+## 4. AI-Analysis Page (GOLDEN STATE)
+**Datei:** `client/src/pages/ai-analysis.tsx`
 
-### Location:
-- **Datei**: `client/src/pages/ai-analysis.tsx`
-
-### Features (alle GOLDEN STATE):
-- OpenAI Integration für Profit-Analyse
-- Automatische Insights-Generierung
+**Features:**
+- OpenAI Integration
+- Automatische Insights
 - Chart-Daten Zusammenfassung
 
----
-
-## EDIT-MODUS DETAILS
-
-### Was ist der Edit-Modus?
-Der Edit-Modus ermöglicht das **Bearbeiten von einzelnen Updates** eines Bot-Types.
-
-### Toggle-System (Implementiert aber noch nicht voll funktional):
-Es gibt einen **Toggle** mit zwei Optionen:
-1. **Overlay Mode**: Zeigt die Edit-Ansicht als Overlay über dem Chart
-2. **Analysis Mode**: Zeigt erweiterte Analyse-Funktionen
-
-### Probleme die wir hatten:
-- Die ursprüngliche Implementierung war zu komplex
-- Overlay-Positionierung war schwierig
-- Analysis-Features wurden noch nicht implementiert
-
-### Aktueller Stand:
-- Toggle ist eingebaut
-- Overlay-Grundstruktur existiert
-- Analysis-Funktionen sind geplant aber noch nicht umgesetzt
+**GESAMTE DATEI IST GOLDEN STATE!**
 
 ---
 
-## MARKER-SYSTEM
+# ✅ ARBEITSBEREICHE (Erlaubt zu bearbeiten)
 
-### Update Markers:
-- **U1, U2, U3...**: Nummerierte Marker für Updates
-- **C1, C2, C3...**: Nummerierte Marker für Closed Bots
-- **Neon-Blue Glow**: Aktive/ausgewählte Marker leuchten
+## 1. Edit-Modus / Stift-Modus
+**Aktueller Fokus!**
 
-### Marker Interaktion:
-- **Eye Mode (markerViewActive)**: Mehrfachauswahl möglich, bidirektionale Interaktion mit Chart-Punkten
-- **Pencil Mode (markerEditActive)**: Einzelauswahl für detailliertes Editing, überschreibt Eye Mode
+**Was gehört dazu:**
+- Toggle: Overlay / Analyze
+- Analyze-Funktion für einzelne Metriken
+- X-Achsen Zoom & Pan
+- X-Achsen Labels (Datum + Uhrzeit)
+
+**Relevante State-Variablen:**
+```typescript
+markerEditActive              // Stift-Modus aktiv
+analyzeModeBounds             // Zeitraum des ausgewählten Updates
+isAnalyzeSingleMetricMode     // Analyze-Funktion aktiv
+```
+
+**CODE-BEREICHE:**
+- xAxisTicks für analyzeModeBounds: Zeilen ~2346-2430
+- analyzeTicksHaveDuplicateDays: Zeilen ~2955-2972
+- X-Achsen Formatierung (Analyze): Zeilen ~5993-6090
 
 ---
 
-## FARB-SYSTEM
+## 2. Added/Portfolio Mode
+**Was ist das?** Mehrere Bot-Types aggregiert OHNE Compare-Toggle.
 
-### Metrik-Farben (konstant):
+**Aktivierung:**
 ```typescript
-const metricColors = {
-  'Gesamtprofit': '#22c55e',      // Grün
-  'Ø Profit/Tag': '#3b82f6',      // Blau
-  'Real Profit/Tag': '#8b5cf6',   // Lila
-  'Gesamtkapital': '#f59e0b',     // Orange
-  'Gesamtprofit %': '#ec4899'     // Pink
-};
+selectedChartBotTypes.length >= 2 && compareActive === false
 ```
 
-### Compare Mode Farben:
-```typescript
-const compareColorMap = {
-  // Dynamisch pro Bot-Type ID zugewiesen
-  // Verschiedene distinkte Farben für jeden Bot-Type
-};
-```
-
-### Spezielle Farben:
-- **Neon-Blue**: `#3b82f6` - Für aktive Elemente
-- **Cyan**: `#06b6d4` - Für "Gesamt" Linie im Added Mode
-- **Rot**: `#ef4444` - Für End-Punkte/Labels
-- **Grün**: `#22c55e` - Für Start-Punkte/Labels
+**CODE-BEREICHE:**
+- `multiBotChartData` useMemo: Zeilen ~1413-1591
+- Added Mode Tooltip: Zeilen ~6262-6324
+- Dot-Renderer: Zeilen ~6662-6704
 
 ---
 
-## WICHTIGE VARIABLEN UND FLAGS
+# 📊 DASHBOARD SECTIONS ÜBERSICHT
 
-### Chart-Modi:
+| Section | Status | Beschreibung |
+|---------|--------|--------------|
+| MainChart | 🔒 GOLDEN STATE | 1 Bot-Type Visualisierung |
+| Compare Mode | 🔒 GOLDEN STATE | 2+ Bot-Types Vergleich |
+| Bot-Type CRUD | 🔒 GOLDEN STATE | Verwaltung |
+| AI-Analysis | 🔒 GOLDEN STATE | KI-Analyse (separate Datei) |
+| Edit-Modus | ✅ ARBEITSBEREICH | Stift-Modus, Analyze |
+| Added Mode | ✅ ARBEITSBEREICH | Portfolio-Ansicht |
+
+---
+
+# 🎨 WICHTIGE VARIABLEN
+
+## Chart-Modi:
 ```typescript
-isMultiBotChartMode          // true wenn 2+ Bot-Types und KEIN Compare
-isMultiSelectCompareMode     // true wenn 2+ Bot-Types UND Compare aktiv
-isSingleBotMode              // true wenn nur 1 Bot-Type
+isMultiBotChartMode          // 2+ Bot-Types, KEIN Compare
+isMultiSelectCompareMode     // 2+ Bot-Types, MIT Compare
+isSingleBotMode              // 1 Bot-Type
 ```
 
-### Interaktions-Modi:
+## Interaktions-Modi:
 ```typescript
-markerViewActive             // Eye Mode aktiv
-markerEditActive             // Pencil Mode aktiv
-compareActive                // Compare Toggle aktiv
+markerViewActive             // Eye Mode (Mehrfachauswahl)
+markerEditActive             // Pencil Mode (Einzelauswahl)
+compareActive                // Compare Toggle
 ```
 
-### Daten-Quellen:
+## Daten-Quellen:
 ```typescript
-chartData                    // Single-Bot MainChart Daten
-multiBotChartData           // Added Mode Daten (2+ Bots ohne Compare)
-compareChartData            // Compare Mode Daten (2+ Bots mit Compare)
+chartData                    // MainChart (1 Bot)
+multiBotChartData            // Added Mode (2+ Bots, kein Compare)
+compareChartData             // Compare Mode (2+ Bots, mit Compare)
 ```
 
 ---
 
-## REGELN FÜR ZUKÜNFTIGE ENTWICKLUNG
+# 🎨 FARB-SYSTEM
 
-### ABSOLUT VERBOTEN:
-1. Änderungen am MainChart Code (GoldenState)
-2. Änderungen am Compare Mode Code (GoldenState)
-3. Änderungen an Bot-Type Verwaltung (GoldenState)
-4. Änderungen an AI-Analysis Page (GoldenState)
+## Metrik-Farben:
+```typescript
+'Gesamtprofit': '#22c55e'      // Grün
+'Ø Profit/Tag': '#3b82f6'      // Blau
+'Real Profit/Tag': '#8b5cf6'   // Lila
+'Gesamtkapital': '#f59e0b'     // Orange
+'Gesamtprofit %': '#ec4899'    // Pink
+```
 
-### ERLAUBT:
-1. Änderungen am Added/Portfolio Mode
-2. Neue Features die keine GoldenState-Bereiche berühren
-3. Bug-Fixes die isoliert sind
-
-### BEI JEDER ÄNDERUNG:
-1. Prüfen ob GoldenState betroffen
-2. Wenn ja: STOPP - nicht anfassen
-3. Wenn nein: Vorsichtig vorgehen, testen
+## Spezielle Farben:
+- **Neon-Blue**: `#3b82f6` - Aktive Elemente
+- **Cyan**: `#06b6d4` - "Gesamt" Linie
+- **Rot**: `#ef4444` - End-Punkte
+- **Grün**: `#22c55e` - Start-Punkte
 
 ---
 
-## System Architecture
+# 📁 DATEI-STRUKTUR
 
-### UI/UX
-- **Framework**: React with TypeScript (Vite)
-- **Design System**: shadcn/ui + Material Design 3 + Roboto font
-- **Styling**: Tailwind CSS
-- **Charting Library**: Recharts
+| Datei | Beschreibung |
+|-------|--------------|
+| `client/src/pages/dashboard.tsx` | Hauptdatei (~9000+ Zeilen) |
+| `client/src/pages/ai-analysis.tsx` | KI-Analyse (GOLDEN STATE) |
+| `shared/schema.ts` | Datenbank-Schema |
+| `server/storage.ts` | Storage-Interface |
+| `server/routes.ts` | API-Endpunkte |
 
-### Backend
-- **Framework**: Express.js + Node.js + TypeScript
-- **Storage**: MemStorage (in-memory for transient data)
+---
+
+# 🔧 SYSTEM ARCHITEKTUR
+
+## Frontend
+- **Framework**: React + TypeScript (Vite)
+- **UI**: shadcn/ui + Tailwind CSS
+- **Charts**: Recharts
+- **Routing**: Wouter
+
+## Backend
+- **Framework**: Express.js + TypeScript
+- **Storage**: MemStorage (in-memory)
 - **Validation**: Zod
 
-### Database
-- **ORM**: Drizzle ORM for PostgreSQL
-- **Schema**: Includes `users`, `bot_types`, and `bot_entries` tables.
-- **Migrations**: Drizzle Kit
-
-### External Dependencies
-- **Database**: Neon Serverless PostgreSQL
+## Database
 - **ORM**: Drizzle ORM
-- **UI Components**: Radix UI, Recharts, date-fns, Lucide React
-- **Form Management**: React Hook Form
-- **Validation**: Zod
-- **Utilities**: clsx, tailwind-merge, class-variance-authority
+- **DB**: Neon Serverless PostgreSQL
 
 ---
 
-## CHANGELOG
+# 📝 CHANGELOG
 
-### Dezember 2025 - Analyze Mode Multi-Metrik Unterstützung
+## Dezember 2025 - Edit-Modus Zoom & X-Achsen-Labels
 **Was wurde gemacht:**
-1. Analyze Mode unterstützt jetzt **mehrere Metriken gleichzeitig**
-2. Jede aktivierte Content-Card wird als separate Linie im Chart angezeigt
-3. **Metrik-Farbcodierung**: Linien haben die Farbe ihrer Content-Card:
-   - Gesamtkapital: Blau (#2563eb)
-   - Gesamtprofit: Grün (#16a34a)
-   - Gesamtprofit %: Lila (#9333ea)
-   - Ø Profit/Tag: Orange (#ea580c)
-   - Real Profit/Tag: Gelb/Gold (#ca8a04)
-4. **Safe Key Mapping**: `metricToSafeKey` konvertiert Metrik-Namen in sichere Schlüssel für Recharts (keine Leerzeichen/Sonderzeichen)
+1. Zoom & Pan für Analyze-Modus (1:1 wie Compare-Mode)
+2. X-Achsen-Labels: Datum + Uhrzeit bei ≤7 Tagen sichtbar
+3. Automatische Sequence-Downgrade beim Zoomen
 
-**Technische Details:**
-- `metricToSafeKey`: Mapping von Metrik-Namen zu sicheren dataKey-Schlüsseln
-- `ALL_METRICS`: Array aller verfügbaren Metriken
-- Daten werden mit sicheren Schlüsseln gespeichert: `metric_gesamtprofit`, `metric_gesamtprofitPercent`, etc.
-- `allowMultiSelect = true` im Analyze Mode (Zeile ~3980)
+**Relevante Änderungen:**
+- xAxisTicks für analyzeModeBounds mit Zoom-Berechnung
+- X-Achsen Formatierung: `visibleDays <= 7` → Datum + Uhrzeit
 
-### Dezember 2025 - Added Mode Redesign
+## Dezember 2025 - Analyze Mode Multi-Metrik
 **Was wurde gemacht:**
-1. `multiBotChartData` useMemo komplett überarbeitet
-2. Nur noch End-Events (thisUpload) werden angezeigt
-3. Jeder End-Event ist ein separater Datenpunkt
-4. Tooltip zeigt: Datum, END-Label, Bot-Type Name, Gesamtprofit, Runtime
-5. Keine Aggregation mehr - individuelle Werte pro Bot
+1. Mehrere Metriken gleichzeitig anzeigen
+2. Farbcodierte Linien pro Metrik
+3. Safe Key Mapping für Recharts
 
-**Warum:**
-- Ursprünglich wurden Werte kumulativ addiert über Zeit
-- Benutzer wollte nur End-Werte sehen, nicht aggregiert
-- Jeder Bot-Profit soll separat sichtbar sein
-
----
-
-## ZUSAMMENFASSUNG GOLDEN STATE BEREICHE
-
-| Bereich | Status | Datei/Zeilen | Beschreibung |
-|---------|--------|--------------|--------------|
-| MainChart | GOLDEN STATE | dashboard.tsx ~800-1200, ~5800-6500 | Single-Bot Visualisierung |
-| Compare Mode | GOLDEN STATE | dashboard.tsx ~1200-1400, ~6050-6240 | Multi-Bot Vergleich |
-| Bot-Type CRUD | GOLDEN STATE | dashboard.tsx, storage.ts, routes.ts | Verwaltung |
-| AI-Analysis | GOLDEN STATE | ai-analysis.tsx | KI-Analyse |
-| Added Mode | ARBEITSBEREICH | dashboard.tsx ~1413-1591, ~6262-6324 | Portfolio-Ansicht |
+## Dezember 2025 - Added Mode Redesign
+**Was wurde gemacht:**
+1. Nur End-Events anzeigen
+2. Individuelle Datenpunkte (nicht aggregiert)
+3. Neues Tooltip-Format
 
 ---
 
-## WO FINDE ICH WAS?
+# ⚠️ REGELN FÜR ENTWICKLUNG
 
-### Hauptdateien:
-- `client/src/pages/dashboard.tsx` - Dashboard mit allen Chart-Modi
-- `client/src/pages/ai-analysis.tsx` - KI-Analyse Seite
-- `shared/schema.ts` - Datenbank-Schema und Typen
-- `server/storage.ts` - Storage-Interface
-- `server/routes.ts` - API-Endpunkte
+## ABSOLUT VERBOTEN:
+1. ❌ MainChart Code ändern
+2. ❌ Compare Mode Code ändern
+3. ❌ Bot-Type CRUD ändern
+4. ❌ AI-Analysis Page ändern
 
-### Chart-Logik:
-- `chartData` useMemo: Single-Bot Daten (ca. Zeile 800)
-- `multiBotChartData` useMemo: Added Mode Daten (ca. Zeile 1413)
-- Compare Mode Logik: Suche nach `isMultiSelectCompareMode`
+## ERLAUBT:
+1. ✅ Edit-Modus / Stift-Modus
+2. ✅ Added/Portfolio Mode
+3. ✅ Neue Features (wenn kein Golden State betroffen)
 
-### Tooltip-Logik:
-- MainChart Tooltip: Suche nach "Standard: Eine Info-Box"
-- Compare Mode Tooltip: Suche nach "COMPARE MODUS"
-- Added Mode Tooltip: Suche nach "ADDED/PORTFOLIO MODUS"
-
-### Marker-Logik:
-- Marker-Rendering: Suche nach `markerViewActive`
-- Marker-Liste: Suche nach "Update-Marker" oder "Marker-Bereich"
+## BEI JEDER ÄNDERUNG:
+1. **Prüfen**: Ist Golden State betroffen?
+2. **Wenn ja**: STOPP! Nicht anfassen!
+3. **Wenn nein**: Vorsichtig vorgehen, testen
