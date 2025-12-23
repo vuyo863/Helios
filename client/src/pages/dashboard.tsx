@@ -2845,6 +2845,36 @@ export default function Dashboard() {
   // Berechne Y-Achsen-Domain dynamisch basierend auf aktiven Metriken + Zoom/Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
   const yAxisDomain = useMemo((): [number | string, number | string] => {
+    // ANALYZE SINGLE METRIC MODE hat PRIORITÄT
+    // Berechne Y-Domain nur aus den Werten des ausgewählten Bot-Types im Zeitraum
+    if (isAnalyzeSingleMetricMode && analyzeSingleMetricInfo && analyzeModeBounds && compareChartData.data.length > 0) {
+      const { startTs, endTs } = analyzeModeBounds;
+      const botTypeName = analyzeSingleMetricInfo.botTypeName;
+      
+      const allValues: number[] = [];
+      compareChartData.data.forEach(point => {
+        // Nur Punkte im Zeitraum des Updates
+        if (point.timestamp >= startTs && point.timestamp <= endTs) {
+          const val = point[botTypeName];
+          if (typeof val === 'number' && !isNaN(val)) {
+            allValues.push(val);
+          }
+        }
+      });
+      
+      if (allValues.length === 0) return ['auto', 'auto'];
+      
+      const minVal = Math.min(...allValues);
+      const maxVal = Math.max(...allValues);
+      const dataRange = maxVal - minVal;
+      const padding = dataRange > 0 ? dataRange * 0.2 : Math.abs(maxVal) * 0.2 || 10;
+      
+      const baseLower = minVal - padding;
+      const baseUpper = maxVal + padding;
+      
+      return [baseLower, baseUpper];
+    }
+    
     // COMPARE MODUS: Berechne Y-Domain aus compareChartData
     // WICHTIG: Zoom und Pan auch hier anwenden!
     if (isMultiSelectCompareMode && compareChartData.data.length > 0) {
@@ -3053,7 +3083,7 @@ export default function Dashboard() {
     zoomedLower = zoomedLower - zoomPadding;
     
     return [zoomedLower, zoomedUpper];
-  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
+  }, [transformedChartData, activeMetricCards, hasGesamtkapitalActive, chartZoomY, chartPanY, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData, isAnalyzeSingleMetricMode, analyzeSingleMetricInfo, analyzeModeBounds]);
 
   // Berechne X-Achsen-Domain (Zeit) basierend auf Zoom & Pan
   // WICHTIG: Padding hinzufügen damit Punkte am Rand nicht abgeschnitten werden
@@ -4119,6 +4149,29 @@ export default function Dashboard() {
                 // COMPARE MODE: Zeige höchste Werte aller Bot-Types im Chart-Zeitraum
                 // Sonst: Verwende aggregierte Werte
                 const getCardValue = (cardId: string): string => {
+                  // ANALYZE SINGLE METRIC MODE hat PRIORITÄT
+                  // Zeige nur Werte der ausgewählten einzelnen Metrik
+                  if (isAnalyzeSingleMetricMode && analyzeSingleMetricValues) {
+                    // Werte aus der einzelnen ausgewählten Metrik
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        const analyzeInv = profitPercentBase === 'gesamtinvestment' 
+                          ? analyzeSingleMetricValues.investment 
+                          : analyzeSingleMetricValues.baseInvestment;
+                        return `${analyzeInv.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit':
+                        return `${analyzeSingleMetricValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit %':
+                        return `${analyzeSingleMetricValues.profitPercent.toFixed(2)}%`;
+                      case 'Ø Profit/Tag':
+                        return `${analyzeSingleMetricValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Real Profit/Tag':
+                        return `${analyzeSingleMetricValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      default:
+                        return '--';
+                    }
+                  }
+                  
                   // COMPARE MODE: Zeige höchste Werte aus dem Chart-Zeitraum
                   if (isMultiSelectCompareMode && compareHighestValues) {
                     switch (cardId) {
@@ -4153,27 +4206,6 @@ export default function Dashboard() {
                         return `${addedModeAggregatedValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
                       case 'Real Profit/Tag':
                         return `${addedModeAggregatedValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
-                      default:
-                        return '--';
-                    }
-                  }
-                  
-                  if (isAnalyzeSingleMetricMode && analyzeSingleMetricValues) {
-                    // Werte aus der einzelnen ausgewählten Metrik
-                    switch (cardId) {
-                      case 'Gesamtkapital':
-                        const inv = profitPercentBase === 'gesamtinvestment' 
-                          ? analyzeSingleMetricValues.investment 
-                          : analyzeSingleMetricValues.baseInvestment;
-                        return `${inv.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
-                      case 'Gesamtprofit':
-                        return `${analyzeSingleMetricValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
-                      case 'Gesamtprofit %':
-                        return `${analyzeSingleMetricValues.profitPercent.toFixed(2)}%`;
-                      case 'Ø Profit/Tag':
-                        return `${analyzeSingleMetricValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
-                      case 'Real Profit/Tag':
-                        return `${analyzeSingleMetricValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
                       default:
                         return '--';
                     }
@@ -4621,7 +4653,19 @@ export default function Dashboard() {
                     // COMPARE/ADDED MODUS: Alle Updates von allen ausgewählten Bot-Types
                     let filteredUpdates: typeof sortedUpdates = [];
                     
-                    if ((isMultiSelectCompareMode || isMultiBotChartMode) && selectedChartBotTypes.length > 0) {
+                    // ANALYZE SINGLE METRIC MODE: NUR das ausgewählte Update anzeigen
+                    if (isAnalyzeSingleMetricMode && analyzeSingleMetricInfo) {
+                      // Finde NUR das eine ausgewählte Update
+                      const { botTypeId, version, isClosedBot } = analyzeSingleMetricInfo;
+                      const matchingUpdate = allBotTypeUpdates.find(u => 
+                        String(u.botTypeId) === botTypeId && 
+                        u.version === version &&
+                        (isClosedBot ? u.status === 'Closed Bots' : u.status === 'Update Metrics')
+                      );
+                      if (matchingUpdate) {
+                        filteredUpdates = [matchingUpdate];
+                      }
+                    } else if ((isMultiSelectCompareMode || isMultiBotChartMode) && selectedChartBotTypes.length > 0) {
                       // Sammle Updates von allen ausgewählten Bot-Types
                       selectedChartBotTypes.forEach(botTypeId => {
                         const updates = allBotTypeUpdates.filter(u => u.botTypeId === botTypeId);
@@ -5564,9 +5608,10 @@ export default function Dashboard() {
               
               {/* Chart Container with Zoom & Pan Events */}
               {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
-              {((isMultiSelectCompareMode && compareChartData.data.length === 0) ||
-                (!isMultiSelectCompareMode && isMultiBotChartMode && multiBotChartData.data.length === 0) || 
-                (!isMultiSelectCompareMode && !isMultiBotChartMode && transformedChartData.length === 0)) ? (
+              {((isAnalyzeSingleMetricMode && (!analyzeModeBounds || compareChartData.data.length === 0)) ||
+                (!isAnalyzeSingleMetricMode && isMultiSelectCompareMode && compareChartData.data.length === 0) ||
+                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && isMultiBotChartMode && multiBotChartData.data.length === 0) || 
+                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && !isMultiBotChartMode && transformedChartData.length === 0)) ? (
                 <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                   <div className="text-center">
                     <p className="text-lg font-medium">No Metrics Available</p>
@@ -5586,13 +5631,28 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart
                   key={investmentBaseKey}
-                  data={isMultiSelectCompareMode
-                    ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
-                    : isMultiBotChartMode 
-                      ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
-                      : (transformedChartData.length > 0 ? transformedChartData : [
-                          { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
-                        ])
+                  data={
+                    // ANALYZE SINGLE METRIC MODE: Verwende compareChartData aber gefiltert auf analyzeModeBounds
+                    isAnalyzeSingleMetricMode && analyzeSingleMetricInfo && analyzeModeBounds
+                      ? (() => {
+                          // Filtere compareChartData auf den Zeitraum des ausgewählten Updates
+                          const { startTs, endTs } = analyzeModeBounds;
+                          const botTypeName = analyzeSingleMetricInfo.botTypeName;
+                          // Filtere Daten: Nur Punkte die zum ausgewählten Bot-Type gehören UND im Zeitraum liegen
+                          const filteredData = compareChartData.data.filter(point => 
+                            point.timestamp >= startTs && 
+                            point.timestamp <= endTs &&
+                            point[botTypeName] !== undefined && point[botTypeName] !== null
+                          );
+                          return filteredData.length > 0 ? filteredData : [{ time: '-', timestamp: 0 }];
+                        })()
+                      : isMultiSelectCompareMode
+                        ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
+                        : isMultiBotChartMode 
+                          ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
+                          : (transformedChartData.length > 0 ? transformedChartData : [
+                              { time: '-', timestamp: 0, 'Gesamtkapital': 0, 'Gesamtprofit': 0, 'Gesamtprofit %': 0, 'Ø Profit/Tag': 0, 'Real Profit/Tag': 0 },
+                            ])
                   }
                   margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
                   onMouseMove={handleLineChartMouseMove}
@@ -6685,7 +6745,65 @@ export default function Dashboard() {
                     }}
                   />
                   {/* Dynamisch Lines rendern - Compare-Mode, Multi-Bot-Mode oder Single-Bot mit Metriken */}
-                  {isMultiSelectCompareMode ? (
+                  {/* ANALYZE SINGLE METRIC MODE: Verwende Compare-Modus Rendering aber NUR für den ausgewählten Bot-Type */}
+                  {isAnalyzeSingleMetricMode && analyzeSingleMetricInfo ? (
+                    // ANALYZE MODE: NUR die eine ausgewählte Metrik/Bot-Type anzeigen
+                    (() => {
+                      const { botTypeId, botTypeName } = analyzeSingleMetricInfo;
+                      const lineColor = compareColorMap[botTypeId] || getCompareColor(0);
+                      
+                      return (
+                        <Line 
+                          key={`analyze-${botTypeName}`}
+                          type="monotone" 
+                          dataKey={botTypeName}
+                          name={botTypeName}
+                          stroke={lineColor}
+                          strokeWidth={2}
+                          dot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            const closedStatusKey = `${botTypeName}_status`;
+                            const isClosedBot = payload?.[closedStatusKey] === 'Closed Bots';
+                            const pointValue = payload?.[botTypeName];
+                            
+                            // Wenn kein Wert vorhanden, keinen Kreis rendern
+                            if (pointValue === null || pointValue === undefined) {
+                              return <g key={`dot-analyze-empty-${payload?.timestamp}`} />;
+                            }
+                            
+                            if (isClosedBot) {
+                              return (
+                                <circle
+                                  key={`dot-analyze-closed-${payload?.timestamp}`}
+                                  cx={cx}
+                                  cy={cy}
+                                  r={5}
+                                  fill="hsl(var(--background))"
+                                  stroke={lineColor}
+                                  strokeWidth={2}
+                                />
+                              );
+                            }
+                            
+                            return (
+                              <circle
+                                key={`dot-analyze-${payload?.timestamp}`}
+                                cx={cx}
+                                cy={cy}
+                                r={4}
+                                fill={lineColor}
+                              />
+                            );
+                          }}
+                          connectNulls
+                          isAnimationActive={true}
+                          animationDuration={1200}
+                          animationBegin={0}
+                          animationEasing="ease-out"
+                        />
+                      );
+                    })()
+                  ) : isMultiSelectCompareMode ? (
                     // COMPARE MODUS: Farbige Linien für jeden ausgewählten Bot-Type
                     // Rot und Blau zuerst, dann weitere Farben
                     // Hover-Effekt: Linie leuchtet auf wenn Bot-Type in Tabelle gehoverd
