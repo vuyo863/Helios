@@ -1407,10 +1407,10 @@ export default function Dashboard() {
   }, [isMultiSelectCompareMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, activeMetricCards, profitPercentBase, appliedChartSettings]);
   // ========== ENDE COMPARE MODUS SECTION ==========
 
-  // ========== ADDED MODUS - ADDITIVE SUMMIERUNG ==========
-  // Zeigt eine GESAMTLINIE mit additiver Summierung aller aktiven Bot-Werte pro Zeitpunkt
-  // Grundprinzip: An jedem Zeitpunkt werden alle AKTIVEN Bot-Werte addiert
-  // Keine Durchschnitte, keine Normalisierung - nur reale Werte
+  // ========== ADDED MODUS - NUR END-EVENTS ==========
+  // NEU: Zeigt NUR End-Events als separate Punkte (keine Start-Events, keine Aggregation)
+  // Jeder Bot der endet bekommt seinen eigenen Punkt mit seinem individuellen Profit
+  // Bei mehreren End-Events am gleichen Zeitpunkt: Separate Punkte auf verschiedenen Y-Positionen
   const multiBotChartData = useMemo(() => {
     if (!isMultiBotChartMode || allBotTypeUpdates.length === 0) {
       return { data: [], botTypeNames: [] as string[], minTimestamp: 0, maxTimestamp: 0 };
@@ -1460,21 +1460,20 @@ export default function Dashboard() {
       return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    // ========== EVENT-TIMELINE ERSTELLEN ==========
-    // Sammle ALLE Event-Zeitpunkte (Start + Ende) aller Bot-Types
-    interface BotEvent {
+    // ========== NUR END-EVENTS SAMMELN ==========
+    // Jeder End-Event wird ein separater Datenpunkt
+    interface EndEvent {
       timestamp: number;
       botTypeId: string;
       botTypeName: string;
-      value: number;
-      metricValues: Record<string, number>; // Werte für alle Metriken
-      type: 'start' | 'end';
+      profit: number; // Gesamtprofit dieses Bots
+      metricValues: Record<string, number>;
       updateVersion: number;
       isClosedBot: boolean;
-      runtimeMs?: number; // Runtime in Millisekunden (nur für End-Events)
+      runtimeMs?: number;
     }
 
-    const allEvents: BotEvent[] = [];
+    const endEvents: EndEvent[] = [];
 
     relevantUpdates.forEach(update => {
       const botType = selectedBotTypesInfo.find(bt => String(bt.id) === String(update.botTypeId));
@@ -1482,41 +1481,21 @@ export default function Dashboard() {
 
       const isClosedBot = update.status === 'Closed Bots';
       
+      // Berechne Profit für diesen Bot
+      const profit = isClosedBot 
+        ? parseFloat(update.profit || '0') || 0
+        : parseFloat(update.overallGridProfitUsdt || '0') || 0;
+      
       // Berechne Werte für ALLE verfügbaren Metriken
       const metricValues: Record<string, number> = {
-        'Gesamtprofit': isClosedBot 
-          ? parseFloat(update.profit || '0') || 0
-          : parseFloat(update.overallGridProfitUsdt || '0') || 0,
+        'Gesamtprofit': profit,
         'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
         'Gesamtprofit %': isClosedBot ? 0 : parseFloat(update.gridProfitPercent || '0') || 0,
         'Ø Profit/Tag': isClosedBot ? 0 : parseFloat(update.avgGridProfitDay || '0') || 0,
         'Real Profit/Tag': isClosedBot ? 0 : parseFloat(update.avgGridProfitDay || '0') || 0,
       };
-      
-      // Legacy: Behalte "value" für Abwärtskompatibilität
-      const value = metricValues['Gesamtprofit'];
 
-      // Start-Zeitpunkt (lastUpload) - nutze parseGermanDate für deutsches Format
-      // WICHTIG: Closed Bots haben KEINEN Start-Event - nur ein Enddatum!
-      // Normale Updates haben Start + End, Closed Bots nur End.
-      // Der Bot trägt seinen END-Wert während der gesamten Laufzeit bei (für Überlappungs-Addition)
-      if (update.lastUpload && !isClosedBot) {
-        const startDate = parseGermanDate(update.lastUpload);
-        if (startDate) {
-          allEvents.push({
-            timestamp: startDate.getTime(),
-            botTypeId: String(update.botTypeId),
-            botTypeName: botType.name,
-            value, // Der END-Wert wird ab Start zur Summe addiert
-            metricValues, // END-Werte für Aggregation (nicht im Tooltip angezeigt bei Start)
-            type: 'start',
-            updateVersion: update.version,
-            isClosedBot: false
-          });
-        }
-      }
-
-      // End-Zeitpunkt (thisUpload) - nutze parseGermanDate für deutsches Format
+      // NUR End-Zeitpunkt (thisUpload) - keine Start-Events mehr!
       if (update.thisUpload) {
         const endDate = parseGermanDate(update.thisUpload);
         if (endDate) {
@@ -1529,13 +1508,12 @@ export default function Dashboard() {
             }
           }
           
-          allEvents.push({
+          endEvents.push({
             timestamp: endDate.getTime(),
             botTypeId: String(update.botTypeId),
             botTypeName: botType.name,
-            value,
+            profit,
             metricValues,
-            type: 'end',
             updateVersion: update.version,
             isClosedBot,
             runtimeMs
@@ -1544,152 +1522,67 @@ export default function Dashboard() {
       }
     });
 
-    if (allEvents.length === 0) {
+    if (endEvents.length === 0) {
       return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
     }
 
-    // Sortiere Events chronologisch
-    allEvents.sort((a, b) => a.timestamp - b.timestamp);
+    // Sortiere End-Events chronologisch
+    endEvents.sort((a, b) => a.timestamp - b.timestamp);
 
-    // ========== ADDITIVE SUMMIERUNG ==========
-    // Für jeden Zeitpunkt: Tracke welche Bots aktiv sind und ihren aktuellen Wert
-    // Aktiv = zwischen Start und Ende eines Updates
-    interface ActiveBot {
-      botTypeId: string;
-      botTypeName: string;
-      value: number;
-      metricValues: Record<string, number>;
-      updateVersion: number;
-    }
-
-    const activeBots: Map<string, ActiveBot> = new Map();
+    // ========== ERSTELLE DATENPUNKTE - JEDER END-EVENT SEPARAT ==========
+    // Jeder End-Event bekommt seinen eigenen Datenpunkt mit individuellem Profit
     const dataPoints: Array<Record<string, any>> = [];
 
-    // Gruppiere Events nach Zeitstempel für gleichzeitige Verarbeitung
-    const eventsByTimestamp: Map<number, BotEvent[]> = new Map();
-    allEvents.forEach(event => {
-      const existing = eventsByTimestamp.get(event.timestamp) || [];
-      existing.push(event);
-      eventsByTimestamp.set(event.timestamp, existing);
-    });
-
-    const sortedTimestamps = Array.from(eventsByTimestamp.keys()).sort((a, b) => a - b);
-
-    sortedTimestamps.forEach(timestamp => {
-      const eventsAtTime = eventsByTimestamp.get(timestamp) || [];
-      
-      // Verarbeite alle Events an diesem Zeitpunkt
-      eventsAtTime.forEach(event => {
-        const key = `${event.botTypeId}:${event.updateVersion}`;
-        
-        if (event.type === 'start') {
-          // Bot startet → mit END-Wert zur Summe hinzufügen (Überlappungs-Addition)
-          // Der Bot trägt seinen Profit während der gesamten Laufzeit bei
-          activeBots.set(key, {
-            botTypeId: event.botTypeId,
-            botTypeName: event.botTypeName,
-            value: event.value, // END-Wert ab Start zur Summe
-            metricValues: event.metricValues, // END-Werte für Aggregation
-            updateVersion: event.updateVersion
-          });
-        }
-        // End-Events werden NICHT zu activeBots hinzugefügt - sie werden nur nach 
-        // dem Datenpunkt entfernt. Dies erhält die korrekte Stufenform der Linie.
-      });
-
-      // Berechne Gesamtsumme aller aktiven Bots an diesem Zeitpunkt - PRO METRIK
-      const metricSums: Record<string, number> = {
-        'Gesamtprofit': 0,
-        'Gesamtkapital': 0,
-        'Gesamtprofit %': 0,
-        'Ø Profit/Tag': 0,
-        'Real Profit/Tag': 0,
-      };
-      const breakdown: Record<string, number> = {};
-      
-      activeBots.forEach(bot => {
-        // Legacy: Summe für "Gesamt" (Profit-basiert)
-        breakdown[bot.botTypeName] = (breakdown[bot.botTypeName] || 0) + bot.value;
-        
-        // Neue Logik: Summiere ALLE Metriken
-        Object.keys(metricSums).forEach(metricName => {
-          metricSums[metricName] += bot.metricValues[metricName] || 0;
-        });
-      });
-      
-      // Berechne DOT-Position: Wert INKLUSIVE der endenden Bots (für Punkt an oberer Ecke)
-      // Dies ist nur für die visuelle Position des Punktes, nicht für die Linie
-      const dotMetricSums: Record<string, number> = { ...metricSums };
-      const endEventsAtTime = eventsAtTime.filter(e => e.type === 'end');
-      endEventsAtTime.forEach(event => {
-        // Addiere die Werte der endenden Bots zur Dot-Position
-        Object.keys(dotMetricSums).forEach(metricName => {
-          dotMetricSums[metricName] += event.metricValues[metricName] || 0;
-        });
-      });
-
-      // Sammle Event-Infos für diesen Zeitpunkt
-      // Für Tooltip: Welche Bot-Types starten/enden hier? Sind es Closed Bots? Runtime? Metrik-Werte?
-      const eventInfos = eventsAtTime.map(event => ({
-        botTypeName: event.botTypeName,
-        type: event.type as 'start' | 'end',
-        isClosedBot: event.isClosedBot,
-        updateVersion: event.updateVersion,
-        runtimeMs: event.runtimeMs, // Runtime nur für End-Events vorhanden
-        metricValues: event.metricValues // Metrik-Werte für dieses Event
-      }));
-      
-      // Bestimme ob dieser Punkt hauptsächlich Start- oder End-Events hat
-      const startEvents = eventInfos.filter(e => e.type === 'start');
-      const endEvents = eventInfos.filter(e => e.type === 'end');
-      const hasClosedBot = eventInfos.some(e => e.isClosedBot);
-      
-      // Erstelle Datenpunkt mit allen Metrik-Summen
+    endEvents.forEach((event, index) => {
+      // Erstelle Datenpunkt für diesen einzelnen End-Event
       const point: Record<string, any> = {
-        time: new Date(timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
-        timestamp,
-        Gesamt: metricSums['Gesamtprofit'], // Legacy-Kompatibilität
-        // Speichere alle Metrik-Summen als separate Felder
-        'Gesamt_Gesamtprofit': metricSums['Gesamtprofit'],
-        'Gesamt_Gesamtkapital': metricSums['Gesamtkapital'],
-        'Gesamt_Gesamtprofit %': metricSums['Gesamtprofit %'],
-        'Gesamt_Ø Profit/Tag': metricSums['Ø Profit/Tag'],
-        'Gesamt_Real Profit/Tag': metricSums['Real Profit/Tag'],
-        // DOT-Position Werte (inklusive endender Bots) für Punkt an oberer Ecke
-        '_dot_Gesamt_Gesamtprofit': dotMetricSums['Gesamtprofit'],
-        '_dot_Gesamt_Gesamtkapital': dotMetricSums['Gesamtkapital'],
-        '_dot_Gesamt_Gesamtprofit %': dotMetricSums['Gesamtprofit %'],
-        '_dot_Gesamt_Ø Profit/Tag': dotMetricSums['Ø Profit/Tag'],
-        '_dot_Gesamt_Real Profit/Tag': dotMetricSums['Real Profit/Tag'],
-        _breakdown: breakdown, // Für Tooltip: Aufschlüsselung pro Bot-Type
-        _activeBotCount: activeBots.size,
-        // Event-Informationen für Tooltip
-        _eventInfos: eventInfos,
-        _startEvents: startEvents,
-        _endEvents: endEvents,
-        _hasClosedBot: hasClosedBot,
-        // Primärer Event-Typ (für Umrandung): End hat Priorität wenn beide vorhanden
-        _primaryEventType: endEvents.length > 0 ? 'end' : (startEvents.length > 0 ? 'start' : 'none')
+        time: new Date(event.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        timestamp: event.timestamp,
+        // Y-Wert ist der individuelle Profit dieses Bots
+        Gesamt: event.profit,
+        'Gesamt_Gesamtprofit': event.profit,
+        'Gesamt_Gesamtkapital': event.metricValues['Gesamtkapital'],
+        'Gesamt_Gesamtprofit %': event.metricValues['Gesamtprofit %'],
+        'Gesamt_Ø Profit/Tag': event.metricValues['Ø Profit/Tag'],
+        'Gesamt_Real Profit/Tag': event.metricValues['Real Profit/Tag'],
+        // Individuelle Bot-Infos für Tooltip
+        _botTypeName: event.botTypeName,
+        _profit: event.profit,
+        _runtimeMs: event.runtimeMs,
+        _isClosedBot: event.isClosedBot,
+        _updateVersion: event.updateVersion,
+        _eventIndex: index,
+        // Legacy-Felder für Kompatibilität
+        _activeBotCount: 1,
+        _primaryEventType: 'end',
+        _hasClosedBot: event.isClosedBot,
+        _endEvents: [{ 
+          botTypeName: event.botTypeName, 
+          type: 'end' as const, 
+          isClosedBot: event.isClosedBot,
+          updateVersion: event.updateVersion,
+          runtimeMs: event.runtimeMs,
+          metricValues: event.metricValues
+        }],
+        _startEvents: [],
+        _eventInfos: [{ 
+          botTypeName: event.botTypeName, 
+          type: 'end' as const, 
+          isClosedBot: event.isClosedBot,
+          updateVersion: event.updateVersion,
+          runtimeMs: event.runtimeMs,
+          metricValues: event.metricValues
+        }]
       };
 
-      // Speichere auch individuelle Bot-Werte (für potenzielle Aufschlüsselung)
-      botTypeNames.forEach(name => {
-        point[name] = breakdown[name] || 0;
-      });
+      // Speichere Bot-Type spezifischen Wert
+      point[event.botTypeName] = event.profit;
 
       dataPoints.push(point);
-
-      // NACH dem Datenpunkt: Beende Bots die an diesem Zeitpunkt enden
-      eventsAtTime.forEach(event => {
-        if (event.type === 'end') {
-          const key = `${event.botTypeId}:${event.updateVersion}`;
-          activeBots.delete(key);
-        }
-      });
     });
 
-    const minTimestamp = sortedTimestamps[0] || 0;
-    const maxTimestamp = sortedTimestamps[sortedTimestamps.length - 1] || 0;
+    const minTimestamp = endEvents[0]?.timestamp || 0;
+    const maxTimestamp = endEvents[endEvents.length - 1]?.timestamp || 0;
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
   }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings]);
@@ -6363,26 +6256,81 @@ export default function Dashboard() {
                         return displayValue;
                       };
                       
-                      // ADDED/PORTFOLIO MODUS: Box mit allen aktiven Metriken
-                      // Zeigt die aggregierte Summe aller aktiven Bot-Types
-                      // Umrandung = Farbe der ersten aktiven Metrik
-                      // Zeigt Start/End-Markierung und Bot-Type Names
+                      // ADDED/PORTFOLIO MODUS: Jeder Punkt ist ein einzelner End-Event
+                      // Zeigt: Datum, End, Bot-Type Name, Gesamtprofit, Runtime
                       if (isMultiBotChartMode) {
-                        // Event-Infos aus dem Datenpunkt
-                        const startEvents = dataPoint._startEvents || [];
-                        const endEvents = dataPoint._endEvents || [];
-                        const hasClosedBot = dataPoint._hasClosedBot || false;
-                        const primaryEventType = dataPoint._primaryEventType || 'none';
+                        // Individuelle Bot-Infos aus dem Datenpunkt
+                        const botTypeName = dataPoint._botTypeName || '';
+                        const profit = dataPoint._profit || 0;
+                        const runtimeMs = dataPoint._runtimeMs;
+                        const isClosedBot = dataPoint._isClosedBot || false;
                         
                         // Farbe = erste aktive Metrik (wie im MainChart)
                         const primaryMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
                         const borderColor = metricColors[primaryMetric] || '#22c55e';
                         
-                        // Start/End Label mit Farbe
+                        // Runtime formatieren
+                        const runtimeStr = runtimeMs && runtimeMs > 0 
+                          ? formatRuntimeFromMs(runtimeMs)
+                          : null;
+                        
+                        return (
+                          <div 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--popover))',
+                              border: `2px solid ${borderColor}`,
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              color: 'hsl(var(--foreground))',
+                              padding: '8px 12px'
+                            }}
+                          >
+                            {/* Datum */}
+                            <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
+                            
+                            {/* END Label */}
+                            <p style={{ 
+                              fontWeight: 'bold', 
+                              marginBottom: '4px', 
+                              fontSize: '12px', 
+                              color: '#ef4444',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              END{isClosedBot ? ' (Closed Bot)' : ''}
+                            </p>
+                            
+                            {/* Bot-Type Name */}
+                            <p style={{ fontSize: '12px', color: 'hsl(var(--foreground))', margin: '2px 0', fontWeight: 'bold' }}>
+                              {botTypeName}
+                            </p>
+                            
+                            {/* Gesamtprofit */}
+                            <p style={{ fontSize: '12px', color: borderColor, margin: '4px 0' }}>
+                              Gesamtprofit: {profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                            </p>
+                            
+                            {/* Runtime */}
+                            {runtimeStr && (
+                              <p style={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))', margin: '2px 0' }}>
+                                Runtime: {runtimeStr}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
+                      
+                      // LEGACY-CODE (wird nicht mehr verwendet im Added-Mode)
+                      // Behalte für Abwärtskompatibilität falls benötigt
+                      if (false && isMultiBotChartMode) {
+                        const startEvents = dataPoint._startEvents || [];
+                        const endEvents = dataPoint._endEvents || [];
+                        const hasClosedBot = dataPoint._hasClosedBot || false;
+                        const primaryEventType = dataPoint._primaryEventType || 'none';
+                        const primaryMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+                        const borderColor = metricColors[primaryMetric] || '#22c55e';
                         const typeLabel = primaryEventType === 'end' ? 'END' : (primaryEventType === 'start' ? 'START' : '');
                         const typeLabelColor = primaryEventType === 'end' ? '#ef4444' : '#22c55e';
-                        
-                        // Bot-Type Names die an diesem Punkt starten/enden
                         const startBotNames = startEvents.map((e: any) => e.botTypeName).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
                         const endBotNames = endEvents.map((e: any) => e.botTypeName).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
                         
@@ -6398,8 +6346,6 @@ export default function Dashboard() {
                             }}
                           >
                             <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>{dateLabel}</p>
-                            
-                            {/* Start/End Label mit Bot-Type Names */}
                             {typeLabel && (
                               <p style={{ 
                                 fontWeight: 'bold', 
@@ -6412,8 +6358,6 @@ export default function Dashboard() {
                                 {typeLabel}{hasClosedBot ? ' (Closed Bot)' : ''}
                               </p>
                             )}
-                            
-                            {/* Bot-Type Names die starten - KEINE Metrik-Werte (Profit existiert noch nicht) */}
                             {startEvents.length > 0 && startEvents.map((event: any, idx: number) => (
                               <div key={`start-${idx}`} style={{ marginBottom: '4px' }}>
                                 <p style={{ fontSize: '11px', color: '#22c55e', margin: '2px 0', fontWeight: 'bold' }}>
@@ -6421,8 +6365,6 @@ export default function Dashboard() {
                                 </p>
                               </div>
                             ))}
-                            
-                            {/* Bot-Type Names die enden - MIT Metrik-Werten und Runtime */}
                             {endEvents.length > 0 && endEvents.map((event: any, idx: number) => {
                               const runtimeStr = event.runtimeMs && event.runtimeMs > 0 
                                 ? formatRuntimeFromMs(event.runtimeMs)
@@ -6764,63 +6706,37 @@ export default function Dashboard() {
                       );
                     })
                   ) : isMultiBotChartMode ? (
-                    // Added-Modus: Separate Linien für jede ausgewählte ContentCard
-                    // stepAfter = 100% wertgetreu, harte Sprünge bei Wertänderungen
-                    // Jede Linie hat die Farbe der entsprechenden ContentCard (wie im MainChart)
+                    // Added-Modus: NUR END-EVENTS als separate Punkte
+                    // Jeder End-Event hat seinen eigenen Y-Wert (individueller Profit)
+                    // Linie verbindet alle End-Events chronologisch
                     activeMetricCards.map((metricName) => {
-                      // DataKey: Verwende "Gesamt_<MetrikName>" für aggregierte Werte
                       const dataKey = `Gesamt_${metricName}`;
                       const color = metricColors[metricName] || '#888888';
-                      
-                      // Berechne Y-Domain für manuelle Skalierung
-                      const [yMin, yMax] = yAxisDomain;
-                      const chartHeight = 300 - 5 - 20; // Höhe minus margins (top: 5, bottom: 20)
                       
                       return (
                         <Line 
                           key={`added-${metricName}`}
-                          type="stepAfter"
+                          type="linear"
                           dataKey={dataKey}
                           name={metricName}
                           stroke={color}
-                          strokeWidth={2.5}
+                          strokeWidth={2}
                           dot={(props: any) => {
                             const { cx, cy, payload } = props;
-                            const activeBotCount = payload?._activeBotCount || 0;
+                            const isClosedBot = payload?._isClosedBot;
+                            const botTypeName = payload?._botTypeName || '';
                             
-                            // NUR bei MEHREREN gleichzeitigen End-Events: Punkt an oberer Ecke (Gesamtwert)
-                            // Beispiel: teshh (63,77) + bhj (109,54) = Gesamtwert 173,31 → Punkt bei 173,31
-                            const endEventsCount = payload?._endEvents?.length || 0;
-                            const hasMultipleEndEvents = endEventsCount > 1;
-                            
-                            let adjustedCy = cy;
-                            
-                            // Verschiebe Punkt NUR wenn mehrere End-Events am gleichen Zeitpunkt enden
-                            if (hasMultipleEndEvents) {
-                              const dotDataKey = `_dot_Gesamt_${metricName}`;
-                              const dotValue = payload?.[dotDataKey];
-                              const lineValue = payload?.[dataKey];
-                              
-                              if (typeof dotValue === 'number' && typeof lineValue === 'number' && 
-                                  dotValue !== lineValue && typeof yMin === 'number' && typeof yMax === 'number') {
-                                const yRange = yMax - yMin;
-                                if (yRange > 0) {
-                                  const pixelPerValue = chartHeight / yRange;
-                                  const valueDiff = dotValue - lineValue;
-                                  adjustedCy = cy - (valueDiff * pixelPerValue);
-                                }
-                              }
-                            }
-                            
+                            // Jeder End-Event ist ein separater Punkt
+                            // Closed Bots: Hohler Kreis, normale Updates: Gefüllter Kreis
                             return (
                               <circle
-                                key={`dot-added-${payload?.timestamp}-${metricName}`}
+                                key={`dot-added-${payload?.timestamp}-${payload?._eventIndex}-${metricName}`}
                                 cx={cx}
-                                cy={adjustedCy}
-                                r={hasMultipleEndEvents ? 6 : (activeBotCount > 1 ? 5 : 4)}
-                                fill={color}
-                                stroke={hasMultipleEndEvents ? "#fff" : (activeBotCount > 1 ? "#fff" : "none")}
-                                strokeWidth={hasMultipleEndEvents ? 2 : (activeBotCount > 1 ? 1.5 : 0)}
+                                cy={cy}
+                                r={5}
+                                fill={isClosedBot ? "hsl(var(--background))" : color}
+                                stroke={color}
+                                strokeWidth={isClosedBot ? 2 : 0}
                               />
                             );
                           }}
