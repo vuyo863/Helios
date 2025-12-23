@@ -5651,8 +5651,9 @@ export default function Dashboard() {
                               // Added Mode Eye Blink: NUR wenn dieser spezifische Update blinken soll!
                               const shouldBlinkLine = blinkingUpdateKey === updateKey;
                               
-                              // Im Auge-Modus UND Stift-Modus: NUR die END-Linie anzeigen (keine START-Linie)
-                              const showStartLine = !markerViewActive && !markerEditActive;
+                              // GOLDEN STATE: Added/Edit-Modus zeigt IMMER NUR die END-Linie (keine START-Linie)
+                              // Dies gilt unabhängig davon ob Auge/Stift aktiv ist oder nach Apply
+                              const showStartLine = false;
                               
                               return (
                                 <g 
