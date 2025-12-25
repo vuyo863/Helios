@@ -518,7 +518,7 @@ export default function BotTypesPage() {
               
               // ZEITGEWICHTETES INVESTMENT: Σ(totalInvestment × runtime) / Σ(runtime)
               // Nur Update Metrics, Closed Bots werden nicht einbezogen
-              // Runtime = From (lastUpload) bis Until (thisUpload)
+              // Runtime = durchschnittliche Laufzeit (avgRuntime) aus jedem Update
               let timeWeightedInvestment = 0;
               if (updateMetricsOnly.length > 0) {
                 let sumInvestmentTimesRuntime = 0;
@@ -527,39 +527,13 @@ export default function BotTypesPage() {
                 updateMetricsOnly.forEach(update => {
                   const investment = parseFloat(update.totalInvestment || '0') || 0;
                   
-                  // Parse From (lastUpload) und Until (thisUpload) Datum
-                  let runtimeMs = 0;
-                  if (update.lastUpload && update.thisUpload) {
-                    // Parse German date format (dd.MM.yyyy HH:mm or dd.MM.yyyy HH:mm:ss)
-                    let fromDate = parse(update.lastUpload, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
-                    if (!isValid(fromDate)) {
-                      fromDate = parse(update.lastUpload, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
-                    }
-                    if (!isValid(fromDate)) {
-                      fromDate = parseISO(update.lastUpload);
-                    }
-                    
-                    let untilDate = parse(update.thisUpload, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
-                    if (!isValid(untilDate)) {
-                      untilDate = parse(update.thisUpload, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
-                    }
-                    if (!isValid(untilDate)) {
-                      untilDate = parseISO(update.thisUpload);
-                    }
-                    
-                    if (isValid(fromDate) && isValid(untilDate)) {
-                      runtimeMs = untilDate.getTime() - fromDate.getTime();
-                      if (runtimeMs < 0) runtimeMs = 0;
-                    }
-                  }
+                  // Verwende durchschnittliche Laufzeit (avgRuntime) für die Gewichtung
+                  const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
                   
-                  // Fallback: Wenn keine Daten, nutze avgRuntime
-                  if (runtimeMs === 0) {
-                    runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
+                  if (runtimeMs > 0) {
+                    sumInvestmentTimesRuntime += investment * runtimeMs;
+                    sumRuntime += runtimeMs;
                   }
-                  
-                  sumInvestmentTimesRuntime += investment * runtimeMs;
-                  sumRuntime += runtimeMs;
                 });
                 
                 if (sumRuntime > 0) {
@@ -570,6 +544,7 @@ export default function BotTypesPage() {
               // ZEITGEWICHTETE INVESTITIONSMENGE: Σ(investment × runtime) / Σ(runtime)
               // Genau wie Gesamtinvestment, nur mit Basis-Investment statt totalInvestment
               // Wird NICHT in der UI angezeigt, aber berechnet für API-Abruf
+              // Runtime = durchschnittliche Laufzeit (avgRuntime) aus jedem Update
               let timeWeightedBaseInvestment = 0;
               if (updateMetricsOnly.length > 0) {
                 let sumBaseInvestmentTimesRuntime = 0;
@@ -578,39 +553,13 @@ export default function BotTypesPage() {
                 updateMetricsOnly.forEach(update => {
                   const baseInvestment = parseFloat(update.investment || '0') || 0;
                   
-                  // Parse From (lastUpload) und Until (thisUpload) Datum
-                  let runtimeMs = 0;
-                  if (update.lastUpload && update.thisUpload) {
-                    // Parse German date format (dd.MM.yyyy HH:mm or dd.MM.yyyy HH:mm:ss)
-                    let fromDate = parse(update.lastUpload, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
-                    if (!isValid(fromDate)) {
-                      fromDate = parse(update.lastUpload, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
-                    }
-                    if (!isValid(fromDate)) {
-                      fromDate = parseISO(update.lastUpload);
-                    }
-                    
-                    let untilDate = parse(update.thisUpload, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
-                    if (!isValid(untilDate)) {
-                      untilDate = parse(update.thisUpload, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
-                    }
-                    if (!isValid(untilDate)) {
-                      untilDate = parseISO(update.thisUpload);
-                    }
-                    
-                    if (isValid(fromDate) && isValid(untilDate)) {
-                      runtimeMs = untilDate.getTime() - fromDate.getTime();
-                      if (runtimeMs < 0) runtimeMs = 0;
-                    }
-                  }
+                  // Verwende durchschnittliche Laufzeit (avgRuntime) für die Gewichtung
+                  const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
                   
-                  // Fallback: Wenn keine Daten, nutze avgRuntime
-                  if (runtimeMs === 0) {
-                    runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
+                  if (runtimeMs > 0) {
+                    sumBaseInvestmentTimesRuntime += baseInvestment * runtimeMs;
+                    sumRuntimeBase += runtimeMs;
                   }
-                  
-                  sumBaseInvestmentTimesRuntime += baseInvestment * runtimeMs;
-                  sumRuntimeBase += runtimeMs;
                 });
                 
                 if (sumRuntimeBase > 0) {
