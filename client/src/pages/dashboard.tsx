@@ -1997,32 +1997,44 @@ export default function Dashboard() {
     });
     
     // ========== Ø PROFIT/TAG: GLEICHE LOGIK WIE GESAMT-MODUS ==========
-    // Pro ausgewähltem Bot-Type den 24h-Durchschnitt berechnen, dann ADDIEREN
-    // Formel pro Bot-Type: totalProfit / totalHours * 24
+    // Pro ausgewähltem Bot-Type den einfachen Durchschnitt berechnen, dann ADDIEREN
+    // Formel pro Bot-Type: Σ(avgGridProfitDay) / Anzahl_Updates
+    // Mit Zeitfilter: Nur Updates im Zeitfenster werden berücksichtigt
     let avgDailyProfitSum = 0;
     
     selectedChartBotTypes.forEach(botTypeId => {
-      const updateMetricsOnly = allBotTypeUpdates.filter(
+      // Alle Update Metrics für diesen Bot-Type
+      const allUpdatesForBotType = allBotTypeUpdates.filter(
         update => update.botTypeId === botTypeId && update.status === 'Update Metrics'
       );
       
-      if (updateMetricsOnly.length > 0) {
-        // GLEICHE Berechnung wie auf Bot-Type-Seite:
-        // totalProfit / totalHours * 24
-        let botTypeTotalProfit = 0;
-        let botTypeTotalHours = 0;
+      // Zeitfilter anwenden wenn aktiv
+      let filteredUpdates = allUpdatesForBotType;
+      if (isTimeFiltered && filterFromTs !== null && filterUntilTs !== null) {
+        filteredUpdates = allUpdatesForBotType.filter(update => {
+          const fromTs = parseTimestamp(update.lastUpload);
+          const untilTs = parseTimestamp(update.thisUpload);
+          if (fromTs && untilTs) {
+            // Prüfen ob Update im Zeitfenster liegt (Überlappung existiert)
+            const effectiveFrom = Math.max(fromTs, filterFromTs);
+            const effectiveUntil = Math.min(untilTs, filterUntilTs);
+            return effectiveUntil > effectiveFrom;
+          }
+          return false;
+        });
+      }
+      
+      if (filteredUpdates.length > 0) {
+        // EINFACHER DURCHSCHNITT: Σ(avgGridProfitDay) / Anzahl_Updates
+        let sumAvgGridProfitDay = 0;
         
-        updateMetricsOnly.forEach(update => {
-          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
-          botTypeTotalProfit += gridProfit;
-          botTypeTotalHours += runtimeHours;
+        filteredUpdates.forEach(update => {
+          const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+          sumAvgGridProfitDay += avgGridProfitDay;
         });
         
-        if (botTypeTotalHours > 0) {
-          const avg24hProfit = (botTypeTotalProfit / botTypeTotalHours) * 24;
-          avgDailyProfitSum += avg24hProfit;
-        }
+        const botTypeAvg = sumAvgGridProfitDay / filteredUpdates.length;
+        avgDailyProfitSum += botTypeAvg;
       }
     });
     
@@ -4006,8 +4018,8 @@ export default function Dashboard() {
     return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
   }, [totalInvestment, totalBaseInvestment, totalProfit, profitPercentBase]);
 
-  // Ø Profit/Tag: Pro Bot-Type den 24h-Durchschnitt berechnen (wie auf Bot-Type-Seite), dann ADDIEREN
-  // Formel pro Bot-Type: totalProfit / totalHours * 24
+  // Ø Profit/Tag: Pro Bot-Type den einfachen Durchschnitt berechnen, dann ADDIEREN
+  // Formel pro Bot-Type: Σ(avgGridProfitDay) / Anzahl_Updates
   // Die Bot-Type-Durchschnitte werden addiert, weil Bots gleichzeitig laufen
   const avgDailyProfit = useMemo(() => {
     // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
@@ -4018,7 +4030,7 @@ export default function Dashboard() {
       
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
       
-      // Pro Bot-Type den 24h-Durchschnitt berechnen (wie auf Bot-Type-Seite), dann addieren
+      // Pro Bot-Type den einfachen Durchschnitt berechnen, dann addieren
       let totalAvgProfitDay = 0;
       
       activeBotTypes.forEach(botType => {
@@ -4027,22 +4039,16 @@ export default function Dashboard() {
         );
         
         if (updateMetricsOnly.length > 0) {
-          // GLEICHE Berechnung wie auf Bot-Type-Seite:
-          // totalProfit / totalHours * 24
-          let totalProfit = 0;
-          let totalHours = 0;
+          // EINFACHER DURCHSCHNITT: Σ(avgGridProfitDay) / Anzahl_Updates
+          let sumAvgGridProfitDay = 0;
           
           updateMetricsOnly.forEach(update => {
-            const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-            const runtimeHours = parseRuntimeToHours(update.avgRuntime);
-            totalProfit += gridProfit;
-            totalHours += runtimeHours;
+            const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+            sumAvgGridProfitDay += avgGridProfitDay;
           });
           
-          if (totalHours > 0) {
-            const avg24hProfit = (totalProfit / totalHours) * 24;
-            totalAvgProfitDay += avg24hProfit;
-          }
+          const botTypeAvg = sumAvgGridProfitDay / updateMetricsOnly.length;
+          totalAvgProfitDay += botTypeAvg;
         }
       });
       
