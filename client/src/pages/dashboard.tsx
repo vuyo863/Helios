@@ -3979,9 +3979,8 @@ export default function Dashboard() {
     return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
   }, [totalInvestment, totalBaseInvestment, totalProfit, profitPercentBase]);
 
-  // Ø Profit/Tag: Pro Bot-Type den Durchschnitt berechnen, dann ADDIEREN
-  // Formel: Σ(Bot-Type 24h Ø Profit)
-  // Jeder Bot-Type-Durchschnitt = Durchschnitt aller avgGridProfitDay dieses Bot-Types
+  // Ø Profit/Tag: Pro Bot-Type den 24h-Durchschnitt berechnen (wie auf Bot-Type-Seite), dann ADDIEREN
+  // Formel pro Bot-Type: totalProfit / totalHours * 24
   // Die Bot-Type-Durchschnitte werden addiert, weil Bots gleichzeitig laufen
   const avgDailyProfit = useMemo(() => {
     // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
@@ -3992,7 +3991,7 @@ export default function Dashboard() {
       
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
       
-      // Pro Bot-Type den Durchschnitt berechnen, dann addieren
+      // Pro Bot-Type den 24h-Durchschnitt berechnen (wie auf Bot-Type-Seite), dann addieren
       let totalAvgProfitDay = 0;
       
       activeBotTypes.forEach(botType => {
@@ -4001,16 +4000,22 @@ export default function Dashboard() {
         );
         
         if (updateMetricsOnly.length > 0) {
-          // Durchschnitt für diesen Bot-Type berechnen
-          let botTypeTotal = 0;
-          updateMetricsOnly.forEach(update => {
-            const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
-            botTypeTotal += avgGridProfitDay;
-          });
-          const botTypeAvg = botTypeTotal / updateMetricsOnly.length;
+          // GLEICHE Berechnung wie auf Bot-Type-Seite:
+          // totalProfit / totalHours * 24
+          let totalProfit = 0;
+          let totalHours = 0;
           
-          // Bot-Type-Durchschnitt zur Gesamtsumme addieren
-          totalAvgProfitDay += botTypeAvg;
+          updateMetricsOnly.forEach(update => {
+            const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+            const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+            totalProfit += gridProfit;
+            totalHours += runtimeHours;
+          });
+          
+          if (totalHours > 0) {
+            const avg24hProfit = (totalProfit / totalHours) * 24;
+            totalAvgProfitDay += avg24hProfit;
+          }
         }
       });
       
