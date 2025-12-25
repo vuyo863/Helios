@@ -2747,16 +2747,18 @@ export default function Dashboard() {
       
       // AUTOMATISCHE SEQUENCE-DOWNGRADE beim Zoomen
       // Months → Weeks → Days → Hours basierend auf sichtbarer Zeitspanne
+      // WICHTIG: Bei "months" soll nur bei STARKEM Zoom downgraded werden!
       let effectiveSequence = baseSequence;
       
       if (baseSequence === 'months') {
+        // Months bleibt "months" auch bei kurzen Zeiträumen (30 Tage)
+        // Nur bei sehr starkem Zoom (< 14 Tage sichtbar) wechseln
         if (visibleDays < 3) {
           effectiveSequence = 'hours';
         } else if (visibleDays < 14) {
           effectiveSequence = 'days';
-        } else if (visibleDays < 56) {
-          effectiveSequence = 'weeks';
         }
+        // Bei >= 14 Tagen bleibt es "months" (KEIN Wechsel zu weeks!)
       } else if (baseSequence === 'weeks') {
         if (visibleDays < 3) {
           effectiveSequence = 'hours';
