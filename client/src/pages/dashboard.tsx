@@ -3756,17 +3756,9 @@ export default function Dashboard() {
   }, [allBotTypeUpdates, appliedChartSettings, analyzeMode, appliedUpdateId, selectedBotTypeData]);
 
   // Berechne totalInvestment basierend auf Bot Type Status - MUSS VOR isLoading check sein!
-  // ZEITGEWICHTETE BERECHNUNG: Σ(Investment × Runtime) / Σ(Runtime) pro Bot-Type, dann summieren
+  // GESAMT MODUS: ALLE Updates zusammen gewichten (wie ein großer Bot-Type)
+  // EINZELNER BOT-TYPE: Zeitgewichtete Berechnung pro Bot-Type
   const totalInvestment = useMemo(() => {
-    // Helper: Parse Timestamp aus "DD.MM.YYYY HH:MM" Format
-    const parseTimestamp = (dateStr: string | null | undefined): number | null => {
-      if (!dateStr) return null;
-      const match = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/);
-      if (!match) return null;
-      const [, day, month, year, hour, minute] = match;
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).getTime();
-    };
-    
     // Verwende timeFilteredBotTypeUpdates statt allBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
       // Prüfe ob alle benötigten Daten vorhanden sind
@@ -3775,41 +3767,35 @@ export default function Dashboard() {
         return filteredEntriesForStats.reduce((sum, entry) => sum + parseFloat(entry.investment), 0);
       }
       
-      // Summiere zeitgewichtetes Gesamtinvestment-Ø von allen aktiven Bot Types
-      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
-      let sum = 0;
+      // KORREKTE BERECHNUNG: ALLE Updates zusammen als "ein großer Bot-Type"
+      // Nicht pro Bot-Type addieren, sondern alle zusammen gewichten
+      const activeBotTypeIds = availableBotTypes.filter(bt => bt.isActive).map(bt => bt.id);
       
-      activeBotTypes.forEach(botType => {
-        // Nur Updates mit Status "Update Metrics" verwenden (keine Closed Bots!)
-        const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
-          update => update.botTypeId === botType.id && update.status === "Update Metrics"
-        );
+      // ALLE Update Metrics von ALLEN aktiven Bot-Types zusammen
+      const allUpdateMetrics = timeFilteredBotTypeUpdates.filter(
+        update => activeBotTypeIds.includes(update.botTypeId) && update.status === "Update Metrics"
+      );
+      
+      if (allUpdateMetrics.length === 0) {
+        return 0;
+      }
+      
+      // EINE zeitgewichtete Berechnung über ALLE Updates
+      // Runtime = durchschnittliche Laufzeit (avgRuntime) - gleich wie Bot-Type-Seite
+      let sumInvestmentTimesRuntime = 0;
+      let sumRuntime = 0;
+      
+      allUpdateMetrics.forEach(update => {
+        const investment = parseFloat(update.totalInvestment || '0') || 0;
+        const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
         
-        if (updateMetricsOnly.length > 0) {
-          // ZEITGEWICHTETE Berechnung: Σ(Investment × Runtime) / Σ(Runtime)
-          let sumInvestmentTimesRuntime = 0;
-          let sumRuntime = 0;
-          
-          updateMetricsOnly.forEach(update => {
-            const investment = parseFloat(update.totalInvestment || '0') || 0;
-            const fromTs = parseTimestamp(update.lastUpload);
-            const untilTs = parseTimestamp(update.thisUpload);
-            
-            if (fromTs && untilTs && untilTs > fromTs) {
-              const runtime = untilTs - fromTs;
-              sumInvestmentTimesRuntime += investment * runtime;
-              sumRuntime += runtime;
-            }
-          });
-          
-          // Zeitgewichteter Durchschnitt pro Bot-Type
-          if (sumRuntime > 0) {
-            sum += sumInvestmentTimesRuntime / sumRuntime;
-          }
+        if (runtimeMs > 0) {
+          sumInvestmentTimesRuntime += investment * runtimeMs;
+          sumRuntime += runtimeMs;
         }
       });
       
-      return sum;
+      return sumRuntime > 0 ? sumInvestmentTimesRuntime / sumRuntime : 0;
     } else {
       // Für spezifischen Bot-Type: Zeitgewichtete Berechnung
       if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
@@ -3822,19 +3808,17 @@ export default function Dashboard() {
       );
       
       if (updateMetricsOnly.length > 0) {
-        // ZEITGEWICHTETE Berechnung
+        // ZEITGEWICHTETE Berechnung mit avgRuntime
         let sumInvestmentTimesRuntime = 0;
         let sumRuntime = 0;
         
         updateMetricsOnly.forEach(update => {
           const investment = parseFloat(update.totalInvestment || '0') || 0;
-          const fromTs = parseTimestamp(update.lastUpload);
-          const untilTs = parseTimestamp(update.thisUpload);
+          const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
           
-          if (fromTs && untilTs && untilTs > fromTs) {
-            const runtime = untilTs - fromTs;
-            sumInvestmentTimesRuntime += investment * runtime;
-            sumRuntime += runtime;
+          if (runtimeMs > 0) {
+            sumInvestmentTimesRuntime += investment * runtimeMs;
+            sumRuntime += runtimeMs;
           }
         });
         
@@ -3848,57 +3832,43 @@ export default function Dashboard() {
   }, [selectedBotName, availableBotTypes, timeFilteredBotTypeUpdates, filteredEntriesForStats, selectedBotTypeData]);
   
   // Berechne totalBaseInvestment (Investitionsmenge-Ø) - ZEITGEWICHTETE BERECHNUNG
-  // Σ(Investment × Runtime) / Σ(Runtime) pro Bot-Type, dann summieren
+  // GESAMT MODUS: ALLE Updates zusammen gewichten (wie ein großer Bot-Type)
+  // EINZELNER BOT-TYPE: Zeitgewichtete Berechnung pro Bot-Type
   const totalBaseInvestment = useMemo(() => {
-    // Helper: Parse Timestamp aus "DD.MM.YYYY HH:MM" Format
-    const parseTimestamp = (dateStr: string | null | undefined): number | null => {
-      if (!dateStr) return null;
-      const match = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/);
-      if (!match) return null;
-      const [, day, month, year, hour, minute] = match;
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).getTime();
-    };
-    
     // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
       if (!availableBotTypes || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
       }
       
-      const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
-      let sum = 0;
+      // KORREKTE BERECHNUNG: ALLE Updates zusammen als "ein großer Bot-Type"
+      const activeBotTypeIds = availableBotTypes.filter(bt => bt.isActive).map(bt => bt.id);
       
-      activeBotTypes.forEach(botType => {
-        // Nur Updates mit Status "Update Metrics" verwenden (keine Closed Bots!)
-        const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
-          update => update.botTypeId === botType.id && update.status === "Update Metrics"
-        );
+      // ALLE Update Metrics von ALLEN aktiven Bot-Types zusammen
+      const allUpdateMetrics = timeFilteredBotTypeUpdates.filter(
+        update => activeBotTypeIds.includes(update.botTypeId) && update.status === "Update Metrics"
+      );
+      
+      if (allUpdateMetrics.length === 0) {
+        return 0;
+      }
+      
+      // EINE zeitgewichtete Berechnung über ALLE Updates
+      // Runtime = durchschnittliche Laufzeit (avgRuntime) - gleich wie Bot-Type-Seite
+      let sumInvestmentTimesRuntime = 0;
+      let sumRuntime = 0;
+      
+      allUpdateMetrics.forEach(update => {
+        const investment = parseFloat(update.investment || '0') || 0;
+        const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
         
-        if (updateMetricsOnly.length > 0) {
-          // ZEITGEWICHTETE Berechnung: Σ(Investment × Runtime) / Σ(Runtime)
-          let sumInvestmentTimesRuntime = 0;
-          let sumRuntime = 0;
-          
-          updateMetricsOnly.forEach(update => {
-            const investment = parseFloat(update.investment || '0') || 0;
-            const fromTs = parseTimestamp(update.lastUpload);
-            const untilTs = parseTimestamp(update.thisUpload);
-            
-            if (fromTs && untilTs && untilTs > fromTs) {
-              const runtime = untilTs - fromTs;
-              sumInvestmentTimesRuntime += investment * runtime;
-              sumRuntime += runtime;
-            }
-          });
-          
-          // Zeitgewichteter Durchschnitt pro Bot-Type
-          if (sumRuntime > 0) {
-            sum += sumInvestmentTimesRuntime / sumRuntime;
-          }
+        if (runtimeMs > 0) {
+          sumInvestmentTimesRuntime += investment * runtimeMs;
+          sumRuntime += runtimeMs;
         }
       });
       
-      return sum;
+      return sumRuntime > 0 ? sumInvestmentTimesRuntime / sumRuntime : 0;
     } else {
       if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
         return 0;
@@ -3910,19 +3880,17 @@ export default function Dashboard() {
       );
       
       if (updateMetricsOnly.length > 0) {
-        // ZEITGEWICHTETE Berechnung
+        // ZEITGEWICHTETE Berechnung mit avgRuntime
         let sumInvestmentTimesRuntime = 0;
         let sumRuntime = 0;
         
         updateMetricsOnly.forEach(update => {
           const investment = parseFloat(update.investment || '0') || 0;
-          const fromTs = parseTimestamp(update.lastUpload);
-          const untilTs = parseTimestamp(update.thisUpload);
+          const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
           
-          if (fromTs && untilTs && untilTs > fromTs) {
-            const runtime = untilTs - fromTs;
-            sumInvestmentTimesRuntime += investment * runtime;
-            sumRuntime += runtime;
+          if (runtimeMs > 0) {
+            sumInvestmentTimesRuntime += investment * runtimeMs;
+            sumRuntime += runtimeMs;
           }
         });
         
