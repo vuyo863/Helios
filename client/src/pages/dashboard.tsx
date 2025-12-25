@@ -1861,31 +1861,75 @@ export default function Dashboard() {
   }, [isMultiBotChartMode, multiBotChartData.data]);
 
   // ADDED MODE: Aggregierte Werte für Content Cards
-  // Berechnet die SUMME aller Metriken, die im Graph angezeigt werden
+  // ZEITGEWICHTETE Berechnung für Gesamtinvestment und Investitionsmenge
   const addedModeAggregatedValues = useMemo(() => {
     if (!isMultiBotChartMode || !multiBotChartData.data || multiBotChartData.data.length === 0) {
       return null;
     }
     
-    // Summiere alle Werte aus den angezeigten Metriken
+    // Helper: Parse Timestamp aus "DD.MM.YYYY HH:MM" Format
+    const parseTimestamp = (dateStr: string | null | undefined): number | null => {
+      if (!dateStr) return null;
+      const match = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/);
+      if (!match) return null;
+      const [, day, month, year, hour, minute] = match;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).getTime();
+    };
+    
+    // ZEITGEWICHTETE Berechnung für Investment pro ausgewähltem Bot-Type
+    let timeWeightedTotalInvestment = 0;
+    let timeWeightedBaseInvestment = 0;
+    
+    // Für jeden ausgewählten Bot-Type: zeitgewichtetes Investment berechnen
+    selectedChartBotTypes.forEach(botTypeId => {
+      // Nur Updates mit Status "Update Metrics" für diesen Bot-Type
+      const updateMetricsOnly = allBotTypeUpdates.filter(
+        update => update.botTypeId === botTypeId && update.status === "Update Metrics"
+      );
+      
+      if (updateMetricsOnly.length > 0) {
+        // ZEITGEWICHTETE Berechnung: Σ(Investment × Runtime) / Σ(Runtime)
+        let sumTotalInvTimesRuntime = 0;
+        let sumBaseInvTimesRuntime = 0;
+        let sumRuntime = 0;
+        
+        updateMetricsOnly.forEach(update => {
+          const totalInv = parseFloat(update.totalInvestment || '0') || 0;
+          const baseInv = parseFloat(update.investment || '0') || 0;
+          const fromTs = parseTimestamp(update.lastUpload);
+          const untilTs = parseTimestamp(update.thisUpload);
+          
+          if (fromTs && untilTs && untilTs > fromTs) {
+            const runtime = untilTs - fromTs;
+            sumTotalInvTimesRuntime += totalInv * runtime;
+            sumBaseInvTimesRuntime += baseInv * runtime;
+            sumRuntime += runtime;
+          }
+        });
+        
+        // Zeitgewichteter Durchschnitt pro Bot-Type
+        if (sumRuntime > 0) {
+          timeWeightedTotalInvestment += sumTotalInvTimesRuntime / sumRuntime;
+          timeWeightedBaseInvestment += sumBaseInvTimesRuntime / sumRuntime;
+        }
+      }
+    });
+    
+    // Andere Metriken aus den Chart-Daten summieren (Profit, etc.)
     let totalProfit = 0;
-    let totalInvestment = 0;
     let totalProfitPercent = 0;
     let totalAvgDailyProfit = 0;
     let totalRealDailyProfit = 0;
     let count = 0;
     
     multiBotChartData.data.forEach((point: any) => {
-      // Jeder Punkt repräsentiert ein End-Event mit individuellen Metriken
-      // WICHTIG: Verwende die ROHEN Werte (_raw_*) für die Content Cards, nicht die adjustierten Chart-Positionen
+      // WICHTIG: Verwende die ROHEN Werte (_raw_*) für die Content Cards
       const profit = point['_raw_Gesamtprofit'] ?? point._profit ?? 0;
-      const investment = point['Gesamt_Gesamtkapital'] || 0; // Kapital bleibt unverändert
       const profitPercent = point['_raw_Gesamtprofit %'] ?? 0;
       const avgDaily = point['_raw_Ø Profit/Tag'] ?? 0;
       const realDaily = point['_raw_Real Profit/Tag'] ?? 0;
       
       totalProfit += profit;
-      totalInvestment += investment;
       totalProfitPercent += profitPercent;
       totalAvgDailyProfit += avgDaily;
       totalRealDailyProfit += realDaily;
@@ -1897,15 +1941,22 @@ export default function Dashboard() {
     const avgDailyProfit = count > 0 ? totalAvgDailyProfit / count : 0;
     const avgRealDailyProfit = count > 0 ? totalRealDailyProfit / count : 0;
     
+    // Investment basierend auf profitPercentBase auswählen
+    const displayedInv = profitPercentBase === 'gesamtinvestment' 
+      ? timeWeightedTotalInvestment 
+      : timeWeightedBaseInvestment;
+    
     return {
       profit: totalProfit,
-      investment: totalInvestment,
+      investment: displayedInv,
+      totalInvestment: timeWeightedTotalInvestment,
+      baseInvestment: timeWeightedBaseInvestment,
       profitPercent: avgProfitPercent,
       avgDailyProfit: avgDailyProfit,
       realDailyProfit: avgRealDailyProfit,
       metricCount: count
     };
-  }, [isMultiBotChartMode, multiBotChartData.data]);
+  }, [isMultiBotChartMode, multiBotChartData.data, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase]);
   // ========== ENDE ADDED MODUS SECTION ==========
 
   // Chart-Daten basierend auf appliedChartSettings generieren
