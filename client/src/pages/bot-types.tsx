@@ -619,7 +619,7 @@ export default function BotTypesPage() {
               }
               
               // DEBUG: Logging für API-Abruf (kann später entfernt werden)
-              // console.log(`Bot-Type ${botType.name}: Gesamtinvestment-Ø = ${timeWeightedInvestment.toFixed(2)}, Investitionsmenge-Ø = ${timeWeightedBaseInvestment.toFixed(2)}`);
+              console.log(`Bot-Type ${botType.name}: Gesamtinvestment-Ø = ${timeWeightedInvestment.toFixed(2)}, Investitionsmenge-Ø = ${timeWeightedBaseInvestment.toFixed(2)}`);
               
               return (
                 <Card 
