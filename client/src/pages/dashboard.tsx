@@ -1862,6 +1862,7 @@ export default function Dashboard() {
 
   // ADDED MODE: Aggregierte Werte für Content Cards
   // ZEITGEWICHTETE Berechnung für Gesamtinvestment und Investitionsmenge
+  // ZEITFILTER-SENSITIV: Nur Updates/Teile im gewählten Zeitraum berücksichtigen
   const addedModeAggregatedValues = useMemo(() => {
     if (!isMultiBotChartMode || !multiBotChartData.data || multiBotChartData.data.length === 0) {
       return null;
@@ -1876,7 +1877,52 @@ export default function Dashboard() {
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).getTime();
     };
     
-    // ZEITGEWICHTETE Berechnung für Investment pro ausgewähltem Bot-Type
+    // ========== ZEITFILTER BESTIMMEN ==========
+    // Prüfe ob ein Zeitfilter aktiv ist und bestimme den Zeitraum
+    let filterFromTs: number | null = null;
+    let filterUntilTs: number | null = null;
+    let isTimeFiltered = false;
+    
+    // Verwende appliedChartSettings für den Added Modus
+    const settings = appliedChartSettings;
+    
+    if (settings) {
+      // Priorität 1: From/Until manuell ausgewählt
+      if (settings.fromUpdate && settings.untilUpdate) {
+        const fromUpdate = allBotTypeUpdates.find(u => u.id === settings.fromUpdate);
+        const untilUpdate = allBotTypeUpdates.find(u => u.id === settings.untilUpdate);
+        if (fromUpdate && untilUpdate) {
+          filterFromTs = parseTimestamp(fromUpdate.thisUpload);
+          filterUntilTs = parseTimestamp(untilUpdate.thisUpload);
+          isTimeFiltered = true;
+        }
+      }
+      // Priorität 2: Custom mit Kalender-Auswahl (von-bis Datum)
+      else if (settings.timeRange === 'Custom' && settings.customFromDate && settings.customToDate) {
+        filterFromTs = settings.customFromDate.getTime();
+        const toDate = new Date(settings.customToDate);
+        toDate.setHours(23, 59, 59, 999);
+        filterUntilTs = toDate.getTime();
+        isTimeFiltered = true;
+      }
+      // Priorität 3: "Letzten"-Zeitraum Filter (1h, 24h, 7 Days, 30 Days, Custom mit D/H/M)
+      else if (settings.timeRange && settings.timeRange !== 'First-Last Update') {
+        const rangeMs = parseTimeRangeToMs(
+          settings.timeRange,
+          settings.customDays,
+          settings.customHours,
+          settings.customMinutes
+        );
+        if (rangeMs !== null && rangeMs > 0) {
+          filterUntilTs = Date.now();
+          filterFromTs = filterUntilTs - rangeMs;
+          isTimeFiltered = true;
+        }
+      }
+      // Priorität 4: First-Last Update = Alle Updates (kein Filter)
+    }
+    
+    // ========== ZEITGEWICHTETE BERECHNUNG PRO BOT-TYPE ==========
     let timeWeightedTotalInvestment = 0;
     let timeWeightedBaseInvestment = 0;
     
@@ -1888,7 +1934,7 @@ export default function Dashboard() {
       );
       
       if (updateMetricsOnly.length > 0) {
-        // ZEITGEWICHTETE Berechnung: Σ(Investment × Runtime) / Σ(Runtime)
+        // ZEITGEWICHTETE Berechnung: Σ(Investment × aktive Zeit im Zeitraum) / Σ(aktive Zeit im Zeitraum)
         let sumTotalInvTimesRuntime = 0;
         let sumBaseInvTimesRuntime = 0;
         let sumRuntime = 0;
@@ -1896,14 +1942,30 @@ export default function Dashboard() {
         updateMetricsOnly.forEach(update => {
           const totalInv = parseFloat(update.totalInvestment || '0') || 0;
           const baseInv = parseFloat(update.investment || '0') || 0;
-          const fromTs = parseTimestamp(update.lastUpload);
-          const untilTs = parseTimestamp(update.thisUpload);
+          let fromTs = parseTimestamp(update.lastUpload);
+          let untilTs = parseTimestamp(update.thisUpload);
           
           if (fromTs && untilTs && untilTs > fromTs) {
-            const runtime = untilTs - fromTs;
-            sumTotalInvTimesRuntime += totalInv * runtime;
-            sumBaseInvTimesRuntime += baseInv * runtime;
-            sumRuntime += runtime;
+            // ZEITFILTER: Schneide den Update-Zeitraum mit dem Filter-Zeitraum
+            if (isTimeFiltered && filterFromTs !== null && filterUntilTs !== null) {
+              // Intersection berechnen: max(updateStart, filterStart) bis min(updateEnd, filterEnd)
+              const effectiveFrom = Math.max(fromTs, filterFromTs);
+              const effectiveUntil = Math.min(untilTs, filterUntilTs);
+              
+              // Nur wenn Überlappung existiert
+              if (effectiveUntil > effectiveFrom) {
+                const activeTime = effectiveUntil - effectiveFrom;
+                sumTotalInvTimesRuntime += totalInv * activeTime;
+                sumBaseInvTimesRuntime += baseInv * activeTime;
+                sumRuntime += activeTime;
+              }
+            } else {
+              // Kein Zeitfilter: Komplette Runtime verwenden
+              const runtime = untilTs - fromTs;
+              sumTotalInvTimesRuntime += totalInv * runtime;
+              sumBaseInvTimesRuntime += baseInv * runtime;
+              sumRuntime += runtime;
+            }
           }
         });
         
@@ -1956,7 +2018,7 @@ export default function Dashboard() {
       realDailyProfit: avgRealDailyProfit,
       metricCount: count
     };
-  }, [isMultiBotChartMode, multiBotChartData.data, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase]);
+  }, [isMultiBotChartMode, multiBotChartData.data, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase, appliedChartSettings]);
   // ========== ENDE ADDED MODUS SECTION ==========
 
   // Chart-Daten basierend auf appliedChartSettings generieren
