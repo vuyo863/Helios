@@ -3979,9 +3979,10 @@ export default function Dashboard() {
     return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
   }, [totalInvestment, totalBaseInvestment, totalProfit, profitPercentBase]);
 
-  // Ø Profit/Tag: Einfacher Durchschnitt über ALLE Updates aller aktiven Bot-Types
-  // Formel: Σ(avgGridProfitDay) / Anzahl_Updates
-  // KEINE Zeitgewichtung, weil avgGridProfitDay bereits auf "pro Tag" normalisiert ist
+  // Ø Profit/Tag: Pro Bot-Type den Durchschnitt berechnen, dann ADDIEREN
+  // Formel: Σ(Bot-Type 24h Ø Profit)
+  // Jeder Bot-Type-Durchschnitt = Durchschnitt aller avgGridProfitDay dieses Bot-Types
+  // Die Bot-Type-Durchschnitte werden addiert, weil Bots gleichzeitig laufen
   const avgDailyProfit = useMemo(() => {
     // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
@@ -3991,24 +3992,29 @@ export default function Dashboard() {
       
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
       
-      // Sammle ALLE Updates von allen aktiven Bot-Types
+      // Pro Bot-Type den Durchschnitt berechnen, dann addieren
       let totalAvgProfitDay = 0;
-      let updateCount = 0;
       
       activeBotTypes.forEach(botType => {
         const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
           update => update.botTypeId === botType.id && update.status === 'Update Metrics'
         );
         
-        updateMetricsOnly.forEach(update => {
-          const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
-          totalAvgProfitDay += avgGridProfitDay;
-          updateCount++;
-        });
+        if (updateMetricsOnly.length > 0) {
+          // Durchschnitt für diesen Bot-Type berechnen
+          let botTypeTotal = 0;
+          updateMetricsOnly.forEach(update => {
+            const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+            botTypeTotal += avgGridProfitDay;
+          });
+          const botTypeAvg = botTypeTotal / updateMetricsOnly.length;
+          
+          // Bot-Type-Durchschnitt zur Gesamtsumme addieren
+          totalAvgProfitDay += botTypeAvg;
+        }
       });
       
-      // Einfacher Durchschnitt
-      return updateCount > 0 ? totalAvgProfitDay / updateCount : 0;
+      return totalAvgProfitDay;
     } else {
       // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
       if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
