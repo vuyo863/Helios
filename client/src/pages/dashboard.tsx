@@ -3979,8 +3979,9 @@ export default function Dashboard() {
     return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
   }, [totalInvestment, totalBaseInvestment, totalProfit, profitPercentBase]);
 
-  // Ø Profit/Tag: Zeitgewichteter Durchschnitt über ALLE Updates aller aktiven Bot-Types
-  // Formel: Σ(avgGridProfitDay × avgRuntime) / Σ(avgRuntime)
+  // Ø Profit/Tag: Einfacher Durchschnitt über ALLE Updates aller aktiven Bot-Types
+  // Formel: Σ(avgGridProfitDay) / Anzahl_Updates
+  // KEINE Zeitgewichtung, weil avgGridProfitDay bereits auf "pro Tag" normalisiert ist
   const avgDailyProfit = useMemo(() => {
     // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
@@ -3990,9 +3991,9 @@ export default function Dashboard() {
       
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
       
-      // Sammle ALLE Updates von allen aktiven Bot-Types (wie ein großer Bot-Type)
-      let weightedSum = 0;
-      let totalRuntime = 0;
+      // Sammle ALLE Updates von allen aktiven Bot-Types
+      let totalAvgProfitDay = 0;
+      let updateCount = 0;
       
       activeBotTypes.forEach(botType => {
         const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
@@ -4001,17 +4002,13 @@ export default function Dashboard() {
         
         updateMetricsOnly.forEach(update => {
           const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
-          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
-          
-          if (runtimeHours > 0) {
-            weightedSum += avgGridProfitDay * runtimeHours;
-            totalRuntime += runtimeHours;
-          }
+          totalAvgProfitDay += avgGridProfitDay;
+          updateCount++;
         });
       });
       
-      // Zeitgewichteter Durchschnitt
-      return totalRuntime > 0 ? weightedSum / totalRuntime : 0;
+      // Einfacher Durchschnitt
+      return updateCount > 0 ? totalAvgProfitDay / updateCount : 0;
     } else {
       // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
       if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
