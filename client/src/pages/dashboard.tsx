@@ -3979,8 +3979,8 @@ export default function Dashboard() {
     return totalBaseInvestment > 0 ? (totalProfit / totalBaseInvestment) * 100 : 0;
   }, [totalInvestment, totalBaseInvestment, totalProfit, profitPercentBase]);
 
-  // Ø Profit/Tag: Summe der "24h Ø Profit" von allen aktiven Bot-Types
-  // Berechnung wie auf Bot-Types-Seite: weighted average (totalProfit / totalHours * 24)
+  // Ø Profit/Tag: Zeitgewichteter Durchschnitt über ALLE Updates aller aktiven Bot-Types
+  // Formel: Σ(avgGridProfitDay × avgRuntime) / Σ(avgRuntime)
   const avgDailyProfit = useMemo(() => {
     // Verwende timeFilteredBotTypeUpdates für Zeitraum-Filterung
     if (selectedBotName === "Gesamt") {
@@ -3989,33 +3989,29 @@ export default function Dashboard() {
       }
       
       const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
-      let totalAvg24h = 0;
+      
+      // Sammle ALLE Updates von allen aktiven Bot-Types (wie ein großer Bot-Type)
+      let weightedSum = 0;
+      let totalRuntime = 0;
       
       activeBotTypes.forEach(botType => {
         const updateMetricsOnly = timeFilteredBotTypeUpdates.filter(
           update => update.botTypeId === botType.id && update.status === 'Update Metrics'
         );
         
-        if (updateMetricsOnly.length > 0) {
-          let totalProfit = 0;
-          let totalHours = 0;
+        updateMetricsOnly.forEach(update => {
+          const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
           
-          updateMetricsOnly.forEach(update => {
-            const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-            const runtimeHours = parseRuntimeToHours(update.avgRuntime);
-            totalProfit += gridProfit;
-            totalHours += runtimeHours;
-          });
-          
-          if (totalHours > 0) {
-            const profitPerHour = totalProfit / totalHours;
-            const avg24h = profitPerHour * 24;
-            totalAvg24h += avg24h;
+          if (runtimeHours > 0) {
+            weightedSum += avgGridProfitDay * runtimeHours;
+            totalRuntime += runtimeHours;
           }
-        }
+        });
       });
       
-      return totalAvg24h;
+      // Zeitgewichteter Durchschnitt
+      return totalRuntime > 0 ? weightedSum / totalRuntime : 0;
     } else {
       // Für spezifischen Bot-Type: Berechne wie auf Bot-Types-Seite
       if (!selectedBotTypeData || timeFilteredBotTypeUpdates.length === 0) {
