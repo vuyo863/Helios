@@ -1983,20 +1983,47 @@ export default function Dashboard() {
     
     // Andere Metriken aus den Chart-Daten summieren (Profit, etc.)
     let totalProfit = 0;
-    let totalAvgDailyProfit = 0;
     let totalRealDailyProfit = 0;
     let count = 0;
     
     multiBotChartData.data.forEach((point: any) => {
       // WICHTIG: Verwende die ROHEN Werte (_raw_*) für die Content Cards
       const profit = point['_raw_Gesamtprofit'] ?? point._profit ?? 0;
-      const avgDaily = point['_raw_Ø Profit/Tag'] ?? 0;
       const realDaily = point['_raw_Real Profit/Tag'] ?? 0;
       
       totalProfit += profit;
-      totalAvgDailyProfit += avgDaily;
       totalRealDailyProfit += realDaily;
       count++;
+    });
+    
+    // ========== Ø PROFIT/TAG: GLEICHE LOGIK WIE GESAMT-MODUS ==========
+    // Pro ausgewähltem Bot-Type den 24h-Durchschnitt berechnen, dann ADDIEREN
+    // Formel pro Bot-Type: totalProfit / totalHours * 24
+    let avgDailyProfitSum = 0;
+    
+    selectedChartBotTypes.forEach(botTypeId => {
+      const updateMetricsOnly = allBotTypeUpdates.filter(
+        update => update.botTypeId === botTypeId && update.status === 'Update Metrics'
+      );
+      
+      if (updateMetricsOnly.length > 0) {
+        // GLEICHE Berechnung wie auf Bot-Type-Seite:
+        // totalProfit / totalHours * 24
+        let botTypeTotalProfit = 0;
+        let botTypeTotalHours = 0;
+        
+        updateMetricsOnly.forEach(update => {
+          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
+          botTypeTotalProfit += gridProfit;
+          botTypeTotalHours += runtimeHours;
+        });
+        
+        if (botTypeTotalHours > 0) {
+          const avg24hProfit = (botTypeTotalProfit / botTypeTotalHours) * 24;
+          avgDailyProfitSum += avg24hProfit;
+        }
+      }
     });
     
     // Investment basierend auf profitPercentBase auswählen
@@ -2009,7 +2036,7 @@ export default function Dashboard() {
     const calculatedProfitPercent = displayedInv > 0 ? (totalProfit / displayedInv) * 100 : 0;
     
     // Durchschnittswerte für tägliche Profite
-    const avgDailyProfit = count > 0 ? totalAvgDailyProfit / count : 0;
+    const avgDailyProfit = avgDailyProfitSum;
     const avgRealDailyProfit = count > 0 ? totalRealDailyProfit / count : 0;
     
     return {
