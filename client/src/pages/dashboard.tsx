@@ -2820,11 +2820,16 @@ export default function Dashboard() {
           tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
         }
       } else if (effectiveSequence === 'months') {
-        // MONATS-MODUS - Immer monatsweise Ticks (ca. 30 Tage Intervall)
-        // Bei Months soll immer der Monatsanfang als Tick erscheinen
+        // MONATS-MODUS - Immer genau 3 Ticks: Anfang, Mitte, Ende
+        // Bei kurzen Zeiträumen (< 6 Monate) zeigen wir genau 3 Striche
         const visibleMonths = visibleDays / 30;
         if (visibleMonths <= 6) {
-          tickInterval = 30 * 24 * 60 * 60 * 1000; // 1 Monat
+          // Spezielle Logik: Genau 3 Ticks (Anfang, Mitte, Ende)
+          const ticks: number[] = [];
+          ticks.push(startTs); // Anfang
+          ticks.push(Math.round((startTs + endTs) / 2)); // Mitte
+          ticks.push(endTs); // Ende
+          return ticks;
         } else if (visibleMonths <= 12) {
           tickInterval = 60 * 24 * 60 * 60 * 1000; // 2 Monate
         } else if (visibleMonths <= 24) {
