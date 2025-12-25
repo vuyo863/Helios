@@ -1943,26 +1943,26 @@ export default function Dashboard() {
         const totalInv = parseFloat(update.totalInvestment || '0') || 0;
         const baseInv = parseFloat(update.investment || '0') || 0;
         
-        // Runtime = durchschnittliche Laufzeit (avgRuntime) - gleich wie Bot-Type-Seite und Gesamt
+        // Runtime = durchschnittliche Laufzeit (avgRuntime) - IMMER verwenden!
         const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
         
         if (runtimeMs > 0) {
-          // ZEITFILTER: Bei aktivem Filter die Runtime mit dem Zeitraum schneiden
+          // ZEITFILTER: Prüfen ob Update im Zeitfenster liegt
           if (isTimeFiltered && filterFromTs !== null && filterUntilTs !== null) {
             const fromTs = parseTimestamp(update.lastUpload);
             const untilTs = parseTimestamp(update.thisUpload);
             
             if (fromTs && untilTs) {
-              // Intersection berechnen
+              // Prüfen ob Update im Zeitfenster liegt (Überlappung existiert)
               const effectiveFrom = Math.max(fromTs, filterFromTs);
               const effectiveUntil = Math.min(untilTs, filterUntilTs);
               
-              // Nur wenn Überlappung existiert
+              // Nur wenn Überlappung existiert → Update ist im Zeitfenster
               if (effectiveUntil > effectiveFrom) {
-                const activeTime = effectiveUntil - effectiveFrom;
-                sumTotalInvTimesRuntime += totalInv * activeTime;
-                sumBaseInvTimesRuntime += baseInv * activeTime;
-                sumRuntime += activeTime;
+                // WICHTIG: avgRuntime verwenden, NICHT from-until!
+                sumTotalInvTimesRuntime += totalInv * runtimeMs;
+                sumBaseInvTimesRuntime += baseInv * runtimeMs;
+                sumRuntime += runtimeMs;
               }
             }
           } else {
