@@ -2818,18 +2818,17 @@ export default function Dashboard() {
           tickInterval = 56 * 24 * 60 * 60 * 1000; // 8 Wochen
         }
       } else if (effectiveSequence === 'months') {
-        // MONATS-MODUS - Optimiert für bessere Tick-Verteilung
+        // MONATS-MODUS - Immer monatsweise Ticks (ca. 30 Tage Intervall)
+        // Bei Months soll immer der Monatsanfang als Tick erscheinen
         const visibleMonths = visibleDays / 30;
-        if (visibleMonths <= 2) {
-          tickInterval = 7 * 24 * 60 * 60 * 1000; // 1 Woche bei kurzen Zeiträumen
-        } else if (visibleMonths <= 4) {
-          tickInterval = 14 * 24 * 60 * 60 * 1000; // 2 Wochen
-        } else if (visibleMonths <= 8) {
+        if (visibleMonths <= 6) {
           tickInterval = 30 * 24 * 60 * 60 * 1000; // 1 Monat
         } else if (visibleMonths <= 12) {
           tickInterval = 60 * 24 * 60 * 60 * 1000; // 2 Monate
-        } else {
+        } else if (visibleMonths <= 24) {
           tickInterval = 90 * 24 * 60 * 60 * 1000; // 3 Monate
+        } else {
+          tickInterval = 180 * 24 * 60 * 60 * 1000; // 6 Monate
         }
       } else {
         // TAGES-MODUS (default) - EXAKT WIE COMPARE-MODUS
