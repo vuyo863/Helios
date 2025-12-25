@@ -56,6 +56,42 @@ The dashboard features three primary chart modes:
 
 **Formel:** `Σ(investment × runtime) / Σ(runtime)`
 
-**Runtime:** From (lastUpload) bis Until (thisUpload)
+**Runtime:** durchschnittliche Laufzeit (avgRuntime) - NICHT from-until!
 
 **Datei:** `client/src/pages/bot-types.tsx` (Zeilen 522-625)
+
+---
+
+## Dezember 2025 - Dashboard Content Cards Golden State
+
+### GOLDEN STATE - Nicht mehr anfassen!
+
+**Gesamt-Modus:**
+- ✅ Gesamtkapital (zeitgewichtet mit avgRuntime über ALLE Updates aller aktiven Bot-Types)
+- ✅ Investitionsmenge (zeitgewichtet mit avgRuntime über ALLE Updates aller aktiven Bot-Types)
+- ✅ Gesamtprofit % (berechnet: totalProfit / displayedInvestment * 100)
+- ✅ Gesamtprofit (Summe aller Profits)
+
+**Added-Modus:**
+- ✅ Gesamtkapital (zeitgewichtet mit avgRuntime über ALLE Updates ausgewählter Bot-Types)
+- ✅ Investitionsmenge (zeitgewichtet mit avgRuntime über ALLE Updates ausgewählter Bot-Types)
+- ✅ Gesamtprofit % (berechnet: totalProfit / displayedInvestment * 100)
+- ✅ Gesamtprofit (Summe aller Profits)
+
+**Compare-Modus:**
+- ✅ Alle Content Cards (Golden State)
+
+**Formel für Investment:**
+`Σ(Investment × avgRuntime) / Σ(avgRuntime)` über ALLE Updates zusammen (wie ein großer Bot-Type)
+
+**Zeitfilter im Added-Modus:**
+- Prüft ob Update im Zeitfenster liegt (from-until Überlappung)
+- Verwendet IMMER avgRuntime für Gewichtung (nicht from-until!)
+
+---
+
+## TODO: Noch zu bearbeiten
+
+**Added-Modus Content Cards:**
+- ⏳ Ø Profit/Tag - in Bearbeitung
+- ⏳ Real Profit/Tag - noch offen
