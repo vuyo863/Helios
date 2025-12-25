@@ -1793,16 +1793,19 @@ export default function Dashboard() {
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
   }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards]);
 
-  // ADDED MODE: Berechne Highest und Lowest Value für die "Gesamt"-Linie
-  // Im Added-Modus gibt es nur eine aggregierte Linie
+  // ADDED MODE: Berechne Highest und Lowest Value für JEDE aktive Metrik
+  // Nicht nur für "Gesamt", sondern für alle Content Cards die aktiv sind
   const addedExtremeValues = useMemo(() => {
     if (!isMultiBotChartMode || !multiBotChartData.data || multiBotChartData.data.length === 0) {
       return { 
         highest: null as { timestamp: number; value: number } | null, 
-        lowest: null as { timestamp: number; value: number } | null 
+        lowest: null as { timestamp: number; value: number } | null,
+        // NEU: Pro-Metrik High/Low Werte
+        perMetric: {} as Record<string, { highest: { timestamp: number; value: number } | null; lowest: { timestamp: number; value: number } | null }>
       };
     }
     
+    // Gesamt-Linie High/Low (für Abwärtskompatibilität)
     let maxVal = -Infinity;
     let minVal = Infinity;
     let maxPoint: { timestamp: number; value: number } | null = null;
@@ -1822,7 +1825,39 @@ export default function Dashboard() {
       }
     });
     
-    return { highest: maxPoint, lowest: minPoint };
+    // NEU: Berechne High/Low für JEDE aktive Metrik
+    const perMetricExtremes: Record<string, { highest: { timestamp: number; value: number } | null; lowest: { timestamp: number; value: number } | null }> = {};
+    
+    // Alle 5 Metriken durchgehen
+    const allMetrics = ['Gesamtprofit', 'Ø Profit/Tag', 'Real Profit/Tag', 'Gesamtkapital', 'Gesamtprofit %'];
+    
+    allMetrics.forEach(metricName => {
+      let metricMax = -Infinity;
+      let metricMin = Infinity;
+      let metricMaxPoint: { timestamp: number; value: number } | null = null;
+      let metricMinPoint: { timestamp: number; value: number } | null = null;
+      
+      // Der Schlüssel im Datenpunkt ist "Gesamt_<MetrikName>"
+      const dataKey = `Gesamt_${metricName}`;
+      
+      multiBotChartData.data.forEach((point: any) => {
+        const value = point[dataKey];
+        if (typeof value === 'number' && !isNaN(value)) {
+          if (value > metricMax) {
+            metricMax = value;
+            metricMaxPoint = { timestamp: point.timestamp, value };
+          }
+          if (value < metricMin) {
+            metricMin = value;
+            metricMinPoint = { timestamp: point.timestamp, value };
+          }
+        }
+      });
+      
+      perMetricExtremes[metricName] = { highest: metricMaxPoint, lowest: metricMinPoint };
+    });
+    
+    return { highest: maxPoint, lowest: minPoint, perMetric: perMetricExtremes };
   }, [isMultiBotChartMode, multiBotChartData.data]);
 
   // ADDED MODE: Aggregierte Werte für Content Cards
@@ -7830,43 +7865,79 @@ export default function Dashboard() {
                     ));
                   })()}
                   
-                  {/* ========== ADDED MODE: Highest Value Marker ========== */}
-                  {/* Zeigt ↑H Marker für die "Gesamt"-Linie im Added-Modus */}
-                  {showHighestValue && isMultiBotChartMode && addedExtremeValues.highest && (
-                    <ReferenceDot
-                      key="added-highest-gesamt"
-                      x={addedExtremeValues.highest.timestamp}
-                      y={addedExtremeValues.highest.value}
-                      r={0}
-                      label={{
-                        value: '↑H',
-                        position: 'bottom',
-                        fill: '#06b6d4', // Cyan für Gesamt-Linie
-                        fontSize: 12,
-                        fontWeight: 'bold',
-                        offset: 8,
-                      }}
-                    />
-                  )}
+                  {/* ========== ADDED MODE: Highest Value Marker für JEDE aktive Metrik ========== */}
+                  {/* Zeigt ↑H Marker für jede Content Card die aktiv ist */}
+                  {showHighestValue && isMultiBotChartMode && (() => {
+                    // Finde alle aktiven Metriken (Content Cards die sichtbar sind)
+                    const activeMetrics = activeMetricCards.filter(m => m !== 'Gesamtprofit');
+                    // Gesamtprofit ist immer aktiv im Added-Mode, also fügen wir sie hinzu
+                    const allActiveMetrics = ['Gesamtprofit', ...activeMetrics];
+                    
+                    return allActiveMetrics.map((metricName, index) => {
+                      const extreme = addedExtremeValues.perMetric?.[metricName];
+                      if (!extreme?.highest) return null;
+                      
+                      // Farbe aus metricColors holen
+                      const color = metricColors[metricName] || '#888888';
+                      
+                      // Offset für Überlappungsvermeidung
+                      const offset = 8 + (index * 14);
+                      
+                      return (
+                        <ReferenceDot
+                          key={`added-highest-${metricName}`}
+                          x={extreme.highest.timestamp}
+                          y={extreme.highest.value}
+                          r={0}
+                          label={{
+                            value: '↑H',
+                            position: 'bottom',
+                            fill: color,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            offset: offset,
+                          }}
+                        />
+                      );
+                    });
+                  })()}
                   
-                  {/* ========== ADDED MODE: Lowest Value Marker ========== */}
-                  {/* Zeigt ↓L Marker für die "Gesamt"-Linie im Added-Modus */}
-                  {showLowestValue && isMultiBotChartMode && addedExtremeValues.lowest && (
-                    <ReferenceDot
-                      key="added-lowest-gesamt"
-                      x={addedExtremeValues.lowest.timestamp}
-                      y={addedExtremeValues.lowest.value}
-                      r={0}
-                      label={{
-                        value: '↓L',
-                        position: 'top',
-                        fill: '#06b6d4', // Cyan für Gesamt-Linie
-                        fontSize: 12,
-                        fontWeight: 'bold',
-                        offset: 8,
-                      }}
-                    />
-                  )}
+                  {/* ========== ADDED MODE: Lowest Value Marker für JEDE aktive Metrik ========== */}
+                  {/* Zeigt ↓L Marker für jede Content Card die aktiv ist */}
+                  {showLowestValue && isMultiBotChartMode && (() => {
+                    // Finde alle aktiven Metriken (Content Cards die sichtbar sind)
+                    const activeMetrics = activeMetricCards.filter(m => m !== 'Gesamtprofit');
+                    // Gesamtprofit ist immer aktiv im Added-Mode, also fügen wir sie hinzu
+                    const allActiveMetrics = ['Gesamtprofit', ...activeMetrics];
+                    
+                    return allActiveMetrics.map((metricName, index) => {
+                      const extreme = addedExtremeValues.perMetric?.[metricName];
+                      if (!extreme?.lowest) return null;
+                      
+                      // Farbe aus metricColors holen
+                      const color = metricColors[metricName] || '#888888';
+                      
+                      // Offset für Überlappungsvermeidung
+                      const offset = 8 + (index * 14);
+                      
+                      return (
+                        <ReferenceDot
+                          key={`added-lowest-${metricName}`}
+                          x={extreme.lowest.timestamp}
+                          y={extreme.lowest.value}
+                          r={0}
+                          label={{
+                            value: '↓L',
+                            position: 'top',
+                            fill: color,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            offset: offset,
+                          }}
+                        />
+                      );
+                    });
+                  })()}
                 </LineChart>
               </ResponsiveContainer>
               </div>
