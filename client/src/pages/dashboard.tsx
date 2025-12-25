@@ -1917,7 +1917,6 @@ export default function Dashboard() {
     
     // Andere Metriken aus den Chart-Daten summieren (Profit, etc.)
     let totalProfit = 0;
-    let totalProfitPercent = 0;
     let totalAvgDailyProfit = 0;
     let totalRealDailyProfit = 0;
     let count = 0;
@@ -1925,33 +1924,34 @@ export default function Dashboard() {
     multiBotChartData.data.forEach((point: any) => {
       // WICHTIG: Verwende die ROHEN Werte (_raw_*) für die Content Cards
       const profit = point['_raw_Gesamtprofit'] ?? point._profit ?? 0;
-      const profitPercent = point['_raw_Gesamtprofit %'] ?? 0;
       const avgDaily = point['_raw_Ø Profit/Tag'] ?? 0;
       const realDaily = point['_raw_Real Profit/Tag'] ?? 0;
       
       totalProfit += profit;
-      totalProfitPercent += profitPercent;
       totalAvgDailyProfit += avgDaily;
       totalRealDailyProfit += realDaily;
       count++;
     });
-    
-    // Durchschnittswerte für Prozent und tägliche Profite
-    const avgProfitPercent = count > 0 ? totalProfitPercent / count : 0;
-    const avgDailyProfit = count > 0 ? totalAvgDailyProfit / count : 0;
-    const avgRealDailyProfit = count > 0 ? totalRealDailyProfit / count : 0;
     
     // Investment basierend auf profitPercentBase auswählen
     const displayedInv = profitPercentBase === 'gesamtinvestment' 
       ? timeWeightedTotalInvestment 
       : timeWeightedBaseInvestment;
     
+    // Gesamtprofit % DIREKT berechnen: (totalProfit / displayedInvestment) * 100
+    // Gleiche Logik wie bei "Gesamt" Modus
+    const calculatedProfitPercent = displayedInv > 0 ? (totalProfit / displayedInv) * 100 : 0;
+    
+    // Durchschnittswerte für tägliche Profite
+    const avgDailyProfit = count > 0 ? totalAvgDailyProfit / count : 0;
+    const avgRealDailyProfit = count > 0 ? totalRealDailyProfit / count : 0;
+    
     return {
       profit: totalProfit,
       investment: displayedInv,
       totalInvestment: timeWeightedTotalInvestment,
       baseInvestment: timeWeightedBaseInvestment,
-      profitPercent: avgProfitPercent,
+      profitPercent: calculatedProfitPercent,
       avgDailyProfit: avgDailyProfit,
       realDailyProfit: avgRealDailyProfit,
       metricCount: count
