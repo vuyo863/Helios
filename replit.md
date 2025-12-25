@@ -45,3 +45,17 @@ The dashboard features three primary chart modes:
 *   **Validation**: Zod for schema validation.
 *   **AI Integration**: OpenAI API for AI-powered analysis features.
 *   **Storage**: In-memory `MemStorage` for server-side data handling.
+
+---
+
+## Dezember 2025 - Zeitgewichtetes Investment (Bot-Type-Page)
+
+**Änderung:**
+- Gesamtinvestment-Ø auf Bot-Type-Cards: **zeitgewichtete Berechnung**
+- Investitionsmenge-Ø (Basis-Investment): zeitgewichtet berechnet (NICHT in UI, für API)
+
+**Formel:** `Σ(investment × runtime) / Σ(runtime)`
+
+**Runtime:** From (lastUpload) bis Until (thisUpload)
+
+**Datei:** `client/src/pages/bot-types.tsx` (Zeilen 522-625)

@@ -567,6 +567,60 @@ export default function BotTypesPage() {
                 }
               }
               
+              // ZEITGEWICHTETE INVESTITIONSMENGE: Σ(investment × runtime) / Σ(runtime)
+              // Genau wie Gesamtinvestment, nur mit Basis-Investment statt totalInvestment
+              // Wird NICHT in der UI angezeigt, aber berechnet für API-Abruf
+              let timeWeightedBaseInvestment = 0;
+              if (updateMetricsOnly.length > 0) {
+                let sumBaseInvestmentTimesRuntime = 0;
+                let sumRuntimeBase = 0;
+                
+                updateMetricsOnly.forEach(update => {
+                  const baseInvestment = parseFloat(update.investment || '0') || 0;
+                  
+                  // Parse From (lastUpload) und Until (thisUpload) Datum
+                  let runtimeMs = 0;
+                  if (update.lastUpload && update.thisUpload) {
+                    // Parse German date format (dd.MM.yyyy HH:mm or dd.MM.yyyy HH:mm:ss)
+                    let fromDate = parse(update.lastUpload, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
+                    if (!isValid(fromDate)) {
+                      fromDate = parse(update.lastUpload, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
+                    }
+                    if (!isValid(fromDate)) {
+                      fromDate = parseISO(update.lastUpload);
+                    }
+                    
+                    let untilDate = parse(update.thisUpload, "dd.MM.yyyy HH:mm:ss", new Date(), { locale: de });
+                    if (!isValid(untilDate)) {
+                      untilDate = parse(update.thisUpload, "dd.MM.yyyy HH:mm", new Date(), { locale: de });
+                    }
+                    if (!isValid(untilDate)) {
+                      untilDate = parseISO(update.thisUpload);
+                    }
+                    
+                    if (isValid(fromDate) && isValid(untilDate)) {
+                      runtimeMs = untilDate.getTime() - fromDate.getTime();
+                      if (runtimeMs < 0) runtimeMs = 0;
+                    }
+                  }
+                  
+                  // Fallback: Wenn keine Daten, nutze avgRuntime
+                  if (runtimeMs === 0) {
+                    runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
+                  }
+                  
+                  sumBaseInvestmentTimesRuntime += baseInvestment * runtimeMs;
+                  sumRuntimeBase += runtimeMs;
+                });
+                
+                if (sumRuntimeBase > 0) {
+                  timeWeightedBaseInvestment = sumBaseInvestmentTimesRuntime / sumRuntimeBase;
+                }
+              }
+              
+              // DEBUG: Logging für API-Abruf (kann später entfernt werden)
+              // console.log(`Bot-Type ${botType.name}: Gesamtinvestment-Ø = ${timeWeightedInvestment.toFixed(2)}, Investitionsmenge-Ø = ${timeWeightedBaseInvestment.toFixed(2)}`);
+              
               return (
                 <Card 
                   key={botType.id} 
