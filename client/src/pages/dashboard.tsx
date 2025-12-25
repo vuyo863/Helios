@@ -1922,33 +1922,38 @@ export default function Dashboard() {
       // Priorität 4: First-Last Update = Alle Updates (kein Filter)
     }
     
-    // ========== ZEITGEWICHTETE BERECHNUNG PRO BOT-TYPE ==========
+    // ========== ZEITGEWICHTETE BERECHNUNG - ALLE UPDATES ZUSAMMEN ==========
+    // KORREKTE LOGIK: Alle Updates von allen ausgewählten Bot-Types zusammen
+    // als "ein großer Bot-Type" berechnen (nicht pro Bot-Type addieren!)
+    
+    // ALLE Update Metrics von ALLEN ausgewählten Bot-Types zusammen
+    const allSelectedUpdateMetrics = allBotTypeUpdates.filter(
+      update => selectedChartBotTypes.includes(update.botTypeId) && update.status === "Update Metrics"
+    );
+    
     let timeWeightedTotalInvestment = 0;
     let timeWeightedBaseInvestment = 0;
     
-    // Für jeden ausgewählten Bot-Type: zeitgewichtetes Investment berechnen
-    selectedChartBotTypes.forEach(botTypeId => {
-      // Nur Updates mit Status "Update Metrics" für diesen Bot-Type
-      const updateMetricsOnly = allBotTypeUpdates.filter(
-        update => update.botTypeId === botTypeId && update.status === "Update Metrics"
-      );
+    if (allSelectedUpdateMetrics.length > 0) {
+      let sumTotalInvTimesRuntime = 0;
+      let sumBaseInvTimesRuntime = 0;
+      let sumRuntime = 0;
       
-      if (updateMetricsOnly.length > 0) {
-        // ZEITGEWICHTETE Berechnung: Σ(Investment × aktive Zeit im Zeitraum) / Σ(aktive Zeit im Zeitraum)
-        let sumTotalInvTimesRuntime = 0;
-        let sumBaseInvTimesRuntime = 0;
-        let sumRuntime = 0;
+      allSelectedUpdateMetrics.forEach(update => {
+        const totalInv = parseFloat(update.totalInvestment || '0') || 0;
+        const baseInv = parseFloat(update.investment || '0') || 0;
         
-        updateMetricsOnly.forEach(update => {
-          const totalInv = parseFloat(update.totalInvestment || '0') || 0;
-          const baseInv = parseFloat(update.investment || '0') || 0;
-          let fromTs = parseTimestamp(update.lastUpload);
-          let untilTs = parseTimestamp(update.thisUpload);
-          
-          if (fromTs && untilTs && untilTs > fromTs) {
-            // ZEITFILTER: Schneide den Update-Zeitraum mit dem Filter-Zeitraum
-            if (isTimeFiltered && filterFromTs !== null && filterUntilTs !== null) {
-              // Intersection berechnen: max(updateStart, filterStart) bis min(updateEnd, filterEnd)
+        // Runtime = durchschnittliche Laufzeit (avgRuntime) - gleich wie Bot-Type-Seite und Gesamt
+        const runtimeMs = parseRuntimeToHours(update.avgRuntime) * 60 * 60 * 1000;
+        
+        if (runtimeMs > 0) {
+          // ZEITFILTER: Bei aktivem Filter die Runtime mit dem Zeitraum schneiden
+          if (isTimeFiltered && filterFromTs !== null && filterUntilTs !== null) {
+            const fromTs = parseTimestamp(update.lastUpload);
+            const untilTs = parseTimestamp(update.thisUpload);
+            
+            if (fromTs && untilTs) {
+              // Intersection berechnen
               const effectiveFrom = Math.max(fromTs, filterFromTs);
               const effectiveUntil = Math.min(untilTs, filterUntilTs);
               
@@ -1959,23 +1964,22 @@ export default function Dashboard() {
                 sumBaseInvTimesRuntime += baseInv * activeTime;
                 sumRuntime += activeTime;
               }
-            } else {
-              // Kein Zeitfilter: Komplette Runtime verwenden
-              const runtime = untilTs - fromTs;
-              sumTotalInvTimesRuntime += totalInv * runtime;
-              sumBaseInvTimesRuntime += baseInv * runtime;
-              sumRuntime += runtime;
             }
+          } else {
+            // Kein Zeitfilter (First-Last): avgRuntime direkt verwenden
+            sumTotalInvTimesRuntime += totalInv * runtimeMs;
+            sumBaseInvTimesRuntime += baseInv * runtimeMs;
+            sumRuntime += runtimeMs;
           }
-        });
-        
-        // Zeitgewichteter Durchschnitt pro Bot-Type
-        if (sumRuntime > 0) {
-          timeWeightedTotalInvestment += sumTotalInvTimesRuntime / sumRuntime;
-          timeWeightedBaseInvestment += sumBaseInvTimesRuntime / sumRuntime;
         }
+      });
+      
+      // EINE zeitgewichtete Berechnung über ALLE Updates
+      if (sumRuntime > 0) {
+        timeWeightedTotalInvestment = sumTotalInvTimesRuntime / sumRuntime;
+        timeWeightedBaseInvestment = sumBaseInvTimesRuntime / sumRuntime;
       }
-    });
+    }
     
     // Andere Metriken aus den Chart-Daten summieren (Profit, etc.)
     let totalProfit = 0;
