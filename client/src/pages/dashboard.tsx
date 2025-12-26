@@ -8845,8 +8845,8 @@ export default function Dashboard() {
                         fromDate = formatDate(startTs);
                         untilDate = formatDate(endTs);
                         
-                        // Anzahl Bots (Platzhalter - später aus Daten)
-                        botsActive = effectiveSelectedBotTypes?.length?.toString() || '--';
+                        // Anzahl Bots aus selectedBotTypesForCompare
+                        botsActive = selectedBotTypesForCompare?.length?.toString() || '--';
                       }
                       
                       return (
