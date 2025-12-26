@@ -1152,6 +1152,26 @@ export default function Dashboard() {
     return colorMap;
   }, [selectedChartBotTypes]);
 
+  // ========== GESAMT-MODUS: Alle aktiven Bot-Types automatisch auswählen ==========
+  // Wenn "Gesamt" ausgewählt ist und Bot-Types geladen sind, alle aktiven Bot-Types in selectedChartBotTypes setzen
+  useEffect(() => {
+    if (selectedBotName === "Gesamt" && availableBotTypes.length > 0) {
+      const activeBotTypeIds = availableBotTypes
+        .filter(bt => bt.isActive)
+        .map(bt => String(bt.id));
+      
+      // Nur setzen wenn unterschiedlich (verhindert Loop)
+      setSelectedChartBotTypes(prev => {
+        const prevSorted = [...prev].sort();
+        const newSorted = [...activeBotTypeIds].sort();
+        if (JSON.stringify(prevSorted) !== JSON.stringify(newSorted)) {
+          return activeBotTypeIds;
+        }
+        return prev;
+      });
+    }
+  }, [selectedBotName, availableBotTypes]);
+
   // Added-Modus: 2+ Bot-Types ausgewählt + Toggle auf "Added"
   // Zeigt eine Gesamtlinie mit additiver Summierung aller aktiven Bot-Werte
   const isMultiBotChartMode = alleEintraegeMode === 'added' && selectedChartBotTypes.length >= 2;
