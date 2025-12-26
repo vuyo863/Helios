@@ -5823,14 +5823,14 @@ export default function Dashboard() {
                       visibleTicks.forEach((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
                         
-                        // Vertikaler Strich
+                        // Vertikaler Strich (2 Kästen hoch: von 100% bis 50%)
                         elements.push(
                           <line
                             key={`overlay-tick-${i}`}
                             x1={`${xPercent}%`}
                             y1="100%"
                             x2={`${xPercent}%`}
-                            y2="75%"
+                            y2="50%"
                             stroke="hsl(var(--muted-foreground))"
                             strokeWidth="1"
                             style={{ pointerEvents: 'none' }}
@@ -5850,8 +5850,9 @@ export default function Dashboard() {
                             <text
                               key={`overlay-label-${i}`}
                               x={`${midXPercent}%`}
-                              y="90%"
+                              y="78%"
                               textAnchor="middle"
+                              dominantBaseline="middle"
                               fill="hsl(var(--muted-foreground))"
                               fontSize="10"
                               style={{ pointerEvents: 'none', userSelect: 'none' }}
