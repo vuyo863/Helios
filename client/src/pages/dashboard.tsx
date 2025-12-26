@@ -259,6 +259,8 @@ export default function Dashboard() {
   const [selectedPeriodIndices, setSelectedPeriodIndices] = useState<Set<number>>(new Set());
   // Overlay Compare-Modus: Wenn aktiv, kann man mehrere Periods auswählen
   const [overlayCompareActive, setOverlayCompareActive] = useState(false);
+  // Ursprüngliche Period-Auswahl vor Compare-Modus (wird beim Deaktivieren wiederhergestellt)
+  const [originalPeriodIndex, setOriginalPeriodIndex] = useState<number | null>(null);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -5906,11 +5908,13 @@ export default function Dashboard() {
                                       return newSet;
                                     });
                                   } else {
-                                    // Normal: Single-Select
+                                    // Normal: Single-Select + ursprüngliche Auswahl speichern
                                     setSelectedPeriodIndices(prev => {
                                       if (prev.has(i)) {
+                                        setOriginalPeriodIndex(null);
                                         return new Set();
                                       } else {
+                                        setOriginalPeriodIndex(i);
                                         return new Set([i]);
                                       }
                                     });
@@ -8937,7 +8941,17 @@ export default function Dashboard() {
                           overlayCompareActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                         )}
                         title="Vergleichen (Multi-Select)"
-                        onClick={() => setOverlayCompareActive(!overlayCompareActive)}
+                        onClick={() => {
+                          if (overlayCompareActive) {
+                            // Deaktivieren: Zurück zur ursprünglichen Auswahl
+                            if (originalPeriodIndex !== null) {
+                              setSelectedPeriodIndices(new Set([originalPeriodIndex]));
+                            } else {
+                              setSelectedPeriodIndices(new Set());
+                            }
+                          }
+                          setOverlayCompareActive(!overlayCompareActive);
+                        }}
                         data-testid="button-compare-periods"
                       >
                         <MoveHorizontal className="h-4 w-4" />
