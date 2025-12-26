@@ -5800,11 +5800,31 @@ export default function Dashboard() {
                       // Nutze die gleichen Ticks wie die X-Achse
                       const visibleTicks = xAxisTicks.filter(t => t >= domainStart && t <= domainEnd);
                       
-                      return visibleTicks.map((tick, i) => {
+                      // Hilfsfunktion: Zeitdifferenz als Text formatieren
+                      const formatTimeDiff = (diffMs: number): string => {
+                        const hours = diffMs / (1000 * 60 * 60);
+                        const days = hours / 24;
+                        const weeks = days / 7;
+                        
+                        if (weeks >= 1 && Number.isInteger(weeks)) {
+                          return weeks === 1 ? '1 week' : `${Math.round(weeks)} weeks`;
+                        } else if (days >= 1) {
+                          const roundedDays = Math.round(days);
+                          return roundedDays === 1 ? '1 day' : `${roundedDays} days`;
+                        } else {
+                          const roundedHours = Math.round(hours);
+                          return roundedHours === 1 ? '1 hour' : `${roundedHours} hours`;
+                        }
+                      };
+                      
+                      const elements: JSX.Element[] = [];
+                      
+                      // Striche und Zeitabstände rendern
+                      visibleTicks.forEach((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
-                        // Strich geht 2 Kästchen hoch von der unteren Grenze der Section
-                        // containerHeight = 80px, 2 Kästchen = ca. 25% der Höhe
-                        return (
+                        
+                        // Vertikaler Strich
+                        elements.push(
                           <line
                             key={`overlay-tick-${i}`}
                             x1={`${xPercent}%`}
@@ -5816,7 +5836,33 @@ export default function Dashboard() {
                             style={{ pointerEvents: 'none' }}
                           />
                         );
+                        
+                        // Zeitabstand zwischen diesem und nächstem Tick
+                        if (i < visibleTicks.length - 1) {
+                          const nextTick = visibleTicks[i + 1];
+                          const diffMs = nextTick - tick;
+                          const timeLabel = formatTimeDiff(diffMs);
+                          
+                          // Position in der Mitte zwischen den beiden Ticks
+                          const midXPercent = ((tick + nextTick) / 2 - domainStart) / domainRange * 100;
+                          
+                          elements.push(
+                            <text
+                              key={`overlay-label-${i}`}
+                              x={`${midXPercent}%`}
+                              y="60%"
+                              textAnchor="middle"
+                              fill="hsl(var(--muted-foreground))"
+                              fontSize="10"
+                              style={{ pointerEvents: 'none', userSelect: 'none' }}
+                            >
+                              {timeLabel}
+                            </text>
+                          );
+                        }
                       });
+                      
+                      return elements;
                     }
                     
                     return updateLanes.map((update, i) => {
