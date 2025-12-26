@@ -5577,8 +5577,7 @@ export default function Dashboard() {
                 )}
               </div>
               
-              {/* Marker Section with Left Icons - Im Overlay-Modus versteckt */}
-              {!isOverlayMode && (
+              {/* Marker Section with Left Icons */}
               <div className="flex" style={{ marginBottom: '16px' }}>
                 {/* Left Icon Panel */}
                 <div className="flex flex-col items-center justify-center gap-1" style={{ width: '80px' }}>
@@ -5795,6 +5794,9 @@ export default function Dashboard() {
                     const containerHeight = 80; // h-20 = 80px
                     const lineHeight = 14;
                     const topPadding = 25;
+                    
+                    // Im Overlay-Modus: Keine Verbindungslinien rendern (Section bleibt sichtbar)
+                    if (isOverlayMode) return null;
                     
                     return updateLanes.map((update, i) => {
                       const startX = ((update.startTs - domainStart) / domainRange) * 100;
@@ -6650,7 +6652,7 @@ export default function Dashboard() {
                 </svg>
                 </div>
               </div>
-              )} 
+              
               {/* Chart Container with Zoom & Pan Events */}
               {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
               {((isAnalyzeSingleMetricMode && (!analyzeModeBounds || compareChartData.data.length === 0)) ||
