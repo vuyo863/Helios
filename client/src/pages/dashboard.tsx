@@ -4672,6 +4672,13 @@ export default function Dashboard() {
                               setSelectedChartBotTypes([]);
                             }
                             // GESAMT-MODUS: Alle aktiven Bot-Types werden durch useEffect gesetzt
+                            // EINZELNER BOT-TYPE: Nur diesen einen auswählen (blau leuchten)
+                            else if (selectedName !== "Gesamt") {
+                              const botType = availableBotTypes.find(bt => bt.name === selectedName);
+                              if (botType) {
+                                setSelectedChartBotTypes([String(botType.id)]);
+                              }
+                            }
                             
                             setSelectedBotName(selectedName);
                             setOpen(false);
