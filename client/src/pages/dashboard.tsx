@@ -261,6 +261,8 @@ export default function Dashboard() {
   const [overlayCompareActive, setOverlayCompareActive] = useState(false);
   // Ursprüngliche Period-Auswahl vor Compare-Modus (wird beim Deaktivieren wiederhergestellt)
   const [originalPeriodIndex, setOriginalPeriodIndex] = useState<number | null>(null);
+  // Overlay Period Details Popup
+  const [periodDetailsPopupOpen, setPeriodDetailsPopupOpen] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -8868,9 +8870,21 @@ export default function Dashboard() {
                       }
                       
                       return (
-                        <div className="flex gap-4">
-                          {/* Linke Spalte: Period-Info */}
-                          <div className="flex-1 space-y-1">
+                        <div className="relative">
+                          {/* Auge-Button oben rechts */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute -top-1 -right-1 h-6 w-6"
+                            title="Details anzeigen"
+                            onClick={() => setPeriodDetailsPopupOpen(true)}
+                            data-testid="button-period-details"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          
+                          {/* Period-Info (ohne Bots aktiv und Metriken) */}
+                          <div className="space-y-1 pr-6">
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-muted-foreground">Period:</span>
                               <span className="text-sm font-medium">{periodLabel}</span>
@@ -8883,31 +8897,60 @@ export default function Dashboard() {
                               <span className="text-xs text-muted-foreground">Until:</span>
                               <span className="text-xs">{untilDate}</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Bots aktiv:</span>
-                              <span className="text-xs">{botsActive}</span>
-                            </div>
                           </div>
                           
-                          {/* Rechte Spalte: Metriken */}
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
-                              <span className="text-xs">--</span>
+                          {/* Details Popup */}
+                          {periodDetailsPopupOpen && (
+                            <div className="absolute top-0 left-0 right-0 bg-background border rounded-md shadow-lg p-3 z-50">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-semibold">Period Details</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5"
+                                  onClick={() => setPeriodDetailsPopupOpen(false)}
+                                  data-testid="button-close-period-details"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Period:</span>
+                                  <span className="text-xs font-medium">{periodLabel}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">From:</span>
+                                  <span className="text-xs">{fromDate}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Until:</span>
+                                  <span className="text-xs">{untilDate}</span>
+                                </div>
+                                <div className="border-t my-1" />
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Bots aktiv:</span>
+                                  <span className="text-xs">{botsActive}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
+                                  <span className="text-xs">--</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Gesamtkapital:</span>
+                                  <span className="text-xs">--</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Profit %:</span>
+                                  <span className="text-xs">--</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">Ø Profit/Tag:</span>
+                                  <span className="text-xs">--</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Gesamtkapital:</span>
-                              <span className="text-xs">--</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Profit %:</span>
-                              <span className="text-xs">--</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Ø Profit/Tag:</span>
-                              <span className="text-xs">--</span>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       );
                     })()}
