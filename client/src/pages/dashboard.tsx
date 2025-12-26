@@ -8177,7 +8177,7 @@ export default function Dashboard() {
                       return (
                         <Line 
                           key={`overlay-${metricName}`}
-                          type="linear"
+                          type="monotone"
                           dataKey={dataKey}
                           name={metricName}
                           stroke={color}
