@@ -1996,9 +1996,9 @@ export default function Dashboard() {
       count++;
     });
     
-    // ========== Ø PROFIT/TAG: GLEICHE LOGIK WIE GESAMT-MODUS ==========
-    // Pro ausgewähltem Bot-Type berechnen wie auf Bot-Type-Seite, dann ADDIEREN
-    // Formel pro Bot-Type: totalProfit / totalHours * 24
+    // ========== Ø PROFIT/TAG: EXISTIERENDE avgGridProfitDay WERTE VERWENDEN ==========
+    // Pro ausgewähltem Bot-Type: Durchschnitt der avgGridProfitDay Werte, dann ADDIEREN
+    // WICHTIG: avgGridProfitDay enthält BEREITS den korrekten Tagesdurchschnitt - NICHT neu berechnen!
     // Mit Zeitfilter: Nur Updates im Zeitfenster werden berücksichtigt
     let avgDailyProfitSum = 0;
     
@@ -2025,21 +2025,17 @@ export default function Dashboard() {
       }
       
       if (filteredUpdates.length > 0) {
-        // WIE AUF BOT-TYPE-SEITE: totalProfit / totalHours * 24
-        let totalProfit = 0;
-        let totalHours = 0;
+        // EXISTIERENDE avgGridProfitDay Werte verwenden - NICHT neu berechnen!
+        let sumAvgGridProfitDay = 0;
         
         filteredUpdates.forEach(update => {
-          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
-          const runtimeHours = parseRuntimeToHours(update.avgRuntime);
-          totalProfit += gridProfit;
-          totalHours += runtimeHours;
+          const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+          sumAvgGridProfitDay += avgGridProfitDay;
         });
         
-        if (totalHours > 0) {
-          const avg24hProfit = (totalProfit / totalHours) * 24;
-          avgDailyProfitSum += avg24hProfit;
-        }
+        // Durchschnitt pro Bot-Type
+        const botTypeAvg = sumAvgGridProfitDay / filteredUpdates.length;
+        avgDailyProfitSum += botTypeAvg;
       }
     });
     
