@@ -255,12 +255,14 @@ export default function Dashboard() {
   const [markerViewActive, setMarkerViewActive] = useState(false);
   const [markerEditActive, setMarkerEditActive] = useState(false);
   // Overlay Period Interaktion (Auge-Modus)
-  const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<number | null>(null);
-  const [selectedPeriodIndices, setSelectedPeriodIndices] = useState<Set<number>>(new Set());
+  // Period-Auswahl basierend auf Timestamp-Keys für Stabilität beim Panning
+  // Key-Format: "${startTimestamp}-${endTimestamp}"
+  const [hoveredPeriodKey, setHoveredPeriodKey] = useState<string | null>(null);
+  const [selectedPeriodKeys, setSelectedPeriodKeys] = useState<Set<string>>(new Set());
   // Overlay Compare-Modus: Wenn aktiv, kann man mehrere Periods auswählen
   const [overlayCompareActive, setOverlayCompareActive] = useState(false);
   // Ursprüngliche Period-Auswahl vor Compare-Modus (wird beim Deaktivieren wiederhergestellt)
-  const [originalPeriodIndex, setOriginalPeriodIndex] = useState<number | null>(null);
+  const [originalPeriodKey, setOriginalPeriodKey] = useState<string | null>(null);
   // Overlay Period Details Popup
   const [periodDetailsPopupOpen, setPeriodDetailsPopupOpen] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
@@ -5624,8 +5626,8 @@ export default function Dashboard() {
                         setLockedUpdateIds(new Set());
                         setHoveredUpdateId(null);
                         // Period-Auswahl zurücksetzen
-                        setHoveredPeriodIndex(null);
-                        setSelectedPeriodIndices(new Set());
+                        setHoveredPeriodKey(null);
+                        setSelectedPeriodKeys(new Set());
                       }
                     }}
                     data-testid="button-marker-view"
@@ -5651,8 +5653,8 @@ export default function Dashboard() {
                           setMarkerViewActive(false);
                           setLockedUpdateIds(new Set());
                           setHoveredUpdateId(null);
-                          setHoveredPeriodIndex(null);
-                          setSelectedPeriodIndices(new Set());
+                          setHoveredPeriodKey(null);
+                          setSelectedPeriodKeys(new Set());
                         }
                       } else {
                         // Beim Deaktivieren OHNE Apply: Auswahl zurücksetzen
@@ -5890,15 +5892,17 @@ export default function Dashboard() {
                           const widthPercent = endXPercent - startXPercent;
                           
                           // Prüfe ob diese Period aktiv ist (Auge-Modus)
-                          const isPeriodHovered = hoveredPeriodIndex === i;
-                          const isPeriodSelected = selectedPeriodIndices.has(i);
+                          // Verwende Timestamp-Key für Stabilität beim Panning
+                          const periodKey = `${tick}-${nextTick}`;
+                          const isPeriodHovered = hoveredPeriodKey === periodKey;
+                          const isPeriodSelected = selectedPeriodKeys.has(periodKey);
                           const isPeriodActive = isPeriodHovered || isPeriodSelected;
                           
                           // Interaktives Rechteck für Period (nur im Auge-Modus)
                           if (markerViewActive) {
                             elements.push(
                               <rect
-                                key={`overlay-period-rect-${i}`}
+                                key={`overlay-period-rect-${periodKey}`}
                                 x={`${startXPercent}%`}
                                 y="45%"
                                 width={`${widthPercent}%`}
@@ -5908,29 +5912,29 @@ export default function Dashboard() {
                                 strokeWidth={isPeriodActive ? 2 : 0}
                                 rx="4"
                                 style={{ cursor: 'pointer' }}
-                                onMouseEnter={() => setHoveredPeriodIndex(i)}
-                                onMouseLeave={() => setHoveredPeriodIndex(null)}
+                                onMouseEnter={() => setHoveredPeriodKey(periodKey)}
+                                onMouseLeave={() => setHoveredPeriodKey(null)}
                                 onClick={() => {
                                   if (overlayCompareActive) {
                                     // Compare-Modus: Multi-Select erlaubt
-                                    setSelectedPeriodIndices(prev => {
+                                    setSelectedPeriodKeys(prev => {
                                       const newSet = new Set(prev);
-                                      if (newSet.has(i)) {
-                                        newSet.delete(i);
+                                      if (newSet.has(periodKey)) {
+                                        newSet.delete(periodKey);
                                       } else {
-                                        newSet.add(i);
+                                        newSet.add(periodKey);
                                       }
                                       return newSet;
                                     });
                                   } else {
                                     // Normal: Single-Select + ursprüngliche Auswahl speichern
-                                    setSelectedPeriodIndices(prev => {
-                                      if (prev.has(i)) {
-                                        setOriginalPeriodIndex(null);
+                                    setSelectedPeriodKeys(prev => {
+                                      if (prev.has(periodKey)) {
+                                        setOriginalPeriodKey(null);
                                         return new Set();
                                       } else {
-                                        setOriginalPeriodIndex(i);
-                                        return new Set([i]);
+                                        setOriginalPeriodKey(periodKey);
+                                        return new Set([periodKey]);
                                       }
                                     });
                                   }
@@ -8837,28 +8841,23 @@ export default function Dashboard() {
                   {/* Inner Content Card - Period Details (gleiche Struktur wie Standard-Modus) */}
                   <Card className="p-3 mb-3" data-testid="card-period-details">
                     {(() => {
-                      // Finde aktive Period (hovered oder erste selected)
-                      const activePeriodIdx = hoveredPeriodIndex !== null 
-                        ? hoveredPeriodIndex 
-                        : selectedPeriodIndices.size > 0 
-                          ? Array.from(selectedPeriodIndices)[0] 
+                      // Finde aktive Period Key (hovered oder erste selected)
+                      const activePeriodKey = hoveredPeriodKey !== null 
+                        ? hoveredPeriodKey 
+                        : selectedPeriodKeys.size > 0 
+                          ? Array.from(selectedPeriodKeys)[0] 
                           : null;
-                      
-                      // Berechne Period-Daten aus xAxisTicks
-                      const visibleTicks = xAxisTicks.filter(t => {
-                        const [domainStart, domainEnd] = xAxisDomain;
-                        return typeof domainStart === 'number' && typeof domainEnd === 'number' 
-                          && t >= domainStart && t <= domainEnd;
-                      });
                       
                       let periodLabel = '--';
                       let fromDate = '--';
                       let untilDate = '--';
                       let botsActive = '--';
                       
-                      if (activePeriodIdx !== null && visibleTicks[activePeriodIdx] !== undefined && visibleTicks[activePeriodIdx + 1] !== undefined) {
-                        const startTs = visibleTicks[activePeriodIdx];
-                        const endTs = visibleTicks[activePeriodIdx + 1];
+                      // Parse Timestamps aus dem Key
+                      if (activePeriodKey !== null) {
+                        const [startTsStr, endTsStr] = activePeriodKey.split('-');
+                        const startTs = parseInt(startTsStr, 10);
+                        const endTs = parseInt(endTsStr, 10);
                         
                         // Period Label (Zeitdifferenz)
                         const diffMs = endTs - startTs;
@@ -8985,11 +8984,11 @@ export default function Dashboard() {
                         size="icon" 
                         className="h-8 w-8" 
                         title="Auswahl löschen"
-                        disabled={!markerViewActive || selectedPeriodIndices.size === 0}
+                        disabled={!markerViewActive || selectedPeriodKeys.size === 0}
                         onClick={() => {
-                          setSelectedPeriodIndices(new Set());
+                          setSelectedPeriodKeys(new Set());
                           setOverlayCompareActive(false);
-                          setOriginalPeriodIndex(null);
+                          setOriginalPeriodKey(null);
                         }}
                         data-testid="button-clear-period-selection"
                       >
@@ -9003,14 +9002,14 @@ export default function Dashboard() {
                           overlayCompareActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                         )}
                         title="Vergleichen (Multi-Select)"
-                        disabled={!markerViewActive || selectedPeriodIndices.size === 0}
+                        disabled={!markerViewActive || selectedPeriodKeys.size === 0}
                         onClick={() => {
                           if (overlayCompareActive) {
                             // Deaktivieren: Zurück zur ursprünglichen Auswahl
-                            if (originalPeriodIndex !== null) {
-                              setSelectedPeriodIndices(new Set([originalPeriodIndex]));
+                            if (originalPeriodKey !== null) {
+                              setSelectedPeriodKeys(new Set([originalPeriodKey]));
                             } else {
-                              setSelectedPeriodIndices(new Set());
+                              setSelectedPeriodKeys(new Set());
                             }
                           }
                           setOverlayCompareActive(!overlayCompareActive);
@@ -9020,16 +9019,16 @@ export default function Dashboard() {
                         <MoveHorizontal className="h-4 w-4" />
                       </Button>
                       {/* Anzahl ausgewählter Periods */}
-                      {overlayCompareActive && selectedPeriodIndices.size > 0 && (
+                      {overlayCompareActive && selectedPeriodKeys.size > 0 && (
                         <span className="text-xs font-medium text-cyan-600 bg-cyan-50 dark:bg-cyan-950 px-2 py-1 rounded">
-                          {selectedPeriodIndices.size}
+                          {selectedPeriodKeys.size}
                         </span>
                       )}
                     </div>
                     <Button 
                       variant="default" 
                       size="sm"
-                      disabled={!overlayCompareActive || selectedPeriodIndices.size < 2}
+                      disabled={!overlayCompareActive || selectedPeriodKeys.size < 2}
                       data-testid="button-apply-period-selection"
                     >
                       Apply
