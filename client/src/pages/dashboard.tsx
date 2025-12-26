@@ -2066,7 +2066,12 @@ export default function Dashboard() {
     
     // Durchschnittswerte für tägliche Profite
     const avgDailyProfit = avgDailyProfitSum;
-    const avgRealDailyProfit = count > 0 ? totalRealDailyProfit / count : 0;
+    
+    // ========== REAL PROFIT/TAG ==========
+    // Formel: Gesamtprofit / Anzahl Tage im Graf
+    // Berechne Anzahl Tage von erstem bis letztem Datenpunkt
+    const daySpan = (multiBotChartData.maxTimestamp - multiBotChartData.minTimestamp) / (1000 * 60 * 60 * 24);
+    const realDailyProfit = daySpan > 0 ? totalProfit / daySpan : totalProfit; // Wenn < 1 Tag, zeige Gesamtprofit
     
     return {
       profit: totalProfit,
@@ -2075,10 +2080,11 @@ export default function Dashboard() {
       baseInvestment: timeWeightedBaseInvestment,
       profitPercent: calculatedProfitPercent,
       avgDailyProfit: avgDailyProfit,
-      realDailyProfit: avgRealDailyProfit,
-      metricCount: count
+      realDailyProfit: realDailyProfit,
+      metricCount: count,
+      daySpan: daySpan // Für Debugging
     };
-  }, [isMultiBotChartMode, multiBotChartData.data, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase, appliedChartSettings]);
+  }, [isMultiBotChartMode, multiBotChartData.data, multiBotChartData.minTimestamp, multiBotChartData.maxTimestamp, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase, appliedChartSettings]);
   // ========== ENDE ADDED MODUS SECTION ==========
 
   // Chart-Daten basierend auf appliedChartSettings generieren
