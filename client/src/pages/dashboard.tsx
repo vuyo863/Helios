@@ -5802,16 +5802,17 @@ export default function Dashboard() {
                       
                       return visibleTicks.map((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
-                        // Strich geht von topPadding bis fast zum Boden der Section
+                        // Strich geht 2 Kästchen hoch von der unteren Grenze der Section
+                        // containerHeight = 80px, 2 Kästchen = ca. 25% der Höhe
                         return (
                           <line
                             key={`overlay-tick-${i}`}
                             x1={`${xPercent}%`}
-                            y1={`${(topPadding / containerHeight) * 100}%`}
+                            y1="100%"
                             x2={`${xPercent}%`}
-                            y2="95%"
-                            stroke="hsl(var(--destructive))"
-                            strokeWidth="2"
+                            y2="75%"
+                            stroke="hsl(var(--muted-foreground))"
+                            strokeWidth="1"
                             style={{ pointerEvents: 'none' }}
                           />
                         );
