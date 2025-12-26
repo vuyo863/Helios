@@ -257,6 +257,8 @@ export default function Dashboard() {
   // Overlay Period Interaktion (Auge-Modus)
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<number | null>(null);
   const [selectedPeriodIndices, setSelectedPeriodIndices] = useState<Set<number>>(new Set());
+  // Overlay Compare-Modus: Wenn aktiv, kann man mehrere Periods auswählen
+  const [overlayCompareActive, setOverlayCompareActive] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -5892,18 +5894,27 @@ export default function Dashboard() {
                                 onMouseEnter={() => setHoveredPeriodIndex(i)}
                                 onMouseLeave={() => setHoveredPeriodIndex(null)}
                                 onClick={() => {
-                                  // Single-Select: Nur eine Period kann ausgewählt werden
-                                  // Klick auf bereits ausgewählte = Abwählen
-                                  // Klick auf andere = Diese auswählen (vorherige ersetzen)
-                                  setSelectedPeriodIndices(prev => {
-                                    if (prev.has(i)) {
-                                      // Abwählen
-                                      return new Set();
-                                    } else {
-                                      // Diese auswählen (ersetzt vorherige)
-                                      return new Set([i]);
-                                    }
-                                  });
+                                  if (overlayCompareActive) {
+                                    // Compare-Modus: Multi-Select erlaubt
+                                    setSelectedPeriodIndices(prev => {
+                                      const newSet = new Set(prev);
+                                      if (newSet.has(i)) {
+                                        newSet.delete(i);
+                                      } else {
+                                        newSet.add(i);
+                                      }
+                                      return newSet;
+                                    });
+                                  } else {
+                                    // Normal: Single-Select
+                                    setSelectedPeriodIndices(prev => {
+                                      if (prev.has(i)) {
+                                        return new Set();
+                                      } else {
+                                        return new Set([i]);
+                                      }
+                                    });
+                                  }
                                 }}
                               />
                             );
@@ -8901,18 +8912,9 @@ export default function Dashboard() {
                   {/* Separator */}
                   <div className="border-t my-2" />
                   
-                  {/* Action Icons Row - Compare und Trash */}
+                  {/* Action Icons Row - Trash links, Compare rechts mit Anzahl */}
                   <div className="flex items-center justify-between" data-testid="metric-action-icons-overlay">
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8" 
-                        title="Vergleichen"
-                        data-testid="button-compare-periods"
-                      >
-                        <MoveHorizontal className="h-4 w-4" />
-                      </Button>
                       <Button 
                         variant="outline" 
                         size="icon" 
@@ -8921,11 +8923,31 @@ export default function Dashboard() {
                         disabled={selectedPeriodIndices.size === 0}
                         onClick={() => {
                           setSelectedPeriodIndices(new Set());
+                          setOverlayCompareActive(false);
                         }}
                         data-testid="button-clear-period-selection"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className={cn(
+                          "h-8 w-8",
+                          overlayCompareActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                        )}
+                        title="Vergleichen (Multi-Select)"
+                        onClick={() => setOverlayCompareActive(!overlayCompareActive)}
+                        data-testid="button-compare-periods"
+                      >
+                        <MoveHorizontal className="h-4 w-4" />
+                      </Button>
+                      {/* Anzahl ausgewählter Periods */}
+                      {overlayCompareActive && selectedPeriodIndices.size > 0 && (
+                        <span className="text-xs font-medium text-cyan-600 bg-cyan-50 dark:bg-cyan-950 px-2 py-1 rounded">
+                          {selectedPeriodIndices.size}
+                        </span>
+                      )}
                     </div>
                     <Button 
                       variant="default" 
