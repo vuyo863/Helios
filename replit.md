@@ -90,8 +90,31 @@ The dashboard features three primary chart modes:
 
 ---
 
+## Dezember 2025 - Ø Profit/Tag Golden State
+
+### GOLDEN STATE - Nicht mehr anfassen!
+
+**Gesamt-Modus:**
+- ✅ Ø Profit/Tag: Pro Bot-Type `totalProfit / totalHours * 24`, dann ADDIEREN
+
+**Added-Modus:**
+- ✅ Ø Profit/Tag mit intelligenter Logik:
+  - **ALLE Updates enthalten:** `totalProfit / totalHours * 24` pro Bot-Type, dann ADDIEREN
+  - **Nur TEIL der Updates (Zeitfilter):** Durchschnitt von `avgGridProfitDay` pro Bot-Type, dann ADDIEREN
+
+**Formel für Gesamt/Alle Updates:**
+Pro Bot-Type: `Σ(overallGridProfitUsdt) / Σ(parseRuntimeToHours(avgRuntime)) * 24`
+Dann werden alle Bot-Type-Ergebnisse addiert.
+
+**Formel für Zeitfilter (Teil der Updates):**
+Pro Bot-Type: `Σ(avgGridProfitDay) / Anzahl_Updates`
+Dann werden alle Bot-Type-Ergebnisse addiert.
+
+**Datei:** `client/src/pages/dashboard.tsx` (Zeilen 2002-2059)
+
+---
+
 ## TODO: Noch zu bearbeiten
 
 **Added-Modus Content Cards:**
-- ⏳ Ø Profit/Tag - in Bearbeitung
-- ⏳ Real Profit/Tag - noch offen
+- ⏳ Real Profit/Tag - noch offen (5. und letzte Content Card)
