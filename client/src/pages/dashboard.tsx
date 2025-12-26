@@ -5839,8 +5839,9 @@ export default function Dashboard() {
                     
                     // Im Overlay-Modus: Vertikale Zeitmarkierungsstriche statt Verbindungslinien
                     if (isOverlayMode) {
-                      // Nutze die gleichen Ticks wie die X-Achse
-                      const visibleTicks = xAxisTicks.filter(t => t >= domainStart && t <= domainEnd);
+                      // WICHTIG: Verwende ALLE Ticks (nicht gefiltert) für stabile Period-Keys
+                      // Period-Keys müssen unabhängig vom Panning identisch bleiben
+                      const allTicks = xAxisTicks;
                       
                       // Hilfsfunktion: Zeitdifferenz als Text formatieren
                       const formatTimeDiff = (diffMs: number): string => {
@@ -5861,33 +5862,42 @@ export default function Dashboard() {
                       
                       const elements: JSX.Element[] = [];
                       
-                      // Striche und Zeitabstände rendern
-                      visibleTicks.forEach((tick, i) => {
+                      // Striche und Zeitabstände rendern (alle Ticks, nur sichtbare werden gerendert)
+                      allTicks.forEach((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
                         
-                        // Vertikaler Strich (2 Kästen hoch: von 100% bis 50%)
-                        elements.push(
-                          <line
-                            key={`overlay-tick-${i}`}
-                            x1={`${xPercent}%`}
-                            y1="100%"
-                            x2={`${xPercent}%`}
-                            y2="50%"
-                            stroke="hsl(var(--muted-foreground))"
-                            strokeWidth="1"
-                            style={{ pointerEvents: 'none' }}
-                          />
-                        );
+                        // Nur rendern wenn im sichtbaren Bereich (0-100%)
+                        if (xPercent >= -10 && xPercent <= 110) {
+                          // Vertikaler Strich (2 Kästen hoch: von 100% bis 50%)
+                          elements.push(
+                            <line
+                              key={`overlay-tick-${tick}`}
+                              x1={`${xPercent}%`}
+                              y1="100%"
+                              x2={`${xPercent}%`}
+                              y2="50%"
+                              stroke="hsl(var(--muted-foreground))"
+                              strokeWidth="1"
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          );
+                        }
                         
                         // Zeitabstand zwischen diesem und nächstem Tick + interaktives Rechteck
-                        if (i < visibleTicks.length - 1) {
-                          const nextTick = visibleTicks[i + 1];
+                        if (i < allTicks.length - 1) {
+                          const nextTick = allTicks[i + 1];
                           const diffMs = nextTick - tick;
                           const timeLabel = formatTimeDiff(diffMs);
                           
                           // Position in der Mitte zwischen den beiden Ticks
                           const startXPercent = xPercent;
                           const endXPercent = ((nextTick - domainStart) / domainRange) * 100;
+                          
+                          // Nur rendern wenn Period mindestens teilweise sichtbar ist
+                          if (endXPercent < -10 || startXPercent > 110) {
+                            return; // Period komplett außerhalb des sichtbaren Bereichs
+                          }
+                          
                           const midXPercent = (startXPercent + endXPercent) / 2;
                           const widthPercent = endXPercent - startXPercent;
                           
