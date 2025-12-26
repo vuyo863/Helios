@@ -8239,8 +8239,7 @@ export default function Dashboard() {
                     // ===================================================================================
                     // ========== OVERLAY MODUS CHART RENDERING - SEPARATE SECTION ==========
                     // ===================================================================================
-                    // EXAKTE KOPIE von Analysis Rendering - NUR END-EVENTS als separate Punkte
-                    // Linie verbindet alle End-Events chronologisch
+                    // Overlay-Modus: Nur sanfte Linie ohne Punkte
                     activeMetricCards.map((metricName) => {
                       const dataKey = `Gesamt_${metricName}`;
                       const color = metricColors[metricName] || '#888888';
@@ -8248,55 +8247,12 @@ export default function Dashboard() {
                       return (
                         <Line 
                           key={`overlay-${metricName}`}
-                          type="monotone"
+                          type="natural"
                           dataKey={dataKey}
                           name={metricName}
                           stroke={color}
                           strokeWidth={2}
-                          dot={(props: any) => {
-                            const { cx, cy, payload, value, index } = props;
-                            const isClosedBot = payload?._isClosedBot;
-                            const eventIndex = payload?._eventIndex ?? 0;
-                            const updateVersion = payload?._updateVersion;
-                            const botTypeName = payload?._botTypeName;
-                            
-                            // WICHTIG: Wenn kein gültiger Y-Wert vorhanden, keinen Punkt rendern
-                            if (value === undefined || value === null || isNaN(cy) || isNaN(cx)) {
-                              return <g key={`dot-overlay-empty-${metricName}-${eventIndex}`} />;
-                            }
-                            
-                            // Prüfe ob dieser Punkt aktiv ist
-                            const botType = availableBotTypes.find(bt => bt.name === botTypeName);
-                            const botTypeId = botType ? String(botType.id) : '';
-                            const pointUpdateKey = botTypeId && updateVersion !== undefined
-                              ? (isClosedBot ? `${botTypeId}:c-${updateVersion}` : `${botTypeId}:u-${updateVersion}`)
-                              : null;
-                            
-                            const isPointActive = pointUpdateKey !== null && (
-                              (markerViewActive && (hoveredUpdateId === pointUpdateKey || lockedUpdateIds.has(pointUpdateKey))) ||
-                              (markerEditActive && (editHoveredUpdateId === pointUpdateKey || editSelectedUpdateId === pointUpdateKey))
-                            );
-                            
-                            // Neon-Blau Styling wenn aktiv
-                            const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : color;
-                            const activeStrokeWidth = isPointActive ? 3 : (isClosedBot ? 2 : 0);
-                            const activeStyle = isPointActive ? { 
-                              filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))'
-                            } : {};
-                            
-                            return (
-                              <circle
-                                key={`dot-overlay-${metricName}-${eventIndex}`}
-                                cx={cx}
-                                cy={cy}
-                                r={isPointActive ? 6 : 5}
-                                fill={isClosedBot ? "hsl(var(--background))" : (isPointActive ? 'rgb(8, 145, 178)' : color)}
-                                stroke={activeStroke}
-                                strokeWidth={activeStrokeWidth}
-                                style={activeStyle}
-                              />
-                            );
-                          }}
+                          dot={false}
                           connectNulls
                           isAnimationActive={true}
                           animationDuration={1200}
