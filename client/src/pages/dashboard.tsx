@@ -382,6 +382,9 @@ export default function Dashboard() {
     // Prüfe ob Maus gedrückt ist
     if (!mouseDownPos) return;
     
+    // Im Auge-Modus im Overlay-Modus: Panning deaktiviert (X-Achse muss fest bleiben für stabile Period-Keys)
+    if (markerViewActive && isOverlayMode) return;
+    
     // Berechne Bewegung seit MouseDown
     const deltaY = e.clientY - mouseDownPos.y;
     const deltaX = e.clientX - mouseDownPos.x;
@@ -5839,11 +5842,8 @@ export default function Dashboard() {
                     
                     // Im Overlay-Modus: Vertikale Zeitmarkierungsstriche statt Verbindungslinien
                     if (isOverlayMode) {
-                      // WICHTIG: Extrahiere FESTE End-Event-Timestamps aus den Updates
-                      // Diese ändern sich NICHT beim Panning (im Gegensatz zu xAxisTicks)
-                      const endEventTimestamps = updateRanges.map(r => r.endTs).sort((a, b) => a - b);
-                      // Deduplizieren und als stabile Period-Basis verwenden
-                      const stableEventTicks = Array.from(new Set(endEventTimestamps));
+                      // Verwende xAxisTicks für die Period-Anzeige
+                      const allTicks = xAxisTicks;
                       
                       // Hilfsfunktion: Zeitdifferenz als Text formatieren
                       const formatTimeDiff = (diffMs: number): string => {
@@ -5864,8 +5864,8 @@ export default function Dashboard() {
                       
                       const elements: JSX.Element[] = [];
                       
-                      // Striche und Zeitabstände rendern (alle stableEventTicks, nur sichtbare werden gerendert)
-                      stableEventTicks.forEach((tick, i) => {
+                      // Striche und Zeitabstände rendern (alle Ticks, nur sichtbare werden gerendert)
+                      allTicks.forEach((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
                         
                         // Nur rendern wenn im sichtbaren Bereich (0-100%)
@@ -5886,8 +5886,8 @@ export default function Dashboard() {
                         }
                         
                         // Zeitabstand zwischen diesem und nächstem Tick + interaktives Rechteck
-                        if (i < stableEventTicks.length - 1) {
-                          const nextTick = stableEventTicks[i + 1];
+                        if (i < allTicks.length - 1) {
+                          const nextTick = allTicks[i + 1];
                           const diffMs = nextTick - tick;
                           const timeLabel = formatTimeDiff(diffMs);
                           
@@ -5904,7 +5904,7 @@ export default function Dashboard() {
                           const widthPercent = endXPercent - startXPercent;
                           
                           // Prüfe ob diese Period aktiv ist (Auge-Modus)
-                          // Period-Key basiert auf festen Event-Timestamps (NICHT auf xAxisTicks!)
+                          // Period-Key basiert auf Timestamp-Werten für Stabilität
                           const periodKey = `${tick}-${nextTick}`;
                           const isPeriodHovered = hoveredPeriodKey === periodKey;
                           const isPeriodSelected = selectedPeriodKeys.has(periodKey);
