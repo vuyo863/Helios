@@ -8798,8 +8798,8 @@ export default function Dashboard() {
           <div className="flex flex-col flex-shrink-0">
             {/* Upper Card - Selected Metric Preview (fills space above Graph-Einstellungen) */}
             <Card className="p-4 w-[296px] mb-4 flex-1 flex flex-col ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]">
-              {/* ========== OVERLAY + AUGE-MODUS: Spezielle Ansicht ========== */}
-              {isOverlayMode && markerViewActive ? (
+              {/* ========== OVERLAY-MODUS: Period-Ansicht (immer aktiv wenn Overlay) ========== */}
+              {isOverlayMode ? (
                 <>
                   {/* Inner Content Card - Period Details (gleiche Struktur wie Standard-Modus) */}
                   <Card className="p-3 mb-3" data-testid="card-period-details">
