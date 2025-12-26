@@ -2096,6 +2096,231 @@ export default function Dashboard() {
   }, [isMultiBotChartMode, multiBotChartData.data, multiBotChartData.minTimestamp, multiBotChartData.maxTimestamp, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase, appliedChartSettings]);
   // ========== ENDE ADDED MODUS SECTION ==========
 
+  // ===================================================================================
+  // ========== OVERLAY MODUS (ADDED) - KOMPLETT SEPARATE SECTION ==========
+  // ===================================================================================
+  // ACHTUNG: Diese Section ist KOMPLETT UNABHÄNGIG von allen anderen Sections!
+  // - Aktiviert wenn: alleEintraegeMode === 'added' UND addedModeView === 'overlay'
+  // - Golden State: MainChart, Compare, Analysis sind NICHT betroffen
+  // - Alle Berechnungen und Daten werden hier separat verwaltet
+  // ===================================================================================
+
+  // Overlay-Modus aktiv: Added Toggle + Overlay Sub-Toggle
+  const isOverlayMode = alleEintraegeMode === 'added' && addedModeView === 'overlay' && selectedChartBotTypes.length >= 2;
+
+  // ========== OVERLAY: Chart-Daten Berechnung ==========
+  // Separate Datenstruktur für Overlay-Darstellung
+  // Im Gegensatz zu Analysis (aggregiert) zeigt Overlay individuelle Bot-Lines übereinander
+  const overlayChartData = useMemo(() => {
+    if (!isOverlayMode || allBotTypeUpdates.length === 0) {
+      return { data: [], botTypeNames: [] as string[], minTimestamp: 0, maxTimestamp: 0 };
+    }
+
+    const selectedIds = selectedChartBotTypes.map(id => String(id));
+    
+    // Finde die Namen der ausgewählten Bot-Types
+    const selectedBotTypesInfo = availableBotTypes.filter(bt => 
+      selectedIds.includes(String(bt.id))
+    );
+    const botTypeNames = selectedBotTypesInfo.map(bt => bt.name);
+
+    // Filtere Updates für die ausgewählten Bot-Types
+    let relevantUpdates = allBotTypeUpdates.filter(update => 
+      selectedIds.includes(String(update.botTypeId))
+    );
+
+    if (relevantUpdates.length === 0) {
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
+    }
+
+    // ========== ZEITFILTER (gleiche Logik wie Analysis) ==========
+    if (appliedChartSettings && appliedChartSettings.timeRange !== 'First-Last Update') {
+      if (appliedChartSettings.timeRange === 'Custom' && appliedChartSettings.customFromDate && appliedChartSettings.customToDate) {
+        const fromTs = appliedChartSettings.customFromDate.getTime();
+        const toDate = new Date(appliedChartSettings.customToDate);
+        toDate.setHours(23, 59, 59, 999);
+        const untilTs = toDate.getTime();
+        
+        relevantUpdates = relevantUpdates.filter(update => {
+          const ts = getUpdateTimestamp(update);
+          return ts >= fromTs && ts <= untilTs;
+        });
+      } else {
+        const rangeMs = parseTimeRangeToMs(
+          appliedChartSettings.timeRange,
+          appliedChartSettings.customDays,
+          appliedChartSettings.customHours,
+          appliedChartSettings.customMinutes
+        );
+        
+        if (rangeMs !== null && rangeMs > 0) {
+          const now = Date.now();
+          const cutoffTimestamp = now - rangeMs;
+          
+          relevantUpdates = relevantUpdates.filter(update => {
+            const ts = getUpdateTimestamp(update);
+            return ts >= cutoffTimestamp;
+          });
+        }
+      }
+    }
+
+    if (relevantUpdates.length === 0) {
+      return { data: [], botTypeNames, minTimestamp: 0, maxTimestamp: 0 };
+    }
+
+    // Gruppiere Updates pro Bot-Type und sortiere jede Gruppe nach Zeit
+    const updatesByBotType: Record<string, typeof relevantUpdates> = {};
+    selectedBotTypesInfo.forEach(bt => {
+      updatesByBotType[bt.name] = relevantUpdates
+        .filter(u => String(u.botTypeId) === String(bt.id))
+        .sort((a, b) => getUpdateTimestamp(a) - getUpdateTimestamp(b));
+    });
+
+    // Sammle alle Timestamps für min/max Berechnung
+    const allTimestamps: number[] = [];
+    const dataPoints: Array<Record<string, any>> = [];
+
+    // Für jeden Bot-Type: Erstelle Datenpunkte
+    selectedBotTypesInfo.forEach(botType => {
+      const updates = updatesByBotType[botType.name] || [];
+      
+      updates.forEach((update, idx) => {
+        const endTimestamp = getUpdateTimestamp(update);
+        let startTimestamp = endTimestamp;
+        if (update.lastUpload) {
+          const parsed = parseGermanDate(update.lastUpload);
+          if (parsed) {
+            startTimestamp = parsed.getTime();
+          }
+        }
+        
+        allTimestamps.push(startTimestamp, endTimestamp);
+
+        // Berechne Wert basierend auf aktiver Metrik
+        const selectedMetric = activeMetricCards.length > 0 ? activeMetricCards[0] : 'Gesamtprofit';
+        const investment = parseFloat(update.totalInvestment || update.investment || '0') || 0;
+        const baseInvestment = parseFloat(update.investment || '0') || 0;
+        const relevantInvestment = profitPercentBase === 'gesamtinvestment' ? investment : baseInvestment;
+        
+        let metricValue = 0;
+        if (update.status === 'Closed Bots') {
+          const profit = parseFloat(update.profit || '0') || 0;
+          switch (selectedMetric) {
+            case 'Gesamtkapital': metricValue = relevantInvestment; break;
+            case 'Gesamtprofit': metricValue = profit; break;
+            case 'Gesamtprofit %': metricValue = relevantInvestment > 0 ? (profit / relevantInvestment) * 100 : 0; break;
+            case 'Ø Profit/Tag': metricValue = parseFloat(update.avgGridProfitDay || '0') || 0; break;
+            case 'Real Profit/Tag':
+              const runtimeHours = parseRuntimeToHours(update.avgRuntime || '');
+              metricValue = runtimeHours < 24 ? profit : parseFloat(update.avgGridProfitDay || '0') || 0;
+              break;
+            default: metricValue = profit;
+          }
+        } else {
+          const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
+          switch (selectedMetric) {
+            case 'Gesamtkapital': metricValue = relevantInvestment; break;
+            case 'Gesamtprofit': metricValue = gridProfit; break;
+            case 'Gesamtprofit %': metricValue = relevantInvestment > 0 ? (gridProfit / relevantInvestment) * 100 : 0; break;
+            case 'Ø Profit/Tag': metricValue = parseFloat(update.avgGridProfitDay || '0') || 0; break;
+            case 'Real Profit/Tag':
+              const runtimeHours = parseRuntimeToHours(update.avgRuntime || '');
+              metricValue = runtimeHours < 24 ? gridProfit : parseFloat(update.avgGridProfitDay || '0') || 0;
+              break;
+            default: metricValue = gridProfit;
+          }
+        }
+
+        // Erstelle End-Punkt
+        const endPoint: Record<string, any> = {
+          time: new Date(endTimestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+          timestamp: endTimestamp,
+          isEndPoint: true,
+          botTypeName: botType.name,
+          updateVersion: idx + 1,
+          updateKey: `${botType.id}:${update.status === 'Closed Bots' ? 'c' : 'u'}-${idx + 1}`,
+        };
+        
+        // Initialisiere alle Bot-Types mit null
+        selectedBotTypesInfo.forEach(bt => {
+          endPoint[bt.name] = null;
+        });
+        // Setze nur den aktuellen Bot-Type Wert
+        endPoint[botType.name] = metricValue;
+        
+        dataPoints.push(endPoint);
+      });
+    });
+
+    // Sortiere alle Datenpunkte nach Timestamp
+    dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+
+    const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : 0;
+    const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : 0;
+
+    return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
+  }, [isOverlayMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards, profitPercentBase]);
+
+  // ========== OVERLAY: Aggregierte Werte für Content Cards ==========
+  const overlayAggregatedValues = useMemo(() => {
+    if (!isOverlayMode || !overlayChartData.data || overlayChartData.data.length === 0) {
+      return null;
+    }
+
+    const selectedIds = selectedChartBotTypes.map(id => String(id));
+    let totalProfit = 0;
+    let totalInvestment = 0;
+    let totalBaseInvestment = 0;
+    let avgDailyProfitSum = 0;
+    let count = 0;
+
+    // Hole letzte Updates pro Bot-Type
+    selectedIds.forEach(botTypeId => {
+      const botUpdates = allBotTypeUpdates
+        .filter(u => String(u.botTypeId) === botTypeId)
+        .sort((a, b) => getUpdateTimestamp(b) - getUpdateTimestamp(a));
+      
+      if (botUpdates.length > 0) {
+        const latestUpdate = botUpdates[0];
+        const investment = parseFloat(latestUpdate.totalInvestment || latestUpdate.investment || '0') || 0;
+        const baseInv = parseFloat(latestUpdate.investment || '0') || 0;
+        
+        if (latestUpdate.status === 'Closed Bots') {
+          totalProfit += parseFloat(latestUpdate.profit || '0') || 0;
+        } else {
+          totalProfit += parseFloat(latestUpdate.overallGridProfitUsdt || '0') || 0;
+        }
+        
+        totalInvestment += investment;
+        totalBaseInvestment += baseInv;
+        avgDailyProfitSum += parseFloat(latestUpdate.avgGridProfitDay || '0') || 0;
+        count++;
+      }
+    });
+
+    const displayedInv = profitPercentBase === 'gesamtinvestment' ? totalInvestment : totalBaseInvestment;
+    const profitPercent = displayedInv > 0 ? (totalProfit / displayedInv) * 100 : 0;
+    const daySpan = (overlayChartData.maxTimestamp - overlayChartData.minTimestamp) / (1000 * 60 * 60 * 24);
+    const realDailyProfit = daySpan > 0 ? totalProfit / daySpan : totalProfit;
+
+    return {
+      profit: totalProfit,
+      investment: displayedInv,
+      totalInvestment: totalInvestment,
+      baseInvestment: totalBaseInvestment,
+      profitPercent: profitPercent,
+      avgDailyProfit: avgDailyProfitSum,
+      realDailyProfit: realDailyProfit,
+      metricCount: count,
+      daySpan: daySpan
+    };
+  }, [isOverlayMode, overlayChartData, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase]);
+
+  // ===================================================================================
+  // ========== ENDE OVERLAY MODUS (ADDED) SECTION ==========
+  // ===================================================================================
+
   // Chart-Daten basierend auf appliedChartSettings generieren
   // Unterstützt mehrere Metriken gleichzeitig
   // Für jeden Update werden ZWEI Punkte erstellt: Start (lastUpload) und Ende (thisUpload)
