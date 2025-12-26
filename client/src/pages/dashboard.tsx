@@ -5595,9 +5595,18 @@ export default function Dashboard() {
                     onClick={() => {
                       const newValue = !markerViewActive;
                       setMarkerViewActive(newValue);
+                      if (newValue && isOverlayMode) {
+                        // Im Overlay-Modus: Stift deaktivieren wenn Auge aktiviert wird
+                        setMarkerEditActive(false);
+                        setEditSelectedUpdateId(null);
+                        setEditHoveredUpdateId(null);
+                      }
                       if (!newValue) {
                         setLockedUpdateIds(new Set());
                         setHoveredUpdateId(null);
+                        // Period-Auswahl zurücksetzen
+                        setHoveredPeriodIndex(null);
+                        setSelectedPeriodIndices(new Set());
                       }
                     }}
                     data-testid="button-marker-view"
@@ -5613,16 +5622,25 @@ export default function Dashboard() {
                     )}
                     disabled={analyzeMode}
                     onClick={() => {
-                      if (!markerEditActive) {
+                      const newValue = !markerEditActive;
+                      if (newValue) {
                         // Beim Aktivieren: vorherige Auswahl löschen
                         setEditSelectedUpdateId(null);
                         setEditHoveredUpdateId(null);
+                        if (isOverlayMode) {
+                          // Im Overlay-Modus: Auge deaktivieren wenn Stift aktiviert wird
+                          setMarkerViewActive(false);
+                          setLockedUpdateIds(new Set());
+                          setHoveredUpdateId(null);
+                          setHoveredPeriodIndex(null);
+                          setSelectedPeriodIndices(new Set());
+                        }
                       } else {
                         // Beim Deaktivieren OHNE Apply: Auswahl zurücksetzen
                         setEditSelectedUpdateId(null);
                         setEditHoveredUpdateId(null);
                       }
-                      setMarkerEditActive(!markerEditActive);
+                      setMarkerEditActive(newValue);
                     }}
                     data-testid="button-marker-edit"
                   >
