@@ -8871,31 +8871,36 @@ export default function Dashboard() {
                       
                       return (
                         <div className="relative">
-                          {/* Auge-Button oben rechts */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute -top-1 -right-1 h-6 w-6"
-                            title="Details anzeigen"
-                            onClick={() => setPeriodDetailsPopupOpen(true)}
-                            data-testid="button-period-details"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          
-                          {/* Period-Info (ohne Bots aktiv und Metriken) */}
-                          <div className="space-y-1 pr-6">
+                          {/* Period-Info mit Auge rechts oben */}
+                          <div className="space-y-1">
+                            {/* Erste Zeile: Period + Auge */}
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Period:</span>
-                              <span className="text-sm font-medium">{periodLabel}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">Period:</span>
+                                <span className="text-sm font-medium">{periodLabel}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
+                                title="Details anzeigen"
+                                onClick={() => setPeriodDetailsPopupOpen(true)}
+                                data-testid="button-period-details"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
                               <span className="text-xs text-muted-foreground">From:</span>
                               <span className="text-xs">{fromDate}</span>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
                               <span className="text-xs text-muted-foreground">Until:</span>
                               <span className="text-xs">{untilDate}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
+                              <span className="text-xs">--</span>
                             </div>
                           </div>
                           
