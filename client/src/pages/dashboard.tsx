@@ -1176,6 +1176,9 @@ export default function Dashboard() {
   // Zeigt eine Gesamtlinie mit additiver Summierung aller aktiven Bot-Werte
   const isMultiBotChartMode = alleEintraegeMode === 'added' && selectedChartBotTypes.length >= 2;
 
+  // Analysis-Modus: Added + Analysis Sub-Toggle (Golden State - aggregierte Linie)
+  const isAnalysisMode = isMultiBotChartMode && addedModeView === 'analysis';
+
   // Compare/Added Modus: 2+ Bot-Types ausgewählt
   // Bei 2+ werden From/Until deaktiviert, Content Cards zeigen "--"
   const isMultiSelectCompareModeBase = alleEintraegeMode === 'compare' && selectedChartBotTypes.length >= 2;
@@ -5019,7 +5022,25 @@ export default function Dashboard() {
                     }
                   }
                   
-                  // ADDED MODE: Zeige aggregierte Werte aus den im Graph angezeigten Metriken
+                  // ========== OVERLAY MODE: Zeige aggregierte Werte (SEPARATE SECTION) ==========
+                  if (isOverlayMode && overlayAggregatedValues) {
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        return `${overlayAggregatedValues.investment.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit':
+                        return `${overlayAggregatedValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit %':
+                        return `${overlayAggregatedValues.profitPercent.toFixed(2)}%`;
+                      case 'Ø Profit/Tag':
+                        return `${overlayAggregatedValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Real Profit/Tag':
+                        return `${overlayAggregatedValues.realDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      default:
+                        return '--';
+                    }
+                  }
+                  
+                  // ADDED MODE / ANALYSIS (Golden State - NICHT ÄNDERN): Zeige aggregierte Werte aus den im Graph angezeigten Metriken
                   if (isMultiBotChartMode && addedModeAggregatedValues) {
                     switch (cardId) {
                       case 'Gesamtkapital':
@@ -6443,8 +6464,9 @@ export default function Dashboard() {
               {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
               {((isAnalyzeSingleMetricMode && (!analyzeModeBounds || compareChartData.data.length === 0)) ||
                 (!isAnalyzeSingleMetricMode && isMultiSelectCompareMode && compareChartData.data.length === 0) ||
-                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && isMultiBotChartMode && multiBotChartData.data.length === 0) || 
-                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && !isMultiBotChartMode && transformedChartData.length === 0)) ? (
+                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && isOverlayMode && overlayChartData.data.length === 0) ||
+                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && !isOverlayMode && isMultiBotChartMode && multiBotChartData.data.length === 0) || 
+                (!isAnalyzeSingleMetricMode && !isMultiSelectCompareMode && !isOverlayMode && !isMultiBotChartMode && transformedChartData.length === 0)) ? (
                 <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                   <div className="text-center">
                     <p className="text-lg font-medium">No Metrics Available</p>
@@ -6482,6 +6504,10 @@ export default function Dashboard() {
                         })()
                       : isMultiSelectCompareMode
                         ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
+                        // ========== OVERLAY MODUS: Eigene Datenquelle (SEPARATE SECTION) ==========
+                        : isOverlayMode
+                          ? (overlayChartData.data.length > 0 ? overlayChartData.data : [{ time: '-', timestamp: 0 }])
+                        // ========== ANALYSIS/ADDED MODUS (Golden State - NICHT ÄNDERN) ==========
                         : isMultiBotChartMode 
                           ? (multiBotChartData.data.length > 0 ? multiBotChartData.data : [{ time: '-', timestamp: 0 }])
                           // NORMAL MODE: Wenn analyzeModeBounds aktiv, filtere transformedChartData
@@ -7948,8 +7974,65 @@ export default function Dashboard() {
                         />
                       );
                     })
+                  ) : isOverlayMode ? (
+                    // ===================================================================================
+                    // ========== OVERLAY MODUS CHART RENDERING - SEPARATE SECTION ==========
+                    // ===================================================================================
+                    // Zeigt separate Linien für jeden Bot-Type (übereinander gelegt)
+                    // Jeder Bot-Type hat seine eigene farbige Linie
+                    overlayChartData.botTypeNames.map((botTypeName, index) => {
+                      const lineColor = COMPARE_MODE_COLORS[index % COMPARE_MODE_COLORS.length];
+                      
+                      return (
+                        <Line 
+                          key={`overlay-${botTypeName}`}
+                          type="linear"
+                          dataKey={botTypeName}
+                          name={botTypeName}
+                          stroke={lineColor}
+                          strokeWidth={2}
+                          dot={(props: any) => {
+                            const { cx, cy, payload, value } = props;
+                            
+                            if (value === undefined || value === null || isNaN(cy) || isNaN(cx)) {
+                              return <g key={`dot-overlay-empty-${botTypeName}-${payload?.timestamp}`} />;
+                            }
+                            
+                            const updateKey = payload?.updateKey || '';
+                            const isPointActive = updateKey && (
+                              (markerViewActive && (hoveredUpdateId === updateKey || lockedUpdateIds.has(updateKey))) ||
+                              (markerEditActive && (editHoveredUpdateId === updateKey || editSelectedUpdateId === updateKey))
+                            );
+                            
+                            const activeStroke = isPointActive ? 'rgb(8, 145, 178)' : lineColor;
+                            const activeStyle = isPointActive ? { 
+                              filter: 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.8))'
+                            } : {};
+                            
+                            return (
+                              <circle
+                                key={`dot-overlay-${botTypeName}-${payload?.timestamp}`}
+                                cx={cx}
+                                cy={cy}
+                                r={isPointActive ? 6 : 4}
+                                fill={isPointActive ? 'rgb(8, 145, 178)' : lineColor}
+                                stroke={activeStroke}
+                                strokeWidth={isPointActive ? 2 : 0}
+                                style={activeStyle}
+                              />
+                            );
+                          }}
+                          connectNulls
+                          isAnimationActive={true}
+                          animationDuration={1200}
+                          animationBegin={0}
+                          animationEasing="ease-out"
+                        />
+                      );
+                    })
+                    // ========== ENDE OVERLAY MODUS CHART RENDERING ==========
                   ) : isMultiBotChartMode ? (
-                    // Added-Modus: NUR END-EVENTS als separate Punkte
+                    // Added/Analysis-Modus (Golden State - NICHT ÄNDERN): NUR END-EVENTS als separate Punkte
                     // Jeder End-Event hat seinen eigenen Y-Wert (individueller Profit)
                     // Linie verbindet alle End-Events chronologisch
                     activeMetricCards.map((metricName) => {
