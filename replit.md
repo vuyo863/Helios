@@ -31,7 +31,7 @@ The dashboard features three primary chart modes:
 *   **AI-Analysis**: Integration with OpenAI for automatic insights and chart data summarization, provided on a dedicated page (`ai-analysis.tsx`).
 
 ### System Design Choices
-*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are strictly forbidden from modification to maintain stability and prevent regressions. This includes the MainChart, Compare Mode, Bot-Type CRUD functionalities, and the entire AI-Analysis page.
+*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are strictly forbidden from modification to maintain stability and prevent regressions. This includes the MainChart, Compare Mode, Edit-Modus (Added) Analysis, Bot-Type CRUD functionalities, and the entire AI-Analysis page.
 *   **Modular Architecture**: Separation of concerns between frontend and backend, and within the frontend, distinct modules for different chart modes and functionalities.
 
 ## External Dependencies
@@ -114,7 +114,38 @@ Dann werden alle Bot-Type-Ergebnisse addiert.
 
 ---
 
-## TODO: Noch zu bearbeiten
+## Dezember 2025 - Real Profit/Tag Golden State
 
-**Added-Modus Content Cards:**
-- ⏳ Real Profit/Tag - noch offen (5. und letzte Content Card)
+### GOLDEN STATE - Nicht mehr anfassen!
+
+**Formel:** `Gesamtprofit / Anzahl Tage im Graf`
+
+**Berechnung:**
+- daySpan = (maxTimestamp - minTimestamp) / (1000 * 60 * 60 * 24)
+- Real Profit/Tag = totalProfit / daySpan
+- Verwendet echte Datenpunkte, nicht Filtereinstellungen
+
+**Datei:** `client/src/pages/dashboard.tsx`
+
+---
+
+## Dashboard Modus-Übersicht - GOLDEN STATE
+
+### ✅ Compare Mode - GOLDEN STATE
+Toggle oben: [Compare | Added]
+- Alle Content Cards fertig
+- Farbcodierte Linien pro Bot-Type
+
+### ✅ Edit-Modus (Added) Analysis - GOLDEN STATE  
+Toggle oben: [Compare | Added] → Wähle "Added"
+Sub-Toggle: [Analysis | Overlay] → Wähle "Analysis"
+- Alle 5 Content Cards fertig:
+  1. ✅ Gesamtkapital (zeitgewichtet)
+  2. ✅ Investitionsmenge (zeitgewichtet)
+  3. ✅ Gesamtprofit % 
+  4. ✅ Gesamtprofit
+  5. ✅ Ø Profit/Tag (intelligente Logik)
+  6. ✅ Real Profit/Tag (Gesamtprofit / Tage im Graf)
+
+### ⏳ Edit-Modus (Added) Overlay - Noch offen
+Sub-Toggle: [Analysis | Overlay] → "Overlay" noch nicht implementiert
