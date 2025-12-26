@@ -8972,10 +8972,11 @@ export default function Dashboard() {
                         size="icon" 
                         className="h-8 w-8" 
                         title="Auswahl löschen"
-                        disabled={selectedPeriodIndices.size === 0}
+                        disabled={!markerViewActive || selectedPeriodIndices.size === 0}
                         onClick={() => {
                           setSelectedPeriodIndices(new Set());
                           setOverlayCompareActive(false);
+                          setOriginalPeriodIndex(null);
                         }}
                         data-testid="button-clear-period-selection"
                       >
@@ -8989,6 +8990,7 @@ export default function Dashboard() {
                           overlayCompareActive && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                         )}
                         title="Vergleichen (Multi-Select)"
+                        disabled={!markerViewActive || selectedPeriodIndices.size === 0}
                         onClick={() => {
                           if (overlayCompareActive) {
                             // Deaktivieren: Zurück zur ursprünglichen Auswahl
@@ -9014,7 +9016,7 @@ export default function Dashboard() {
                     <Button 
                       variant="default" 
                       size="sm"
-                      disabled={selectedPeriodIndices.size === 0}
+                      disabled={!overlayCompareActive || selectedPeriodIndices.size < 2}
                       data-testid="button-apply-period-selection"
                     >
                       Apply
