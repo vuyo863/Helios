@@ -8801,8 +8801,99 @@ export default function Dashboard() {
               {/* ========== OVERLAY + AUGE-MODUS: Spezielle Ansicht ========== */}
               {isOverlayMode && markerViewActive ? (
                 <>
-                  {/* Leerer Bereich statt Update-Card - flex-1 füllt den Platz */}
-                  <div className="flex-1" />
+                  {/* Inner Content Card - Period Details (gleiche Struktur wie Standard-Modus) */}
+                  <Card className="p-3 mb-3" data-testid="card-period-details">
+                    {(() => {
+                      // Finde aktive Period (hovered oder erste selected)
+                      const activePeriodIdx = hoveredPeriodIndex !== null 
+                        ? hoveredPeriodIndex 
+                        : selectedPeriodIndices.size > 0 
+                          ? Array.from(selectedPeriodIndices)[0] 
+                          : null;
+                      
+                      // Berechne Period-Daten aus xAxisTicks
+                      const visibleTicks = xAxisTicks.filter(t => {
+                        const [domainStart, domainEnd] = xAxisDomain;
+                        return typeof domainStart === 'number' && typeof domainEnd === 'number' 
+                          && t >= domainStart && t <= domainEnd;
+                      });
+                      
+                      let periodLabel = '--';
+                      let fromDate = '--';
+                      let untilDate = '--';
+                      let botsActive = '--';
+                      
+                      if (activePeriodIdx !== null && visibleTicks[activePeriodIdx] !== undefined && visibleTicks[activePeriodIdx + 1] !== undefined) {
+                        const startTs = visibleTicks[activePeriodIdx];
+                        const endTs = visibleTicks[activePeriodIdx + 1];
+                        
+                        // Period Label (Zeitdifferenz)
+                        const diffMs = endTs - startTs;
+                        const hours = diffMs / (1000 * 60 * 60);
+                        const days = hours / 24;
+                        if (days >= 1) {
+                          periodLabel = `${Math.round(days)} ${Math.round(days) === 1 ? 'Tag' : 'Tage'}`;
+                        } else {
+                          periodLabel = `${Math.round(hours)} ${Math.round(hours) === 1 ? 'Stunde' : 'Stunden'}`;
+                        }
+                        
+                        // Datum formatieren
+                        const formatDate = (ts: number) => {
+                          const d = new Date(ts);
+                          return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+                        };
+                        fromDate = formatDate(startTs);
+                        untilDate = formatDate(endTs);
+                        
+                        // Anzahl Bots (Platzhalter - später aus Daten)
+                        botsActive = effectiveSelectedBotTypes?.length?.toString() || '--';
+                      }
+                      
+                      return (
+                        <div className="flex gap-4">
+                          {/* Linke Spalte: Period-Info */}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Period:</span>
+                              <span className="text-sm font-medium">{periodLabel}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">From:</span>
+                              <span className="text-xs">{fromDate}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Until:</span>
+                              <span className="text-xs">{untilDate}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Bots aktiv:</span>
+                              <span className="text-xs">{botsActive}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Rechte Spalte: Metriken */}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
+                              <span className="text-xs">--</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Gesamtkapital:</span>
+                              <span className="text-xs">--</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Profit %:</span>
+                              <span className="text-xs">--</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Ø Profit/Tag:</span>
+                              <span className="text-xs">--</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </Card>
                   
                   {/* Separator */}
                   <div className="border-t my-2" />
