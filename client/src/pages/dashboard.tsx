@@ -331,6 +331,16 @@ export default function Dashboard() {
     isDraggingRef.current = isDragging;
   }, [isDragging]);
   
+  // Ref für markerViewActive und isOverlayMode (für Wheel-Handler)
+  const markerViewActiveRef = useRef(false);
+  const isOverlayModeRef = useRef(false);
+  useEffect(() => {
+    markerViewActiveRef.current = markerViewActive;
+  }, [markerViewActive]);
+  useEffect(() => {
+    isOverlayModeRef.current = isOverlayMode;
+  }, [isOverlayMode]);
+  
   // Native Wheel-Event Listener für Chart-Zoom
   // Muss native sein weil React's onWheel passiv ist und preventDefault() nicht funktioniert
   useEffect(() => {
@@ -344,6 +354,9 @@ export default function Dashboard() {
       
       // Nicht zoomen während des Dragging
       if (isDraggingRef.current) return;
+      
+      // Im Auge-Modus im Overlay-Modus: Zoomen deaktiviert
+      if (markerViewActiveRef.current && isOverlayModeRef.current) return;
       
       // Zoom für alle Scroll-Events (Mausrad, Touchpad, Pinch)
       const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
@@ -376,6 +389,9 @@ export default function Dashboard() {
   const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prüfe ob Maus gedrückt ist
     if (!mouseDownPos) return;
+    
+    // Im Auge-Modus im Overlay-Modus: Panning deaktiviert
+    if (markerViewActive && isOverlayMode) return;
     
     // Berechne Bewegung seit MouseDown
     const deltaY = e.clientY - mouseDownPos.y;
