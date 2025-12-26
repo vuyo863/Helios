@@ -3181,27 +3181,28 @@ export default function Dashboard() {
       const ticks: number[] = [];
       ticks.push(startTs);
       
-      // RUNDUNG basierend auf effectiveSequence (1:1 wie Compare-Mode!)
-      const currentDate = new Date(startTs);
+      // RUNDUNG basierend auf effectiveSequence
+      // WICHTIG: Runde auf FESTEN Referenzpunkt (baseStartTs), nicht auf sichtbaren startTs!
+      // Damit bleiben die Ticks beim Panning stabil (gleiche Timestamps)
+      const referenceDate = new Date(baseStartTs);
       
       if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
         // STUNDEN: Runde auf volle Stunde
-        currentDate.setMinutes(0, 0, 0);
-        if (currentDate.getTime() <= startTs) {
-          currentDate.setTime(currentDate.getTime() + 60 * 60 * 1000);
-        }
+        referenceDate.setMinutes(0, 0, 0);
       } else {
         // TAGE: Runde auf Mitternacht
-        currentDate.setHours(0, 0, 0, 0);
-        if (currentDate.getTime() <= startTs) {
-          currentDate.setTime(currentDate.getTime() + 24 * 60 * 60 * 1000);
-        }
+        referenceDate.setHours(0, 0, 0, 0);
       }
       
-      let currentTs = currentDate.getTime();
+      // Finde den ersten gerundeten Tick nach startTs
+      let currentTs = referenceDate.getTime();
+      while (currentTs <= startTs) {
+        currentTs += tickInterval;
+      }
+      
       const minGap = tickInterval * 0.3;
       
-      // Nur Ticks mit genug Abstand hinzufügen (1:1 wie Compare-Mode!)
+      // Nur Ticks mit genug Abstand hinzufügen
       while (currentTs < endTs - minGap) {
         if (currentTs > startTs + minGap) {
           ticks.push(currentTs);
@@ -5861,6 +5862,12 @@ export default function Dashboard() {
                       
                       const elements: JSX.Element[] = [];
                       
+                      // Debug: Log selectedPeriodKeys und allTicks beim Rendern
+                      if (selectedPeriodKeys.size > 0) {
+                        console.log('[Overlay Render] selectedPeriodKeys:', Array.from(selectedPeriodKeys));
+                        console.log('[Overlay Render] allTicks count:', allTicks.length, 'first:', allTicks[0], 'last:', allTicks[allTicks.length - 1]);
+                      }
+                      
                       // Striche und Zeitabstände rendern (alle Ticks, nur sichtbare werden gerendert)
                       allTicks.forEach((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
@@ -5924,6 +5931,8 @@ export default function Dashboard() {
                                 onMouseEnter={() => setHoveredPeriodKey(periodKey)}
                                 onMouseLeave={() => setHoveredPeriodKey(null)}
                                 onClick={() => {
+                                  console.log('[Period Click] periodKey:', periodKey, 'tick:', tick, 'nextTick:', nextTick);
+                                  console.log('[Period Click] Date range:', new Date(tick).toLocaleDateString('de-DE'), '-', new Date(nextTick).toLocaleDateString('de-DE'));
                                   if (overlayCompareActive) {
                                     // Compare-Modus: Multi-Select erlaubt
                                     setSelectedPeriodKeys(prev => {
@@ -5933,6 +5942,7 @@ export default function Dashboard() {
                                       } else {
                                         newSet.add(periodKey);
                                       }
+                                      console.log('[Period Click] Compare-Mode - selectedPeriodKeys:', Array.from(newSet));
                                       return newSet;
                                     });
                                   } else {
@@ -5940,9 +5950,11 @@ export default function Dashboard() {
                                     setSelectedPeriodKeys(prev => {
                                       if (prev.has(periodKey)) {
                                         setOriginalPeriodKey(null);
+                                        console.log('[Period Click] Deselected, cleared');
                                         return new Set();
                                       } else {
                                         setOriginalPeriodKey(periodKey);
+                                        console.log('[Period Click] Selected:', periodKey);
                                         return new Set([periodKey]);
                                       }
                                     });
