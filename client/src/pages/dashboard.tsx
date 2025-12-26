@@ -5795,8 +5795,28 @@ export default function Dashboard() {
                     const lineHeight = 14;
                     const topPadding = 25;
                     
-                    // Im Overlay-Modus: Keine Verbindungslinien rendern (Section bleibt sichtbar)
-                    if (isOverlayMode) return null;
+                    // Im Overlay-Modus: Vertikale Zeitmarkierungsstriche statt Verbindungslinien
+                    if (isOverlayMode) {
+                      // Nutze die gleichen Ticks wie die X-Achse
+                      const visibleTicks = xAxisTicks.filter(t => t >= domainStart && t <= domainEnd);
+                      
+                      return visibleTicks.map((tick, i) => {
+                        const xPercent = ((tick - domainStart) / domainRange) * 100;
+                        // Strich geht von topPadding bis fast zum Boden der Section
+                        return (
+                          <line
+                            key={`overlay-tick-${i}`}
+                            x1={`${xPercent}%`}
+                            y1={`${(topPadding / containerHeight) * 100}%`}
+                            x2={`${xPercent}%`}
+                            y2="95%"
+                            stroke="hsl(var(--destructive))"
+                            strokeWidth="2"
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        );
+                      });
+                    }
                     
                     return updateLanes.map((update, i) => {
                       const startX = ((update.startTs - domainStart) / domainRange) * 100;
