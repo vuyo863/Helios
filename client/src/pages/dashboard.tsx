@@ -1997,8 +1997,8 @@ export default function Dashboard() {
     });
     
     // ========== Ø PROFIT/TAG ==========
-    // OHNE Zeitfilter: totalProfit / totalHours * 24 (wie Gesamt-Modus)
-    // MIT Zeitfilter: avgGridProfitDay Durchschnitt (weil gefilterte Updates)
+    // ALLE Updates: totalProfit / totalHours * 24 (wie Gesamt-Modus)
+    // NUR TEILWEISE Updates (echter Zeitfilter): avgGridProfitDay Durchschnitt
     let avgDailyProfitSum = 0;
     
     selectedChartBotTypes.forEach(botTypeId => {
@@ -2007,9 +2007,10 @@ export default function Dashboard() {
         update => update.botTypeId === botTypeId && update.status === 'Update Metrics'
       );
       
+      // Gefilterte Updates bestimmen
+      let filteredUpdates = allUpdatesForBotType;
       if (isTimeFiltered && filterFromTs !== null && filterUntilTs !== null) {
-        // MIT ZEITFILTER: avgGridProfitDay Durchschnitt verwenden
-        const filteredUpdates = allUpdatesForBotType.filter(update => {
+        filteredUpdates = allUpdatesForBotType.filter(update => {
           const fromTs = parseTimestamp(update.lastUpload);
           const untilTs = parseTimestamp(update.thisUpload);
           if (fromTs && untilTs) {
@@ -2019,23 +2020,18 @@ export default function Dashboard() {
           }
           return false;
         });
+      }
+      
+      if (filteredUpdates.length > 0) {
+        // Prüfen ob ALLE Updates enthalten sind
+        const allUpdatesIncluded = filteredUpdates.length === allUpdatesForBotType.length;
         
-        if (filteredUpdates.length > 0) {
-          let sumAvgGridProfitDay = 0;
-          filteredUpdates.forEach(update => {
-            const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
-            sumAvgGridProfitDay += avgGridProfitDay;
-          });
-          const botTypeAvg = sumAvgGridProfitDay / filteredUpdates.length;
-          avgDailyProfitSum += botTypeAvg;
-        }
-      } else {
-        // OHNE ZEITFILTER: totalProfit / totalHours * 24 (wie Gesamt-Modus)
-        if (allUpdatesForBotType.length > 0) {
+        if (allUpdatesIncluded) {
+          // ALLE Updates: totalProfit / totalHours * 24 (wie Gesamt-Modus)
           let totalProfit = 0;
           let totalHours = 0;
           
-          allUpdatesForBotType.forEach(update => {
+          filteredUpdates.forEach(update => {
             const gridProfit = parseFloat(update.overallGridProfitUsdt || '0') || 0;
             const runtimeHours = parseRuntimeToHours(update.avgRuntime);
             totalProfit += gridProfit;
@@ -2046,6 +2042,15 @@ export default function Dashboard() {
             const avg24hProfit = (totalProfit / totalHours) * 24;
             avgDailyProfitSum += avg24hProfit;
           }
+        } else {
+          // NUR TEILWEISE Updates: avgGridProfitDay Durchschnitt verwenden
+          let sumAvgGridProfitDay = 0;
+          filteredUpdates.forEach(update => {
+            const avgGridProfitDay = parseFloat(update.avgGridProfitDay || '0') || 0;
+            sumAvgGridProfitDay += avgGridProfitDay;
+          });
+          const botTypeAvg = sumAvgGridProfitDay / filteredUpdates.length;
+          avgDailyProfitSum += botTypeAvg;
         }
       }
     });
