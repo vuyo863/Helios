@@ -382,9 +382,6 @@ export default function Dashboard() {
     // Prüfe ob Maus gedrückt ist
     if (!mouseDownPos) return;
     
-    // Im Auge-Modus im Overlay-Modus: Panning deaktiviert (X-Achse muss fest bleiben für stabile Period-Keys)
-    if (markerViewActive && isOverlayMode) return;
-    
     // Berechne Bewegung seit MouseDown
     const deltaY = e.clientY - mouseDownPos.y;
     const deltaX = e.clientX - mouseDownPos.x;
