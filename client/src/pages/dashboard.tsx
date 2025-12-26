@@ -254,6 +254,9 @@ export default function Dashboard() {
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
   const [markerViewActive, setMarkerViewActive] = useState(false);
   const [markerEditActive, setMarkerEditActive] = useState(false);
+  // Overlay Period Interaktion (Auge-Modus)
+  const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<number | null>(null);
+  const [selectedPeriodIndices, setSelectedPeriodIndices] = useState<Set<number>>(new Set());
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -5837,15 +5840,55 @@ export default function Dashboard() {
                           />
                         );
                         
-                        // Zeitabstand zwischen diesem und nächstem Tick
+                        // Zeitabstand zwischen diesem und nächstem Tick + interaktives Rechteck
                         if (i < visibleTicks.length - 1) {
                           const nextTick = visibleTicks[i + 1];
                           const diffMs = nextTick - tick;
                           const timeLabel = formatTimeDiff(diffMs);
                           
                           // Position in der Mitte zwischen den beiden Ticks
-                          const midXPercent = ((tick + nextTick) / 2 - domainStart) / domainRange * 100;
+                          const startXPercent = xPercent;
+                          const endXPercent = ((nextTick - domainStart) / domainRange) * 100;
+                          const midXPercent = (startXPercent + endXPercent) / 2;
+                          const widthPercent = endXPercent - startXPercent;
                           
+                          // Prüfe ob diese Period aktiv ist (Auge-Modus)
+                          const isPeriodHovered = hoveredPeriodIndex === i;
+                          const isPeriodSelected = selectedPeriodIndices.has(i);
+                          const isPeriodActive = isPeriodHovered || isPeriodSelected;
+                          
+                          // Interaktives Rechteck für Period (nur im Auge-Modus)
+                          if (markerViewActive) {
+                            elements.push(
+                              <rect
+                                key={`overlay-period-rect-${i}`}
+                                x={`${startXPercent}%`}
+                                y="45%"
+                                width={`${widthPercent}%`}
+                                height="60%"
+                                fill={isPeriodActive ? 'rgba(8, 145, 178, 0.1)' : 'transparent'}
+                                stroke={isPeriodActive ? 'rgb(8, 145, 178)' : 'transparent'}
+                                strokeWidth={isPeriodActive ? 2 : 0}
+                                rx="4"
+                                style={{ cursor: 'pointer' }}
+                                onMouseEnter={() => setHoveredPeriodIndex(i)}
+                                onMouseLeave={() => setHoveredPeriodIndex(null)}
+                                onClick={() => {
+                                  setSelectedPeriodIndices(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(i)) {
+                                      newSet.delete(i);
+                                    } else {
+                                      newSet.add(i);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                              />
+                            );
+                          }
+                          
+                          // Zeit-Label
                           elements.push(
                             <text
                               key={`overlay-label-${i}`}
@@ -5853,8 +5896,9 @@ export default function Dashboard() {
                               y="78%"
                               textAnchor="middle"
                               dominantBaseline="middle"
-                              fill="hsl(var(--muted-foreground))"
+                              fill={isPeriodActive ? 'rgb(8, 145, 178)' : 'hsl(var(--muted-foreground))'}
                               fontSize="10"
+                              fontWeight={isPeriodActive ? 'bold' : 'normal'}
                               style={{ pointerEvents: 'none', userSelect: 'none' }}
                             >
                               {timeLabel}
