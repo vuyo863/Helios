@@ -331,16 +331,6 @@ export default function Dashboard() {
     isDraggingRef.current = isDragging;
   }, [isDragging]);
   
-  // Ref für markerViewActive und isOverlayMode (für Wheel-Handler)
-  const markerViewActiveRef = useRef(false);
-  const isOverlayModeRef = useRef(false);
-  useEffect(() => {
-    markerViewActiveRef.current = markerViewActive;
-  }, [markerViewActive]);
-  useEffect(() => {
-    isOverlayModeRef.current = isOverlayMode;
-  }, [isOverlayMode]);
-  
   // Native Wheel-Event Listener für Chart-Zoom
   // Muss native sein weil React's onWheel passiv ist und preventDefault() nicht funktioniert
   useEffect(() => {
@@ -2136,6 +2126,16 @@ export default function Dashboard() {
 
   // Overlay-Modus aktiv: Added Toggle + Overlay Sub-Toggle
   const isOverlayMode = alleEintraegeMode === 'added' && addedModeView === 'overlay' && selectedChartBotTypes.length >= 2;
+
+  // Refs für markerViewActive und isOverlayMode (für Wheel-Handler - muss NACH Definition sein)
+  const markerViewActiveRef = useRef(false);
+  const isOverlayModeRef = useRef(false);
+  useEffect(() => {
+    markerViewActiveRef.current = markerViewActive;
+  }, [markerViewActive]);
+  useEffect(() => {
+    isOverlayModeRef.current = isOverlayMode;
+  }, [isOverlayMode]);
 
   // ========== OVERLAY: Chart-Daten Berechnung ==========
   // EXAKTE KOPIE von multiBotChartData (Analysis) - nur mit isOverlayMode als Guard
