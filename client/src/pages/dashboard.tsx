@@ -5577,7 +5577,8 @@ export default function Dashboard() {
                 )}
               </div>
               
-              {/* Marker Section with Left Icons */}
+              {/* Marker Section with Left Icons - Im Overlay-Modus versteckt */}
+              {!isOverlayMode && (
               <div className="flex" style={{ marginBottom: '16px' }}>
                 {/* Left Icon Panel */}
                 <div className="flex flex-col items-center justify-center gap-1" style={{ width: '80px' }}>
@@ -6649,7 +6650,7 @@ export default function Dashboard() {
                 </svg>
                 </div>
               </div>
-              
+              )} 
               {/* Chart Container with Zoom & Pan Events */}
               {/* Zeige "No Metrics Available" wenn keine Daten vorhanden */}
               {((isAnalyzeSingleMetricMode && (!analyzeModeBounds || compareChartData.data.length === 0)) ||
