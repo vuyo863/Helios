@@ -1248,21 +1248,10 @@ export default function Dashboard() {
     }
   }, [isMultiSelectCompareMode]);
 
-  // Added Modus: "Gesamt" wenn ALLE aktiven Bot-Types ausgewählt, sonst "Custom"
-  // Compare Modus: immer "Custom" bei 2+ Selection
-  useEffect(() => {
-    if (selectedChartBotTypes.length >= 2) {
-      if (alleEintraegeMode === 'added') {
-        const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
-        const allActiveSelected = activeBotTypes.length > 0 && 
-          activeBotTypes.every(bt => selectedChartBotTypes.includes(String(bt.id)));
-        setSelectedBotName(allActiveSelected ? "Gesamt" : "Custom");
-      } else {
-        // Compare Modus: immer "Custom"
-        setSelectedBotName("Custom");
-      }
-    }
-  }, [alleEintraegeMode, selectedChartBotTypes, availableBotTypes]);
+  // ENTFERNT: Automatischer Wechsel zu "Gesamt" wenn alle ausgewählt
+  // NEU: "Gesamt" und "Custom" sind jetzt strikt getrennt
+  // - Gesamt: Alle Bot-Types FEST, nicht abwählbar
+  // - Custom: Manuell wählbar, bleibt immer "Custom" auch wenn alle ausgewählt
 
   // ========== COMPARE MODUS - SEPARATE SECTION ==========
   // Diese Logik ist komplett unabhängig von den Graph-Einstellungen (Golden State)
@@ -4677,9 +4666,15 @@ export default function Dashboard() {
                             const selectedName = uniqueBotNames.find(
                               name => name.toLowerCase() === currentValue.toLowerCase()
                             ) || "Gesamt";
+                            
+                            // CUSTOM-MODUS: Alle Bot-Types entwählen
+                            if (selectedName === "Custom") {
+                              setSelectedChartBotTypes([]);
+                            }
+                            // GESAMT-MODUS: Alle aktiven Bot-Types werden durch useEffect gesetzt
+                            
                             setSelectedBotName(selectedName);
                             setOpen(false);
-                            // Animation wird durch Auto-Apply useEffect getriggert
                           }}
                           data-testid={`option-bot-${botName}`}
                         >
@@ -8787,7 +8782,12 @@ export default function Dashboard() {
             onRemoveBotType={handleRemoveBotType}
             selectedChartBotTypes={selectedChartBotTypes}
             onToggleChartBotType={(botTypeId) => {
-              // UI-Toggle (blau/grau) + Suche oben setzen
+              // GESAMT-MODUS: Checkbox blockiert, alle Bot-Types sind fest
+              if (selectedBotName === "Gesamt") {
+                return; // Keine Änderung erlaubt im Gesamt-Modus
+              }
+              
+              // CUSTOM-MODUS: Manuelle Auswahl erlaubt
               setSelectedChartBotTypes(prev => {
                 const newSelection = prev.includes(botTypeId)
                   ? prev.filter(id => id !== botTypeId)
@@ -8801,18 +8801,13 @@ export default function Dashboard() {
                     setSelectedBotName(botType.name);
                   }
                 }
-                // Wenn 2+ ausgewählt → "Gesamt" oder "Custom" je nach Added Modus
+                // Bei 2+ ausgewählt → IMMER "Custom" (auch wenn alle ausgewählt)
                 else if (newSelection.length >= 2) {
-                  // Added Modus: "Gesamt" wenn ALLE aktiven Bot-Types ausgewählt, sonst "Custom"
-                  if (alleEintraegeMode === 'added') {
-                    const activeBotTypes = availableBotTypes.filter(bt => bt.isActive);
-                    const allActiveSelected = activeBotTypes.length > 0 && 
-                      activeBotTypes.every(bt => newSelection.includes(String(bt.id)));
-                    setSelectedBotName(allActiveSelected ? "Gesamt" : "Custom");
-                  } else {
-                    // Compare Modus: immer "Custom"
-                    setSelectedBotName("Custom");
-                  }
+                  setSelectedBotName("Custom");
+                }
+                // Bei 0 ausgewählt → "Custom" behalten
+                else if (newSelection.length === 0) {
+                  setSelectedBotName("Custom");
                 }
                 
                 return newSelection;
