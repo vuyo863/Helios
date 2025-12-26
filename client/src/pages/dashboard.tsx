@@ -5892,14 +5892,17 @@ export default function Dashboard() {
                                 onMouseEnter={() => setHoveredPeriodIndex(i)}
                                 onMouseLeave={() => setHoveredPeriodIndex(null)}
                                 onClick={() => {
+                                  // Single-Select: Nur eine Period kann ausgewählt werden
+                                  // Klick auf bereits ausgewählte = Abwählen
+                                  // Klick auf andere = Diese auswählen (vorherige ersetzen)
                                   setSelectedPeriodIndices(prev => {
-                                    const newSet = new Set(prev);
-                                    if (newSet.has(i)) {
-                                      newSet.delete(i);
+                                    if (prev.has(i)) {
+                                      // Abwählen
+                                      return new Set();
                                     } else {
-                                      newSet.add(i);
+                                      // Diese auswählen (ersetzt vorherige)
+                                      return new Set([i]);
                                     }
-                                    return newSet;
                                   });
                                 }}
                               />
