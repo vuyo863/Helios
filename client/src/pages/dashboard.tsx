@@ -5850,7 +5850,7 @@ export default function Dashboard() {
                             <text
                               key={`overlay-label-${i}`}
                               x={`${midXPercent}%`}
-                              y="60%"
+                              y="90%"
                               textAnchor="middle"
                               fill="hsl(var(--muted-foreground))"
                               fontSize="10"
