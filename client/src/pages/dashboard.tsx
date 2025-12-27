@@ -3130,8 +3130,9 @@ export default function Dashboard() {
       else if (visibleHours <= 12) tickInterval = 60 * 60 * 1000;
       else if (visibleHours <= 24) tickInterval = 2 * 60 * 60 * 1000;
       else if (visibleHours <= 48) tickInterval = 4 * 60 * 60 * 1000;
-      else if (visibleHours <= 96) tickInterval = 6 * 60 * 60 * 1000;
-      else tickInterval = 12 * 60 * 60 * 1000;
+      else if (visibleHours <= 72) tickInterval = 6 * 60 * 60 * 1000;
+      else if (visibleHours <= 96) tickInterval = 12 * 60 * 60 * 1000;
+      else tickInterval = 24 * 60 * 60 * 1000; // 4-7 Tage: 1 Tag Intervall
     } else {
       if (visibleDays <= 7) tickInterval = 24 * 60 * 60 * 1000;
       else if (visibleDays <= 14) tickInterval = 2 * 24 * 60 * 60 * 1000;
