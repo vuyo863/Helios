@@ -3104,6 +3104,69 @@ export default function Dashboard() {
   }, [isMultiSelectCompareMode, compareChartData.data, compareChartData.botTypeNames]);
 
 
+  // Hilfsfunktion: Berechne Ticks für einen Zeitbereich (OHNE Zoom/Pan)
+  // Wird für eingefrorene Ticks im Eye-Modus verwendet
+  const calculateFullRangeTicks = (baseStartTs: number, baseEndTs: number): number[] => {
+    const totalRange = baseEndTs - baseStartTs;
+    const visibleDays = totalRange / (24 * 60 * 60 * 1000);
+    
+    // AUTOMATISCHE SEQUENCE basierend auf Zeitspanne
+    let effectiveSequence = 'days';
+    if (visibleDays < 7) {
+      effectiveSequence = 'hours';
+    }
+    
+    // TICK-INTERVALLE
+    let tickInterval: number;
+    const visibleHours = totalRange / (60 * 60 * 1000);
+    
+    if (effectiveSequence === 'hours') {
+      if (visibleHours <= 6) tickInterval = 30 * 60 * 1000;
+      else if (visibleHours <= 12) tickInterval = 60 * 60 * 1000;
+      else if (visibleHours <= 24) tickInterval = 2 * 60 * 60 * 1000;
+      else if (visibleHours <= 48) tickInterval = 4 * 60 * 60 * 1000;
+      else if (visibleHours <= 96) tickInterval = 6 * 60 * 60 * 1000;
+      else tickInterval = 12 * 60 * 60 * 1000;
+    } else {
+      if (visibleDays <= 7) tickInterval = 24 * 60 * 60 * 1000;
+      else if (visibleDays <= 14) tickInterval = 2 * 24 * 60 * 60 * 1000;
+      else if (visibleDays <= 30) tickInterval = 3 * 24 * 60 * 60 * 1000;
+      else if (visibleDays <= 60) tickInterval = 7 * 24 * 60 * 60 * 1000;
+      else tickInterval = 14 * 24 * 60 * 60 * 1000;
+    }
+    
+    const ticks: number[] = [];
+    ticks.push(baseStartTs);
+    
+    // RUNDUNG auf festen Referenzpunkt
+    const referenceDate = new Date(baseStartTs);
+    if (effectiveSequence === 'hours' && tickInterval < 24 * 60 * 60 * 1000) {
+      referenceDate.setMinutes(0, 0, 0);
+    } else {
+      referenceDate.setHours(0, 0, 0, 0);
+    }
+    
+    let currentTs = referenceDate.getTime();
+    while (currentTs <= baseStartTs) {
+      currentTs += tickInterval;
+    }
+    
+    const minGap = tickInterval * 0.3;
+    while (currentTs < baseEndTs - minGap) {
+      if (currentTs > baseStartTs + minGap) {
+        ticks.push(currentTs);
+      }
+      currentTs += tickInterval;
+    }
+    
+    const lastTick = ticks[ticks.length - 1];
+    if (lastTick !== baseEndTs && (baseEndTs - lastTick) >= minGap) {
+      ticks.push(baseEndTs);
+    }
+    
+    return ticks;
+  };
+
   // Berechne X-Achsen-Ticks basierend auf Sequence (Granularität)
   // WICHTIG: Der Zeitraum (From bis Until) bleibt IMMER gleich!
   // Tick-Intervalle:
