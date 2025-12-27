@@ -3104,21 +3104,26 @@ export default function Dashboard() {
   }, [isMultiSelectCompareMode, compareChartData.data, compareChartData.botTypeNames]);
 
 
-  // Hilfsfunktion: Berechne Ticks für einen Zeitbereich (OHNE Zoom/Pan)
+  // Hilfsfunktion: Berechne Ticks für GESAMTEN Zeitbereich mit Zoom-basierter Granularität
   // Wird für eingefrorene Ticks im Eye-Modus verwendet
-  const calculateFullRangeTicks = (baseStartTs: number, baseEndTs: number): number[] => {
+  // WICHTIG: Granularität basiert auf aktuellem Zoom, aber Ticks decken GESAMTEN Bereich ab!
+  const calculateFullRangeTicks = (baseStartTs: number, baseEndTs: number, zoomLevel: number): number[] => {
     const totalRange = baseEndTs - baseStartTs;
-    const visibleDays = totalRange / (24 * 60 * 60 * 1000);
     
-    // AUTOMATISCHE SEQUENCE basierend auf Zeitspanne
+    // WICHTIG: Granularität basiert auf SICHTBAREM Bereich (wie bei xAxisTicks)
+    // So dass beim Reinzoomen feinere Periods entstehen
+    const visibleRange = totalRange / zoomLevel;
+    const visibleDays = visibleRange / (24 * 60 * 60 * 1000);
+    const visibleHours = visibleRange / (60 * 60 * 1000);
+    
+    // AUTOMATISCHE SEQUENCE basierend auf sichtbarer Zeitspanne
     let effectiveSequence = 'days';
     if (visibleDays < 7) {
       effectiveSequence = 'hours';
     }
     
-    // TICK-INTERVALLE
+    // TICK-INTERVALLE basierend auf Zoom-Level (wie xAxisTicks)
     let tickInterval: number;
-    const visibleHours = totalRange / (60 * 60 * 1000);
     
     if (effectiveSequence === 'hours') {
       if (visibleHours <= 6) tickInterval = 30 * 60 * 1000;
@@ -3136,7 +3141,7 @@ export default function Dashboard() {
     }
     
     const ticks: number[] = [];
-    ticks.push(baseStartTs);
+    ticks.push(baseStartTs); // IMMER mit erster Metrik beginnen
     
     // RUNDUNG auf festen Referenzpunkt
     const referenceDate = new Date(baseStartTs);
@@ -3152,6 +3157,7 @@ export default function Dashboard() {
     }
     
     const minGap = tickInterval * 0.3;
+    // Generiere Ticks für GESAMTEN Bereich (bis zur letzten Metrik)
     while (currentTs < baseEndTs - minGap) {
       if (currentTs > baseStartTs + minGap) {
         ticks.push(currentTs);
@@ -3161,7 +3167,7 @@ export default function Dashboard() {
     
     const lastTick = ticks[ticks.length - 1];
     if (lastTick !== baseEndTs && (baseEndTs - lastTick) >= minGap) {
-      ticks.push(baseEndTs);
+      ticks.push(baseEndTs); // IMMER mit letzter Metrik enden
     }
     
     return ticks;
@@ -5689,12 +5695,14 @@ export default function Dashboard() {
                         setMarkerEditActive(false);
                         setEditSelectedUpdateId(null);
                         setEditHoveredUpdateId(null);
-                        // WICHTIG: Ticks für GESAMTEN Datenbereich berechnen (nicht nur sichtbar!)
-                        // Damit alle Metriken abgedeckt sind, unabhängig von Zoom/Pan
+                        // WICHTIG: Ticks für GESAMTEN Datenbereich berechnen
+                        // Granularität basiert auf aktuellem Zoom-Level (feinere Periods bei mehr Zoom)
+                        // Aber deckt GESAMTEN Bereich ab (erste bis letzte Metrik)
                         if (analyzeModeBounds) {
                           const fullTicks = calculateFullRangeTicks(
                             analyzeModeBounds.startTs,
-                            analyzeModeBounds.endTs
+                            analyzeModeBounds.endTs,
+                            chartZoomX // Aktuelles Zoom-Level für Granularität
                           );
                           setFrozenOverlayTicks(fullTicks);
                         } else {
