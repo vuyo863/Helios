@@ -5862,12 +5862,6 @@ export default function Dashboard() {
                       
                       const elements: JSX.Element[] = [];
                       
-                      // Debug: Log selectedPeriodKeys und allTicks beim Rendern
-                      if (selectedPeriodKeys.size > 0) {
-                        console.log('[Overlay Render] selectedPeriodKeys:', Array.from(selectedPeriodKeys));
-                        console.log('[Overlay Render] allTicks count:', allTicks.length, 'first:', allTicks[0], 'last:', allTicks[allTicks.length - 1]);
-                      }
-                      
                       // Striche und Zeitabstände rendern (alle Ticks, nur sichtbare werden gerendert)
                       allTicks.forEach((tick, i) => {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
@@ -5931,8 +5925,6 @@ export default function Dashboard() {
                                 onMouseEnter={() => setHoveredPeriodKey(periodKey)}
                                 onMouseLeave={() => setHoveredPeriodKey(null)}
                                 onClick={() => {
-                                  console.log('[Period Click] periodKey:', periodKey, 'tick:', tick, 'nextTick:', nextTick);
-                                  console.log('[Period Click] Date range:', new Date(tick).toLocaleDateString('de-DE'), '-', new Date(nextTick).toLocaleDateString('de-DE'));
                                   if (overlayCompareActive) {
                                     // Compare-Modus: Multi-Select erlaubt
                                     setSelectedPeriodKeys(prev => {
@@ -5942,7 +5934,6 @@ export default function Dashboard() {
                                       } else {
                                         newSet.add(periodKey);
                                       }
-                                      console.log('[Period Click] Compare-Mode - selectedPeriodKeys:', Array.from(newSet));
                                       return newSet;
                                     });
                                   } else {
@@ -5950,11 +5941,9 @@ export default function Dashboard() {
                                     setSelectedPeriodKeys(prev => {
                                       if (prev.has(periodKey)) {
                                         setOriginalPeriodKey(null);
-                                        console.log('[Period Click] Deselected, cleared');
                                         return new Set();
                                       } else {
                                         setOriginalPeriodKey(periodKey);
-                                        console.log('[Period Click] Selected:', periodKey);
                                         return new Set([periodKey]);
                                       }
                                     });
