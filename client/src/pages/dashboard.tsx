@@ -5689,8 +5689,18 @@ export default function Dashboard() {
                         setMarkerEditActive(false);
                         setEditSelectedUpdateId(null);
                         setEditHoveredUpdateId(null);
-                        // WICHTIG: xAxisTicks einfrieren für stabile Period-Keys beim Panning
-                        setFrozenOverlayTicks([...xAxisTicks]);
+                        // WICHTIG: Ticks für GESAMTEN Datenbereich berechnen (nicht nur sichtbar!)
+                        // Damit alle Metriken abgedeckt sind, unabhängig von Zoom/Pan
+                        if (analyzeModeBounds) {
+                          const fullTicks = calculateFullRangeTicks(
+                            analyzeModeBounds.startTs,
+                            analyzeModeBounds.endTs
+                          );
+                          setFrozenOverlayTicks(fullTicks);
+                        } else {
+                          // Fallback: aktuelle Ticks verwenden
+                          setFrozenOverlayTicks([...xAxisTicks]);
+                        }
                       }
                       if (!newValue) {
                         setLockedUpdateIds(new Set());
