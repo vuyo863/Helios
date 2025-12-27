@@ -254,6 +254,10 @@ export default function Dashboard() {
   const [settingsCollapsed, setSettingsCollapsed] = useState(false);
   const [markerViewActive, setMarkerViewActive] = useState(false);
   const [markerEditActive, setMarkerEditActive] = useState(false);
+  // Eingefrorene xAxisTicks für Eye-Modus Stabilität
+  // Wenn der Eye-Modus aktiviert wird, werden die aktuellen xAxisTicks eingefroren
+  // Damit bleiben die Period-Keys beim Panning stabil
+  const [frozenOverlayTicks, setFrozenOverlayTicks] = useState<number[] | null>(null);
   // Overlay Period Interaktion (Auge-Modus)
   // Period-Auswahl basierend auf Timestamp-Keys für Stabilität beim Panning
   // Key-Format: "${startTimestamp}-${endTimestamp}"
@@ -5622,6 +5626,8 @@ export default function Dashboard() {
                         setMarkerEditActive(false);
                         setEditSelectedUpdateId(null);
                         setEditHoveredUpdateId(null);
+                        // WICHTIG: xAxisTicks einfrieren für stabile Period-Keys beim Panning
+                        setFrozenOverlayTicks([...xAxisTicks]);
                       }
                       if (!newValue) {
                         setLockedUpdateIds(new Set());
@@ -5629,6 +5635,8 @@ export default function Dashboard() {
                         // Period-Auswahl zurücksetzen
                         setHoveredPeriodKey(null);
                         setSelectedPeriodKeys(new Set());
+                        // Eingefrorene Ticks zurücksetzen
+                        setFrozenOverlayTicks(null);
                       }
                     }}
                     data-testid="button-marker-view"
@@ -5656,6 +5664,8 @@ export default function Dashboard() {
                           setHoveredUpdateId(null);
                           setHoveredPeriodKey(null);
                           setSelectedPeriodKeys(new Set());
+                          // Eingefrorene Ticks zurücksetzen
+                          setFrozenOverlayTicks(null);
                         }
                       } else {
                         // Beim Deaktivieren OHNE Apply: Auswahl zurücksetzen
@@ -5840,8 +5850,9 @@ export default function Dashboard() {
                     
                     // Im Overlay-Modus: Vertikale Zeitmarkierungsstriche statt Verbindungslinien
                     if (isOverlayMode) {
-                      // Verwende xAxisTicks für die Period-Anzeige
-                      const allTicks = xAxisTicks;
+                      // Verwende eingefrorene Ticks im Eye-Modus für stabile Period-Keys
+                      // Sonst verwende die dynamischen xAxisTicks
+                      const allTicks = (markerViewActive && frozenOverlayTicks) ? frozenOverlayTicks : xAxisTicks;
                       
                       // Hilfsfunktion: Zeitdifferenz als Text formatieren
                       const formatTimeDiff = (diffMs: number): string => {
