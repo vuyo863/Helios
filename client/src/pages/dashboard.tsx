@@ -5968,7 +5968,7 @@ export default function Dashboard() {
                         const xPercent = ((tick - domainStart) / domainRange) * 100;
                         
                         // Nur rendern wenn im sichtbaren Bereich (0-100%)
-                        if (xPercent >= -10 && xPercent <= 110) {
+                        if (xPercent >= 0 && xPercent <= 100) {
                           // Vertikaler Strich (2 Kästen hoch: von 100% bis 50%)
                           elements.push(
                             <line
@@ -5991,13 +5991,17 @@ export default function Dashboard() {
                           const timeLabel = formatTimeDiff(diffMs);
                           
                           // Position in der Mitte zwischen den beiden Ticks
-                          const startXPercent = xPercent;
-                          const endXPercent = ((nextTick - domainStart) / domainRange) * 100;
+                          const rawStartXPercent = xPercent;
+                          const rawEndXPercent = ((nextTick - domainStart) / domainRange) * 100;
                           
                           // Nur rendern wenn Period mindestens teilweise sichtbar ist
-                          if (endXPercent < -10 || startXPercent > 110) {
+                          if (rawEndXPercent < 0 || rawStartXPercent > 100) {
                             return; // Period komplett außerhalb des sichtbaren Bereichs
                           }
+                          
+                          // WICHTIG: Werte auf 0-100% clampen, damit nichts über den Chart hinausläuft
+                          const startXPercent = Math.max(0, rawStartXPercent);
+                          const endXPercent = Math.min(100, rawEndXPercent);
                           
                           const midXPercent = (startXPercent + endXPercent) / 2;
                           const widthPercent = endXPercent - startXPercent;
