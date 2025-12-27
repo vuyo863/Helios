@@ -5698,11 +5698,20 @@ export default function Dashboard() {
                         // WICHTIG: Ticks für GESAMTEN Datenbereich berechnen
                         // Granularität basiert auf aktuellem Zoom-Level (feinere Periods bei mehr Zoom)
                         // Aber deckt GESAMTEN Bereich ab (erste bis letzte Metrik)
-                        if (analyzeModeBounds) {
+                        // Im Overlay-Modus: Verwende multiBotChartData Grenzen
+                        if (multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
+                          const fullTicks = calculateFullRangeTicks(
+                            multiBotChartData.minTimestamp,
+                            multiBotChartData.maxTimestamp,
+                            chartZoomX // Aktuelles Zoom-Level für Granularität
+                          );
+                          setFrozenOverlayTicks(fullTicks);
+                        } else if (analyzeModeBounds) {
+                          // Fallback für Analyze-Modus
                           const fullTicks = calculateFullRangeTicks(
                             analyzeModeBounds.startTs,
                             analyzeModeBounds.endTs,
-                            chartZoomX // Aktuelles Zoom-Level für Granularität
+                            chartZoomX
                           );
                           setFrozenOverlayTicks(fullTicks);
                         } else {
