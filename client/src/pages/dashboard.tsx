@@ -9149,24 +9149,6 @@ export default function Dashboard() {
                               <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
                               <span className="text-xs">{gesamtprofit}</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs text-muted-foreground">
-                                  {periodCapitalMode === 'gesamtkapital' ? 'Gesamtkapital:' : 'Investitionsmenge:'}
-                                </span>
-                                <span className="text-xs">{gesamtkapital}</span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5"
-                                title={periodCapitalMode === 'gesamtkapital' ? 'Zu Investitionsmenge wechseln' : 'Zu Gesamtkapital wechseln'}
-                                onClick={() => setPeriodCapitalMode(prev => prev === 'gesamtkapital' ? 'investitionsmenge' : 'gesamtkapital')}
-                                data-testid="button-toggle-capital-mode"
-                              >
-                                <ArrowLeftRight className="h-3 w-3" />
-                              </Button>
-                            </div>
                           </div>
                           
                           {/* Details Popup */}
