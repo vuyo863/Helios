@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical, RotateCcw, ZoomIn, Eye, LineChart as LineChartIcon, Trash2, MoveHorizontal, ArrowLeftRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import StatCard from "@/components/StatCard";
 import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -10995,7 +10996,14 @@ export default function Dashboard() {
                   const avgProfitTag = durationHours > 0 ? avgProfitTagNum.toFixed(2) : '--';
                 
                   return (
-                  <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${originalIndex}`}>
+                  <motion.div
+                    key={periodKey}
+                    layout
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                  <Card className="p-4" data-testid={`card-period-compare-${originalIndex}`}>
                     {/* Header: Periode + Dauer */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -11044,6 +11052,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </Card>
+                  </motion.div>
                   );
                 });
               })()}
