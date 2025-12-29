@@ -10750,42 +10750,39 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    {/* Details wie im Period Details Popup */}
-                    <div className="space-y-1.5 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Period:</span>
-                        <span className="font-medium">{durationText}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">From:</span>
-                        <span className="font-medium">{formatDateShort(startDate)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Until:</span>
-                        <span className="font-medium">{formatDateShort(endDate)}</span>
+                    {/* Details kompakt */}
+                    <div className="space-y-2 text-sm">
+                      {/* Period + From/Until in einer Zeile */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span><span className="font-medium">From:</span> {formatDateShort(startDate)}</span>
+                        <span>→</span>
+                        <span><span className="font-medium">Until:</span> {formatDateShort(endDate)}</span>
                       </div>
                       
                       <Separator className="my-2" />
                       
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Bots aktiv:</span>
-                        <span className="font-medium">{botsAktiv}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Gesamtprofit:</span>
-                        <span className="font-medium">{gesamtprofit}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Gesamtkapital:</span>
-                        <span className="font-medium">{gesamtkapital}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Profit %:</span>
-                        <span className="font-medium">{profitProzent}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Ø Profit/Tag:</span>
-                        <span className="font-medium">{avgProfitTag}</span>
+                      {/* Metriken in 3-Spalten-Grid, max 2 Zeilen */}
+                      <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground">Bots aktiv</span>
+                          <span className="font-medium">{botsAktiv}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground">Gesamtkapital</span>
+                          <span className="font-medium">{gesamtkapital}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground">Ø Profit/Tag</span>
+                          <span className="font-medium">{avgProfitTag}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground">Gesamtprofit</span>
+                          <span className="font-medium">{gesamtprofit}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground">Profit %</span>
+                          <span className="font-medium">{profitProzent}</span>
+                        </div>
                       </div>
                     </div>
                   </Card>
