@@ -28,6 +28,62 @@ The dashboard features three main chart modes:
 *   **Zoom & Pan**: Interactive zooming and panning capabilities on chart axes, particularly in analysis modes.
 *   **AI-Analysis**: Integration with OpenAI for automated insights and chart data summarization.
 
+### Perioden-Profit-Berechnung (Overlay-Modus)
+
+Die Perioden-Profit-Berechnung ermittelt, wie viel Profit in einer bestimmten Zeitperiode erzielt wurde. Die Summe aller Perioden ergibt den Kontokart-Wert (z.B. 205.96 USDT).
+
+#### Automatische Unterscheidung der Berechnungsarten
+
+Das System erkennt automatisch, welche Berechnungsart für jedes Update verwendet werden muss:
+
+**Schritt 1: Closed Bot prüfen**
+```
+if (update.status === 'Closed Bots') → Closed-Bot-Berechnung
+```
+
+**Schritt 2: Zeitbasis ermitteln (nur für aktive Bots)**
+```javascript
+// Berechne mit beiden möglichen Zeitbasen:
+calcWithAvgRuntime = avgGridProfitHour × avgRuntimeHours
+calcWithFromUntil = avgGridProfitHour × fromUntilHours
+
+// Prüfe welche näher an overallGridProfitUsdt liegt:
+if (|calcWithAvgRuntime - overallGridProfitUsdt| < |calcWithFromUntil - overallGridProfitUsdt|)
+  → Startmetrik-Modus
+else
+  → Vergleich-Modus
+```
+
+#### Drei Berechnungsarten
+
+| Modus | Wann verwendet | Formel |
+|-------|----------------|--------|
+| **Closed Bot** | `status === 'Closed Bots'` | `profit` einmalig am End-Datum |
+| **Startmetrik** | Neues Update (avgRuntime-basiert) | `avgGridProfitHour × (avgRuntime × Überlappungs-Verhältnis)` |
+| **Vergleich** | Update mit Vorgänger (From/Until-basiert) | `avgGridProfitHour × Überlappungs-Stunden` |
+
+#### Detaillierte Erklärung
+
+**1. Closed Bots**
+- Der `profit`-Wert wird einmalig am End-Datum (`thisUpload`) gutgeschrieben
+- Keine stündliche Berechnung, da der Bot bereits geschlossen ist
+- Beispiel: profit = 4.88 USDT → wird der Periode zugerechnet, in der das End-Datum liegt
+
+**2. Startmetrik (avgRuntime-basiert)**
+- Wird verwendet, wenn das Update eine neue Startmetrik ist (kein Vorgänger)
+- `avgGridProfitHour` wurde aus `overallGridProfitUsdt / avgRuntime` berechnet
+- Perioden-Profit = `avgGridProfitHour × (avgRuntime × (Überlappung / Gesamtdauer))`
+- Beispiel: bhj v1 → 2.85 × 38.47h = 109.64 USDT
+
+**3. Vergleich (From/Until-basiert)**
+- Wird verwendet, wenn das Update einen Vorgänger hat (Differenz-Berechnung)
+- `avgGridProfitHour` wurde aus `overallGridProfitUsdt / (Until - From)` berechnet
+- Perioden-Profit = `avgGridProfitHour × Überlappungs-Stunden`
+- Beispiel: teshh v4 → -0.04 × 469.75h = -18.79 USDT
+
+#### Code-Referenz
+Die Implementierung befindet sich in `client/src/pages/dashboard.tsx` (ca. Zeilen 9038-9094).
+
 ### System Design Choices
 *   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase (e.g., MainChart, Compare Mode, Edit-Modus Analysis, Bot-Type CRUD, AI-Analysis page) are designated as "Golden State" and are protected from modification to ensure stability.
 *   **Modular Architecture**: Clear separation of concerns between frontend and backend, and within the frontend, distinct modules for different chart functionalities.
