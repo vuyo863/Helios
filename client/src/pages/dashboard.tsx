@@ -8978,6 +8978,7 @@ export default function Dashboard() {
                       let gesamtprofit = '--';
                       let gesamtkapital = '--';
                       let profitPercent = '--';
+                      let avgProfitPerDay = '--';
                       
                       // Parse Timestamps aus dem Key
                       if (activePeriodKey !== null) {
@@ -9128,6 +9129,15 @@ export default function Dashboard() {
                             const percent = (profitValue / displayValue) * 100;
                             profitPercent = percent.toFixed(2) + '%';
                           }
+                          
+                          // Ø PROFIT/TAG BERECHNUNG:
+                          // Ø Profit/Tag = (Gesamtprofit / Periodendauer in Stunden) × 24
+                          const periodDurationHours = (endTs - startTs) / (1000 * 60 * 60);
+                          if (periodDurationHours > 0) {
+                            const profitPerHour = profitValue / periodDurationHours;
+                            const dailyProfit = profitPerHour * 24;
+                            avgProfitPerDay = dailyProfit.toFixed(2);
+                          }
                         }
                       }
                       
@@ -9229,7 +9239,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Ø Profit/Tag:</span>
-                                  <span className="text-xs">--</span>
+                                  <span className="text-xs">{avgProfitPerDay}</span>
                                 </div>
                               </div>
                             </div>
