@@ -10780,9 +10780,10 @@ export default function Dashboard() {
               </DialogTitle>
             </DialogHeader>
             
-            {/* Sortier-Dropdown */}
-            <div className="flex items-center gap-2 py-2 border-b">
-              <span className="text-sm text-muted-foreground">Sortieren nach:</span>
+            {/* Sortier-Dropdown + Toggle */}
+            <div className="flex items-center justify-between py-2 border-b">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sortieren nach:</span>
               <Select 
                 value={periodCompareSortBy} 
                 onValueChange={(value) => setPeriodCompareSortBy(value as any)}
@@ -10814,6 +10815,24 @@ export default function Dashboard() {
                   <ArrowDown className="h-4 w-4" />
                 )}
               </Button>
+              </div>
+              
+              {/* Toggle Gesamtkapital / Investitionsmenge */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {periodCapitalMode === 'gesamtkapital' ? 'Gesamtkapital' : 'Investitionsmenge'}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  title={periodCapitalMode === 'gesamtkapital' ? 'Zu Investitionsmenge wechseln' : 'Zu Gesamtkapital wechseln'}
+                  onClick={() => setPeriodCapitalMode(prev => prev === 'gesamtkapital' ? 'investitionsmenge' : 'gesamtkapital')}
+                  data-testid="button-toggle-capital-mode-compare"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
@@ -10884,6 +10903,42 @@ export default function Dashboard() {
                   // Gesamtprofit = Summe(avgGridProfitHour) × Perioden-Stunden
                   const calculatedProfit = sumAvgProfitHour * durationHours;
                   gesamtprofit = calculatedProfit.toFixed(2);
+                  
+                  // GESAMTKAPITAL / INVESTITIONSMENGE BERECHNUNG
+                  let totalCapital = 0;
+                  let totalInvestmentAmount = 0;
+                  relevantUpdates.forEach((update: any) => {
+                    const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                    const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                    
+                    if (!updateStartDate || !updateEndDate) return;
+                    
+                    const updateStartTs = updateStartDate.getTime();
+                    const updateEndTs = updateEndDate.getTime();
+                    
+                    if (updateStartTs <= endTs && updateEndTs >= startTs) {
+                      const investment = parseFloat(update.totalInvestment) || 0;
+                      const extraMargin = parseFloat(update.extraMargin) || 0;
+                      totalCapital += investment;
+                      totalInvestmentAmount += (investment - extraMargin);
+                    }
+                  });
+                  
+                  const displayValue = periodCapitalMode === 'gesamtkapital' ? totalCapital : totalInvestmentAmount;
+                  gesamtkapital = displayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  
+                  // PROFIT % BERECHNUNG
+                  if (displayValue > 0) {
+                    const percent = (calculatedProfit / displayValue) * 100;
+                    profitProzent = percent.toFixed(2) + '%';
+                  }
+                  
+                  // Ø PROFIT/TAG BERECHNUNG
+                  if (durationHours > 0) {
+                    const profitPerHour = calculatedProfit / durationHours;
+                    const dailyProfit = profitPerHour * 24;
+                    avgProfitTag = dailyProfit.toFixed(2);
+                  }
                 }
                 
                 return (
@@ -10916,7 +10971,9 @@ export default function Dashboard() {
                           <span className="font-medium">{botsAktiv}</span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-muted-foreground">Gesamtkapital</span>
+                          <span className="text-muted-foreground">
+                            {periodCapitalMode === 'gesamtkapital' ? 'Gesamtkapital' : 'Investitionsmenge'}
+                          </span>
                           <span className="font-medium">{gesamtkapital}</span>
                         </div>
                         <div className="flex flex-col">
