@@ -10855,14 +10855,15 @@ export default function Dashboard() {
                   
                   if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
                     const uniqueBotTypeIds = new Set<string>();
-                    let sumAvgProfitHour = 0;
                     let totalCapital = 0;
                     let totalInvestmentAmount = 0;
+                    let totalPeriodProfit = 0;
                     
                     const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
                       selectedIds.includes(String(update.botTypeId))
                     );
                     
+                    // Zähle aktive Bots
                     relevantUpdates.forEach((update: any) => {
                       const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
                       const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
@@ -10873,8 +10874,6 @@ export default function Dashboard() {
                         
                         if (updateStartTs <= endTs && updateEndTs >= startTs) {
                           uniqueBotTypeIds.add(String(update.botTypeId));
-                          const profitHour = parseFloat(update.avgGridProfitHour) || 0;
-                          sumAvgProfitHour += profitHour;
                           
                           const investment = parseFloat(update.totalInvestment) || 0;
                           const extraMargin = parseFloat(update.extraMargin) || 0;
@@ -10884,8 +10883,53 @@ export default function Dashboard() {
                       }
                     });
                     
+                    // KORREKTE Perioden-Profit-Berechnung (gleiche Logik wie Auge-Funktion)
+                    relevantUpdates.forEach((update: any) => {
+                      const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                      const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                      
+                      if (!updateStartDate || !updateEndDate) return;
+                      
+                      const updateStartTs = updateStartDate.getTime();
+                      const updateEndTs = updateEndDate.getTime();
+                      
+                      const overlapStart = Math.max(startTs, updateStartTs);
+                      const overlapEnd = Math.min(endTs, updateEndTs);
+                      
+                      if (overlapStart >= overlapEnd) return;
+                      
+                      const isClosedBot = update.status === 'Closed Bots';
+                      const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+                      const overallGridProfitUsdt = parseFloat(update.overallGridProfitUsdt) || 0;
+                      const profit = parseFloat(update.profit) || 0;
+                      
+                      const fromUntilHours = (updateEndTs - updateStartTs) / (1000 * 60 * 60);
+                      const avgRuntimeHours = parseRuntimeToHours(update.avgRuntime);
+                      const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+                      
+                      if (isClosedBot) {
+                        if (updateEndTs >= startTs && updateEndTs < endTs) {
+                          totalPeriodProfit += profit;
+                        }
+                      } else {
+                        const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
+                        const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
+                        const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
+                        const diffFromUntil = Math.abs(calcWithFromUntil - overallGridProfitUsdt);
+                        const usesAvgRuntime = diffAvgRuntime < diffFromUntil;
+                        
+                        if (usesAvgRuntime && fromUntilHours > 0) {
+                          const ratio = overlapHours / fromUntilHours;
+                          const proportionalRuntime = avgRuntimeHours * ratio;
+                          totalPeriodProfit += avgGridProfitHour * proportionalRuntime;
+                        } else {
+                          totalPeriodProfit += avgGridProfitHour * overlapHours;
+                        }
+                      }
+                    });
+                    
                     botsAktivNum = uniqueBotTypeIds.size;
-                    gesamtprofitNum = sumAvgProfitHour * durationHours;
+                    gesamtprofitNum = totalPeriodProfit;
                     gesamtkapitalNum = periodCapitalMode === 'gesamtkapital' ? totalCapital : totalInvestmentAmount;
                     
                     if (gesamtkapitalNum > 0) {
