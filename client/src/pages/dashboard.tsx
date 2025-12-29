@@ -54,7 +54,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, ArrowLeft } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, ArrowLeft, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { format } from "date-fns";
@@ -271,6 +271,9 @@ export default function Dashboard() {
   const [periodDetailsPopupOpen, setPeriodDetailsPopupOpen] = useState(false);
   // Overlay Period Compare Popup (Multi-Select Vergleich)
   const [periodComparePopupOpen, setPeriodComparePopupOpen] = useState(false);
+  // Sortierung für Period Compare Popup
+  const [periodCompareSortBy, setPeriodCompareSortBy] = useState<'datum' | 'laufzeit' | 'gesamtprofit' | 'gesamtprofitProzent' | 'avgProfitTag' | 'realProfitTag' | 'anzahlBots'>('datum');
+  const [periodCompareSortDirection, setPeriodCompareSortDirection] = useState<'asc' | 'desc'>('asc');
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -10621,6 +10624,42 @@ export default function Dashboard() {
                 Perioden-Vergleich ({selectedPeriodKeys.size} Perioden)
               </DialogTitle>
             </DialogHeader>
+            
+            {/* Sortier-Dropdown */}
+            <div className="flex items-center gap-2 py-2 border-b">
+              <span className="text-sm text-muted-foreground">Sortieren nach:</span>
+              <Select 
+                value={periodCompareSortBy} 
+                onValueChange={(value) => setPeriodCompareSortBy(value as any)}
+              >
+                <SelectTrigger className="w-[180px] h-8" data-testid="select-period-sort">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="datum">Datum</SelectItem>
+                  <SelectItem value="laufzeit">Laufzeit</SelectItem>
+                  <SelectItem value="gesamtprofit">Gesamtprofit</SelectItem>
+                  <SelectItem value="gesamtprofitProzent">Gesamtprofit (%)</SelectItem>
+                  <SelectItem value="avgProfitTag">Ø Profit/Tag</SelectItem>
+                  <SelectItem value="realProfitTag">Real Profit/Tag</SelectItem>
+                  <SelectItem value="anzahlBots">Anzahl Bots</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setPeriodCompareSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                title={periodCompareSortDirection === 'asc' ? 'Aufsteigend' : 'Absteigend'}
+                data-testid="button-period-sort-direction"
+              >
+                {periodCompareSortDirection === 'asc' ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             
             <div className="space-y-4 py-4">
               {Array.from(selectedPeriodKeys).map((periodKey, index) => {
