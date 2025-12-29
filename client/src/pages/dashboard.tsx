@@ -8999,10 +8999,24 @@ export default function Dashboard() {
                         untilDate = formatDate(endTs);
                         
                         // Anzahl verschiedener Bot-Types im ausgewählten Zeitraum berechnen
-                        // Prüfe welche Bots im Zeitraum aktiv liefen (Laufzeit überlappt mit Period)
-                        if (allBotTypeUpdates && allBotTypeUpdates.length > 0) {
+                        // NUR Updates der im Chart ausgewählten Bot-Types berücksichtigen
+                        const selectedIds = selectedChartBotTypes.map(id => String(id));
+                        
+                        console.log(`[BotsActive DEBUG] selectedChartBotTypes:`, selectedIds);
+                        console.log(`[BotsActive DEBUG] allBotTypeUpdates count:`, allBotTypeUpdates?.length);
+                        console.log(`[BotsActive DEBUG] Period startTs=${startTs} (${fromDate}), endTs=${endTs} (${untilDate})`);
+                        
+                        if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
                           const uniqueBotTypeIds = new Set<string>();
-                          allBotTypeUpdates.forEach((update: any) => {
+                          
+                          // Nur Updates der ausgewählten Bot-Types
+                          const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
+                            selectedIds.includes(String(update.botTypeId))
+                          );
+                          
+                          console.log(`[BotsActive DEBUG] Relevant updates (matching selected):`, relevantUpdates.length);
+                          
+                          relevantUpdates.forEach((update: any) => {
                             // Parse Start- und End-Datum des Updates
                             const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
                             const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
@@ -9015,10 +9029,15 @@ export default function Dashboard() {
                               // Update-Start <= Period-End UND Update-End >= Period-Start
                               if (updateStartTs <= endTs && updateEndTs >= startTs) {
                                 uniqueBotTypeIds.add(String(update.botTypeId));
+                                console.log(`[BotsActive] Match: BotType=${update.botTypeId}, Update=${update.lastUpload} - ${update.thisUpload}`);
                               }
                             }
                           });
+                          
+                          console.log(`[BotsActive RESULT] Period: ${fromDate} - ${untilDate}, Found ${uniqueBotTypeIds.size} unique bot types:`, Array.from(uniqueBotTypeIds));
                           botsActive = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
+                        } else {
+                          console.log(`[BotsActive DEBUG] Skipped: allBotTypeUpdates=${allBotTypeUpdates?.length}, selectedIds=${selectedIds.length}`);
                         }
                       }
                       
