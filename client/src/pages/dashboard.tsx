@@ -10839,7 +10839,7 @@ export default function Dashboard() {
               {(() => {
                 // Berechne Metriken für alle Perioden zuerst
                 const selectedIds = selectedChartBotTypes.map(id => String(id));
-                const periodsWithMetrics = Array.from(selectedPeriodKeys).map((periodKey) => {
+                const periodsWithMetrics = Array.from(selectedPeriodKeys).map((periodKey, originalIndex) => {
                   const [startTsStr, endTsStr] = periodKey.split('-');
                   const startTs = parseInt(startTsStr, 10);
                   const endTs = parseInt(endTsStr, 10);
@@ -10942,6 +10942,7 @@ export default function Dashboard() {
                   
                   return {
                     periodKey,
+                    originalIndex: originalIndex + 1,
                     startTs,
                     endTs,
                     durationHours,
@@ -10969,8 +10970,8 @@ export default function Dashboard() {
                   return periodCompareSortDirection === 'asc' ? valA - valB : valB - valA;
                 });
                 
-                return periodsWithMetrics.map((period, index) => {
-                  const { periodKey, startTs, endTs, durationHours, durationDays, botsAktivNum, gesamtprofitNum, gesamtkapitalNum, profitProzentNum, avgProfitTagNum } = period;
+                return periodsWithMetrics.map((period) => {
+                  const { periodKey, originalIndex, startTs, endTs, durationHours, durationDays, botsAktivNum, gesamtprofitNum, gesamtkapitalNum, profitProzentNum, avgProfitTagNum } = period;
                   
                   const startDate = new Date(startTs);
                   const endDate = new Date(endTs);
@@ -10994,11 +10995,11 @@ export default function Dashboard() {
                   const avgProfitTag = durationHours > 0 ? avgProfitTagNum.toFixed(2) : '--';
                 
                   return (
-                  <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${index}`}>
+                  <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${originalIndex}`}>
                     {/* Header: Periode + Dauer */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-muted-foreground">Periode {index + 1}</span>
+                        <span className="text-sm font-semibold text-muted-foreground">Periode {originalIndex}</span>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                           {durationText}
                         </span>
