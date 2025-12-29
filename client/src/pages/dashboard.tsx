@@ -269,6 +269,8 @@ export default function Dashboard() {
   const [originalPeriodKey, setOriginalPeriodKey] = useState<string | null>(null);
   // Overlay Period Details Popup
   const [periodDetailsPopupOpen, setPeriodDetailsPopupOpen] = useState(false);
+  // Overlay Period Compare Popup (Multi-Select Vergleich)
+  const [periodComparePopupOpen, setPeriodComparePopupOpen] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -9145,6 +9147,7 @@ export default function Dashboard() {
                       variant="default" 
                       size="sm"
                       disabled={!overlayCompareActive || selectedPeriodKeys.size < 2}
+                      onClick={() => setPeriodComparePopupOpen(true)}
                       data-testid="button-apply-period-selection"
                     >
                       Apply
@@ -10606,6 +10609,125 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Period Compare Popup - Vergleich mehrerer ausgewählter Perioden */}
+        <Dialog open={periodComparePopupOpen} onOpenChange={setPeriodComparePopupOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MoveHorizontal className="h-5 w-5 text-cyan-600" />
+                Perioden-Vergleich ({selectedPeriodKeys.size} Perioden)
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {Array.from(selectedPeriodKeys).map((periodKey, index) => {
+                // Parse period key: "startTs-endTs"
+                const [startTsStr, endTsStr] = periodKey.split('-');
+                const startTs = parseInt(startTsStr, 10);
+                const endTs = parseInt(endTsStr, 10);
+                const periodDuration = endTs - startTs;
+                
+                // Format dates
+                const startDate = new Date(startTs);
+                const endDate = new Date(endTs);
+                const formatDate = (d: Date) => d.toLocaleDateString('de-DE', { 
+                  day: '2-digit', 
+                  month: '2-digit', 
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                
+                // Format duration
+                const durationHours = periodDuration / (1000 * 60 * 60);
+                const durationDays = durationHours / 24;
+                let durationText = '';
+                if (durationDays >= 1) {
+                  durationText = `${durationDays.toFixed(1)} Tage`;
+                } else {
+                  durationText = `${durationHours.toFixed(1)} Stunden`;
+                }
+                
+                // Berechne Metriken für diese Periode aus multiBotChartData
+                const periodMetrics: Record<string, { start: number | null; end: number | null; diff: number | null }> = {};
+                
+                if (multiBotChartData.data && multiBotChartData.data.length > 0) {
+                  // Finde Datenpunkte innerhalb dieser Periode
+                  const periodPoints = multiBotChartData.data.filter((point: any) => {
+                    const pointTs = point.timestamp;
+                    return pointTs >= startTs && pointTs <= endTs;
+                  });
+                  
+                  // Für jede aktive Metrik: Start- und Endwert ermitteln
+                  activeMetricCards.forEach(metricName => {
+                    let firstValue: number | null = null;
+                    let lastValue: number | null = null;
+                    
+                    periodPoints.forEach((point: any) => {
+                      const value = point[metricName];
+                      if (typeof value === 'number') {
+                        if (firstValue === null) firstValue = value;
+                        lastValue = value;
+                      }
+                    });
+                    
+                    periodMetrics[metricName] = {
+                      start: firstValue,
+                      end: lastValue,
+                      diff: (firstValue !== null && lastValue !== null) ? lastValue - firstValue : null
+                    };
+                  });
+                }
+                
+                return (
+                  <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${index}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-cyan-600">Periode {index + 1}</span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          {durationText}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Zeitraum */}
+                    <div className="text-xs text-muted-foreground mb-3">
+                      <span className="font-medium">Von:</span> {formatDate(startDate)} → <span className="font-medium">Bis:</span> {formatDate(endDate)}
+                    </div>
+                    
+                    {/* Metriken */}
+                    <div className="space-y-2">
+                      {activeMetricCards.map(metricName => {
+                        const metric = periodMetrics[metricName];
+                        if (!metric) return null;
+                        
+                        const diffColor = metric.diff !== null && metric.diff >= 0 ? 'text-green-600' : 'text-red-600';
+                        const diffSign = metric.diff !== null && metric.diff >= 0 ? '+' : '';
+                        
+                        return (
+                          <div key={metricName} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{metricName}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground">
+                                {metric.start !== null ? metric.start.toFixed(2) : '-'} → {metric.end !== null ? metric.end.toFixed(2) : '-'}
+                              </span>
+                              {metric.diff !== null && (
+                                <span className={cn("font-medium", diffColor)}>
+                                  {diffSign}{metric.diff.toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
