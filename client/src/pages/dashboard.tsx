@@ -9093,9 +9093,11 @@ export default function Dashboard() {
                           
                           gesamtprofit = totalPeriodProfit.toFixed(2);
                           
-                          // GESAMTKAPITAL-BERECHNUNG:
-                          // Summe des totalInvestment aller aktiven Updates in dieser Periode
+                          // GESAMTKAPITAL / INVESTITIONSMENGE BERECHNUNG:
+                          // Gesamtkapital = Summe von totalInvestment (mit Extra-Margin)
+                          // Investitionsmenge = Summe von (totalInvestment - extraMargin)
                           let totalCapital = 0;
+                          let totalInvestmentAmount = 0;
                           relevantUpdates.forEach((update: any) => {
                             const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
                             const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
@@ -9108,11 +9110,15 @@ export default function Dashboard() {
                             // Prüfe ob Update die Periode überlappt
                             if (updateStartTs <= endTs && updateEndTs >= startTs) {
                               const investment = parseFloat(update.totalInvestment) || 0;
+                              const extraMargin = parseFloat(update.extraMargin) || 0;
                               totalCapital += investment;
+                              totalInvestmentAmount += (investment - extraMargin);
                             }
                           });
                           
-                          gesamtkapital = totalCapital.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          // Je nach Modus den richtigen Wert anzeigen
+                          const displayValue = periodCapitalMode === 'gesamtkapital' ? totalCapital : totalInvestmentAmount;
+                          gesamtkapital = displayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         }
                       }
                       
