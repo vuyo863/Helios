@@ -1751,6 +1751,22 @@ export default function Dashboard() {
     // Sortiere End-Events chronologisch
     endEvents.sort((a, b) => a.timestamp - b.timestamp);
 
+    // ========== BERECHNE ECHTEN ZEITRAUM (inkl. Start-Daten) ==========
+    // minTimestamp sollte das früheste lastUpload sein, damit Perioden den gesamten Bot-Zeitraum abdecken
+    let earliestStartTs = Infinity;
+    relevantUpdates.forEach(update => {
+      if (update.lastUpload) {
+        const startDate = parseGermanDate(update.lastUpload);
+        if (startDate) {
+          earliestStartTs = Math.min(earliestStartTs, startDate.getTime());
+        }
+      }
+    });
+    // Fallback: Wenn kein lastUpload gefunden, nutze erstes End-Event
+    if (earliestStartTs === Infinity) {
+      earliestStartTs = endEvents[0]?.timestamp || 0;
+    }
+
     // ========== ERSTELLE DATENPUNKTE - JEDER END-EVENT SEPARAT ==========
     // Jeder End-Event bekommt seinen eigenen Datenpunkt mit individuellem Profit
     const dataPoints: Array<Record<string, any>> = [];
@@ -1825,7 +1841,8 @@ export default function Dashboard() {
       dataPoints.push(point);
     });
 
-    const minTimestamp = endEvents[0]?.timestamp || 0;
+    // WICHTIG: minTimestamp = frühestes lastUpload (damit Perioden den gesamten Bot-Zeitraum abdecken)
+    const minTimestamp = earliestStartTs;
     const maxTimestamp = endEvents[endEvents.length - 1]?.timestamp || 0;
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
