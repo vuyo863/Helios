@@ -10661,7 +10661,7 @@ export default function Dashboard() {
               </Button>
             </div>
             
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
               {Array.from(selectedPeriodKeys).map((periodKey, index) => {
                 // Parse period key: "startTs-endTs"
                 const [startTsStr, endTsStr] = periodKey.split('-');
@@ -10672,12 +10672,10 @@ export default function Dashboard() {
                 // Format dates
                 const startDate = new Date(startTs);
                 const endDate = new Date(endTs);
-                const formatDate = (d: Date) => d.toLocaleDateString('de-DE', { 
+                const formatDateShort = (d: Date) => d.toLocaleDateString('de-DE', { 
                   day: '2-digit', 
                   month: '2-digit', 
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
+                  year: 'numeric'
                 });
                 
                 // Format duration
@@ -10692,6 +10690,11 @@ export default function Dashboard() {
                 
                 // Berechne Metriken für diese Periode aus multiBotChartData
                 const periodMetrics: Record<string, { start: number | null; end: number | null; diff: number | null }> = {};
+                let botsAktiv = '--';
+                let gesamtprofit = '--';
+                let gesamtkapital = '--';
+                let profitProzent = '--';
+                let avgProfitTag = '--';
                 
                 if (multiBotChartData.data && multiBotChartData.data.length > 0) {
                   // Finde Datenpunkte innerhalb dieser Periode
@@ -10719,10 +10722,25 @@ export default function Dashboard() {
                       diff: (firstValue !== null && lastValue !== null) ? lastValue - firstValue : null
                     };
                   });
+                  
+                  // Spezifische Metriken extrahieren (falls vorhanden)
+                  if (periodMetrics['Gesamtprofit']?.end !== null) {
+                    gesamtprofit = periodMetrics['Gesamtprofit'].end!.toFixed(2);
+                  }
+                  if (periodMetrics['Gesamtkapital']?.end !== null) {
+                    gesamtkapital = periodMetrics['Gesamtkapital'].end!.toFixed(2);
+                  }
+                  if (periodMetrics['Gesamtprofit (%)']?.end !== null) {
+                    profitProzent = periodMetrics['Gesamtprofit (%)'].end!.toFixed(2) + '%';
+                  }
+                  if (periodMetrics['Ø Profit/Tag']?.end !== null) {
+                    avgProfitTag = periodMetrics['Ø Profit/Tag'].end!.toFixed(2);
+                  }
                 }
                 
                 return (
                   <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${index}`}>
+                    {/* Header: Periode + Dauer */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-cyan-600">Periode {index + 1}</span>
@@ -10732,36 +10750,43 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    {/* Zeitraum */}
-                    <div className="text-xs text-muted-foreground mb-3">
-                      <span className="font-medium">Von:</span> {formatDate(startDate)} → <span className="font-medium">Bis:</span> {formatDate(endDate)}
-                    </div>
-                    
-                    {/* Metriken */}
-                    <div className="space-y-2">
-                      {activeMetricCards.map(metricName => {
-                        const metric = periodMetrics[metricName];
-                        if (!metric) return null;
-                        
-                        const diffColor = metric.diff !== null && metric.diff >= 0 ? 'text-green-600' : 'text-red-600';
-                        const diffSign = metric.diff !== null && metric.diff >= 0 ? '+' : '';
-                        
-                        return (
-                          <div key={metricName} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{metricName}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-muted-foreground">
-                                {metric.start !== null ? metric.start.toFixed(2) : '-'} → {metric.end !== null ? metric.end.toFixed(2) : '-'}
-                              </span>
-                              {metric.diff !== null && (
-                                <span className={cn("font-medium", diffColor)}>
-                                  {diffSign}{metric.diff.toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    {/* Details wie im Period Details Popup */}
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Period:</span>
+                        <span className="font-medium">{durationText}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">From:</span>
+                        <span className="font-medium">{formatDateShort(startDate)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Until:</span>
+                        <span className="font-medium">{formatDateShort(endDate)}</span>
+                      </div>
+                      
+                      <Separator className="my-2" />
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Bots aktiv:</span>
+                        <span className="font-medium">{botsAktiv}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Gesamtprofit:</span>
+                        <span className="font-medium">{gesamtprofit}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Gesamtkapital:</span>
+                        <span className="font-medium">{gesamtkapital}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Profit %:</span>
+                        <span className="font-medium">{profitProzent}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Ø Profit/Tag:</span>
+                        <span className="font-medium">{avgProfitTag}</span>
+                      </div>
                     </div>
                   </Card>
                 );
