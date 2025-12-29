@@ -1,0 +1,215 @@
+Perioden-Vergleich (14 Perioden)
+Sortieren nach:
+
+Datum
+
+Gesamtkapital
+
+Periode 1
+2.0 Tage
+From: 17.11.2025
+→
+Until: 19.11.2025
+Bots aktiv
+2
+Gesamtkapital
+9,131.30
+Ø Profit/Tag
+10.64
+Gesamtprofit
+20.97
+Profit %
+0.23%
+Periode 2
+2.0 Tage
+From: 19.11.2025
+→
+Until: 21.11.2025
+Bots aktiv
+1
+Gesamtkapital
+8,731.30
+Ø Profit/Tag
+10.64
+Gesamtprofit
+21.28
+Profit %
+0.24%
+Periode 3
+2.0 Tage
+From: 21.11.2025
+→
+Until: 23.11.2025
+Bots aktiv
+1
+Gesamtkapital
+8,731.30
+Ø Profit/Tag
+10.64
+Gesamtprofit
+21.28
+Profit %
+0.24%
+Periode 4
+2.0 Tage
+From: 23.11.2025
+→
+Until: 25.11.2025
+Bots aktiv
+2
+Gesamtkapital
+17,462.60
+Ø Profit/Tag
+27.84
+Gesamtprofit
+55.67
+Profit %
+0.32%
+Periode 5
+2.0 Tage
+From: 25.11.2025
+→
+Until: 27.11.2025
+Bots aktiv
+2
+Gesamtkapital
+17,462.60
+Ø Profit/Tag
+21.92
+Gesamtprofit
+43.83
+Profit %
+0.25%
+Periode 6
+2.0 Tage
+From: 27.11.2025
+→
+Until: 29.11.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 7
+2.0 Tage
+From: 29.11.2025
+→
+Until: 01.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 8
+2.0 Tage
+From: 01.12.2025
+→
+Until: 03.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 9
+2.0 Tage
+From: 03.12.2025
+→
+Until: 05.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 10
+2.0 Tage
+From: 05.12.2025
+→
+Until: 07.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 11
+2.0 Tage
+From: 07.12.2025
+→
+Until: 09.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 12
+2.0 Tage
+From: 09.12.2025
+→
+Until: 11.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 13
+2.0 Tage
+From: 11.12.2025
+→
+Until: 13.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-1.92
+Profit %
+-0.48%
+Periode 14
+2.6 Tage
+From: 13.12.2025
+→
+Until: 15.12.2025
+Bots aktiv
+1
+Gesamtkapital
+400.00
+Ø Profit/Tag
+-0.96
+Gesamtprofit
+-2.48

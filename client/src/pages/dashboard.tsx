@@ -9069,8 +9069,8 @@ export default function Dashboard() {
                             const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
                             
                             if (isClosedBot) {
-                              // CLOSED BOT: profit einmalig am End-Datum (inklusive Periodenende)
-                              if (updateEndTs >= startTs && updateEndTs <= endTs) {
+                              // CLOSED BOT: profit einmalig am End-Datum
+                              if (updateEndTs >= startTs && updateEndTs < endTs) {
                                 totalPeriodProfit += profit;
                               }
                             } else {
@@ -10909,8 +10909,8 @@ export default function Dashboard() {
                       const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
                       
                       if (isClosedBot) {
-                        // Closed Bot: profit einmalig am End-Datum (inklusive Periodenende)
-                        if (updateEndTs >= startTs && updateEndTs <= endTs) {
+                        // Closed Bot: profit einmalig am End-Datum
+                        if (updateEndTs >= startTs && updateEndTs < endTs) {
                           totalPeriodProfit += profit;
                         }
                       } else {
