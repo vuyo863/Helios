@@ -8999,18 +8999,26 @@ export default function Dashboard() {
                         untilDate = formatDate(endTs);
                         
                         // Anzahl verschiedener Bot-Types im ausgewählten Zeitraum berechnen
-                        if (multiBotChartData.data && multiBotChartData.data.length > 0) {
-                          const uniqueBotTypes = new Set<string>();
-                          multiBotChartData.data.forEach((point: any) => {
-                            // Prüfe ob der Datenpunkt im Zeitraum liegt
-                            if (point.timestamp >= startTs && point.timestamp <= endTs) {
-                              // Sammle eindeutige Bot-Types
-                              if (point.botTypeName) {
-                                uniqueBotTypes.add(point.botTypeName);
+                        // Prüfe welche Bots im Zeitraum aktiv liefen (Laufzeit überlappt mit Period)
+                        if (allBotTypeUpdates && allBotTypeUpdates.length > 0) {
+                          const uniqueBotTypeIds = new Set<string>();
+                          allBotTypeUpdates.forEach((update: any) => {
+                            // Parse Start- und End-Datum des Updates
+                            const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                            const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                            
+                            if (updateStartDate && updateEndDate) {
+                              const updateStartTs = updateStartDate.getTime();
+                              const updateEndTs = updateEndDate.getTime();
+                              
+                              // Bot ist aktiv wenn Laufzeit den Zeitraum überlappt:
+                              // Update-Start <= Period-End UND Update-End >= Period-Start
+                              if (updateStartTs <= endTs && updateEndTs >= startTs) {
+                                uniqueBotTypeIds.add(String(update.botTypeId));
                               }
                             }
                           });
-                          botsActive = uniqueBotTypes.size > 0 ? String(uniqueBotTypes.size) : '--';
+                          botsActive = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
                         }
                       }
                       
