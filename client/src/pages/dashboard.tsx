@@ -10617,7 +10617,7 @@ export default function Dashboard() {
 
         {/* Period Compare Popup - Vergleich mehrerer ausgewählter Perioden */}
         <Dialog open={periodComparePopupOpen} onOpenChange={setPeriodComparePopupOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MoveHorizontal className="h-5 w-5 text-muted-foreground" />
@@ -10739,7 +10739,7 @@ export default function Dashboard() {
                 }
                 
                 return (
-                  <Card key={periodKey} className="p-4 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.15)]" data-testid={`card-period-compare-${index}`}>
+                  <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${index}`}>
                     {/* Header: Periode + Dauer */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
