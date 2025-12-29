@@ -9173,7 +9173,7 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
-                              <span className="text-xs">{gesamtprofit}</span>
+                              <span className={`text-xs ${parseFloat(gesamtprofit) >= 0 ? 'text-green-500' : 'text-red-500'}`}>{gesamtprofit} $</span>
                             </div>
                           </div>
                           
