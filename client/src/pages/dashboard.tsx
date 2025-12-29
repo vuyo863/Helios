@@ -8998,8 +8998,20 @@ export default function Dashboard() {
                         fromDate = formatDate(startTs);
                         untilDate = formatDate(endTs);
                         
-                        // Anzahl Bots (wird später aus echten Daten berechnet)
-                        botsActive = '--';
+                        // Anzahl verschiedener Bot-Types im ausgewählten Zeitraum berechnen
+                        if (multiBotChartData.data && multiBotChartData.data.length > 0) {
+                          const uniqueBotTypes = new Set<string>();
+                          multiBotChartData.data.forEach((point: any) => {
+                            // Prüfe ob der Datenpunkt im Zeitraum liegt
+                            if (point.timestamp >= startTs && point.timestamp <= endTs) {
+                              // Sammle eindeutige Bot-Types
+                              if (point.botTypeName) {
+                                uniqueBotTypes.add(point.botTypeName);
+                              }
+                            }
+                          });
+                          botsActive = uniqueBotTypes.size > 0 ? String(uniqueBotTypes.size) : '--';
+                        }
                       }
                       
                       return (
