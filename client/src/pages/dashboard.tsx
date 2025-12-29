@@ -9112,7 +9112,7 @@ export default function Dashboard() {
                             }
                           });
                           
-                          gesamtkapital = totalCapital.toFixed(2);
+                          gesamtkapital = totalCapital.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         }
                       }
                       
