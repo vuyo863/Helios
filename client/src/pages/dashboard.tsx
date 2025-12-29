@@ -9003,9 +9003,6 @@ export default function Dashboard() {
                         // NUR Updates der im Chart ausgewählten Bot-Types berücksichtigen
                         const selectedIds = selectedChartBotTypes.map(id => String(id));
                         
-                        console.log(`[BotsActive DEBUG] selectedChartBotTypes:`, selectedIds);
-                        console.log(`[BotsActive DEBUG] allBotTypeUpdates count:`, allBotTypeUpdates?.length);
-                        console.log(`[BotsActive DEBUG] Period startTs=${startTs} (${fromDate}), endTs=${endTs} (${untilDate})`);
                         
                         if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
                           const uniqueBotTypeIds = new Set<string>();
@@ -9015,8 +9012,7 @@ export default function Dashboard() {
                             selectedIds.includes(String(update.botTypeId))
                           );
                           
-                          console.log(`[BotsActive DEBUG] Relevant updates (matching selected):`, relevantUpdates.length);
-                          
+                            
                           relevantUpdates.forEach((update: any) => {
                             // Parse Start- und End-Datum des Updates
                             const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
@@ -9030,12 +9026,10 @@ export default function Dashboard() {
                               // Update-Start <= Period-End UND Update-End >= Period-Start
                               if (updateStartTs <= endTs && updateEndTs >= startTs) {
                                 uniqueBotTypeIds.add(String(update.botTypeId));
-                                console.log(`[BotsActive] Match: BotType=${update.botTypeId}, Update=${update.lastUpload} - ${update.thisUpload}`);
                               }
                             }
                           });
                           
-                          console.log(`[BotsActive RESULT] Period: ${fromDate} - ${untilDate}, Found ${uniqueBotTypeIds.size} unique bot types:`, Array.from(uniqueBotTypeIds));
                           botsActive = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
                           
                           // Gesamtprofit berechnen: Summe(avgGridProfitHour) × Perioden-Stunden
@@ -9052,7 +9046,6 @@ export default function Dashboard() {
                               if (updateStartTs <= endTs && updateEndTs >= startTs) {
                                 const profitHour = parseFloat(update.avgGridProfitHour) || 0;
                                 sumAvgProfitHour += profitHour;
-                                console.log(`[Gesamtprofit] Adding avgGridProfitHour=${profitHour} from BotType=${update.botTypeId}`);
                               }
                             }
                           });
@@ -9061,9 +9054,6 @@ export default function Dashboard() {
                           const periodHours = (endTs - startTs) / (1000 * 60 * 60);
                           const calculatedProfit = sumAvgProfitHour * periodHours;
                           gesamtprofit = calculatedProfit.toFixed(2);
-                          console.log(`[Gesamtprofit RESULT] sumAvgProfitHour=${sumAvgProfitHour}, periodHours=${periodHours.toFixed(2)}, Gesamtprofit=${gesamtprofit}`);
-                        } else {
-                          console.log(`[BotsActive DEBUG] Skipped: allBotTypeUpdates=${allBotTypeUpdates?.length}, selectedIds=${selectedIds.length}`);
                         }
                       }
                       
