@@ -10724,17 +10724,17 @@ export default function Dashboard() {
                   });
                   
                   // Spezifische Metriken extrahieren (falls vorhanden)
-                  if (periodMetrics['Gesamtprofit']?.end !== null) {
-                    gesamtprofit = periodMetrics['Gesamtprofit'].end!.toFixed(2);
+                  if (periodMetrics['Gesamtprofit']?.end != null) {
+                    gesamtprofit = periodMetrics['Gesamtprofit'].end.toFixed(2);
                   }
-                  if (periodMetrics['Gesamtkapital']?.end !== null) {
-                    gesamtkapital = periodMetrics['Gesamtkapital'].end!.toFixed(2);
+                  if (periodMetrics['Gesamtkapital']?.end != null) {
+                    gesamtkapital = periodMetrics['Gesamtkapital'].end.toFixed(2);
                   }
-                  if (periodMetrics['Gesamtprofit (%)']?.end !== null) {
-                    profitProzent = periodMetrics['Gesamtprofit (%)'].end!.toFixed(2) + '%';
+                  if (periodMetrics['Gesamtprofit (%)']?.end != null) {
+                    profitProzent = periodMetrics['Gesamtprofit (%)'].end.toFixed(2) + '%';
                   }
-                  if (periodMetrics['Ø Profit/Tag']?.end !== null) {
-                    avgProfitTag = periodMetrics['Ø Profit/Tag'].end!.toFixed(2);
+                  if (periodMetrics['Ø Profit/Tag']?.end != null) {
+                    avgProfitTag = periodMetrics['Ø Profit/Tag'].end.toFixed(2);
                   }
                 }
                 
