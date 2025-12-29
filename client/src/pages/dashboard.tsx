@@ -8973,6 +8973,7 @@ export default function Dashboard() {
                       let fromDate = '--';
                       let untilDate = '--';
                       let botsActive = '--';
+                      let gesamtprofit = '--';
                       
                       // Parse Timestamps aus dem Key
                       if (activePeriodKey !== null) {
@@ -9036,6 +9037,31 @@ export default function Dashboard() {
                           
                           console.log(`[BotsActive RESULT] Period: ${fromDate} - ${untilDate}, Found ${uniqueBotTypeIds.size} unique bot types:`, Array.from(uniqueBotTypeIds));
                           botsActive = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
+                          
+                          // Gesamtprofit berechnen: Summe(avgGridProfitHour) × Perioden-Stunden
+                          let sumAvgProfitHour = 0;
+                          relevantUpdates.forEach((update: any) => {
+                            const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                            const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                            
+                            if (updateStartDate && updateEndDate) {
+                              const updateStartTs = updateStartDate.getTime();
+                              const updateEndTs = updateEndDate.getTime();
+                              
+                              // Prüfe ob Update die Periode überlappt
+                              if (updateStartTs <= endTs && updateEndTs >= startTs) {
+                                const profitHour = parseFloat(update.avgGridProfitHour) || 0;
+                                sumAvgProfitHour += profitHour;
+                                console.log(`[Gesamtprofit] Adding avgGridProfitHour=${profitHour} from BotType=${update.botTypeId}`);
+                              }
+                            }
+                          });
+                          
+                          // Perioden-Stunden berechnen
+                          const periodHours = (endTs - startTs) / (1000 * 60 * 60);
+                          const calculatedProfit = sumAvgProfitHour * periodHours;
+                          gesamtprofit = calculatedProfit.toFixed(2);
+                          console.log(`[Gesamtprofit RESULT] sumAvgProfitHour=${sumAvgProfitHour}, periodHours=${periodHours.toFixed(2)}, Gesamtprofit=${gesamtprofit}`);
                         } else {
                           console.log(`[BotsActive DEBUG] Skipped: allBotTypeUpdates=${allBotTypeUpdates?.length}, selectedIds=${selectedIds.length}`);
                         }
@@ -9072,7 +9098,7 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
-                              <span className="text-xs">--</span>
+                              <span className="text-xs">{gesamtprofit}</span>
                             </div>
                           </div>
                           
@@ -9111,7 +9137,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
-                                  <span className="text-xs">--</span>
+                                  <span className="text-xs">{gesamtprofit}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Gesamtkapital:</span>
@@ -10727,54 +10753,47 @@ export default function Dashboard() {
                   durationText = `${durationHours.toFixed(1)} Stunden`;
                 }
                 
-                // Berechne Metriken für diese Periode aus multiBotChartData
-                const periodMetrics: Record<string, { start: number | null; end: number | null; diff: number | null }> = {};
+                // Berechne Metriken für diese Periode
                 let botsAktiv = '--';
                 let gesamtprofit = '--';
                 let gesamtkapital = '--';
                 let profitProzent = '--';
                 let avgProfitTag = '--';
                 
-                if (multiBotChartData.data && multiBotChartData.data.length > 0) {
-                  // Finde Datenpunkte innerhalb dieser Periode
-                  const periodPoints = multiBotChartData.data.filter((point: any) => {
-                    const pointTs = point.timestamp;
-                    return pointTs >= startTs && pointTs <= endTs;
-                  });
+                // Berechnung basierend auf Bot-Type Updates (gleiche Logik wie Period Details)
+                const selectedIds = selectedChartBotTypes.map(id => String(id));
+                
+                if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
+                  const uniqueBotTypeIds = new Set<string>();
+                  let sumAvgProfitHour = 0;
                   
-                  // Für jede aktive Metrik: Start- und Endwert ermitteln
-                  activeMetricCards.forEach(metricName => {
-                    let firstValue: number | null = null;
-                    let lastValue: number | null = null;
+                  // Nur Updates der ausgewählten Bot-Types
+                  const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
+                    selectedIds.includes(String(update.botTypeId))
+                  );
+                  
+                  relevantUpdates.forEach((update: any) => {
+                    const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                    const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
                     
-                    periodPoints.forEach((point: any) => {
-                      const value = point[metricName];
-                      if (typeof value === 'number') {
-                        if (firstValue === null) firstValue = value;
-                        lastValue = value;
+                    if (updateStartDate && updateEndDate) {
+                      const updateStartTs = updateStartDate.getTime();
+                      const updateEndTs = updateEndDate.getTime();
+                      
+                      // Bot ist aktiv wenn Laufzeit den Zeitraum überlappt
+                      if (updateStartTs <= endTs && updateEndTs >= startTs) {
+                        uniqueBotTypeIds.add(String(update.botTypeId));
+                        const profitHour = parseFloat(update.avgGridProfitHour) || 0;
+                        sumAvgProfitHour += profitHour;
                       }
-                    });
-                    
-                    periodMetrics[metricName] = {
-                      start: firstValue,
-                      end: lastValue,
-                      diff: (firstValue !== null && lastValue !== null) ? lastValue - firstValue : null
-                    };
+                    }
                   });
                   
-                  // Spezifische Metriken extrahieren (falls vorhanden)
-                  if (periodMetrics['Gesamtprofit']?.end != null) {
-                    gesamtprofit = periodMetrics['Gesamtprofit'].end.toFixed(2);
-                  }
-                  if (periodMetrics['Gesamtkapital']?.end != null) {
-                    gesamtkapital = periodMetrics['Gesamtkapital'].end.toFixed(2);
-                  }
-                  if (periodMetrics['Gesamtprofit (%)']?.end != null) {
-                    profitProzent = periodMetrics['Gesamtprofit (%)'].end.toFixed(2) + '%';
-                  }
-                  if (periodMetrics['Ø Profit/Tag']?.end != null) {
-                    avgProfitTag = periodMetrics['Ø Profit/Tag'].end.toFixed(2);
-                  }
+                  botsAktiv = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
+                  
+                  // Gesamtprofit = Summe(avgGridProfitHour) × Perioden-Stunden
+                  const calculatedProfit = sumAvgProfitHour * durationHours;
+                  gesamtprofit = calculatedProfit.toFixed(2);
                 }
                 
                 return (
