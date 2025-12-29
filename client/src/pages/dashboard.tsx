@@ -10836,112 +10836,120 @@ export default function Dashboard() {
             </div>
             
             <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
-              {Array.from(selectedPeriodKeys).map((periodKey, index) => {
-                // Parse period key: "startTs-endTs"
-                const [startTsStr, endTsStr] = periodKey.split('-');
-                const startTs = parseInt(startTsStr, 10);
-                const endTs = parseInt(endTsStr, 10);
-                const periodDuration = endTs - startTs;
-                
-                // Format dates
-                const startDate = new Date(startTs);
-                const endDate = new Date(endTs);
-                const formatDateShort = (d: Date) => d.toLocaleDateString('de-DE', { 
-                  day: '2-digit', 
-                  month: '2-digit', 
-                  year: 'numeric'
+              {(() => {
+                // Berechne Metriken für alle Perioden zuerst
+                const selectedIds = selectedChartBotTypes.map(id => String(id));
+                const periodsWithMetrics = Array.from(selectedPeriodKeys).map((periodKey) => {
+                  const [startTsStr, endTsStr] = periodKey.split('-');
+                  const startTs = parseInt(startTsStr, 10);
+                  const endTs = parseInt(endTsStr, 10);
+                  const periodDuration = endTs - startTs;
+                  const durationHours = periodDuration / (1000 * 60 * 60);
+                  const durationDays = durationHours / 24;
+                  
+                  let botsAktivNum = 0;
+                  let gesamtprofitNum = 0;
+                  let gesamtkapitalNum = 0;
+                  let profitProzentNum = 0;
+                  let avgProfitTagNum = 0;
+                  
+                  if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
+                    const uniqueBotTypeIds = new Set<string>();
+                    let sumAvgProfitHour = 0;
+                    let totalCapital = 0;
+                    let totalInvestmentAmount = 0;
+                    
+                    const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
+                      selectedIds.includes(String(update.botTypeId))
+                    );
+                    
+                    relevantUpdates.forEach((update: any) => {
+                      const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                      const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                      
+                      if (updateStartDate && updateEndDate) {
+                        const updateStartTs = updateStartDate.getTime();
+                        const updateEndTs = updateEndDate.getTime();
+                        
+                        if (updateStartTs <= endTs && updateEndTs >= startTs) {
+                          uniqueBotTypeIds.add(String(update.botTypeId));
+                          const profitHour = parseFloat(update.avgGridProfitHour) || 0;
+                          sumAvgProfitHour += profitHour;
+                          
+                          const investment = parseFloat(update.totalInvestment) || 0;
+                          const extraMargin = parseFloat(update.extraMargin) || 0;
+                          totalCapital += investment;
+                          totalInvestmentAmount += (investment - extraMargin);
+                        }
+                      }
+                    });
+                    
+                    botsAktivNum = uniqueBotTypeIds.size;
+                    gesamtprofitNum = sumAvgProfitHour * durationHours;
+                    gesamtkapitalNum = periodCapitalMode === 'gesamtkapital' ? totalCapital : totalInvestmentAmount;
+                    
+                    if (gesamtkapitalNum > 0) {
+                      profitProzentNum = (gesamtprofitNum / gesamtkapitalNum) * 100;
+                    }
+                    if (durationHours > 0) {
+                      avgProfitTagNum = (gesamtprofitNum / durationHours) * 24;
+                    }
+                  }
+                  
+                  return {
+                    periodKey,
+                    startTs,
+                    endTs,
+                    durationHours,
+                    durationDays,
+                    botsAktivNum,
+                    gesamtprofitNum,
+                    gesamtkapitalNum,
+                    profitProzentNum,
+                    avgProfitTagNum
+                  };
                 });
                 
-                // Format duration
-                const durationHours = periodDuration / (1000 * 60 * 60);
-                const durationDays = durationHours / 24;
-                let durationText = '';
-                if (durationDays >= 1) {
-                  durationText = `${durationDays.toFixed(1)} Tage`;
-                } else {
-                  durationText = `${durationHours.toFixed(1)} Stunden`;
-                }
+                // Sortiere nach ausgewählter Metrik
+                periodsWithMetrics.sort((a, b) => {
+                  let valA = 0, valB = 0;
+                  switch (periodCompareSortBy) {
+                    case 'datum': valA = a.startTs; valB = b.startTs; break;
+                    case 'laufzeit': valA = a.durationHours; valB = b.durationHours; break;
+                    case 'gesamtprofit': valA = a.gesamtprofitNum; valB = b.gesamtprofitNum; break;
+                    case 'gesamtprofitProzent': valA = a.profitProzentNum; valB = b.profitProzentNum; break;
+                    case 'avgProfitTag': valA = a.avgProfitTagNum; valB = b.avgProfitTagNum; break;
+                    case 'anzahlBots': valA = a.botsAktivNum; valB = b.botsAktivNum; break;
+                    default: valA = a.startTs; valB = b.startTs;
+                  }
+                  return periodCompareSortDirection === 'asc' ? valA - valB : valB - valA;
+                });
                 
-                // Berechne Metriken für diese Periode
-                let botsAktiv = '--';
-                let gesamtprofit = '--';
-                let gesamtkapital = '--';
-                let profitProzent = '--';
-                let avgProfitTag = '--';
-                
-                // Berechnung basierend auf Bot-Type Updates (gleiche Logik wie Period Details)
-                const selectedIds = selectedChartBotTypes.map(id => String(id));
-                
-                if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
-                  const uniqueBotTypeIds = new Set<string>();
-                  let sumAvgProfitHour = 0;
+                return periodsWithMetrics.map((period, index) => {
+                  const { periodKey, startTs, endTs, durationHours, durationDays, botsAktivNum, gesamtprofitNum, gesamtkapitalNum, profitProzentNum, avgProfitTagNum } = period;
                   
-                  // Nur Updates der ausgewählten Bot-Types
-                  const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
-                    selectedIds.includes(String(update.botTypeId))
-                  );
-                  
-                  relevantUpdates.forEach((update: any) => {
-                    const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
-                    const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
-                    
-                    if (updateStartDate && updateEndDate) {
-                      const updateStartTs = updateStartDate.getTime();
-                      const updateEndTs = updateEndDate.getTime();
-                      
-                      // Bot ist aktiv wenn Laufzeit den Zeitraum überlappt
-                      if (updateStartTs <= endTs && updateEndTs >= startTs) {
-                        uniqueBotTypeIds.add(String(update.botTypeId));
-                        const profitHour = parseFloat(update.avgGridProfitHour) || 0;
-                        sumAvgProfitHour += profitHour;
-                      }
-                    }
+                  const startDate = new Date(startTs);
+                  const endDate = new Date(endTs);
+                  const formatDateShort = (d: Date) => d.toLocaleDateString('de-DE', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric'
                   });
                   
-                  botsAktiv = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
-                  
-                  // Gesamtprofit = Summe(avgGridProfitHour) × Perioden-Stunden
-                  const calculatedProfit = sumAvgProfitHour * durationHours;
-                  gesamtprofit = calculatedProfit.toFixed(2);
-                  
-                  // GESAMTKAPITAL / INVESTITIONSMENGE BERECHNUNG
-                  let totalCapital = 0;
-                  let totalInvestmentAmount = 0;
-                  relevantUpdates.forEach((update: any) => {
-                    const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
-                    const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
-                    
-                    if (!updateStartDate || !updateEndDate) return;
-                    
-                    const updateStartTs = updateStartDate.getTime();
-                    const updateEndTs = updateEndDate.getTime();
-                    
-                    if (updateStartTs <= endTs && updateEndTs >= startTs) {
-                      const investment = parseFloat(update.totalInvestment) || 0;
-                      const extraMargin = parseFloat(update.extraMargin) || 0;
-                      totalCapital += investment;
-                      totalInvestmentAmount += (investment - extraMargin);
-                    }
-                  });
-                  
-                  const displayValue = periodCapitalMode === 'gesamtkapital' ? totalCapital : totalInvestmentAmount;
-                  gesamtkapital = displayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  
-                  // PROFIT % BERECHNUNG
-                  if (displayValue > 0) {
-                    const percent = (calculatedProfit / displayValue) * 100;
-                    profitProzent = percent.toFixed(2) + '%';
+                  let durationText = '';
+                  if (durationDays >= 1) {
+                    durationText = `${durationDays.toFixed(1)} Tage`;
+                  } else {
+                    durationText = `${durationHours.toFixed(1)} Stunden`;
                   }
                   
-                  // Ø PROFIT/TAG BERECHNUNG
-                  if (durationHours > 0) {
-                    const profitPerHour = calculatedProfit / durationHours;
-                    const dailyProfit = profitPerHour * 24;
-                    avgProfitTag = dailyProfit.toFixed(2);
-                  }
-                }
+                  const botsAktiv = botsAktivNum > 0 ? String(botsAktivNum) : '--';
+                  const gesamtprofit = gesamtprofitNum !== 0 ? gesamtprofitNum.toFixed(2) : '--';
+                  const gesamtkapital = gesamtkapitalNum > 0 ? gesamtkapitalNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--';
+                  const profitProzent = gesamtkapitalNum > 0 ? profitProzentNum.toFixed(2) + '%' : '--';
+                  const avgProfitTag = durationHours > 0 ? avgProfitTagNum.toFixed(2) : '--';
                 
-                return (
+                  return (
                   <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${index}`}>
                     {/* Header: Periode + Dauer */}
                     <div className="flex items-center justify-between mb-3">
@@ -10991,8 +10999,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </Card>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </DialogContent>
         </Dialog>
