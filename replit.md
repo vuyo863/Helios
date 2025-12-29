@@ -28,7 +28,43 @@ The dashboard features three main chart modes:
 *   **Zoom & Pan**: Interactive zooming and panning capabilities on chart axes, particularly in analysis modes.
 *   **AI-Analysis**: Integration with OpenAI for automated insights and chart data summarization.
 
-### Perioden-Profit-Berechnung (Overlay-Modus)
+---
+
+## 🔒 GOLDEN STATE: Auge-Modus (Eye Mode / Overlay Mode)
+
+> **ACHTUNG: GOLDEN STATE - KEINE ÄNDERUNGEN ERLAUBT!**
+> Der Auge-Modus ist vollständig implementiert, getestet und abgeschlossen.
+> Dieser Code darf NICHT mehr modifiziert werden - 0,0 gar nicht!
+
+### Übersicht Auge-Modus
+
+Der Auge-Modus (aktiviert durch das Auge-Icon im Added Mode) zeigt eine erweiterte Overlay-Ansicht mit:
+- **Period Comparison Cards**: Vergleich von Zeitperioden mit Profit-Berechnung
+- **Eye Mode Content Card**: Aggregierte Metriken für ausgewählte Bot-Types
+- **Sortierung & Animationen**: Interaktive Sortierung mit Framer Motion Animationen
+
+### Implementierte Features
+
+#### 1. Period Comparison Cards
+- **Zeitperioden-Aufteilung**: Automatische Einteilung des Zeitraums in Perioden (1h, 6h, 12h, 1d, 3d, 1w, 2w, 1m)
+- **Profit pro Periode**: Berechnet wie viel Profit in jeder Periode erzielt wurde
+- **Bot-Beiträge**: Zeigt welche Bots wie viel zu jeder Periode beigetragen haben
+- **Sortierung**: Nach Datum (aufsteigend/absteigend) oder Profit (höchster/niedrigster zuerst)
+- **Framer Motion Animationen**: Sanfte 0.3s ease-in-out Animationen beim Sortieren
+
+#### 2. Eye Mode Content Card
+- **Gesamtprofit**: Summe aller Bot-Profite mit Dollarzeichen ($) und Farbkodierung (grün ≥0, rot <0)
+- **Gesamtkapital**: Aggregiertes Investment aller ausgewählten Bots
+- **Profit %**: Prozentuale Rendite
+- **Ø Profit/Tag**: Durchschnittlicher täglicher Profit
+- **Real Profit/Tag**: Tatsächlicher täglicher Profit
+
+#### 3. Perioden-Zeitraum-Berechnung
+- **minTimestamp**: Verwendet das früheste `lastUpload` (Start-Datum) aller relevanten Updates
+- **maxTimestamp**: Verwendet das späteste `thisUpload` (End-Datum)
+- **Wichtig**: Perioden decken den GESAMTEN Bot-Zeitraum ab, nicht nur ab dem ersten sichtbaren Datenpunkt
+
+### Perioden-Profit-Berechnung
 
 Die Perioden-Profit-Berechnung ermittelt, wie viel Profit in einer bestimmten Zeitperiode erzielt wurde. Die Summe aller Perioden ergibt den Kontokart-Wert (z.B. 205.96 USDT).
 
@@ -81,8 +117,30 @@ else
 - Perioden-Profit = `avgGridProfitHour × Überlappungs-Stunden`
 - Beispiel: teshh v4 → -0.04 × 469.75h = -18.79 USDT
 
-#### Code-Referenz
-Die Implementierung befindet sich in `client/src/pages/dashboard.tsx` (ca. Zeilen 9038-9094).
+### Kritische Bug-Fixes (abgeschlossen)
+
+1. **minTimestamp-Korrektur**: Verwendet jetzt frühestes `lastUpload` statt erstes End-Event, damit alle Bot-Laufzeit-Tage in Perioden erfasst werden
+2. **Perioden-Summe validiert**: Summe aller Perioden entspricht dem Kontokart-Wert (~205.96 USDT)
+3. **Dollarzeichen & Farbkodierung**: Gesamtprofit zeigt `{wert} $` mit grün (≥0) oder rot (<0)
+
+### Code-Referenzen
+
+| Feature | Datei | Ca. Zeilen |
+|---------|-------|------------|
+| Perioden-Profit-Berechnung | `dashboard.tsx` | 9038-9094 |
+| Period Comparison Cards | `dashboard.tsx` | 9100-9300 |
+| Eye Mode Content Card | `dashboard.tsx` | 8900-9000 |
+| minTimestamp-Berechnung | `dashboard.tsx` | 1757-1771 |
+| Framer Motion Animationen | `dashboard.tsx` | Period Cards mit `motion.div` |
+
+### Verwendete Technologien im Auge-Modus
+
+- **Framer Motion**: `motion.div` mit `layout` prop für sanfte Card-Animationen
+- **Recharts**: Chart-Darstellung (falls benötigt)
+- **TypeScript**: Vollständig typisierte States und Props
+- **Tailwind CSS**: Styling inkl. dynamische Farbklassen
+
+---
 
 ### System Design Choices
 *   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase (e.g., MainChart, Compare Mode, Edit-Modus Analysis, Bot-Type CRUD, AI-Analysis page) are designated as "Golden State" and are protected from modification to ensure stability.
