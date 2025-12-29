@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical, RotateCcw, ZoomIn, Eye, LineChart as LineChartIcon, Trash2, MoveHorizontal } from "lucide-react";
+import { Wallet, TrendingUp, Percent, Search, Check, Plus, Zap, Pencil, X, Save, GripVertical, RotateCcw, ZoomIn, Eye, LineChart as LineChartIcon, Trash2, MoveHorizontal, ArrowLeftRight } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import BotEntryTable, { BotTypeTableData, calculateBotTypeTableData } from "@/components/BotEntryTable";
 import ProfitLineChart from "@/components/ProfitLineChart";
@@ -269,6 +269,8 @@ export default function Dashboard() {
   const [originalPeriodKey, setOriginalPeriodKey] = useState<string | null>(null);
   // Overlay Period Details Popup
   const [periodDetailsPopupOpen, setPeriodDetailsPopupOpen] = useState(false);
+  // Overlay Period Kapital-Anzeige: 'gesamtkapital' oder 'investitionsmenge'
+  const [periodCapitalMode, setPeriodCapitalMode] = useState<'gesamtkapital' | 'investitionsmenge'>('gesamtkapital');
   // Overlay Period Compare Popup (Multi-Select Vergleich)
   const [periodComparePopupOpen, setPeriodComparePopupOpen] = useState(false);
   // Sortierung für Period Compare Popup
@@ -8974,6 +8976,7 @@ export default function Dashboard() {
                       let untilDate = '--';
                       let botsActive = '--';
                       let gesamtprofit = '--';
+                      let gesamtkapital = '--';
                       
                       // Parse Timestamps aus dem Key
                       if (activePeriodKey !== null) {
@@ -9089,6 +9092,27 @@ export default function Dashboard() {
                           });
                           
                           gesamtprofit = totalPeriodProfit.toFixed(2);
+                          
+                          // GESAMTKAPITAL-BERECHNUNG:
+                          // Summe des totalInvestment aller aktiven Updates in dieser Periode
+                          let totalCapital = 0;
+                          relevantUpdates.forEach((update: any) => {
+                            const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                            const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                            
+                            if (!updateStartDate || !updateEndDate) return;
+                            
+                            const updateStartTs = updateStartDate.getTime();
+                            const updateEndTs = updateEndDate.getTime();
+                            
+                            // Prüfe ob Update die Periode überlappt
+                            if (updateStartTs <= endTs && updateEndTs >= startTs) {
+                              const investment = parseFloat(update.totalInvestment) || 0;
+                              totalCapital += investment;
+                            }
+                          });
+                          
+                          gesamtkapital = totalCapital.toFixed(2);
                         }
                       }
                       
@@ -9124,6 +9148,24 @@ export default function Dashboard() {
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-muted-foreground">Gesamtprofit:</span>
                               <span className="text-xs">{gesamtprofit}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {periodCapitalMode === 'gesamtkapital' ? 'Gesamtkapital:' : 'Investitionsmenge:'}
+                                </span>
+                                <span className="text-xs">{gesamtkapital}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
+                                title={periodCapitalMode === 'gesamtkapital' ? 'Zu Investitionsmenge wechseln' : 'Zu Gesamtkapital wechseln'}
+                                onClick={() => setPeriodCapitalMode(prev => prev === 'gesamtkapital' ? 'investitionsmenge' : 'gesamtkapital')}
+                                data-testid="button-toggle-capital-mode"
+                              >
+                                <ArrowLeftRight className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                           
@@ -9165,8 +9207,24 @@ export default function Dashboard() {
                                   <span className="text-xs">{gesamtprofit}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-muted-foreground">Gesamtkapital:</span>
-                                  <span className="text-xs">--</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs text-muted-foreground">
+                                      {periodCapitalMode === 'gesamtkapital' ? 'Gesamtkapital:' : 'Investitionsmenge:'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs">{gesamtkapital}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-4 w-4"
+                                      title={periodCapitalMode === 'gesamtkapital' ? 'Zu Investitionsmenge wechseln' : 'Zu Gesamtkapital wechseln'}
+                                      onClick={() => setPeriodCapitalMode(prev => prev === 'gesamtkapital' ? 'investitionsmenge' : 'gesamtkapital')}
+                                      data-testid="button-toggle-capital-mode-popup"
+                                    >
+                                      <ArrowLeftRight className="h-2.5 w-2.5" />
+                                    </Button>
+                                  </div>
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Profit %:</span>
