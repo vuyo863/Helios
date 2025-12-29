@@ -8977,6 +8977,7 @@ export default function Dashboard() {
                       let botsActive = '--';
                       let gesamtprofit = '--';
                       let gesamtkapital = '--';
+                      let profitPercent = '--';
                       
                       // Parse Timestamps aus dem Key
                       if (activePeriodKey !== null) {
@@ -9119,6 +9120,14 @@ export default function Dashboard() {
                           // Je nach Modus den richtigen Wert anzeigen
                           const displayValue = periodCapitalMode === 'gesamtkapital' ? totalCapital : totalInvestmentAmount;
                           gesamtkapital = displayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          
+                          // PROFIT % BERECHNUNG:
+                          // Profit % = (Gesamtprofit / ausgewähltes Kapital) × 100
+                          const profitValue = parseFloat(gesamtprofit) || 0;
+                          if (displayValue > 0) {
+                            const percent = (profitValue / displayValue) * 100;
+                            profitPercent = percent.toFixed(2) + '%';
+                          }
                         }
                       }
                       
@@ -9216,7 +9225,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Profit %:</span>
-                                  <span className="text-xs">--</span>
+                                  <span className="text-xs">{profitPercent}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Ø Profit/Tag:</span>
