@@ -10620,7 +10620,7 @@ export default function Dashboard() {
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <MoveHorizontal className="h-5 w-5 text-cyan-600" />
+                <MoveHorizontal className="h-5 w-5 text-muted-foreground" />
                 Perioden-Vergleich ({selectedPeriodKeys.size} Perioden)
               </DialogTitle>
             </DialogHeader>
@@ -10739,11 +10739,11 @@ export default function Dashboard() {
                 }
                 
                 return (
-                  <Card key={periodKey} className="p-4" data-testid={`card-period-compare-${index}`}>
+                  <Card key={periodKey} className="p-4 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.15)]" data-testid={`card-period-compare-${index}`}>
                     {/* Header: Periode + Dauer */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-cyan-600">Periode {index + 1}</span>
+                        <span className="text-sm font-semibold text-muted-foreground">Periode {index + 1}</span>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                           {durationText}
                         </span>
