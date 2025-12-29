@@ -10635,7 +10635,7 @@ export default function Dashboard() {
                 <SelectTrigger className="w-[180px] h-8" data-testid="select-period-sort">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[120px] overflow-y-auto">
                   <SelectItem value="datum">Datum</SelectItem>
                   <SelectItem value="laufzeit">Laufzeit</SelectItem>
                   <SelectItem value="gesamtprofit">Gesamtprofit</SelectItem>
