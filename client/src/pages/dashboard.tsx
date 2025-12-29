@@ -9032,28 +9032,63 @@ export default function Dashboard() {
                           
                           botsActive = uniqueBotTypeIds.size > 0 ? String(uniqueBotTypeIds.size) : '--';
                           
-                          // Gesamtprofit berechnen: Summe(avgGridProfitHour) × Perioden-Stunden
-                          let sumAvgProfitHour = 0;
+                          // KORREKTE Perioden-Profit-Berechnung:
+                          // 1. Closed Bots: profit einmalig am End-Datum
+                          // 2. Startmetrik (avgRuntime-basiert): avgGridProfitHour × anteilige avgRuntime
+                          // 3. Vergleich (From/Until-basiert): avgGridProfitHour × Perioden-Überlappung
+                          let totalPeriodProfit = 0;
+                          
                           relevantUpdates.forEach((update: any) => {
                             const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
                             const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
                             
-                            if (updateStartDate && updateEndDate) {
-                              const updateStartTs = updateStartDate.getTime();
-                              const updateEndTs = updateEndDate.getTime();
+                            if (!updateStartDate || !updateEndDate) return;
+                            
+                            const updateStartTs = updateStartDate.getTime();
+                            const updateEndTs = updateEndDate.getTime();
+                            
+                            // Prüfe ob Update die Periode überlappt
+                            const overlapStart = Math.max(startTs, updateStartTs);
+                            const overlapEnd = Math.min(endTs, updateEndTs);
+                            
+                            if (overlapStart >= overlapEnd) return;
+                            
+                            const isClosedBot = update.status === 'Closed Bots';
+                            const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+                            const overallGridProfitUsdt = parseFloat(update.overallGridProfitUsdt) || 0;
+                            const profit = parseFloat(update.profit) || 0;
+                            
+                            const fromUntilHours = (updateEndTs - updateStartTs) / (1000 * 60 * 60);
+                            const avgRuntimeHours = parseRuntimeToHours(update.avgRuntime);
+                            const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+                            
+                            if (isClosedBot) {
+                              // CLOSED BOT: profit einmalig am End-Datum
+                              if (updateEndTs >= startTs && updateEndTs < endTs) {
+                                totalPeriodProfit += profit;
+                              }
+                            } else {
+                              // Bestimme welche Basis verwendet wurde:
+                              // Berechne mit beiden und prüfe welche zum overallGridProfitUsdt passt
+                              const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
+                              const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
+                              const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
+                              const diffFromUntil = Math.abs(calcWithFromUntil - overallGridProfitUsdt);
+                              const usesAvgRuntime = diffAvgRuntime < diffFromUntil;
                               
-                              // Prüfe ob Update die Periode überlappt
-                              if (updateStartTs <= endTs && updateEndTs >= startTs) {
-                                const profitHour = parseFloat(update.avgGridProfitHour) || 0;
-                                sumAvgProfitHour += profitHour;
+                              if (usesAvgRuntime && fromUntilHours > 0) {
+                                // STARTMETRIK: avgGridProfitHour × anteilige avgRuntime
+                                const ratio = overlapHours / fromUntilHours;
+                                const proportionalRuntime = avgRuntimeHours * ratio;
+                                totalPeriodProfit += avgGridProfitHour * proportionalRuntime;
+                              } else {
+                                // VERGLEICH: avgGridProfitHour × Perioden-Überlappung
+                                totalPeriodProfit += avgGridProfitHour * overlapHours;
                               }
                             }
                           });
                           
-                          // Perioden-Stunden berechnen
-                          const periodHours = (endTs - startTs) / (1000 * 60 * 60);
-                          const calculatedProfit = sumAvgProfitHour * periodHours;
-                          gesamtprofit = calculatedProfit.toFixed(2);
+                          gesamtprofit = totalPeriodProfit.toFixed(2);
                         }
                       }
                       
