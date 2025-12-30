@@ -5400,8 +5400,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Metric Cards - im overlayAnalyzeMode ausgegraut */}
-        <div className={cn((analyzeMode || overlayAnalyzeMode) && "opacity-50 pointer-events-none")}>
+        {/* Metric Cards - nur im analyzeMode ausgegraut, overlayAnalyzeMode erlaubt Klicks */}
+        <div className={cn(analyzeMode && "opacity-50 pointer-events-none")}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
