@@ -7156,7 +7156,7 @@ export default function Dashboard() {
                 onMouseMove={handleChartMouseMove}
                 onMouseUp={handleChartMouseUp}
                 onMouseLeave={handleChartMouseLeave}
-                className={cn("select-none relative", isDragging && "cursor-grabbing")}
+                className={cn("select-none relative overflow-hidden", isDragging && "cursor-grabbing")}
                 style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
               >
               <ResponsiveContainer width="100%" height={300}>
