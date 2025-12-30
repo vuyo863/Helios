@@ -619,7 +619,8 @@ export default function Notifications() {
   }, [activeAlarms]);
 
   // Gefilterte Vorschläge basierend auf Suchanfrage und Market Type
-  const filteredSuggestions = (marketType === 'spot' ? allBinancePairs : allBinanceFuturesPairs)
+  const allPairsForCurrentMarket = marketType === 'spot' ? allBinancePairs : allBinanceFuturesPairs;
+  const filteredSuggestions = allPairsForCurrentMarket
     .filter(pair =>
       pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
       !watchlist.includes(pair.id)
@@ -630,34 +631,27 @@ export default function Notifications() {
     if (!watchlist.includes(id)) {
       setWatchlist(prev => [...prev, id]);
       
-      // Determine market type from current toggle state
-      const currentMarketType = marketType;
+      // Use the CURRENT marketType toggle state
+      const selectedMarketType = marketType;
       
-      // Add pair to availableTradingPairs if not already there
-      let pair = currentMarketType === 'futures' 
+      // Find pair from the correct market based on current toggle
+      const pair = selectedMarketType === 'futures' 
         ? allBinanceFuturesPairs.find(p => p.id === id)
         : allBinancePairs.find(p => p.id === id);
       
-      // Fallback to other market if not found
-      if (!pair) {
-        pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      if (pair && !availableTradingPairs.find(p => p.id === id)) {
+        // Add pair with the selected market type
+        setAvailableTradingPairs(prev => [...prev, {
+          ...pair,
+          marketType: selectedMarketType
+        }]);
       }
       
-      if (pair && !availableTradingPairs.find(p => p.id === id)) {
-        // Ensure marketType is set correctly based on current toggle
-        const pairWithCorrectMarketType = {
-          ...pair,
-          marketType: currentMarketType
-        };
-        
-        setAvailableTradingPairs(prev => [...prev, pairWithCorrectMarketType]);
-        
-        // Store the market type for this pair
-        setPairMarketTypes(prev => ({
-          ...prev,
-          [id]: currentMarketType
-        }));
-      }
+      // Store the market type for this pair
+      setPairMarketTypes(prev => ({
+        ...prev,
+        [id]: selectedMarketType
+      }));
       
       // Initialize settings only if not already existing
       setTrendPriceSettings(prev => {
