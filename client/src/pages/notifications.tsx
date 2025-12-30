@@ -925,8 +925,17 @@ export default function Notifications() {
 
         {/* Trendpreis Suche & Watchlist Content Card */}
         <Card className="mb-8 ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Trendpreise & Watchlist</CardTitle>
+            {/* Market Type Toggle - kompakt neben dem Titel */}
+            <ToggleGroup type="single" value={marketType} onValueChange={(value) => value && setMarketType(value as 'spot' | 'futures')} className="gap-0">
+              <ToggleGroupItem value="spot" aria-label="Spot Market" className="h-8 px-3 rounded-r-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                Spot
+              </ToggleGroupItem>
+              <ToggleGroupItem value="futures" aria-label="Futures Market" className="h-8 px-3 rounded-l-none data-[state=on]:bg-blue-500 data-[state=on]:text-white">
+                Futures
+              </ToggleGroupItem>
+            </ToggleGroup>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -936,18 +945,6 @@ export default function Notifications() {
                   <Label htmlFor="search-trading-pairs" className="text-base font-semibold mb-3 block">
                     Trading Pairs suchen
                   </Label>
-                  
-                  {/* Market Type Toggle */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <ToggleGroup type="single" value={marketType} onValueChange={(value) => value && setMarketType(value as 'spot' | 'futures')}>
-                      <ToggleGroupItem value="spot" aria-label="Spot Market" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                        Spot
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="futures" aria-label="Futures Market" className="data-[state=on]:bg-blue-500 data-[state=on]:text-white">
-                        Futures
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  </div>
 
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
