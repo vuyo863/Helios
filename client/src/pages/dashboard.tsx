@@ -286,6 +286,9 @@ export default function Dashboard() {
   const [appliedPencilPeriodKey, setAppliedPencilPeriodKey] = useState<string | null>(null);
   // overlayAnalyzeMode: Wenn aktiv, zeigt Chart nur die applied Period im Compare-Stil
   const [overlayAnalyzeMode, setOverlayAnalyzeMode] = useState(false);
+  // Aktive Bar-Metriken im Pencil Analyze Mode (welche Säulen angezeigt werden)
+  // Default: nur 'profit' (Gesamtprofit) ist aktiv
+  const [activePencilBarMetrics, setActivePencilBarMetrics] = useState<Set<string>>(new Set(['profit']));
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
@@ -5859,14 +5862,58 @@ export default function Dashboard() {
                   );
                 };
                 
+                // ========== STIFT-MODUS ANALYZE: Card-Klick togglet Bar-Metriken ==========
+                const handlePencilBarCardClick = (cardId: string) => {
+                  // Mapping von Card-ID zu Bar-Metrik-Key
+                  const cardToMetricKey: Record<string, string> = {
+                    'Gesamtprofit': 'profit',
+                    'Gesamtkapital': 'capital',
+                  };
+                  const metricKey = cardToMetricKey[cardId];
+                  if (!metricKey) return; // Nur Gesamtprofit und Gesamtkapital unterstützt
+                  
+                  setActivePencilBarMetrics(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(metricKey)) {
+                      newSet.delete(metricKey);
+                    } else {
+                      newSet.add(metricKey);
+                    }
+                    return newSet;
+                  });
+                };
+                
+                // Prüfe ob Card im Pencil Bar Mode aktiv ist
+                const isPencilBarCardActive = (cardId: string): boolean => {
+                  const cardToMetricKey: Record<string, string> = {
+                    'Gesamtprofit': 'profit',
+                    'Gesamtkapital': 'capital',
+                  };
+                  const metricKey = cardToMetricKey[cardId];
+                  return metricKey ? activePencilBarMetrics.has(metricKey) : false;
+                };
+                
                 return (
                   <SortableItem key={cardId} id={cardId} isEditMode={isCardEditMode}>
                     <div 
-                      onClick={() => !isCardEditMode && toggleMetricCard(cardId)}
+                      onClick={() => {
+                        if (isCardEditMode) return;
+                        // Im overlayAnalyzeMode: Toggle Bar-Metriken für Gesamtprofit/Gesamtkapital
+                        if (overlayAnalyzeMode && (cardId === 'Gesamtprofit' || cardId === 'Gesamtkapital')) {
+                          handlePencilBarCardClick(cardId);
+                        } else {
+                          toggleMetricCard(cardId);
+                        }
+                      }}
                       className={`cursor-pointer transition-all relative ${
-                        activeMetricCards.includes(cardId) 
-                          ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
-                          : ''
+                        // Im overlayAnalyzeMode: Zeige Ring für aktive Bar-Metriken
+                        overlayAnalyzeMode && (cardId === 'Gesamtprofit' || cardId === 'Gesamtkapital')
+                          ? isPencilBarCardActive(cardId)
+                            ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg'
+                            : ''
+                          : activeMetricCards.includes(cardId) 
+                            ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg' 
+                            : ''
                       } ${isCardEditMode ? 'ring-2 ring-dashed ring-muted-foreground/30 rounded-lg' : ''}`}
                       data-testid={`card-${cardId.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                     >
@@ -7508,15 +7555,19 @@ export default function Dashboard() {
                         );
                       }}
                     />
-                    <Bar dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={40}>
-                      {pencilBarChartData.map((entry, index) => (
-                        <Cell 
-                          key={`profit-cell-${index}`} 
-                          fill={entry.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)'} 
-                        />
-                      ))}
-                    </Bar>
-                    <Bar dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
+                    {activePencilBarMetrics.has('profit') && (
+                      <Bar dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={40}>
+                        {pencilBarChartData.map((entry, index) => (
+                          <Cell 
+                            key={`profit-cell-${index}`} 
+                            fill={entry.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)'} 
+                          />
+                        ))}
+                      </Bar>
+                    )}
+                    {activePencilBarMetrics.has('capital') && (
+                      <Bar dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
+                    )}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
