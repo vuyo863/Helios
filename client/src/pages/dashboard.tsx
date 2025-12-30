@@ -7465,17 +7465,18 @@ export default function Dashboard() {
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        border: '2px solid hsl(142, 76%, 36%)',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        fontSize: '12px'
                       }}
-                      formatter={(value: number, name: string, props: any) => {
-                        const item = props.payload;
-                        return [
-                          `${value.toFixed(2)} USDT (Metrics: ${item.updateMatrixCount}, Closed: ${item.closedBotsCount})`,
-                          'Profit'
-                        ];
-                      }}
-                      labelFormatter={(label) => `Bot-Type: ${label}`}
+                      itemStyle={{ color: 'hsl(142, 76%, 36%)', padding: 0 }}
+                      labelStyle={{ fontWeight: 600, marginBottom: '2px' }}
+                      cursor={{ fill: 'transparent' }}
+                      isAnimationActive={false}
+                      formatter={(value: number) => [`Gesamtprofit: ${value.toFixed(2)} USDT`, null]}
+                      labelFormatter={(label) => label}
+                      separator=""
                     />
                     <Bar dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={60}>
                       {pencilBarChartData.map((entry, index) => (
