@@ -151,6 +151,14 @@ export default function Notifications() {
 
       setAllBinanceFuturesPairs(pairs);
 
+      // Add popular futures pairs to availableTradingPairs
+      const popularSymbols = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+        'DOGEUSDT', 'MATICUSDT', 'ICPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT'
+      ];
+      const popularFuturesPairs = pairs.filter(p => popularSymbols.includes(p.symbol));
+      setAvailableTradingPairs(prev => [...prev, ...popularFuturesPairs]);
+
     } catch (error) {
       console.error('Error fetching Binance Futures pairs:', error);
     }
@@ -925,17 +933,19 @@ export default function Notifications() {
 
         {/* Trendpreis Suche & Watchlist Content Card */}
         <Card className="mb-8 ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Trendpreise & Watchlist</CardTitle>
-            {/* Market Type Toggle - kompakt neben dem Titel */}
-            <ToggleGroup type="single" value={marketType} onValueChange={(value) => value && setMarketType(value as 'spot' | 'futures')} className="gap-0">
-              <ToggleGroupItem value="spot" aria-label="Spot Market" className="h-8 px-3 rounded-r-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                Spot
-              </ToggleGroupItem>
-              <ToggleGroupItem value="futures" aria-label="Futures Market" className="h-8 px-3 rounded-l-none data-[state=on]:bg-blue-500 data-[state=on]:text-white">
-                Futures
-              </ToggleGroupItem>
-            </ToggleGroup>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Trendpreise & Watchlist</CardTitle>
+              {/* Market Type Toggle */}
+              <ToggleGroup type="single" value={marketType} onValueChange={(value) => value && setMarketType(value as 'spot' | 'futures')} className="gap-0">
+                <ToggleGroupItem value="spot" aria-label="Spot Market" className="h-8 px-3 rounded-r-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  Spot
+                </ToggleGroupItem>
+                <ToggleGroupItem value="futures" aria-label="Futures Market" className="h-8 px-3 rounded-l-none data-[state=on]:bg-blue-500 data-[state=on]:text-white">
+                  Futures
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
