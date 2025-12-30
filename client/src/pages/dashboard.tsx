@@ -7402,10 +7402,11 @@ export default function Dashboard() {
               ) : overlayAnalyzeMode && pencilBarChartData.length > 0 ? (
               /* ========== STIFT-MODUS ANALYZE: BAR CHART ========== */
               <div className="select-none relative">
-                <ResponsiveContainer width="100%" height={340}>
+                <ResponsiveContainer width="100%" height={380}>
                   <BarChart
                     data={pencilBarChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+                    margin={{ top: 10, right: 30, left: 20, bottom: 50 }}
+                    barCategoryGap="60%"
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
@@ -7414,7 +7415,7 @@ export default function Dashboard() {
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                       axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                       interval={0}
-                      height={100}
+                      height={50}
                       tick={(props: any) => {
                         const { x, y, payload, index } = props;
                         const dataItem = pencilBarChartData[index];
@@ -7434,16 +7435,16 @@ export default function Dashboard() {
                             </text>
                             <text
                               x={0}
-                              y={24}
+                              y={22}
                               textAnchor="middle"
                               fill="hsl(var(--muted-foreground))"
                               fontSize={9}
                             >
-                              Matrix: {dataItem.updateMatrixCount}
+                              Metrics: {dataItem.updateMatrixCount}
                             </text>
                             <text
                               x={0}
-                              y={38}
+                              y={34}
                               textAnchor="middle"
                               fill="hsl(var(--muted-foreground))"
                               fontSize={9}
@@ -7458,6 +7459,7 @@ export default function Dashboard() {
                       tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                       axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
+                      tickCount={10}
                       tickFormatter={(value) => `${value.toFixed(2)}`}
                     />
                     <Tooltip 
@@ -7469,13 +7471,13 @@ export default function Dashboard() {
                       formatter={(value: number, name: string, props: any) => {
                         const item = props.payload;
                         return [
-                          `${value.toFixed(2)} USDT (Matrix: ${item.updateMatrixCount}, Closed: ${item.closedBotsCount})`,
+                          `${value.toFixed(2)} USDT (Metrics: ${item.updateMatrixCount}, Closed: ${item.closedBotsCount})`,
                           'Profit'
                         ];
                       }}
                       labelFormatter={(label) => `Bot-Type: ${label}`}
                     />
-                    <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={60}>
                       {pencilBarChartData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
