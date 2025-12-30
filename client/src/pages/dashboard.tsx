@@ -7471,9 +7471,11 @@ export default function Dashboard() {
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                       axisLine={{ stroke: 'hsl(142, 76%, 36%)', strokeWidth: 2 }}
                       tickCount={8}
+                      domain={['auto', 'auto']}
                       tickFormatter={(value) => `${value.toFixed(0)}`}
                       label={{ value: 'Profit (USDT)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(142, 76%, 36%)', fontSize: 10 } }}
                     />
+                    <ReferenceLine yAxisId="profit" y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
                     <YAxis 
                       yAxisId="capital"
                       orientation="right"
