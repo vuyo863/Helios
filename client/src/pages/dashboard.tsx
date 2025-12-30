@@ -5302,15 +5302,15 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold" data-testid="heading-dashboard">Dashboard</h1>
           
           {/* Suchleiste + Stift-Button - im Analyze-Status ausgegraut */}
-          <div className={cn("flex items-center gap-2", analyzeMode && "opacity-50 pointer-events-none")}>
-            <Popover open={open} onOpenChange={(o) => !analyzeMode && setOpen(o)}>
+          <div className={cn("flex items-center gap-2", (analyzeMode || overlayAnalyzeMode) && "opacity-50 pointer-events-none")}>
+            <Popover open={open} onOpenChange={(o) => !(analyzeMode || overlayAnalyzeMode) && setOpen(o)}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
                   className="w-[300px] justify-between"
-                  disabled={analyzeMode}
+                  disabled={analyzeMode || overlayAnalyzeMode}
                   data-testid="button-bot-filter"
                 >
                   {selectedBotName}
@@ -5400,6 +5400,8 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Metric Cards - im overlayAnalyzeMode ausgegraut */}
+        <div className={cn((analyzeMode || overlayAnalyzeMode) && "opacity-50 pointer-events-none")}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -5685,6 +5687,7 @@ export default function Dashboard() {
             </div>
           </SortableContext>
         </DndContext>
+        </div>
 
         <div className="flex items-stretch gap-4 mb-8">
           <div className="flex-1">
@@ -5694,12 +5697,12 @@ export default function Dashboard() {
                   <h3 className="text-lg font-bold">Update Verlauf</h3>
                   {/* Toggle für Added-Mode: Analysis vs Overlay - deaktiviert im Analyze-Mode */}
                   {isMultiBotChartMode && (
-                    <div className={`flex items-center bg-muted rounded-md p-0.5 ${analyzeMode ? 'opacity-50' : ''}`}>
+                    <div className={`flex items-center bg-muted rounded-md p-0.5 ${(analyzeMode || overlayAnalyzeMode) ? 'opacity-50' : ''}`}>
                       <button
-                        onClick={() => !analyzeMode && setAddedModeView('analysis')}
-                        disabled={analyzeMode}
+                        onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAddedModeView('analysis')}
+                        disabled={analyzeMode || overlayAnalyzeMode}
                         className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          analyzeMode 
+                          (analyzeMode || overlayAnalyzeMode) 
                             ? 'cursor-not-allowed text-muted-foreground'
                             : addedModeView === 'analysis'
                               ? 'bg-background text-foreground shadow-sm'
@@ -5710,10 +5713,10 @@ export default function Dashboard() {
                         Analysis
                       </button>
                       <button
-                        onClick={() => !analyzeMode && setAddedModeView('overlay')}
-                        disabled={analyzeMode}
+                        onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAddedModeView('overlay')}
+                        disabled={analyzeMode || overlayAnalyzeMode}
                         className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          analyzeMode 
+                          (analyzeMode || overlayAnalyzeMode) 
                             ? 'cursor-not-allowed text-muted-foreground'
                             : addedModeView === 'overlay'
                               ? 'bg-background text-foreground shadow-sm'
@@ -5733,8 +5736,8 @@ export default function Dashboard() {
                       variant="outline" 
                       size="sm" 
                       className="gap-2 min-w-[100px]"
-                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && !isMultiSelectCompareMode && setFromUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode || isMultiSelectCompareMode}
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !(analyzeMode || overlayAnalyzeMode) && !isMultiSelectCompareMode && setFromUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode || overlayAnalyzeMode || isMultiSelectCompareMode}
                     >
                       {selectedFromUpdate ? `#${selectedFromUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
@@ -5746,8 +5749,8 @@ export default function Dashboard() {
                       variant="outline" 
                       size="sm" 
                       className="gap-2 min-w-[100px]"
-                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !analyzeMode && !isMultiSelectCompareMode && setUntilUpdateDialogOpen(true)}
-                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode || isMultiSelectCompareMode}
+                      onClick={() => selectedBotName !== "Gesamt" && updateSelectionMode !== 'confirmed' && !(analyzeMode || overlayAnalyzeMode) && !isMultiSelectCompareMode && setUntilUpdateDialogOpen(true)}
+                      disabled={selectedBotName === "Gesamt" || updateSelectionMode === 'confirmed' || analyzeMode || overlayAnalyzeMode || isMultiSelectCompareMode}
                     >
                       {selectedUntilUpdate ? `#${selectedUntilUpdate.version}` : 'Select'}
                       <ChevronDown className="h-3 w-3" />
@@ -5833,9 +5836,9 @@ export default function Dashboard() {
                     size="icon" 
                     className={cn(
                       "h-7 w-7",
-                      markerViewActive && !analyzeMode && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                      markerViewActive && !(analyzeMode || overlayAnalyzeMode) && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                     )}
-                    disabled={analyzeMode}
+                    disabled={analyzeMode || overlayAnalyzeMode}
                     onClick={() => {
                       const newValue = !markerViewActive;
                       setMarkerViewActive(newValue);
@@ -5891,9 +5894,9 @@ export default function Dashboard() {
                     size="icon" 
                     className={cn(
                       "h-7 w-7",
-                      markerEditActive && !analyzeMode && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                      markerEditActive && !(analyzeMode || overlayAnalyzeMode) && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
                     )}
-                    disabled={analyzeMode}
+                    disabled={analyzeMode || overlayAnalyzeMode}
                     onClick={() => {
                       const newValue = !markerEditActive;
                       if (newValue) {
@@ -9955,7 +9958,7 @@ export default function Dashboard() {
             {/* Im Analyze-Status komplett ausgegraut und nicht anklickbar */}
             <div className={cn(
               "flex ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg",
-              analyzeMode && "opacity-50 pointer-events-none"
+              (analyzeMode || overlayAnalyzeMode) && "opacity-50 pointer-events-none"
             )} style={{ height: '300px' }}>
             {/* Collapse Toggle Strip - Left Side */}
             <div 
@@ -9963,7 +9966,7 @@ export default function Dashboard() {
                 "flex flex-col items-center justify-start pt-3 w-10 bg-muted/30 cursor-pointer hover-elevate border",
                 settingsCollapsed ? "rounded-md" : "rounded-l-md border-r-0"
               )}
-              onClick={() => !analyzeMode && setSettingsCollapsed(!settingsCollapsed)}
+              onClick={() => !(analyzeMode || overlayAnalyzeMode) && setSettingsCollapsed(!settingsCollapsed)}
               title={settingsCollapsed ? "Graph-Einstellungen ausklappen" : "Graph-Einstellungen einklappen"}
             >
               {settingsCollapsed ? (
@@ -9978,14 +9981,14 @@ export default function Dashboard() {
               <Card className="p-4 flex flex-col rounded-l-none border-l-0 w-64">
                 <h4 className="text-sm font-semibold mb-3">Graph-Einstellungen</h4>
                 <div className="space-y-3 flex-1">
-              <div className={cn("flex items-center justify-between", (updateSelectionMode === 'confirmed' || analyzeMode) && "opacity-50")}>
+              <div className={cn("flex items-center justify-between", (updateSelectionMode === 'confirmed' || analyzeMode || overlayAnalyzeMode) && "opacity-50")}>
                 <span className="text-sm">Letzten</span>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="gap-2"
-                  disabled={updateSelectionMode === 'confirmed' || analyzeMode}
-                  onClick={() => updateSelectionMode !== 'confirmed' && !analyzeMode && setTimeRangeOpen(true)}
+                  disabled={updateSelectionMode === 'confirmed' || analyzeMode || overlayAnalyzeMode}
+                  onClick={() => updateSelectionMode !== 'confirmed' && !(analyzeMode || overlayAnalyzeMode) && setTimeRangeOpen(true)}
                 >
                   {selectedTimeRange}
                   <ChevronDown className="h-3 w-3" />
@@ -10272,18 +10275,18 @@ export default function Dashboard() {
         </div>
 
         {/* Alle Einträge Bereich - im Analyze-Status komplett ausgegraut */}
-        <div className={cn("mb-8", analyzeMode && "opacity-50 pointer-events-none")}>
+        <div className={cn("mb-8", (analyzeMode || overlayAnalyzeMode) && "opacity-50 pointer-events-none")}>
           <div className="flex items-center gap-4 mb-4">
             <h2 className="text-xl font-bold">
               Alle Einträge
             </h2>
             <div className="flex items-center bg-muted rounded-lg p-1 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]" data-testid="toggle-alle-eintraege-mode">
               <button
-                onClick={() => !analyzeMode && setAlleEintraegeMode('compare')}
-                disabled={analyzeMode}
+                onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAlleEintraegeMode('compare')}
+                disabled={analyzeMode || overlayAnalyzeMode}
                 className={cn(
                   "px-3 py-1 text-sm font-medium rounded-md transition-colors",
-                  analyzeMode 
+                  (analyzeMode || overlayAnalyzeMode) 
                     ? "cursor-not-allowed"
                     : alleEintraegeMode === 'compare' 
                       ? "bg-background text-foreground shadow-sm" 
@@ -10294,11 +10297,11 @@ export default function Dashboard() {
                 Compare
               </button>
               <button
-                onClick={() => !analyzeMode && setAlleEintraegeMode('added')}
-                disabled={analyzeMode}
+                onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAlleEintraegeMode('added')}
+                disabled={analyzeMode || overlayAnalyzeMode}
                 className={cn(
                   "px-3 py-1 text-sm font-medium rounded-md transition-colors",
-                  analyzeMode 
+                  (analyzeMode || overlayAnalyzeMode) 
                     ? "cursor-not-allowed"
                     : alleEintraegeMode === 'added' 
                       ? "bg-background text-foreground shadow-sm" 
