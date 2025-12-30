@@ -2827,10 +2827,12 @@ export default function Dashboard() {
     });
     
     // In Array-Format für BarChart umwandeln
+    // Berechne percent pro Bot-Type: (profit / capital) * 100
     return Object.entries(botTypeData).map(([name, data]) => ({
       botTypeName: name,
       profit: data.profit,
       capital: data.capital,
+      percent: data.capital > 0 ? (data.profit / data.capital) * 100 : 0,
       updateMatrixCount: data.updateMatrixCount,
       closedBotsCount: data.closedBotsCount
     }));
@@ -5868,9 +5870,10 @@ export default function Dashboard() {
                   const cardToMetricKey: Record<string, string> = {
                     'Gesamtprofit': 'profit',
                     'Gesamtkapital': 'capital',
+                    'Gesamtprofit %': 'percent',
                   };
                   const metricKey = cardToMetricKey[cardId];
-                  if (!metricKey) return; // Nur Gesamtprofit und Gesamtkapital unterstützt
+                  if (!metricKey) return; // Nur Gesamtprofit, Gesamtkapital und Gesamtprofit % unterstützt
                   
                   setActivePencilBarMetrics(prev => {
                     const newSet = new Set(prev);
@@ -5888,9 +5891,15 @@ export default function Dashboard() {
                   const cardToMetricKey: Record<string, string> = {
                     'Gesamtprofit': 'profit',
                     'Gesamtkapital': 'capital',
+                    'Gesamtprofit %': 'percent',
                   };
                   const metricKey = cardToMetricKey[cardId];
                   return metricKey ? activePencilBarMetrics.has(metricKey) : false;
+                };
+                
+                // Prüfe ob Card für Pencil Bar Mode klickbar ist
+                const isPencilBarCardClickable = (cardId: string): boolean => {
+                  return ['Gesamtprofit', 'Gesamtkapital', 'Gesamtprofit %'].includes(cardId);
                 };
                 
                 return (
@@ -5898,8 +5907,8 @@ export default function Dashboard() {
                     <div 
                       onClick={() => {
                         if (isCardEditMode) return;
-                        // Im overlayAnalyzeMode: Toggle Bar-Metriken für Gesamtprofit/Gesamtkapital
-                        if (overlayAnalyzeMode && (cardId === 'Gesamtprofit' || cardId === 'Gesamtkapital')) {
+                        // Im overlayAnalyzeMode: Toggle Bar-Metriken für Gesamtprofit/Gesamtkapital/Gesamtprofit %
+                        if (overlayAnalyzeMode && isPencilBarCardClickable(cardId)) {
                           handlePencilBarCardClick(cardId);
                         } else {
                           toggleMetricCard(cardId);
@@ -5907,7 +5916,7 @@ export default function Dashboard() {
                       }}
                       className={`cursor-pointer transition-all relative ${
                         // Im overlayAnalyzeMode: Zeige Ring für aktive Bar-Metriken
-                        overlayAnalyzeMode && (cardId === 'Gesamtprofit' || cardId === 'Gesamtkapital')
+                        overlayAnalyzeMode && isPencilBarCardClickable(cardId)
                           ? isPencilBarCardActive(cardId)
                             ? 'ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)] rounded-lg'
                             : ''
@@ -7522,6 +7531,7 @@ export default function Dashboard() {
                         pencilBarChartData.forEach(d => {
                           if (activePencilBarMetrics.has('profit')) allValues.push(d.profit);
                           if (activePencilBarMetrics.has('capital')) allValues.push(d.capital);
+                          if (activePencilBarMetrics.has('percent')) allValues.push(d.percent);
                         });
                         if (allValues.length === 0) return [0, 1];
                         const minVal = Math.min(...allValues);
@@ -7592,6 +7602,16 @@ export default function Dashboard() {
                     )}
                     {activePencilBarMetrics.has('capital') && (
                       <Bar dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
+                    )}
+                    {activePencilBarMetrics.has('percent') && (
+                      <Bar dataKey="percent" radius={[3, 3, 0, 0]} maxBarSize={40}>
+                        {pencilBarChartData.map((entry, index) => (
+                          <Cell 
+                            key={`percent-cell-${index}`} 
+                            fill={entry.percent >= 0 ? 'hsl(280, 65%, 60%)' : 'hsl(0, 84%, 60%)'} 
+                          />
+                        ))}
+                      </Bar>
                     )}
                   </BarChart>
                 </ResponsiveContainer>
