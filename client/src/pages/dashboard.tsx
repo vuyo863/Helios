@@ -7465,27 +7465,15 @@ export default function Dashboard() {
                       }}
                     />
                     <YAxis 
-                      yAxisId="profit"
-                      orientation="left"
                       tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
-                      axisLine={{ stroke: 'hsl(142, 76%, 36%)', strokeWidth: 2 }}
+                      axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                       tickCount={8}
                       domain={['auto', 'auto']}
                       tickFormatter={(value) => `${value.toFixed(0)}`}
-                      label={{ value: 'Profit (USDT)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(142, 76%, 36%)', fontSize: 10 } }}
+                      label={{ value: 'USDT', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))', fontSize: 10 } }}
                     />
-                    <ReferenceLine yAxisId="profit" y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                    <YAxis 
-                      yAxisId="capital"
-                      orientation="right"
-                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                      tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
-                      axisLine={{ stroke: 'hsl(217, 91%, 60%)', strokeWidth: 2 }}
-                      tickCount={8}
-                      tickFormatter={(value) => `${value.toFixed(0)}`}
-                      label={{ value: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital (USDT)' : 'Investitionsmenge (USDT)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: 'hsl(217, 91%, 60%)', fontSize: 10 } }}
-                    />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
@@ -7520,7 +7508,7 @@ export default function Dashboard() {
                         );
                       }}
                     />
-                    <Bar yAxisId="profit" dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={40}>
+                    <Bar dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={40}>
                       {pencilBarChartData.map((entry, index) => (
                         <Cell 
                           key={`profit-cell-${index}`} 
@@ -7528,7 +7516,7 @@ export default function Dashboard() {
                         />
                       ))}
                     </Bar>
-                    <Bar yAxisId="capital" dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
+                    <Bar dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
