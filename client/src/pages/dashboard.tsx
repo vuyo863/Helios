@@ -2748,8 +2748,8 @@ export default function Dashboard() {
       selectedIds.includes(String(update.botTypeId))
     );
     
-    // Profit, Update-Matrix Anzahl und Closed-Bots Anzahl pro Bot-Type aggregieren
-    const botTypeData: Record<string, { profit: number; updateMatrixCount: number; closedBotsCount: number }> = {};
+    // Profit, Kapital, Update-Matrix Anzahl und Closed-Bots Anzahl pro Bot-Type aggregieren
+    const botTypeData: Record<string, { profit: number; capital: number; updateMatrixCount: number; closedBotsCount: number }> = {};
     
     relevantUpdates.forEach((update: any) => {
       const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
@@ -2772,8 +2772,15 @@ export default function Dashboard() {
       
       // Initialisiere Bot-Type Daten falls noch nicht vorhanden
       if (!botTypeData[botTypeName]) {
-        botTypeData[botTypeName] = { profit: 0, updateMatrixCount: 0, closedBotsCount: 0 };
+        botTypeData[botTypeName] = { profit: 0, capital: 0, updateMatrixCount: 0, closedBotsCount: 0 };
       }
+      
+      // Kapital berechnen (je nach profitPercentBase)
+      const totalInvestment = parseFloat(update.totalInvestment) || 0;
+      const extraMargin = parseFloat(update.extraMargin) || 0;
+      const baseInvestment = totalInvestment - extraMargin;
+      const capital = profitPercentBase === 'gesamtinvestment' ? totalInvestment : baseInvestment;
+      botTypeData[botTypeName].capital += capital;
       
       // Profit berechnen (gleiche Logik wie pencilPeriodAnalyzeValues)
       const isClosedBot = update.status === 'Closed Bots';
@@ -2820,10 +2827,11 @@ export default function Dashboard() {
     return Object.entries(botTypeData).map(([name, data]) => ({
       botTypeName: name,
       profit: data.profit,
+      capital: data.capital,
       updateMatrixCount: data.updateMatrixCount,
       closedBotsCount: data.closedBotsCount
     }));
-  }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes]);
+  }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, profitPercentBase]);
 
   // ===================================================================================
   // ========== ENDE OVERLAY MODUS (ADDED) SECTION ==========
@@ -7406,7 +7414,8 @@ export default function Dashboard() {
                   <BarChart
                     data={pencilBarChartData}
                     margin={{ top: 10, right: 30, left: 20, bottom: 50 }}
-                    barCategoryGap="60%"
+                    barCategoryGap="40%"
+                    barGap={4}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
@@ -7456,11 +7465,24 @@ export default function Dashboard() {
                       }}
                     />
                     <YAxis 
+                      yAxisId="profit"
+                      orientation="left"
                       tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
-                      axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
-                      tickCount={10}
-                      tickFormatter={(value) => `${value.toFixed(2)}`}
+                      axisLine={{ stroke: 'hsl(142, 76%, 36%)', strokeWidth: 2 }}
+                      tickCount={8}
+                      tickFormatter={(value) => `${value.toFixed(0)}`}
+                      label={{ value: 'Profit (USDT)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(142, 76%, 36%)', fontSize: 10 } }}
+                    />
+                    <YAxis 
+                      yAxisId="capital"
+                      orientation="right"
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'hsl(217, 91%, 60%)', strokeWidth: 2 }}
+                      tickCount={8}
+                      tickFormatter={(value) => `${value.toFixed(0)}`}
+                      label={{ value: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital (USDT)' : 'Investitionsmenge (USDT)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: 'hsl(217, 91%, 60%)', fontSize: 10 } }}
                     />
                     <Tooltip 
                       contentStyle={{ 
@@ -7470,22 +7492,41 @@ export default function Dashboard() {
                         padding: '8px 12px',
                         fontSize: '12px'
                       }}
-                      itemStyle={{ color: 'hsl(142, 76%, 36%)', padding: 0 }}
-                      labelStyle={{ fontWeight: 600, marginBottom: '2px' }}
+                      labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
                       cursor={{ fill: 'transparent' }}
                       isAnimationActive={false}
-                      formatter={(value: number) => [`Gesamtprofit: ${value.toFixed(2)} USDT`, null]}
-                      labelFormatter={(label) => label}
-                      separator=""
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload || payload.length === 0) return null;
+                        const data = payload[0]?.payload;
+                        if (!data) return null;
+                        return (
+                          <div style={{ 
+                            backgroundColor: 'hsl(var(--background))', 
+                            border: '2px solid hsl(142, 76%, 36%)',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            fontSize: '12px'
+                          }}>
+                            <p style={{ fontWeight: 600, marginBottom: '4px' }}>{label}</p>
+                            <p style={{ color: data.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)' }}>
+                              Gesamtprofit: {data.profit.toFixed(2)} USDT
+                            </p>
+                            <p style={{ color: 'hsl(217, 91%, 60%)' }}>
+                              {profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge'}: {data.capital.toFixed(2)} USDT
+                            </p>
+                          </div>
+                        );
+                      }}
                     />
-                    <Bar dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={60}>
+                    <Bar yAxisId="profit" dataKey="profit" radius={[3, 3, 0, 0]} maxBarSize={40}>
                       {pencilBarChartData.map((entry, index) => (
                         <Cell 
-                          key={`cell-${index}`} 
+                          key={`profit-cell-${index}`} 
                           fill={entry.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)'} 
                         />
                       ))}
                     </Bar>
+                    <Bar yAxisId="capital" dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
