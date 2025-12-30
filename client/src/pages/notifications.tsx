@@ -620,12 +620,14 @@ export default function Notifications() {
 
   // Gefilterte Vorschläge basierend auf Suchanfrage und Market Type
   const allPairsForCurrentMarket = marketType === 'spot' ? allBinancePairs : allBinanceFuturesPairs;
-  const filteredSuggestions = allPairsForCurrentMarket
-    .filter(pair =>
-      pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !watchlist.includes(pair.id)
-    )
-    .slice(0, 10); // Zeige maximal 10 Vorschläge
+  const filteredSuggestions = searchQuery.trim() === '' 
+    ? [] 
+    : allPairsForCurrentMarket
+        .filter(pair =>
+          pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !watchlist.includes(pair.id)
+        )
+        .slice(0, 10); // Zeige maximal 10 Vorschläge
 
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
@@ -1064,10 +1066,16 @@ export default function Notifications() {
                 {searchQuery && (
                   <div className="border rounded-lg overflow-hidden">
                     <div className="bg-muted px-3 py-2">
-                      <p className="text-sm font-medium">Vorschläge</p>
+                      <p className="text-sm font-medium">
+                        Vorschläge {marketType === 'futures' && allBinanceFuturesPairs.length === 0 && '(Lade Futures-Pairs...)'}
+                      </p>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      {filteredSuggestions.length > 0 ? (
+                      {allPairsForCurrentMarket.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground text-sm">
+                          Lade {marketType === 'spot' ? 'Spot' : 'Futures'} Pairs...
+                        </div>
+                      ) : filteredSuggestions.length > 0 ? (
                         filteredSuggestions.map((pair) => (
                           <div
                             key={pair.id}
@@ -1097,7 +1105,7 @@ export default function Notifications() {
                         ))
                       ) : (
                         <div className="p-4 text-center text-muted-foreground text-sm">
-                          Keine Ergebnisse gefunden
+                          Keine Ergebnisse gefunden für "{searchQuery}"
                         </div>
                       )}
                     </div>
