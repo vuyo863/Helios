@@ -7551,7 +7551,8 @@ export default function Dashboard() {
                         const domainMax = Math.max(maxVal, 0);
                         // Padding nur auf der Seite wo Werte sind (nicht bei 0)
                         const range = domainMax - domainMin;
-                        const padding = range * 0.1;
+                        // Mindest-Padding für kleine Werte: min 20% des Bereichs
+                        const padding = Math.max(range * 0.2, Math.abs(minVal) * 0.5, Math.abs(maxVal) * 0.5);
                         // Wenn alle negativ: nur unten Padding, oben bleibt exakt 0
                         if (maxVal <= 0) return [domainMin - padding, 0];
                         // Wenn alle positiv: nur oben Padding, unten bleibt exakt 0
