@@ -3019,6 +3019,32 @@ export default function Dashboard() {
     return { startTs, endTs, update, isClosedBot, version };
   }, [analyzeMode, appliedUpdateId, effectiveSelectedBotTypeData, allBotTypeUpdates]);
 
+  /* ========== OVERLAY STIFT-MODUS: SEPARATE ANALYZE BOUNDS BERECHNUNG ========== */
+  // KOMPLETT GETRENNT vom normalen analyzeMode - eigene States, eigene Logik
+  // Berechnet Zeitgrenzen für den overlayAnalyzeMode basierend auf appliedPencilPeriodKey
+  const overlayAnalyzeModeBounds = useMemo(() => {
+    // Nur aktiv wenn overlayAnalyzeMode UND appliedPencilPeriodKey vorhanden
+    if (!overlayAnalyzeMode || !appliedPencilPeriodKey) {
+      return null;
+    }
+    
+    // Parse Period Key: Format ist "{startTs}-{endTs}"
+    const parts = appliedPencilPeriodKey.split('-');
+    if (parts.length !== 2) {
+      return null;
+    }
+    
+    const startTs = parseInt(parts[0], 10);
+    const endTs = parseInt(parts[1], 10);
+    
+    if (isNaN(startTs) || isNaN(endTs)) {
+      return null;
+    }
+    
+    return { startTs, endTs };
+  }, [overlayAnalyzeMode, appliedPencilPeriodKey]);
+  /* ========== ENDE OVERLAY STIFT-MODUS ANALYZE BOUNDS ========== */
+
   // Berechne Highest und Lowest Value für jede aktive Metrik
   // Diese werden als Marker im Chart angezeigt wenn die entsprechenden Toggles aktiv sind
   const extremeValues = useMemo(() => {
@@ -4186,6 +4212,41 @@ export default function Dashboard() {
       return [zoomedStart, zoomedEnd];
     }
     
+    /* ========== OVERLAY STIFT-MODUS ANALYZE: SEPARATE X-AXIS DOMAIN ========== */
+    // KOMPLETT GETRENNT vom normalen analyzeMode - eigene Zeitgrenzen
+    if (overlayAnalyzeModeBounds) {
+      const { startTs, endTs } = overlayAnalyzeModeBounds;
+      const rawRange = endTs - startTs;
+      
+      // Mindestens 1 Stunde Range für Sichtbarkeit
+      const range = rawRange > 0 ? rawRange : 60 * 60 * 1000;
+      const padding = range * 0.05;
+      
+      const center = (startTs + endTs) / 2;
+      const baseMin = center - range / 2 - padding;
+      const baseMax = center + range / 2 + padding;
+      const baseRange = baseMax - baseMin;
+      
+      // Bei Zoom 1 und Pan 0: Zeige den vollen Bereich mit Padding
+      if (chartZoomX === 1 && chartPanX === 0) {
+        return [baseMin, baseMax];
+      }
+      
+      // Zoom anwenden
+      const zoomedRange = baseRange / chartZoomX;
+      const zoomCenter = (baseMin + baseMax) / 2;
+      
+      // Pan-Offset
+      const chartWidth = 600;
+      const panOffset = -(chartPanX / chartWidth) * baseRange;
+      
+      const zoomedStart = zoomCenter - zoomedRange / 2 + panOffset;
+      const zoomedEnd = zoomCenter + zoomedRange / 2 + panOffset;
+      
+      return [zoomedStart, zoomedEnd];
+    }
+    /* ========== ENDE OVERLAY STIFT-MODUS ANALYZE X-AXIS DOMAIN ========== */
+    
     // COMPARE MODUS: Nutze frühestes und spätestes Datum aller ausgewählten Bot-Types
     // WICHTIG: Zoom und Pan auch hier anwenden!
     if (isMultiSelectCompareMode && compareChartData.minTimestamp > 0 && compareChartData.maxTimestamp > 0) {
@@ -4286,7 +4347,7 @@ export default function Dashboard() {
     const zoomedEnd = center + zoomedRange / 2 + panOffset;
     
     return [zoomedStart, zoomedEnd];
-  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
+  }, [transformedChartData, chartZoomX, chartPanX, analyzeModeBounds, overlayAnalyzeModeBounds, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
 
   // ===== ZEITFILTER FÜR STATCARDS =====
   // Diese gefilterten Updates werden in allen StatCard-Berechnungen verwendet
@@ -6093,6 +6154,43 @@ export default function Dashboard() {
                             );
                           }
                           
+                          {/* ========== OVERLAY STIFT-MODUS: SEPARATE PERIOD INTERAKTION ========== */}
+                          {/* KOMPLETT GETRENNT vom Auge-Modus - eigene States, eigene Logik */}
+                          if (markerEditActive && isOverlayMode && !overlayAnalyzeMode) {
+                            // Stift-Modus: Single-Select für Periods
+                            const isPencilPeriodHovered = hoveredPencilPeriodKey === periodKey;
+                            const isPencilPeriodSelected = selectedPencilPeriodKey === periodKey;
+                            const isPencilPeriodApplied = appliedPencilPeriodKey === periodKey;
+                            const isPencilPeriodActive = isPencilPeriodHovered || isPencilPeriodSelected || isPencilPeriodApplied;
+                            
+                            elements.push(
+                              <rect
+                                key={`pencil-period-rect-${periodKey}`}
+                                x={`${startXPercent}%`}
+                                y="45%"
+                                width={`${widthPercent}%`}
+                                height="60%"
+                                fill={isPencilPeriodActive ? 'rgba(8, 145, 178, 0.15)' : 'transparent'}
+                                stroke={isPencilPeriodActive ? 'rgb(8, 145, 178)' : 'transparent'}
+                                strokeWidth={isPencilPeriodActive ? 2 : 0}
+                                strokeDasharray={isPencilPeriodApplied && !isPencilPeriodSelected ? "4 2" : "none"}
+                                rx="4"
+                                style={{ cursor: 'pointer' }}
+                                onMouseEnter={() => setHoveredPencilPeriodKey(periodKey)}
+                                onMouseLeave={() => setHoveredPencilPeriodKey(null)}
+                                onClick={() => {
+                                  // Stift-Modus: Single-Select - entweder auswählen oder abwählen
+                                  if (selectedPencilPeriodKey === periodKey) {
+                                    setSelectedPencilPeriodKey(null);
+                                  } else {
+                                    setSelectedPencilPeriodKey(periodKey);
+                                  }
+                                }}
+                              />
+                            );
+                          }
+                          {/* ========== ENDE OVERLAY STIFT-MODUS PERIOD INTERAKTION ========== */}
+                          
                           // Zeit-Label
                           elements.push(
                             <text
@@ -7014,6 +7112,18 @@ export default function Dashboard() {
                         })()
                       : isMultiSelectCompareMode
                         ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
+                        /* ========== OVERLAY STIFT-MODUS ANALYZE: SEPARATE SECTION ========== */
+                        // KOMPLETT GETRENNT vom normalen Overlay - filtered auf Period Zeitraum
+                        : isOverlayMode && overlayAnalyzeMode && overlayAnalyzeModeBounds
+                          ? (() => {
+                              // Filtere overlayChartData auf den Zeitraum der ausgewählten Period
+                              const { startTs, endTs } = overlayAnalyzeModeBounds;
+                              const filteredData = overlayChartData.data.filter(point => 
+                                point.timestamp >= startTs && point.timestamp <= endTs
+                              );
+                              return filteredData.length > 0 ? filteredData : [{ time: '-', timestamp: 0 }];
+                            })()
+                        /* ========== ENDE OVERLAY STIFT-MODUS ANALYZE ========== */
                         // ========== OVERLAY MODUS: Eigene Datenquelle (SEPARATE SECTION) ==========
                         : isOverlayMode
                           ? (overlayChartData.data.length > 0 ? overlayChartData.data : [{ time: '-', timestamp: 0 }])
@@ -8985,8 +9095,184 @@ export default function Dashboard() {
           <div className="flex flex-col flex-shrink-0">
             {/* Upper Card - Selected Metric Preview (fills space above Graph-Einstellungen) */}
             <Card className="p-4 w-[296px] mb-4 flex-1 flex flex-col ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]">
-              {/* ========== OVERLAY-MODUS: Period-Ansicht (immer aktiv wenn Overlay) ========== */}
+              {/* ========== OVERLAY-MODUS: Unterscheide zwischen Stift und Auge ========== */}
               {isOverlayMode ? (
+                // ========== OVERLAY STIFT-MODUS: KOMPLETT SEPARATE SEKTION (NICHT mit Auge-Modus vermischen!) ==========
+                markerEditActive || overlayAnalyzeMode ? (
+                <>
+                  {/* ========== OVERLAY STIFT-MODUS INHALT - SEPARATE SECTION ========== */}
+                  <Card className="p-3 mb-3" data-testid="card-pencil-period-details">
+                    {(() => {
+                      // Stift-Modus: Finde aktive Period Key
+                      // Priorität: Selected > Hovered (nur wenn Stift aktiv) > Applied (dauerhaft)
+                      const activePencilKey = selectedPencilPeriodKey || (markerEditActive ? hoveredPencilPeriodKey : null) || appliedPencilPeriodKey;
+                      
+                      let periodLabel = '--';
+                      let fromDate = '--';
+                      let untilDate = '--';
+                      let gesamtprofit = '--';
+                      
+                      if (activePencilKey !== null) {
+                        const [startTsStr, endTsStr] = activePencilKey.split('-');
+                        const startTs = parseInt(startTsStr, 10);
+                        const endTs = parseInt(endTsStr, 10);
+                        
+                        // Period Label (Zeitdifferenz)
+                        const diffMs = endTs - startTs;
+                        const hours = diffMs / (1000 * 60 * 60);
+                        const days = hours / 24;
+                        if (days >= 1) {
+                          periodLabel = `${Math.round(days)} ${Math.round(days) === 1 ? 'Tag' : 'Tage'}`;
+                        } else {
+                          periodLabel = `${Math.round(hours)} ${Math.round(hours) === 1 ? 'Stunde' : 'Stunden'}`;
+                        }
+                        
+                        // Datum formatieren
+                        const formatDateLocal = (ts: number) => {
+                          const d = new Date(ts);
+                          return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
+                        };
+                        fromDate = formatDateLocal(startTs);
+                        untilDate = formatDateLocal(endTs);
+                        
+                        // Berechne Gesamtprofit für diese Period
+                        const selectedIds = selectedChartBotTypes.map(id => String(id));
+                        if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
+                          const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
+                            selectedIds.includes(String(update.botTypeId))
+                          );
+                          
+                          let totalPeriodProfit = 0;
+                          relevantUpdates.forEach((update: any) => {
+                            const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                            const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                            if (!updateStartDate || !updateEndDate) return;
+                            
+                            const updateStartTs = updateStartDate.getTime();
+                            const updateEndTs = updateEndDate.getTime();
+                            const overlapStart = Math.max(startTs, updateStartTs);
+                            const overlapEnd = Math.min(endTs, updateEndTs);
+                            if (overlapStart >= overlapEnd) return;
+                            
+                            const isClosedBot = update.status === 'Closed Bots';
+                            const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+                            const profit = parseFloat(update.profit) || 0;
+                            const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+                            
+                            if (isClosedBot) {
+                              if (updateEndTs >= startTs && updateEndTs < endTs) {
+                                totalPeriodProfit += profit;
+                              }
+                            } else {
+                              totalPeriodProfit += avgGridProfitHour * overlapHours;
+                            }
+                          });
+                          gesamtprofit = totalPeriodProfit.toFixed(2);
+                        }
+                      }
+                      
+                      if (!activePencilKey) {
+                        return (
+                          <>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-muted-foreground">Keine Period ausgewählt</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-muted-foreground">Period</span>
+                              <span className="text-sm font-medium text-muted-foreground">--</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Laufzeit</span>
+                              <span className="text-xs text-muted-foreground">--</span>
+                            </div>
+                          </>
+                        );
+                      }
+                      
+                      return (
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold">Period: {periodLabel}</span>
+                          </div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-muted-foreground">Von</span>
+                            <span className="text-xs">{fromDate}</span>
+                          </div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-muted-foreground">Bis</span>
+                            <span className="text-xs">{untilDate}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Gesamtprofit</span>
+                            <span className={`text-sm font-medium ${parseFloat(gesamtprofit) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {parseFloat(gesamtprofit) >= 0 ? '+' : ''}${gesamtprofit}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </Card>
+                  
+                  {/* Separator */}
+                  <div className="border-t my-2" />
+                  
+                  {/* Action Icons Row - Stift-Modus Buttons */}
+                  <div className="flex items-center justify-between" data-testid="pencil-action-icons-overlay">
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8" 
+                        title="Auswahl löschen"
+                        disabled={overlayAnalyzeMode || (!selectedPencilPeriodKey && !appliedPencilPeriodKey)}
+                        onClick={() => {
+                          setSelectedPencilPeriodKey(null);
+                          setAppliedPencilPeriodKey(null);
+                          setHoveredPencilPeriodKey(null);
+                        }}
+                        data-testid="button-clear-pencil-period"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className={cn(
+                          "h-8 w-8",
+                          overlayAnalyzeMode && "ring-2 ring-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.6)]"
+                        )}
+                        title="Analysieren"
+                        disabled={!appliedPencilPeriodKey}
+                        onClick={() => {
+                          setOverlayAnalyzeMode(!overlayAnalyzeMode);
+                        }}
+                        data-testid="button-analyze-pencil-period"
+                      >
+                        <LineChartIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      disabled={!markerEditActive || !selectedPencilPeriodKey || overlayAnalyzeMode}
+                      onClick={() => {
+                        if (selectedPencilPeriodKey) {
+                          // Auswahl übernehmen: Als "angewandt" speichern
+                          setAppliedPencilPeriodKey(selectedPencilPeriodKey);
+                          // Stift-Modus bleibt aktiv, aber Selected wird geleert
+                          setSelectedPencilPeriodKey(null);
+                          setHoveredPencilPeriodKey(null);
+                        }
+                      }}
+                      data-testid="button-apply-pencil-period"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                  {/* ========== ENDE OVERLAY STIFT-MODUS INHALT ========== */}
+                </>
+                ) : (
+                // ========== OVERLAY AUGE-MODUS: GOLDEN STATE - NICHT ÄNDERN! ==========
                 <>
                   {/* Inner Content Card - Period Details (gleiche Struktur wie Standard-Modus) */}
                   <Card className="p-3 mb-3" data-testid="card-period-details">
@@ -9338,7 +9624,9 @@ export default function Dashboard() {
                       Apply
                     </Button>
                   </div>
+                  {/* ========== ENDE OVERLAY AUGE-MODUS GOLDEN STATE ========== */}
                 </>
+                )
               ) : (
               /* ========== STANDARD-MODUS: Original Update Card ========== */
               <>
