@@ -5935,7 +5935,7 @@ export default function Dashboard() {
                 
                 {/* Marker Container - Dynamic Grid aligned with Chart */}
                 <div 
-                  className="relative h-20 border rounded-sm flex-1"
+                  className="relative h-20 border rounded-sm flex-1 overflow-hidden"
                   style={{ 
                     marginRight: '30px',
                     borderColor: 'hsl(var(--border))'
@@ -5943,7 +5943,7 @@ export default function Dashboard() {
                   data-testid="chart-marker-container"
                 >
                 {/* Dynamic vertical grid lines - synced with chart X-axis */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-auto" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                <svg className="absolute inset-0 w-full h-full pointer-events-auto" preserveAspectRatio="none">
                   {/* Horizontal grid lines (static) */}
                   {[0.25, 0.5, 0.75].map((ratio) => (
                     <line
