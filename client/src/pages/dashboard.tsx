@@ -7526,16 +7526,22 @@ export default function Dashboard() {
                         if (allValues.length === 0) return [0, 1];
                         const minVal = Math.min(...allValues);
                         const maxVal = Math.max(...allValues);
-                        // Wenn alle Werte negativ: 0 ist Maximum (oben), Minimum ist unten
-                        // Wenn alle Werte positiv: 0 ist Minimum (unten), Maximum ist oben
-                        // Wenn gemischt: beides
+                        // Wenn alle Werte negativ: 0 ist Maximum (oben), Minimum ist unten mit Padding
+                        // Wenn alle Werte positiv: 0 ist Minimum (unten), Maximum ist oben mit Padding
+                        // Wenn gemischt: beides mit Padding
                         const domainMin = Math.min(minVal, 0);
                         const domainMax = Math.max(maxVal, 0);
-                        // Etwas Padding hinzufügen (5%)
+                        // Padding nur auf der Seite wo Werte sind (nicht bei 0)
                         const range = domainMax - domainMin;
-                        const padding = range * 0.05;
+                        const padding = range * 0.1;
+                        // Wenn alle negativ: nur unten Padding, oben bleibt exakt 0
+                        if (maxVal <= 0) return [domainMin - padding, 0];
+                        // Wenn alle positiv: nur oben Padding, unten bleibt exakt 0
+                        if (minVal >= 0) return [0, domainMax + padding];
+                        // Gemischt: beidseitig Padding
                         return [domainMin - padding, domainMax + padding];
                       })()}
+                      allowDecimals={false}
                       tickFormatter={(value) => `${value.toFixed(0)}`}
                       label={{ value: 'USDT', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))', fontSize: 10 } }}
                     />
