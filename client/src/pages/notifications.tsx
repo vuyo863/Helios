@@ -77,10 +77,17 @@ export default function Notifications() {
   const [allBinancePairs, setAllBinancePairs] = useState<TrendPrice[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Store watchlist with marketType information
   const [watchlist, setWatchlist] = useState<string[]>(() => {
     // Load watchlist from localStorage on mount
     const saved = localStorage.getItem('notifications-watchlist');
     return saved ? JSON.parse(saved) : [];
+  });
+
+  // Store marketType for each pair
+  const [pairMarketTypes, setPairMarketTypes] = useState<Record<string, 'spot' | 'futures'>>(() => {
+    const saved = localStorage.getItem('notifications-pair-market-types');
+    return saved ? JSON.parse(saved) : {};
   });
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
@@ -164,6 +171,27 @@ export default function Notifications() {
     fetchAllBinanceFuturesPairs();
   }, []);
 
+  // Load watchlist pairs into availableTradingPairs when data is available
+  useEffect(() => {
+    if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
+    if (watchlist.length === 0) return;
+
+    watchlist.forEach(id => {
+      // Check if already in availableTradingPairs
+      if (availableTradingPairs.find(p => p.id === id)) return;
+
+      // Try to find in both spot and futures
+      const pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      
+      if (pair) {
+        setAvailableTradingPairs(prev => {
+          if (prev.find(p => p.id === id)) return prev;
+          return [...prev, pair];
+        });
+      }
+    });
+  }, [allBinancePairs, allBinanceFuturesPairs, watchlist]);
+
   // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
   const fetchSpotPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
@@ -246,20 +274,19 @@ export default function Notifications() {
 
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
-    if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
+    if (availableTradingPairs.length === 0) return;
 
-    // Separate Spot and Futures symbols
+    // Separate Spot and Futures symbols based on marketType
     const spotSymbols: string[] = [];
     const futuresSymbols: string[] = [];
 
-    watchlist.forEach(id => {
-      const spotPair = allBinancePairs.find(p => p.id === id);
-      const futuresPair = allBinanceFuturesPairs.find(p => p.id === id);
-
-      if (spotPair) {
-        spotSymbols.push(spotPair.symbol);
-      } else if (futuresPair) {
-        futuresSymbols.push(futuresPair.symbol);
+    availableTradingPairs.forEach(pair => {
+      if (!watchlist.includes(pair.id)) return;
+      
+      if (pair.marketType === 'futures') {
+        futuresSymbols.push(pair.symbol);
+      } else {
+        spotSymbols.push(pair.symbol);
       }
     });
 
@@ -280,7 +307,7 @@ export default function Notifications() {
         clearInterval(priceUpdateIntervalRef.current);
       }
     };
-  }, [watchlist, allBinancePairs, allBinanceFuturesPairs]);
+  }, [watchlist, availableTradingPairs]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
     // Load saved thresholds from localStorage on mount
@@ -511,6 +538,11 @@ export default function Notifications() {
     localStorage.setItem('notifications-watchlist', JSON.stringify(watchlist));
   }, [watchlist]);
 
+  // Save pair market types to localStorage
+  useEffect(() => {
+    localStorage.setItem('notifications-pair-market-types', JSON.stringify(pairMarketTypes));
+  }, [pairMarketTypes]);
+
   // Save threshold settings to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
@@ -557,6 +589,12 @@ export default function Notifications() {
       const pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
       if (pair && !availableTradingPairs.find(p => p.id === id)) {
         setAvailableTradingPairs(prev => [...prev, pair]);
+        
+        // Store the market type for this pair
+        setPairMarketTypes(prev => ({
+          ...prev,
+          [id]: pair.marketType || 'spot'
+        }));
       }
       
       // Initialize settings only if not already existing
