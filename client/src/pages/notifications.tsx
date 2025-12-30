@@ -268,7 +268,13 @@ export default function Notifications() {
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          const index = updated.findIndex(p => p.symbol === ticker.symbol && p.marketType === 'futures');
+          // WICHTIG: Find by symbol AND check stored marketType from pairMarketTypes
+          const index = updated.findIndex(p => {
+            if (p.symbol !== ticker.symbol) return false;
+            const storedMarketType = pairMarketTypes[p.id] || 'spot';
+            return storedMarketType === 'futures';
+          });
+          
           if (index !== -1) {
             updated[index] = {
               ...updated[index],
@@ -279,6 +285,7 @@ export default function Notifications() {
               priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
               priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
               lastUpdate: new Date(),
+              marketType: 'futures' as const // Ensure marketType is set
             };
           }
         });
@@ -295,14 +302,17 @@ export default function Notifications() {
   useEffect(() => {
     if (availableTradingPairs.length === 0) return;
 
-    // Separate Spot and Futures symbols based on marketType
+    // Separate Spot and Futures symbols based on STORED marketType from pairMarketTypes
     const spotSymbols: string[] = [];
     const futuresSymbols: string[] = [];
 
     availableTradingPairs.forEach(pair => {
       if (!watchlist.includes(pair.id)) return;
       
-      if (pair.marketType === 'futures') {
+      // WICHTIG: Use stored marketType from pairMarketTypes, not pair.marketType directly
+      const storedMarketType = pairMarketTypes[pair.id] || 'spot';
+      
+      if (storedMarketType === 'futures') {
         futuresSymbols.push(pair.symbol);
       } else {
         spotSymbols.push(pair.symbol);
@@ -326,7 +336,7 @@ export default function Notifications() {
         clearInterval(priceUpdateIntervalRef.current);
       }
     };
-  }, [watchlist, availableTradingPairs]);
+  }, [watchlist, availableTradingPairs, pairMarketTypes]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
     // Load saved thresholds from localStorage on mount
@@ -1104,6 +1114,8 @@ export default function Notifications() {
                     <div className="divide-y">
                       {watchlist.map((tpId) => {
                         const pair = getTrendPrice(tpId);
+                        const storedMarketType = pairMarketTypes[tpId] || 'spot'; // WICHTIG: Use stored marketType
+                        
                         return (
                           <div
                             key={tpId}
@@ -1113,14 +1125,14 @@ export default function Notifications() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <p className="font-medium">{pair?.name}</p>
-                                {pair?.marketType === 'futures' && (
+                                {storedMarketType === 'futures' && (
                                   <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
                                     FUTURE
                                   </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-muted-foreground">${pair?.price}</span>
+                                <span className="text-muted-foreground">${pair?.price || 'Loading...'}</span>
                                 {pair?.priceChangePercent24h && (
                                   <span className={cn(
                                     "text-xs font-medium",
