@@ -160,6 +160,22 @@ export default function Notifications() {
 
       setAllBinanceFuturesPairs(futuresPairs);
 
+      // Initialize availableTradingPairs with popular futures pairs
+      const popularFuturesSymbols = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+        'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT'
+      ];
+
+      const popularFuturesPairs = futuresPairs.filter(p => popularFuturesSymbols.includes(p.symbol));
+      
+      // Add popular futures pairs to availableTradingPairs
+      setAvailableTradingPairs(prev => {
+        // Avoid duplicates
+        const existingIds = new Set(prev.map(p => p.id));
+        const newPairs = popularFuturesPairs.filter(p => !existingIds.has(p.id));
+        return [...prev, ...newPairs];
+      });
+
     } catch (error) {
       console.error('Error fetching Binance Futures pairs:', error);
     }
