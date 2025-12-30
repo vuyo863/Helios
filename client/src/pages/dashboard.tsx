@@ -425,8 +425,8 @@ export default function Dashboard() {
     // Im Auge-Modus im Overlay-Modus: Panning deaktiviert
     if (markerViewActiveRef.current && isOverlayModeRef.current) return;
     
-    // Im Stift-Modus im Overlay-Modus: Panning deaktiviert (SEPARATE SECTION - nicht Auge-Modus anfassen!)
-    if (markerEditActiveRef.current && isOverlayModeRef.current) return;
+    // STIFT-MODUS: Panning ERLAUBT im Overlay-Modus (nur Zoom ist deaktiviert)
+    // Das ermöglicht das Durchscrollen der Periods auch wenn Stift-Modus aktiv ist
     
     // Berechne Bewegung seit MouseDown
     const deltaY = e.clientY - mouseDownPos.y;
