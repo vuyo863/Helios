@@ -57,7 +57,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft, ArrowLeft, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, BarChart, Bar, Cell } from 'recharts';
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -2721,6 +2721,100 @@ export default function Dashboard() {
       avgDailyProfit: avgDailyProfit
     };
   }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase]);
+
+  // ========== STIFT-MODUS ANALYZE: Bar Chart Daten pro Bot-Type ==========
+  // Aggregiert Profit pro Bot-Type für die ausgewählte Period
+  const pencilBarChartData = useMemo(() => {
+    if (!overlayAnalyzeMode || !appliedPencilPeriodKey) {
+      return [];
+    }
+    
+    // Parse Period Key: "startTs-endTs"
+    const [startTsStr, endTsStr] = appliedPencilPeriodKey.split('-');
+    const startTs = parseInt(startTsStr, 10);
+    const endTs = parseInt(endTsStr, 10);
+    
+    if (isNaN(startTs) || isNaN(endTs)) {
+      return [];
+    }
+    
+    // Nur Updates der ausgewählten Bot-Types berücksichtigen
+    const selectedIds = selectedChartBotTypes.map(id => String(id));
+    if (!allBotTypeUpdates || allBotTypeUpdates.length === 0 || selectedIds.length === 0) {
+      return [];
+    }
+    
+    const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
+      selectedIds.includes(String(update.botTypeId))
+    );
+    
+    // Profit pro Bot-Type aggregieren
+    const botTypeProfits: Record<string, number> = {};
+    
+    relevantUpdates.forEach((update: any) => {
+      const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+      const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+      
+      if (!updateStartDate || !updateEndDate) return;
+      
+      const updateStartTs = updateStartDate.getTime();
+      const updateEndTs = updateEndDate.getTime();
+      
+      // Prüfe ob Update die Periode überlappt
+      const overlapStart = Math.max(startTs, updateStartTs);
+      const overlapEnd = Math.min(endTs, updateEndTs);
+      
+      if (overlapStart >= overlapEnd) return;
+      
+      // Finde Bot-Type Namen
+      const botType = availableBotTypes.find(bt => bt.id === update.botTypeId);
+      const botTypeName = botType?.name || 'Unknown';
+      
+      // Profit berechnen (gleiche Logik wie pencilPeriodAnalyzeValues)
+      const isClosedBot = update.status === 'Closed Bots';
+      const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+      const overallGridProfitUsdt = parseFloat(update.overallGridProfitUsdt) || 0;
+      const profit = parseFloat(update.profit) || 0;
+      
+      const fromUntilHours = (updateEndTs - updateStartTs) / (1000 * 60 * 60);
+      const avgRuntimeHours = parseRuntimeToHours(update.avgRuntime);
+      const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+      
+      let updateProfit = 0;
+      
+      if (isClosedBot) {
+        if (updateEndTs >= startTs && updateEndTs < endTs) {
+          updateProfit = profit;
+        }
+      } else {
+        const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
+        const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
+        const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
+        const diffFromUntil = Math.abs(calcWithFromUntil - overallGridProfitUsdt);
+        const usesAvgRuntime = diffAvgRuntime < diffFromUntil;
+        
+        if (usesAvgRuntime && fromUntilHours > 0) {
+          const ratio = overlapHours / fromUntilHours;
+          const proportionalRuntime = avgRuntimeHours * ratio;
+          updateProfit = avgGridProfitHour * proportionalRuntime;
+        } else {
+          updateProfit = avgGridProfitHour * overlapHours;
+        }
+      }
+      
+      // Zum Bot-Type aggregieren
+      if (!botTypeProfits[botTypeName]) {
+        botTypeProfits[botTypeName] = 0;
+      }
+      botTypeProfits[botTypeName] += updateProfit;
+    });
+    
+    // In Array-Format für BarChart umwandeln
+    return Object.entries(botTypeProfits).map(([name, profit]) => ({
+      botTypeName: name,
+      profit: profit
+    }));
+  }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes]);
 
   // ===================================================================================
   // ========== ENDE OVERLAY MODUS (ADDED) SECTION ==========
@@ -7296,6 +7390,53 @@ export default function Dashboard() {
                     <p className="text-sm mt-1">Wähle einen anderen Zeitraum oder Bot-Type</p>
                   </div>
                 </div>
+              ) : overlayAnalyzeMode && pencilBarChartData.length > 0 ? (
+              /* ========== STIFT-MODUS ANALYZE: BAR CHART ========== */
+              <div className="select-none relative">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={pencilBarChartData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="botTypeName"
+                      type="category"
+                      tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
+                      tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
+                      tickFormatter={(value) => `${value.toFixed(2)}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number) => [`${value.toFixed(2)} USDT`, 'Profit']}
+                      labelFormatter={(label) => `Bot-Type: ${label}`}
+                    />
+                    <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                      {pencilBarChartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)'} 
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              /* ========== ENDE STIFT-MODUS ANALYZE: BAR CHART ========== */
               ) : (
               <div
                 ref={chartContainerRef}
@@ -7327,18 +7468,6 @@ export default function Dashboard() {
                         })()
                       : isMultiSelectCompareMode
                         ? (compareChartData.data.length > 0 ? compareChartData.data : [{ time: '-', timestamp: 0 }])
-                        /* ========== OVERLAY STIFT-MODUS ANALYZE: SEPARATE SECTION ========== */
-                        // KOMPLETT GETRENNT vom normalen Overlay - filtered auf Period Zeitraum
-                        : isOverlayMode && overlayAnalyzeMode && overlayAnalyzeModeBounds
-                          ? (() => {
-                              // Filtere overlayChartData auf den Zeitraum der ausgewählten Period
-                              const { startTs, endTs } = overlayAnalyzeModeBounds;
-                              const filteredData = overlayChartData.data.filter(point => 
-                                point.timestamp >= startTs && point.timestamp <= endTs
-                              );
-                              return filteredData.length > 0 ? filteredData : [{ time: '-', timestamp: 0 }];
-                            })()
-                        /* ========== ENDE OVERLAY STIFT-MODUS ANALYZE ========== */
                         // ========== OVERLAY MODUS: Eigene Datenquelle (SEPARATE SECTION) ==========
                         : isOverlayMode
                           ? (overlayChartData.data.length > 0 ? overlayChartData.data : [{ time: '-', timestamp: 0 }])
