@@ -178,7 +178,8 @@ export default function Notifications() {
 
     watchlist.forEach(id => {
       // Check if already in availableTradingPairs
-      if (availableTradingPairs.find(p => p.id === id)) return;
+      const existingPair = availableTradingPairs.find(p => p.id === id);
+      if (existingPair) return;
 
       // Get the stored marketType for this pair
       const storedMarketType = pairMarketTypes[id] || 'spot';
@@ -199,12 +200,16 @@ export default function Notifications() {
       if (pair) {
         setAvailableTradingPairs(prev => {
           if (prev.find(p => p.id === id)) return prev;
-          // Ensure marketType is set correctly from stored value
-          return [...prev, { ...pair, marketType: storedMarketType }];
+          // WICHTIG: Ensure marketType is explicitly set from stored value
+          const correctedPair: TrendPrice = {
+            ...pair,
+            marketType: storedMarketType as 'spot' | 'futures'
+          };
+          return [...prev, correctedPair];
         });
       }
     });
-  }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes]);
+  }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes, availableTradingPairs]);
 
   // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
   const fetchSpotPrices = async (symbols: string[]) => {
@@ -599,15 +604,32 @@ export default function Notifications() {
     if (!watchlist.includes(id)) {
       setWatchlist(prev => [...prev, id]);
       
+      // Determine market type from current toggle state
+      const currentMarketType = marketType;
+      
       // Add pair to availableTradingPairs if not already there
-      const pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      let pair = currentMarketType === 'futures' 
+        ? allBinanceFuturesPairs.find(p => p.id === id)
+        : allBinancePairs.find(p => p.id === id);
+      
+      // Fallback to other market if not found
+      if (!pair) {
+        pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      }
+      
       if (pair && !availableTradingPairs.find(p => p.id === id)) {
-        setAvailableTradingPairs(prev => [...prev, pair]);
+        // Ensure marketType is set correctly based on current toggle
+        const pairWithCorrectMarketType = {
+          ...pair,
+          marketType: currentMarketType
+        };
+        
+        setAvailableTradingPairs(prev => [...prev, pairWithCorrectMarketType]);
         
         // Store the market type for this pair
         setPairMarketTypes(prev => ({
           ...prev,
-          [id]: pair.marketType || 'spot'
+          [id]: currentMarketType
         }));
       }
       
