@@ -7559,8 +7559,14 @@ export default function Dashboard() {
                         // Gemischt: beidseitig Padding
                         return [domainMin - padding, domainMax + padding];
                       })()}
-                      allowDecimals={false}
-                      tickFormatter={(value) => `${value.toFixed(0)}`}
+                      allowDecimals={true}
+                      tickFormatter={(value) => {
+                        // Bei kleinen Werten (< 10) Dezimalstellen anzeigen
+                        if (Math.abs(value) < 10 && value !== 0) {
+                          return value.toFixed(2);
+                        }
+                        return value.toFixed(0);
+                      }}
                       label={{ value: 'USDT', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))', fontSize: 10 } }}
                     />
                     <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={2} />
