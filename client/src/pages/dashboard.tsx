@@ -7591,7 +7591,7 @@ export default function Dashboard() {
                               </p>
                             )}
                             {activePencilBarMetrics.has('percent') && (
-                              <p style={{ color: data.percent >= 0 ? 'hsl(280, 65%, 60%)' : 'hsl(0, 84%, 60%)' }}>
+                              <p style={{ color: 'hsl(280, 65%, 60%)' }}>
                                 Gesamtprofit %: {data.percent.toFixed(2)}%
                               </p>
                             )}
@@ -7613,14 +7613,7 @@ export default function Dashboard() {
                       <Bar dataKey="capital" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(217, 91%, 60%)" />
                     )}
                     {activePencilBarMetrics.has('percent') && (
-                      <Bar dataKey="percent" radius={[3, 3, 0, 0]} maxBarSize={40}>
-                        {pencilBarChartData.map((entry, index) => (
-                          <Cell 
-                            key={`percent-cell-${index}`} 
-                            fill={entry.percent >= 0 ? 'hsl(280, 65%, 60%)' : 'hsl(0, 84%, 60%)'} 
-                          />
-                        ))}
-                      </Bar>
+                      <Bar dataKey="percent" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(280, 65%, 60%)" />
                     )}
                   </BarChart>
                 </ResponsiveContainer>
