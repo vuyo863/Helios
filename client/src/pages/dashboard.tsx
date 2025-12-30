@@ -7,7 +7,7 @@ import ProfitLineChart from "@/components/ProfitLineChart";
 import ProfitBarChartAdvanced from "@/components/ProfitBarChartAdvanced";
 import { BotEntry, BotType, BotTypeUpdate } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -345,6 +345,22 @@ export default function Dashboard() {
   const [tooltipCoordinate, setTooltipCoordinate] = useState<{ x: number; y: number } | null>(null);
   const [tooltipIsNearPoint, setTooltipIsNearPoint] = useState(false);
   
+  // ========== STIFT-MODUS: Zentraler Teardown Callback ==========
+  // SEPARATE LOGIK - Auge-Modus (markerViewActive) wird NICHT angefasst!
+  // Dieser Callback setzt alle Stift-Modus States zurück
+  // Wird aufgerufen von: Stift-Button Deaktivierung, Auge-Button Aktivierung, Overlay Exit
+  const resetPencilAnalyzeState = useCallback((clearFrozenTicks: boolean = true) => {
+    setHoveredPencilPeriodKey(null);
+    setSelectedPencilPeriodKey(null);
+    setAppliedPencilPeriodKey(null);
+    setOverlayAnalyzeMode(false);
+    setEditSelectedUpdateId(null);
+    setEditHoveredUpdateId(null);
+    if (clearFrozenTicks) {
+      setFrozenOverlayTicks(null);
+    }
+  }, []);
+  
   // Chart Zoom & Pan Event-Handler
   // Mausrad im Chart = Zoom für BEIDE Achsen gleichzeitig (wie Bild-Viewer)
   // WICHTIG: Nativer Event-Listener mit passive: false, damit preventDefault() funktioniert
@@ -370,6 +386,9 @@ export default function Dashboard() {
       
       // Im Auge-Modus im Overlay-Modus: Zoomen deaktiviert
       if (markerViewActiveRef.current && isOverlayModeRef.current) return;
+      
+      // Im Stift-Modus im Overlay-Modus: Zoomen deaktiviert (SEPARATE SECTION - nicht Auge-Modus anfassen!)
+      if (markerEditActiveRef.current && isOverlayModeRef.current) return;
       
       // Zoom für alle Scroll-Events (Mausrad, Touchpad, Pinch)
       const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
@@ -402,6 +421,12 @@ export default function Dashboard() {
   const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prüfe ob Maus gedrückt ist
     if (!mouseDownPos) return;
+    
+    // Im Auge-Modus im Overlay-Modus: Panning deaktiviert
+    if (markerViewActiveRef.current && isOverlayModeRef.current) return;
+    
+    // Im Stift-Modus im Overlay-Modus: Panning deaktiviert (SEPARATE SECTION - nicht Auge-Modus anfassen!)
+    if (markerEditActiveRef.current && isOverlayModeRef.current) return;
     
     // Berechne Bewegung seit MouseDown
     const deltaY = e.clientY - mouseDownPos.y;
@@ -2164,12 +2189,16 @@ export default function Dashboard() {
   // Overlay-Modus aktiv: Added Toggle + Overlay Sub-Toggle
   const isOverlayMode = alleEintraegeMode === 'added' && addedModeView === 'overlay' && selectedChartBotTypes.length >= 2;
 
-  // Refs für markerViewActive und isOverlayMode (für Wheel-Handler - muss NACH Definition sein)
+  // Refs für markerViewActive, markerEditActive und isOverlayMode (für Wheel-Handler - muss NACH Definition sein)
   const markerViewActiveRef = useRef(false);
+  const markerEditActiveRef = useRef(false);
   const isOverlayModeRef = useRef(false);
   useEffect(() => {
     markerViewActiveRef.current = markerViewActive;
   }, [markerViewActive]);
+  useEffect(() => {
+    markerEditActiveRef.current = markerEditActive;
+  }, [markerEditActive]);
   useEffect(() => {
     isOverlayModeRef.current = isOverlayMode;
   }, [isOverlayMode]);
@@ -3878,6 +3907,30 @@ export default function Dashboard() {
     
     return ticks;
   }, [chartData, appliedChartSettings?.sequence, chartZoomX, chartPanX, analyzeModeBounds, isMultiSelectCompareMode, compareChartData, isMultiBotChartMode, multiBotChartData]);
+
+  // ========== STIFT-MODUS: Automatische Bereinigung bei Modus-Deaktivierung ==========
+  // SEPARATE LOGIK - Auge-Modus (markerViewActive) wird NICHT angefasst!
+  // Dieser Effect stellt sicher, dass alle Stift-Modus States zurückgesetzt werden
+  // wenn der Stift-Modus extern deaktiviert wird (z.B. durch Overlay Mode Exit)
+  const prevMarkerEditActiveRef = useRef(markerEditActive);
+  useEffect(() => {
+    // Wenn Stift-Modus gerade deaktiviert wurde (von true auf false)
+    if (prevMarkerEditActiveRef.current && !markerEditActive) {
+      // Zentralen Teardown ausführen, Ticks nur löschen wenn Auge-Modus nicht aktiv
+      resetPencilAnalyzeState(!markerViewActive);
+    }
+    prevMarkerEditActiveRef.current = markerEditActive;
+  }, [markerEditActive, markerViewActive, resetPencilAnalyzeState]);
+
+  // ========== STIFT-MODUS: Cleanup wenn alle Modi inaktiv ==========
+  // Dieser Effect stellt sicher, dass frozenOverlayTicks gelöscht werden
+  // wenn weder Auge-Modus noch Stift-Modus noch Analyze-Modus aktiv sind
+  useEffect(() => {
+    const allModesInactive = !markerViewActive && !markerEditActive && !overlayAnalyzeMode;
+    if (allModesInactive && frozenOverlayTicks !== null) {
+      setFrozenOverlayTicks(null);
+    }
+  }, [markerViewActive, markerEditActive, overlayAnalyzeMode, frozenOverlayTicks]);
 
   // Prüfe ob Ticks am selben Tag liegen → dann Uhrzeiten anzeigen
   // REGEL: Sobald ein Datum auf der X-Achse WIEDERHOLT wird, müssen Uhrzeiten erscheinen!
@@ -5789,8 +5842,9 @@ export default function Dashboard() {
                       if (newValue && isOverlayMode) {
                         // Im Overlay-Modus: Stift deaktivieren wenn Auge aktiviert wird
                         setMarkerEditActive(false);
-                        setEditSelectedUpdateId(null);
-                        setEditHoveredUpdateId(null);
+                        // STIFT-MODUS Bereinigung: Zentralen Teardown verwenden
+                        // Ticks werden nicht gelöscht da Auge-Modus sie gleich neu setzt
+                        resetPencilAnalyzeState(false);
                         // WICHTIG: Ticks für GESAMTEN Datenbereich berechnen
                         // Granularität basiert auf aktuellem Zoom-Level (feinere Periods bei mehr Zoom)
                         // Aber deckt GESAMTEN Bereich ab (erste bis letzte Metrik)
@@ -5821,8 +5875,11 @@ export default function Dashboard() {
                         // Period-Auswahl zurücksetzen
                         setHoveredPeriodKey(null);
                         setSelectedPeriodKeys(new Set());
-                        // Eingefrorene Ticks zurücksetzen
-                        setFrozenOverlayTicks(null);
+                        // Eingefrorene Ticks nur löschen wenn Stift-Modus NICHT aktiv
+                        // (Stift-Modus könnte die Ticks noch brauchen)
+                        if (!markerEditActive) {
+                          setFrozenOverlayTicks(null);
+                        }
                       }
                     }}
                     data-testid="button-marker-view"
@@ -5850,13 +5907,23 @@ export default function Dashboard() {
                           setHoveredUpdateId(null);
                           setHoveredPeriodKey(null);
                           setSelectedPeriodKeys(new Set());
-                          // Eingefrorene Ticks zurücksetzen
-                          setFrozenOverlayTicks(null);
+                          // STIFT-MODUS: Ticks einfrieren (wie im Auge-Modus) für stabile Period-Keys beim Panning
+                          // SEPARATE LOGIK - Auge-Modus Code wird NICHT angefasst!
+                          if (multiBotChartData.minTimestamp > 0 && multiBotChartData.maxTimestamp > 0) {
+                            const fullTicks = calculateFullRangeTicks(
+                              multiBotChartData.minTimestamp,
+                              multiBotChartData.maxTimestamp,
+                              chartZoomX
+                            );
+                            setFrozenOverlayTicks(fullTicks);
+                          } else if (xAxisTicks.length > 0) {
+                            setFrozenOverlayTicks([...xAxisTicks]);
+                          }
                         }
                       } else {
-                        // Beim Deaktivieren OHNE Apply: Auswahl zurücksetzen
-                        setEditSelectedUpdateId(null);
-                        setEditHoveredUpdateId(null);
+                        // Beim Deaktivieren: Zentralen Teardown verwenden
+                        // frozenOverlayTicks nur löschen wenn Auge-Modus NICHT aktiv
+                        resetPencilAnalyzeState(!markerViewActive);
                       }
                       setMarkerEditActive(newValue);
                     }}
@@ -6036,9 +6103,10 @@ export default function Dashboard() {
                     
                     // Im Overlay-Modus: Vertikale Zeitmarkierungsstriche statt Verbindungslinien
                     if (isOverlayMode) {
-                      // Verwende eingefrorene Ticks im Eye-Modus für stabile Period-Keys
+                      // Verwende eingefrorene Ticks im Eye-Modus ODER Stift-Modus für stabile Period-Keys
+                      // WICHTIG: Auge-Modus (markerViewActive) und Stift-Modus (markerEditActive) GETRENNT behandelt
                       // Sonst verwende die dynamischen xAxisTicks
-                      const allTicks = (markerViewActive && frozenOverlayTicks) ? frozenOverlayTicks : xAxisTicks;
+                      const allTicks = ((markerViewActive || markerEditActive) && frozenOverlayTicks) ? frozenOverlayTicks : xAxisTicks;
                       
                       // Hilfsfunktion: Zeitdifferenz als Text formatieren
                       const formatTimeDiff = (diffMs: number): string => {
