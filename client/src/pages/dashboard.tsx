@@ -277,6 +277,15 @@ export default function Dashboard() {
   // Sortierung für Period Compare Popup
   const [periodCompareSortBy, setPeriodCompareSortBy] = useState<'datum' | 'laufzeit' | 'gesamtprofit' | 'gesamtprofitProzent' | 'avgProfitTag' | 'realProfitTag' | 'anzahlBots'>('datum');
   const [periodCompareSortDirection, setPeriodCompareSortDirection] = useState<'asc' | 'desc'>('asc');
+  // Overlay Stift-Modus: Einzelne Period auswählen und analysieren
+  // hoveredPencilPeriodKey: Aktuell gehoverte Period im Stift-Modus
+  const [hoveredPencilPeriodKey, setHoveredPencilPeriodKey] = useState<string | null>(null);
+  // selectedPencilPeriodKey: Ausgewählte Period im Stift-Modus (vor Apply)
+  const [selectedPencilPeriodKey, setSelectedPencilPeriodKey] = useState<string | null>(null);
+  // appliedPencilPeriodKey: Nach Apply gespeicherte Period (Analyze-Button wird aktiv)
+  const [appliedPencilPeriodKey, setAppliedPencilPeriodKey] = useState<string | null>(null);
+  // overlayAnalyzeMode: Wenn aktiv, zeigt Chart nur die applied Period im Compare-Stil
+  const [overlayAnalyzeMode, setOverlayAnalyzeMode] = useState(false);
   const [hoveredUpdateId, setHoveredUpdateId] = useState<string | null>(null);
   const [lockedUpdateIds, setLockedUpdateIds] = useState<Set<string>>(new Set());
   // Stift-Modus: nur Single-Select (einer zur Zeit)
