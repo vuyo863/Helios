@@ -206,6 +206,9 @@ export default function Notifications() {
     if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
     if (watchlist.length === 0) return;
 
+    // WICHTIG: Batch update to avoid multiple re-renders
+    const newPairs: TrendPrice[] = [];
+
     watchlist.forEach(id => {
       // Check if already in availableTradingPairs
       const existingPair = availableTradingPairs.find(p => p.id === id);
@@ -228,18 +231,25 @@ export default function Notifications() {
       }
       
       if (pair) {
-        setAvailableTradingPairs(prev => {
-          if (prev.find(p => p.id === id)) return prev;
-          // WICHTIG: Ensure marketType is explicitly set from stored value
-          const correctedPair: TrendPrice = {
-            ...pair,
-            marketType: storedMarketType as 'spot' | 'futures'
-          };
-          return [...prev, correctedPair];
-        });
+        // WICHTIG: Ensure marketType is explicitly set from stored value
+        const correctedPair: TrendPrice = {
+          ...pair,
+          price: undefined, // Reset price to trigger fresh fetch
+          marketType: storedMarketType as 'spot' | 'futures'
+        };
+        newPairs.push(correctedPair);
       }
     });
-  }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes, availableTradingPairs]);
+
+    // Single batch update
+    if (newPairs.length > 0) {
+      setAvailableTradingPairs(prev => {
+        const existingIds = new Set(prev.map(p => p.id));
+        const uniqueNewPairs = newPairs.filter(p => !existingIds.has(p.id));
+        return [...prev, ...uniqueNewPairs];
+      });
+    }
+  }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes]);
 
   // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
   const fetchSpotPrices = async (symbols: string[]) => {
@@ -331,6 +341,7 @@ export default function Notifications() {
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
     if (availableTradingPairs.length === 0) return;
+    if (watchlist.length === 0) return;
 
     // Separate Spot and Futures symbols based on STORED marketType from pairMarketTypes
     const spotSymbols: string[] = [];
@@ -351,15 +362,21 @@ export default function Notifications() {
 
     if (spotSymbols.length === 0 && futuresSymbols.length === 0) return;
 
-    // Initial fetch
-    if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-    if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+    // Clear existing interval
+    if (priceUpdateIntervalRef.current) {
+      clearInterval(priceUpdateIntervalRef.current);
+    }
 
-    // Update alle 2 Sekunden
-    priceUpdateIntervalRef.current = setInterval(() => {
+    // Initial fetch IMMEDIATELY
+    const performFetch = () => {
       if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
       if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
-    }, 2000);
+    };
+
+    performFetch(); // First immediate fetch
+
+    // Update alle 2 Sekunden
+    priceUpdateIntervalRef.current = setInterval(performFetch, 2000);
 
     return () => {
       if (priceUpdateIntervalRef.current) {
