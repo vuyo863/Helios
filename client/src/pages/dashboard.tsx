@@ -7539,7 +7539,7 @@ export default function Dashboard() {
                       tickFormatter={(value) => `${value.toFixed(0)}`}
                       label={{ value: 'USDT', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))', fontSize: 10 } }}
                     />
-                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={2} />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
