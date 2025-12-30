@@ -552,6 +552,13 @@ export default function Notifications() {
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
       setWatchlist(prev => [...prev, id]);
+      
+      // Add pair to availableTradingPairs if not already there
+      const pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      if (pair && !availableTradingPairs.find(p => p.id === id)) {
+        setAvailableTradingPairs(prev => [...prev, pair]);
+      }
+      
       // Initialize settings only if not already existing
       setTrendPriceSettings(prev => {
         if (prev[id]) {
