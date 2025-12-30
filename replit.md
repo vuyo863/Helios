@@ -142,6 +142,60 @@ else
 
 ---
 
+## 🔧 STIFT-MODUS (Pencil Mode) - SEPARATE SEKTION
+
+> **KOMPLETT GETRENNT vom Auge-Modus - eigene States, eigene Logik**
+> Der Stift-Modus (Pencil Mode) ist als vollständig separate Sektion implementiert, um den Golden State des Auge-Modus nicht zu beeinträchtigen.
+
+### Übersicht Stift-Modus
+
+Der Stift-Modus (aktiviert durch das Stift-Icon im Overlay Mode) ermöglicht:
+- **Period-Auswahl**: Single-Select einer Period im Marker-Container
+- **Apply-Workflow**: Auswahl speichern und Analyze-Button aktivieren
+- **Analyze-Modus**: Chart zeigt nur die ausgewählte Period im Compare-Stil
+
+### Implementierte Features
+
+#### 1. Separate States
+- `hoveredPencilPeriodKey`: Hovered Period (null oder Period-Key)
+- `selectedPencilPeriodKey`: Ausgewählte Period (vor Apply)
+- `appliedPencilPeriodKey`: Angewendete Period (nach Apply)
+- `overlayAnalyzeMode`: Boolean für Analyze-Modus
+
+#### 2. Stift-Modus UI Card
+- **Period Details**: Von/Bis Datum, Gesamtprofit
+- **Trash-Button**: Auswahl löschen
+- **Analyze-Button**: Aktiviert overlayAnalyzeMode (neonblauer Glow wenn aktiv)
+- **Apply-Button**: Speichert ausgewählte Period
+
+#### 3. Marker-Container Interaktion
+- **Hover**: Zeigt Period-Highlight (neonblau)
+- **Click**: Single-Select (wählt Period aus oder ab)
+- **Deaktiviert**: Wenn overlayAnalyzeMode aktiv
+
+#### 4. Chart-Rendering im Analyze-Modus
+- **Datenfilterung**: `overlayChartData.data` gefiltert auf `overlayAnalyzeModeBounds`
+- **XAxis-Domain**: Automatischer Zoom auf Period-Zeitraum
+- **Compare-Stil**: Individuelle Bot-Type Linien innerhalb der Period
+
+### Code-Referenzen
+
+| Feature | Datei | Ca. Zeilen |
+|---------|-------|------------|
+| States | `dashboard.tsx` | 283-288 |
+| overlayAnalyzeModeBounds | `dashboard.tsx` | 3025-3049 |
+| Period Interaktion | `dashboard.tsx` | 6099-6134 |
+| Chart Data Filterung | `dashboard.tsx` | 7083-7094 |
+| XAxis Domain | `dashboard.tsx` | 4218-4251 |
+| Stift-Modus UI | `dashboard.tsx` | 9061-9272 |
+
+### Backend-Tests (35 erfolgreich)
+
+- 20 Logik-Tests: Period Key Parsing, Date Parsing, Profit Calculation
+- 15 API-Integration-Tests: Bot Types, Updates, Timestamps, Filtering
+
+---
+
 ### System Design Choices
 *   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase (e.g., MainChart, Compare Mode, Edit-Modus Analysis, Bot-Type CRUD, AI-Analysis page) are designated as "Golden State" and are protected from modification to ensure stability.
 *   **Modular Architecture**: Clear separation of concerns between frontend and backend, and within the frontend, distinct modules for different chart functionalities.
