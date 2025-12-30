@@ -7580,12 +7580,21 @@ export default function Dashboard() {
                             fontSize: '12px'
                           }}>
                             <p style={{ fontWeight: 600, marginBottom: '4px' }}>{label}</p>
-                            <p style={{ color: data.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)' }}>
-                              Gesamtprofit: {data.profit.toFixed(2)} USDT
-                            </p>
-                            <p style={{ color: 'hsl(217, 91%, 60%)' }}>
-                              {profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge'}: {data.capital.toFixed(2)} USDT
-                            </p>
+                            {activePencilBarMetrics.has('profit') && (
+                              <p style={{ color: data.profit >= 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)' }}>
+                                Gesamtprofit: {data.profit.toFixed(2)} USDT
+                              </p>
+                            )}
+                            {activePencilBarMetrics.has('capital') && (
+                              <p style={{ color: 'hsl(217, 91%, 60%)' }}>
+                                {profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge'}: {data.capital.toFixed(2)} USDT
+                              </p>
+                            )}
+                            {activePencilBarMetrics.has('percent') && (
+                              <p style={{ color: data.percent >= 0 ? 'hsl(280, 65%, 60%)' : 'hsl(0, 84%, 60%)' }}>
+                                Gesamtprofit %: {data.percent.toFixed(2)}%
+                              </p>
+                            )}
                           </div>
                         );
                       }}
