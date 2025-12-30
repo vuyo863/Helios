@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface TrendPrice {
   id: string;
@@ -19,6 +20,7 @@ interface TrendPrice {
   priceChange24h?: string;
   priceChangePercent24h?: string;
   lastUpdate?: Date;
+  marketType?: 'spot' | 'futures'; // Market type indicator
 }
 
 type AlarmLevel = 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich';
@@ -67,9 +69,13 @@ interface TrendPriceSettings {
 export default function Notifications() {
   const { toast } = useToast();
 
+  // Market Type Toggle State
+  const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
+
   // Verfügbare Trading Pairs für Suche - werden dynamisch von Binance geladen
   const [availableTradingPairs, setAvailableTradingPairs] = useState<TrendPrice[]>([]);
   const [allBinancePairs, setAllBinancePairs] = useState<TrendPrice[]>([]);
+  const [allBinanceFuturesPairs, setAllBinanceFuturesPairs] = useState<TrendPrice[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [watchlist, setWatchlist] = useState<string[]>(() => {
@@ -81,7 +87,7 @@ export default function Notifications() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
   const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
 
-  // Funktion zum Laden aller verfügbaren Binance Trading Pairs
+  // Funktion zum Laden aller verfügbaren Binance Spot Trading Pairs
   const fetchAllBinancePairs = async () => {
     try {
       const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
@@ -96,10 +102,11 @@ export default function Notifications() {
           (s.symbol.endsWith('USDT') || s.symbol.endsWith('USDC'))
         )
         .map((s: any, index: number) => ({
-          id: `binance-${index}`,
+          id: `binance-spot-${index}`,
           name: s.symbol.replace('USDT', '/USDT').replace('USDC', '/USDC'),
           symbol: s.symbol,
-          price: 'Loading...'
+          price: 'Loading...',
+          marketType: 'spot' as const
         }));
 
       setAllBinancePairs(pairs);
@@ -119,22 +126,52 @@ export default function Notifications() {
     }
   };
 
+  // Funktion zum Laden aller verfügbaren Binance Futures Trading Pairs
+  const fetchAllBinanceFuturesPairs = async () => {
+    try {
+      const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      // Filter für USDT Perpetual Futures
+      const pairs: TrendPrice[] = data.symbols
+        .filter((s: any) => 
+          s.status === 'TRADING' && 
+          s.contractType === 'PERPETUAL' &&
+          s.symbol.endsWith('USDT')
+        )
+        .map((s: any, index: number) => ({
+          id: `binance-futures-${index}`,
+          name: s.symbol.replace('USDT', '/USDT'),
+          symbol: s.symbol,
+          price: 'Loading...',
+          marketType: 'futures' as const
+        }));
+
+      setAllBinanceFuturesPairs(pairs);
+
+    } catch (error) {
+      console.error('Error fetching Binance Futures pairs:', error);
+    }
+  };
+
   // Load all Binance pairs on mount
   useEffect(() => {
     fetchAllBinancePairs();
+    fetchAllBinanceFuturesPairs();
   }, []);
 
-  // Funktion zum Abrufen der aktuellen Preise von Binance API
-  const fetchPrices = async (symbols: string[]) => {
+  // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
+  const fetchSpotPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
 
     try {
-      // Binance Public API - 24hr Ticker Price Change Statistics
       const symbolsParam = symbols.map(s => `"${s}"`).join(',');
       const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`);
 
       if (!response.ok) {
-        console.error('Failed to fetch prices from Binance API');
+        console.error('Failed to fetch Spot prices from Binance API');
         return;
       }
 
@@ -143,7 +180,7 @@ export default function Notifications() {
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          const index = updated.findIndex(p => p.symbol === ticker.symbol);
+          const index = updated.findIndex(p => p.symbol === ticker.symbol && p.marketType === 'spot');
           if (index !== -1) {
             updated[index] = {
               ...updated[index],
@@ -153,34 +190,91 @@ export default function Notifications() {
               }),
               priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
               priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
-              lastUpdate: new Date(), // Update last update time
+              lastUpdate: new Date(),
             };
           }
         });
         return updated;
       });
     } catch (error) {
-      console.error('Error fetching prices:', error);
+      console.error('Error fetching Spot prices:', error);
+    }
+  };
+
+  // Funktion zum Abrufen der aktuellen Preise von Binance Futures API
+  const fetchFuturesPrices = async (symbols: string[]) => {
+    if (symbols.length === 0) return;
+
+    try {
+      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
+      const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[${symbolsParam}]`);
+
+      if (!response.ok) {
+        console.error('Failed to fetch Futures prices from Binance API');
+        return;
+      }
+
+      const data = await response.json();
+
+      setAvailableTradingPairs(prev => {
+        const updated = [...prev];
+        data.forEach((ticker: any) => {
+          const index = updated.findIndex(p => p.symbol === ticker.symbol && p.marketType === 'futures');
+          if (index !== -1) {
+            updated[index] = {
+              ...updated[index],
+              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }),
+              priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
+              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
+              lastUpdate: new Date(),
+            };
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error fetching Futures prices:', error);
     }
   };
 
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
-    if (allBinancePairs.length === 0) return;
+    if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
 
-    // Get symbols from watchlist
-    const watchlistSymbols = watchlist
-      .map(id => allBinancePairs.find(p => p.id === id)?.symbol)
+    // Separate Spot and Futures symbols
+    const spotSymbols = watchlist
+      .map(id => {
+        const pair = allBinancePairs.find(p => p.id === id);
+        return pair?.symbol;
+      })
       .filter(Boolean) as string[];
 
-    if (watchlistSymbols.length === 0) return;
+    const futuresSymbols = watchlist
+      .map(id => {
+        const pair = allBinanceFuturesPairs.find(p => p.id === id);
+        return pair?.symbol;
+      })
+      .filter(Boolean) as string[];
 
     // Initial fetch
-    fetchPrices(watchlistSymbols);
+    if (spotSymbols.length > 0) {
+      fetchSpotPrices(spotSymbols);
+    }
+    if (futuresSymbols.length > 0) {
+      fetchFuturesPrices(futuresSymbols);
+    }
 
     // Update alle 2 Sekunden
     priceUpdateIntervalRef.current = setInterval(() => {
-      fetchPrices(watchlistSymbols);
+      if (spotSymbols.length > 0) {
+        fetchSpotPrices(spotSymbols);
+      }
+      if (futuresSymbols.length > 0) {
+        fetchFuturesPrices(futuresSymbols);
+      }
     }, 2000);
 
     return () => {
@@ -188,7 +282,7 @@ export default function Notifications() {
         clearInterval(priceUpdateIntervalRef.current);
       }
     };
-  }, [watchlist, allBinancePairs]); // Update when watchlist or pairs change
+  }, [watchlist, allBinancePairs, allBinanceFuturesPairs]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
     // Load saved thresholds from localStorage on mount
@@ -449,8 +543,8 @@ export default function Notifications() {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
   }, [activeAlarms]);
 
-  // Gefilterte Vorschläge basierend auf Suchanfrage - durchsucht ALLE Binance Pairs
-  const filteredSuggestions = allBinancePairs
+  // Gefilterte Vorschläge basierend auf Suchanfrage und Market Type
+  const filteredSuggestions = (marketType === 'spot' ? allBinancePairs : allBinanceFuturesPairs)
     .filter(pair =>
       pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
       !watchlist.includes(pair.id)
@@ -582,9 +676,10 @@ export default function Notifications() {
   };
 
   const getTrendPrice = (id: string) => {
-    // Search in both available and all pairs
+    // Search in available pairs first, then all Spot and Futures pairs
     return availableTradingPairs.find(tp => tp.id === id) || 
-           allBinancePairs.find(tp => tp.id === id);
+           allBinancePairs.find(tp => tp.id === id) ||
+           allBinanceFuturesPairs.find(tp => tp.id === id);
   };
 
   // Helper to get the name, falling back to ID if not found
@@ -841,11 +936,24 @@ export default function Notifications() {
                   <Label htmlFor="search-trading-pairs" className="text-base font-semibold mb-3 block">
                     Trading Pairs suchen
                   </Label>
+                  
+                  {/* Market Type Toggle */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <ToggleGroup type="single" value={marketType} onValueChange={(value) => value && setMarketType(value as 'spot' | 'futures')}>
+                      <ToggleGroupItem value="spot" aria-label="Spot Market" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                        Spot
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="futures" aria-label="Futures Market" className="data-[state=on]:bg-blue-500 data-[state=on]:text-white">
+                        Futures
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       id="search-trading-pairs"
-                      placeholder="z.B. BTC/USDT, ETH/USDT..."
+                      placeholder={marketType === 'spot' ? "z.B. BTC/USDT, ETH/USDT..." : "z.B. BTC/USDT Futures..."}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
@@ -925,7 +1033,14 @@ export default function Notifications() {
                             data-testid={`watchlist-item-${pair?.name}`}
                           >
                             <div className="flex-1">
-                              <p className="font-medium">{pair?.name}</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium">{pair?.name}</p>
+                                {pair?.marketType === 'futures' && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
+                                    FUTURE
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-muted-foreground">${pair?.price}</span>
                                 {pair?.priceChangePercent24h && (
