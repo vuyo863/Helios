@@ -2601,6 +2601,127 @@ export default function Dashboard() {
     };
   }, [isOverlayMode, overlayChartData.data, overlayChartData.minTimestamp, overlayChartData.maxTimestamp, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase, appliedChartSettings]);
 
+  // ========== STIFT-MODUS ANALYZE: Period-Werte für Main Content Cards ==========
+  // Berechnet Werte für die ausgewählte Period im overlayAnalyzeMode
+  // KOPIERT von Auge-Modus Berechnung (Zeilen 9450-9550) - Auge-Modus wird NICHT angefasst!
+  const pencilPeriodAnalyzeValues = useMemo(() => {
+    if (!overlayAnalyzeMode || !appliedPencilPeriodKey) {
+      return null;
+    }
+    
+    // Parse Period Key: "startTs-endTs"
+    const [startTsStr, endTsStr] = appliedPencilPeriodKey.split('-');
+    const startTs = parseInt(startTsStr, 10);
+    const endTs = parseInt(endTsStr, 10);
+    
+    if (isNaN(startTs) || isNaN(endTs)) {
+      return null;
+    }
+    
+    // Nur Updates der ausgewählten Bot-Types berücksichtigen
+    const selectedIds = selectedChartBotTypes.map(id => String(id));
+    if (!allBotTypeUpdates || allBotTypeUpdates.length === 0 || selectedIds.length === 0) {
+      return null;
+    }
+    
+    const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
+      selectedIds.includes(String(update.botTypeId))
+    );
+    
+    // ========== PROFIT BERECHNUNG (3-Modus-Algorithmus) ==========
+    let totalPeriodProfit = 0;
+    
+    relevantUpdates.forEach((update: any) => {
+      const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+      const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+      
+      if (!updateStartDate || !updateEndDate) return;
+      
+      const updateStartTs = updateStartDate.getTime();
+      const updateEndTs = updateEndDate.getTime();
+      
+      // Prüfe ob Update die Periode überlappt
+      const overlapStart = Math.max(startTs, updateStartTs);
+      const overlapEnd = Math.min(endTs, updateEndTs);
+      
+      if (overlapStart >= overlapEnd) return;
+      
+      const isClosedBot = update.status === 'Closed Bots';
+      const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+      const overallGridProfitUsdt = parseFloat(update.overallGridProfitUsdt) || 0;
+      const profit = parseFloat(update.profit) || 0;
+      
+      const fromUntilHours = (updateEndTs - updateStartTs) / (1000 * 60 * 60);
+      const avgRuntimeHours = parseRuntimeToHours(update.avgRuntime);
+      const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+      
+      if (isClosedBot) {
+        // CLOSED BOT: profit einmalig am End-Datum
+        if (updateEndTs >= startTs && updateEndTs < endTs) {
+          totalPeriodProfit += profit;
+        }
+      } else {
+        // Bestimme welche Basis verwendet wurde
+        const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
+        const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
+        const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
+        const diffFromUntil = Math.abs(calcWithFromUntil - overallGridProfitUsdt);
+        const usesAvgRuntime = diffAvgRuntime < diffFromUntil;
+        
+        if (usesAvgRuntime && fromUntilHours > 0) {
+          // STARTMETRIK: avgGridProfitHour × anteilige avgRuntime
+          const ratio = overlapHours / fromUntilHours;
+          const proportionalRuntime = avgRuntimeHours * ratio;
+          totalPeriodProfit += avgGridProfitHour * proportionalRuntime;
+        } else {
+          // VERGLEICH: avgGridProfitHour × Perioden-Überlappung
+          totalPeriodProfit += avgGridProfitHour * overlapHours;
+        }
+      }
+    });
+    
+    // ========== KAPITAL BERECHNUNG ==========
+    let totalCapital = 0;
+    let totalInvestmentAmount = 0;
+    
+    relevantUpdates.forEach((update: any) => {
+      const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+      const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+      
+      if (!updateStartDate || !updateEndDate) return;
+      
+      const updateStartTs = updateStartDate.getTime();
+      const updateEndTs = updateEndDate.getTime();
+      
+      // Prüfe ob Update die Periode überlappt
+      if (updateStartTs <= endTs && updateEndTs >= startTs) {
+        const investment = parseFloat(update.totalInvestment) || 0;
+        const extraMargin = parseFloat(update.extraMargin) || 0;
+        totalCapital += investment;
+        totalInvestmentAmount += (investment - extraMargin);
+      }
+    });
+    
+    // Je nach Modus den richtigen Wert anzeigen
+    const displayedCapital = profitPercentBase === 'gesamtinvestment' ? totalCapital : totalInvestmentAmount;
+    
+    // ========== PROFIT % BERECHNUNG ==========
+    const profitPercent = displayedCapital > 0 ? (totalPeriodProfit / displayedCapital) * 100 : 0;
+    
+    // ========== Ø PROFIT/TAG BERECHNUNG ==========
+    const periodDurationHours = (endTs - startTs) / (1000 * 60 * 60);
+    const avgDailyProfit = periodDurationHours > 0 ? (totalPeriodProfit / periodDurationHours) * 24 : 0;
+    
+    return {
+      profit: totalPeriodProfit,
+      investment: displayedCapital,
+      totalInvestment: totalCapital,
+      baseInvestment: totalInvestmentAmount,
+      profitPercent: profitPercent,
+      avgDailyProfit: avgDailyProfit
+    };
+  }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase]);
+
   // ===================================================================================
   // ========== ENDE OVERLAY MODUS (ADDED) SECTION ==========
   // ===================================================================================
@@ -5417,6 +5538,29 @@ export default function Dashboard() {
                 // COMPARE MODE: Zeige höchste Werte aller Bot-Types im Chart-Zeitraum
                 // Sonst: Verwende aggregierte Werte
                 const getCardValue = (cardId: string): string => {
+                  // ========== STIFT-MODUS ANALYZE: Period-Werte haben HÖCHSTE PRIORITÄT ==========
+                  // Zeigt Werte der ausgewählten Period im overlayAnalyzeMode
+                  if (overlayAnalyzeMode && pencilPeriodAnalyzeValues) {
+                    switch (cardId) {
+                      case 'Gesamtkapital':
+                        const pencilInv = profitPercentBase === 'gesamtinvestment' 
+                          ? pencilPeriodAnalyzeValues.totalInvestment 
+                          : pencilPeriodAnalyzeValues.baseInvestment;
+                        return `${pencilInv.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit':
+                        return `${pencilPeriodAnalyzeValues.profit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Gesamtprofit %':
+                        return `${pencilPeriodAnalyzeValues.profitPercent.toFixed(2)}%`;
+                      case 'Ø Profit/Tag':
+                        return `${pencilPeriodAnalyzeValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      case 'Real Profit/Tag':
+                        // Real Profit/Tag = Ø Profit/Tag im Period-Modus (gleiche Berechnung)
+                        return `${pencilPeriodAnalyzeValues.avgDailyProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
+                      default:
+                        return '--';
+                    }
+                  }
+                  
                   // ANALYZE SINGLE METRIC MODE hat PRIORITÄT
                   // Zeige nur Werte der ausgewählten einzelnen Metrik
                   if (isAnalyzeSingleMetricMode && analyzeSingleMetricValues) {
