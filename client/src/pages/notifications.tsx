@@ -180,17 +180,31 @@ export default function Notifications() {
       // Check if already in availableTradingPairs
       if (availableTradingPairs.find(p => p.id === id)) return;
 
-      // Try to find in both spot and futures
-      const pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      // Get the stored marketType for this pair
+      const storedMarketType = pairMarketTypes[id] || 'spot';
+
+      // Try to find in the correct market based on stored type
+      let pair;
+      if (storedMarketType === 'futures') {
+        pair = allBinanceFuturesPairs.find(p => p.id === id);
+      } else {
+        pair = allBinancePairs.find(p => p.id === id);
+      }
+
+      // Fallback: try the other market if not found
+      if (!pair) {
+        pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      }
       
       if (pair) {
         setAvailableTradingPairs(prev => {
           if (prev.find(p => p.id === id)) return prev;
-          return [...prev, pair];
+          // Ensure marketType is set correctly from stored value
+          return [...prev, { ...pair, marketType: storedMarketType }];
         });
       }
     });
-  }, [allBinancePairs, allBinanceFuturesPairs, watchlist]);
+  }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes]);
 
   // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
   const fetchSpotPrices = async (symbols: string[]) => {
