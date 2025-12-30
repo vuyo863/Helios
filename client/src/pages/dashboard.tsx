@@ -2723,7 +2723,7 @@ export default function Dashboard() {
   }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, profitPercentBase]);
 
   // ========== STIFT-MODUS ANALYZE: Bar Chart Daten pro Bot-Type ==========
-  // Aggregiert Profit pro Bot-Type für die ausgewählte Period
+  // Aggregiert Profit pro Bot-Type für die ausgewählte Period + Anzahl Updates/Closed Bots
   const pencilBarChartData = useMemo(() => {
     if (!overlayAnalyzeMode || !appliedPencilPeriodKey) {
       return [];
@@ -2748,8 +2748,8 @@ export default function Dashboard() {
       selectedIds.includes(String(update.botTypeId))
     );
     
-    // Profit pro Bot-Type aggregieren
-    const botTypeProfits: Record<string, number> = {};
+    // Profit, Update-Matrix Anzahl und Closed-Bots Anzahl pro Bot-Type aggregieren
+    const botTypeData: Record<string, { profit: number; updateMatrixCount: number; closedBotsCount: number }> = {};
     
     relevantUpdates.forEach((update: any) => {
       const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
@@ -2770,6 +2770,11 @@ export default function Dashboard() {
       const botType = availableBotTypes.find(bt => bt.id === update.botTypeId);
       const botTypeName = botType?.name || 'Unknown';
       
+      // Initialisiere Bot-Type Daten falls noch nicht vorhanden
+      if (!botTypeData[botTypeName]) {
+        botTypeData[botTypeName] = { profit: 0, updateMatrixCount: 0, closedBotsCount: 0 };
+      }
+      
       // Profit berechnen (gleiche Logik wie pencilPeriodAnalyzeValues)
       const isClosedBot = update.status === 'Closed Bots';
       const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
@@ -2783,10 +2788,15 @@ export default function Dashboard() {
       let updateProfit = 0;
       
       if (isClosedBot) {
+        // Zähle Closed Bot
+        botTypeData[botTypeName].closedBotsCount += 1;
         if (updateEndTs >= startTs && updateEndTs < endTs) {
           updateProfit = profit;
         }
       } else {
+        // Zähle Update-Matrix
+        botTypeData[botTypeName].updateMatrixCount += 1;
+        
         const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
         const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
         const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
@@ -2803,16 +2813,15 @@ export default function Dashboard() {
       }
       
       // Zum Bot-Type aggregieren
-      if (!botTypeProfits[botTypeName]) {
-        botTypeProfits[botTypeName] = 0;
-      }
-      botTypeProfits[botTypeName] += updateProfit;
+      botTypeData[botTypeName].profit += updateProfit;
     });
     
     // In Array-Format für BarChart umwandeln
-    return Object.entries(botTypeProfits).map(([name, profit]) => ({
+    return Object.entries(botTypeData).map(([name, data]) => ({
       botTypeName: name,
-      profit: profit
+      profit: data.profit,
+      updateMatrixCount: data.updateMatrixCount,
+      closedBotsCount: data.closedBotsCount
     }));
   }, [overlayAnalyzeMode, appliedPencilPeriodKey, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes]);
 
@@ -7393,22 +7402,57 @@ export default function Dashboard() {
               ) : overlayAnalyzeMode && pencilBarChartData.length > 0 ? (
               /* ========== STIFT-MODUS ANALYZE: BAR CHART ========== */
               <div className="select-none relative">
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={340}>
                   <BarChart
                     data={pencilBarChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="botTypeName"
                       type="category"
-                      tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                       axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                       interval={0}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
+                      height={100}
+                      tick={(props: any) => {
+                        const { x, y, payload, index } = props;
+                        const dataItem = pencilBarChartData[index];
+                        if (!dataItem) return <g />;
+                        
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <text
+                              x={0}
+                              y={8}
+                              textAnchor="middle"
+                              fill="hsl(var(--foreground))"
+                              fontSize={11}
+                              fontWeight="600"
+                            >
+                              {payload.value}
+                            </text>
+                            <text
+                              x={0}
+                              y={24}
+                              textAnchor="middle"
+                              fill="hsl(var(--muted-foreground))"
+                              fontSize={9}
+                            >
+                              Matrix: {dataItem.updateMatrixCount}
+                            </text>
+                            <text
+                              x={0}
+                              y={38}
+                              textAnchor="middle"
+                              fill="hsl(var(--muted-foreground))"
+                              fontSize={9}
+                            >
+                              Closed: {dataItem.closedBotsCount}
+                            </text>
+                          </g>
+                        );
+                      }}
                     />
                     <YAxis 
                       tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
@@ -7422,7 +7466,13 @@ export default function Dashboard() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      formatter={(value: number) => [`${value.toFixed(2)} USDT`, 'Profit']}
+                      formatter={(value: number, name: string, props: any) => {
+                        const item = props.payload;
+                        return [
+                          `${value.toFixed(2)} USDT (Matrix: ${item.updateMatrixCount}, Closed: ${item.closedBotsCount})`,
+                          'Profit'
+                        ];
+                      }}
                       labelFormatter={(label) => `Bot-Type: ${label}`}
                     />
                     <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
