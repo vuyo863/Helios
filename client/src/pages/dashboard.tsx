@@ -7516,7 +7516,26 @@ export default function Dashboard() {
                       tickLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                       axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }}
                       tickCount={8}
-                      domain={['auto', 'auto']}
+                      domain={(() => {
+                        // Berechne min/max aus aktiven Metriken
+                        const allValues: number[] = [];
+                        pencilBarChartData.forEach(d => {
+                          if (activePencilBarMetrics.has('profit')) allValues.push(d.profit);
+                          if (activePencilBarMetrics.has('capital')) allValues.push(d.capital);
+                        });
+                        if (allValues.length === 0) return [0, 1];
+                        const minVal = Math.min(...allValues);
+                        const maxVal = Math.max(...allValues);
+                        // Wenn alle Werte negativ: 0 ist Maximum (oben), Minimum ist unten
+                        // Wenn alle Werte positiv: 0 ist Minimum (unten), Maximum ist oben
+                        // Wenn gemischt: beides
+                        const domainMin = Math.min(minVal, 0);
+                        const domainMax = Math.max(maxVal, 0);
+                        // Etwas Padding hinzufügen (5%)
+                        const range = domainMax - domainMin;
+                        const padding = range * 0.05;
+                        return [domainMin - padding, domainMax + padding];
+                      })()}
                       tickFormatter={(value) => `${value.toFixed(0)}`}
                       label={{ value: 'USDT', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(var(--muted-foreground))', fontSize: 10 } }}
                     />
