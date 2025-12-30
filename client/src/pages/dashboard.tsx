@@ -9203,7 +9203,10 @@ export default function Dashboard() {
                         fromDate = formatDateLocal(startTs);
                         untilDate = formatDateLocal(endTs);
                         
-                        // Berechne Gesamtprofit für diese Period
+                        // KORREKTE Perioden-Profit-Berechnung (kopiert von Auge-Modus Golden State):
+                        // 1. Closed Bots: profit einmalig am End-Datum
+                        // 2. Startmetrik (avgRuntime-basiert): avgGridProfitHour × anteilige avgRuntime
+                        // 3. Vergleich (From/Until-basiert): avgGridProfitHour × Perioden-Überlappung
                         const selectedIds = selectedChartBotTypes.map(id => String(id));
                         if (allBotTypeUpdates && allBotTypeUpdates.length > 0 && selectedIds.length > 0) {
                           const relevantUpdates = allBotTypeUpdates.filter((update: any) => 
@@ -9218,21 +9221,44 @@ export default function Dashboard() {
                             
                             const updateStartTs = updateStartDate.getTime();
                             const updateEndTs = updateEndDate.getTime();
+                            
+                            // Prüfe ob Update die Periode überlappt
                             const overlapStart = Math.max(startTs, updateStartTs);
                             const overlapEnd = Math.min(endTs, updateEndTs);
                             if (overlapStart >= overlapEnd) return;
                             
                             const isClosedBot = update.status === 'Closed Bots';
                             const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+                            const overallGridProfitUsdt = parseFloat(update.overallGridProfitUsdt) || 0;
                             const profit = parseFloat(update.profit) || 0;
+                            
+                            const fromUntilHours = (updateEndTs - updateStartTs) / (1000 * 60 * 60);
+                            const avgRuntimeHours = parseRuntimeToHours(update.avgRuntime);
                             const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
                             
                             if (isClosedBot) {
+                              // CLOSED BOT: profit einmalig am End-Datum
                               if (updateEndTs >= startTs && updateEndTs < endTs) {
                                 totalPeriodProfit += profit;
                               }
                             } else {
-                              totalPeriodProfit += avgGridProfitHour * overlapHours;
+                              // Bestimme welche Basis verwendet wurde:
+                              // Berechne mit beiden und prüfe welche zum overallGridProfitUsdt passt
+                              const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
+                              const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
+                              const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
+                              const diffFromUntil = Math.abs(calcWithFromUntil - overallGridProfitUsdt);
+                              const usesAvgRuntime = diffAvgRuntime < diffFromUntil;
+                              
+                              if (usesAvgRuntime && fromUntilHours > 0) {
+                                // STARTMETRIK: avgGridProfitHour × anteilige avgRuntime
+                                const ratio = overlapHours / fromUntilHours;
+                                const proportionalRuntime = avgRuntimeHours * ratio;
+                                totalPeriodProfit += avgGridProfitHour * proportionalRuntime;
+                              } else {
+                                // VERGLEICH: avgGridProfitHour × Perioden-Überlappung
+                                totalPeriodProfit += avgGridProfitHour * overlapHours;
+                              }
                             }
                           });
                           gesamtprofit = totalPeriodProfit.toFixed(2);
@@ -9263,11 +9289,11 @@ export default function Dashboard() {
                             <span className="text-sm font-semibold">Period: {periodLabel}</span>
                           </div>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-muted-foreground">Von</span>
+                            <span className="text-xs text-muted-foreground">From</span>
                             <span className="text-xs">{fromDate}</span>
                           </div>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-muted-foreground">Bis</span>
+                            <span className="text-xs text-muted-foreground">Until</span>
                             <span className="text-xs">{untilDate}</span>
                           </div>
                           <div className="flex items-center justify-between">
