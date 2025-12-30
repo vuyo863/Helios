@@ -2826,13 +2826,18 @@ export default function Dashboard() {
       botTypeData[botTypeName].profit += updateProfit;
     });
     
+    // Berechne Period-Dauer in Stunden für Ø Profit/Tag
+    const periodDurationHours = (endTs - startTs) / (1000 * 60 * 60);
+    
     // In Array-Format für BarChart umwandeln
     // Berechne percent pro Bot-Type: (profit / capital) * 100
+    // Berechne avgDailyProfit pro Bot-Type: (profit / periodDurationHours) * 24
     return Object.entries(botTypeData).map(([name, data]) => ({
       botTypeName: name,
       profit: data.profit,
       capital: data.capital,
       percent: data.capital > 0 ? (data.profit / data.capital) * 100 : 0,
+      avgDailyProfit: periodDurationHours > 0 ? (data.profit / periodDurationHours) * 24 : 0,
       updateMatrixCount: data.updateMatrixCount,
       closedBotsCount: data.closedBotsCount
     }));
@@ -5871,9 +5876,10 @@ export default function Dashboard() {
                     'Gesamtprofit': 'profit',
                     'Gesamtkapital': 'capital',
                     'Gesamtprofit %': 'percent',
+                    'Ø Profit/Tag': 'avgDaily',
                   };
                   const metricKey = cardToMetricKey[cardId];
-                  if (!metricKey) return; // Nur Gesamtprofit, Gesamtkapital und Gesamtprofit % unterstützt
+                  if (!metricKey) return; // Nur unterstützte Metriken
                   
                   setActivePencilBarMetrics(prev => {
                     const newSet = new Set(prev);
@@ -5892,6 +5898,7 @@ export default function Dashboard() {
                     'Gesamtprofit': 'profit',
                     'Gesamtkapital': 'capital',
                     'Gesamtprofit %': 'percent',
+                    'Ø Profit/Tag': 'avgDaily',
                   };
                   const metricKey = cardToMetricKey[cardId];
                   return metricKey ? activePencilBarMetrics.has(metricKey) : false;
@@ -5899,7 +5906,7 @@ export default function Dashboard() {
                 
                 // Prüfe ob Card für Pencil Bar Mode klickbar ist
                 const isPencilBarCardClickable = (cardId: string): boolean => {
-                  return ['Gesamtprofit', 'Gesamtkapital', 'Gesamtprofit %'].includes(cardId);
+                  return ['Gesamtprofit', 'Gesamtkapital', 'Gesamtprofit %', 'Ø Profit/Tag'].includes(cardId);
                 };
                 
                 return (
@@ -7532,6 +7539,7 @@ export default function Dashboard() {
                           if (activePencilBarMetrics.has('profit')) allValues.push(d.profit);
                           if (activePencilBarMetrics.has('capital')) allValues.push(d.capital);
                           if (activePencilBarMetrics.has('percent')) allValues.push(d.percent);
+                          if (activePencilBarMetrics.has('avgDaily')) allValues.push(d.avgDailyProfit);
                         });
                         if (allValues.length === 0) return [0, 1];
                         const minVal = Math.min(...allValues);
@@ -7595,6 +7603,11 @@ export default function Dashboard() {
                                 Gesamtprofit %: {data.percent.toFixed(2)}%
                               </p>
                             )}
+                            {activePencilBarMetrics.has('avgDaily') && (
+                              <p style={{ color: 'hsl(24, 95%, 53%)' }}>
+                                Ø Profit/Tag: {data.avgDailyProfit.toFixed(2)} USDT
+                              </p>
+                            )}
                           </div>
                         );
                       }}
@@ -7614,6 +7627,9 @@ export default function Dashboard() {
                     )}
                     {activePencilBarMetrics.has('percent') && (
                       <Bar dataKey="percent" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(280, 65%, 60%)" />
+                    )}
+                    {activePencilBarMetrics.has('avgDaily') && (
+                      <Bar dataKey="avgDailyProfit" radius={[3, 3, 0, 0]} maxBarSize={40} fill="hsl(24, 95%, 53%)" />
                     )}
                   </BarChart>
                 </ResponsiveContainer>
