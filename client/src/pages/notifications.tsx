@@ -95,12 +95,18 @@ export default function Notifications() {
 
   // State for Futures pairs
   const [allBinanceFuturesPairs, setAllBinanceFuturesPairs] = useState<TrendPrice[]>([]);
+  const [isFuturesLoading, setIsFuturesLoading] = useState(true);
+  const [isSpotLoading, setIsSpotLoading] = useState(true);
 
   // Funktion zum Laden aller verfügbaren Binance Spot Trading Pairs
   const fetchAllBinancePairs = async () => {
+    setIsSpotLoading(true);
     try {
       const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-      if (!response.ok) return;
+      if (!response.ok) {
+        setIsSpotLoading(false);
+        return;
+      }
 
       const data = await response.json();
 
@@ -132,14 +138,20 @@ export default function Notifications() {
 
     } catch (error) {
       console.error('Error fetching Binance pairs:', error);
+    } finally {
+      setIsSpotLoading(false);
     }
   };
 
   // Funktion zum Laden aller verfügbaren Binance Futures Trading Pairs
   const fetchAllBinanceFuturesPairs = async () => {
+    setIsFuturesLoading(true);
     try {
       const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
-      if (!response.ok) return;
+      if (!response.ok) {
+        setIsFuturesLoading(false);
+        return;
+      }
 
       const data = await response.json();
 
@@ -178,6 +190,8 @@ export default function Notifications() {
 
     } catch (error) {
       console.error('Error fetching Binance Futures pairs:', error);
+    } finally {
+      setIsFuturesLoading(false);
     }
   };
 
@@ -1067,13 +1081,16 @@ export default function Notifications() {
                   <div className="border rounded-lg overflow-hidden">
                     <div className="bg-muted px-3 py-2">
                       <p className="text-sm font-medium">
-                        Vorschläge {marketType === 'futures' && allBinanceFuturesPairs.length === 0 && '(Lade Futures-Pairs...)'}
+                        Vorschläge
                       </p>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      {allPairsForCurrentMarket.length === 0 ? (
+                      {(marketType === 'spot' && isSpotLoading) || (marketType === 'futures' && isFuturesLoading) ? (
                         <div className="p-4 text-center text-muted-foreground text-sm">
-                          Lade {marketType === 'spot' ? 'Spot' : 'Futures'} Pairs...
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            Lade {marketType === 'spot' ? 'Spot' : 'Futures'} Pairs...
+                          </div>
                         </div>
                       ) : filteredSuggestions.length > 0 ? (
                         filteredSuggestions.map((pair) => (
