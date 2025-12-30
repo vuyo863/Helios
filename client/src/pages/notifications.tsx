@@ -86,6 +86,9 @@ export default function Notifications() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
   const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
 
+  // State for Futures pairs
+  const [allBinanceFuturesPairs, setAllBinanceFuturesPairs] = useState<TrendPrice[]>([]);
+
   // Funktion zum Laden aller verfügbaren Binance Spot Trading Pairs
   const fetchAllBinancePairs = async () => {
     try {
@@ -125,9 +128,40 @@ export default function Notifications() {
     }
   };
 
+  // Funktion zum Laden aller verfügbaren Binance Futures Trading Pairs
+  const fetchAllBinanceFuturesPairs = async () => {
+    try {
+      const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      // Filter für USDT Perpetual Futures
+      const futuresPairs: TrendPrice[] = data.symbols
+        .filter((s: any) => 
+          s.status === 'TRADING' && 
+          s.contractType === 'PERPETUAL' &&
+          s.symbol.endsWith('USDT')
+        )
+        .map((s: any, index: number) => ({
+          id: `binance-futures-${index}`,
+          name: s.symbol.replace('USDT', '/USDT'),
+          symbol: s.symbol,
+          price: 'Loading...',
+          marketType: 'futures' as const
+        }));
+
+      setAllBinanceFuturesPairs(futuresPairs);
+
+    } catch (error) {
+      console.error('Error fetching Binance Futures pairs:', error);
+    }
+  };
+
   // Load all Binance pairs on mount
   useEffect(() => {
     fetchAllBinancePairs();
+    fetchAllBinanceFuturesPairs();
   }, []);
 
   // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
@@ -169,27 +203,76 @@ export default function Notifications() {
     }
   };
 
+  // Funktion zum Abrufen der aktuellen Preise von Binance Futures API
+  const fetchFuturesPrices = async (symbols: string[]) => {
+    if (symbols.length === 0) return;
+
+    try {
+      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
+      const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[${symbolsParam}]`);
+
+      if (!response.ok) {
+        console.error('Failed to fetch futures prices from Binance API');
+        return;
+      }
+
+      const data = await response.json();
+
+      setAvailableTradingPairs(prev => {
+        const updated = [...prev];
+        data.forEach((ticker: any) => {
+          const index = updated.findIndex(p => p.symbol === ticker.symbol && p.marketType === 'futures');
+          if (index !== -1) {
+            updated[index] = {
+              ...updated[index],
+              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }),
+              priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
+              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
+              lastUpdate: new Date(),
+            };
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error fetching futures prices:', error);
+    }
+  };
+
   
 
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
-    if (allBinancePairs.length === 0) return;
+    if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
 
-    const symbols = watchlist
-      .map(id => {
-        const pair = allBinancePairs.find(p => p.id === id);
-        return pair?.symbol;
-      })
-      .filter(Boolean) as string[];
+    // Separate Spot and Futures symbols
+    const spotSymbols: string[] = [];
+    const futuresSymbols: string[] = [];
 
-    if (symbols.length === 0) return;
+    watchlist.forEach(id => {
+      const spotPair = allBinancePairs.find(p => p.id === id);
+      const futuresPair = allBinanceFuturesPairs.find(p => p.id === id);
+
+      if (spotPair) {
+        spotSymbols.push(spotPair.symbol);
+      } else if (futuresPair) {
+        futuresSymbols.push(futuresPair.symbol);
+      }
+    });
+
+    if (spotSymbols.length === 0 && futuresSymbols.length === 0) return;
 
     // Initial fetch
-    fetchSpotPrices(symbols);
+    if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
+    if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
 
     // Update alle 2 Sekunden
     priceUpdateIntervalRef.current = setInterval(() => {
-      fetchSpotPrices(symbols);
+      if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
+      if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
     }, 2000);
 
     return () => {
@@ -197,7 +280,7 @@ export default function Notifications() {
         clearInterval(priceUpdateIntervalRef.current);
       }
     };
-  }, [watchlist, allBinancePairs]);
+  }, [watchlist, allBinancePairs, allBinanceFuturesPairs]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
     // Load saved thresholds from localStorage on mount
@@ -458,8 +541,8 @@ export default function Notifications() {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
   }, [activeAlarms]);
 
-  // Gefilterte Vorschläge basierend auf Suchanfrage
-  const filteredSuggestions = allBinancePairs
+  // Gefilterte Vorschläge basierend auf Suchanfrage und Market Type
+  const filteredSuggestions = (marketType === 'spot' ? allBinancePairs : allBinanceFuturesPairs)
     .filter(pair =>
       pair.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
       !watchlist.includes(pair.id)
@@ -591,8 +674,10 @@ export default function Notifications() {
   };
 
   const getTrendPrice = (id: string) => {
-    // Search in available pairs first, then all pairs
-    return availableTradingPairs.find(tp => tp.id === id) || allBinancePairs.find(tp => tp.id === id);
+    // Search in available pairs first, then all pairs (both Spot and Futures)
+    return availableTradingPairs.find(tp => tp.id === id) || 
+           allBinancePairs.find(tp => tp.id === id) || 
+           allBinanceFuturesPairs.find(tp => tp.id === id);
   };
 
   // Helper to get the name, falling back to ID if not found
