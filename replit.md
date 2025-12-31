@@ -219,6 +219,78 @@ Die folgenden Bereiche sind als **Golden State** geschützt und wurden bei diese
 
 ---
 
+## Golden State Version 1.2 - Real Profit/Tag Fix im Overlay Mode (31.12.2025)
+
+### Problem
+
+Im Overlay Mode wurde "Real Profit/Tag" falsch berechnet:
+- **Analysis Mode**: 6.89 USDT ✅ (korrekt)
+- **Overlay Mode**: 7.21 USDT ❌ (falsch)
+
+### Ursache
+
+Der Overlay Mode verwendete `endEvents[0]?.timestamp` (Zeitpunkt des ersten End-Events) als `minTimestamp`, während der Analysis Mode `earliestStartTs` (das früheste `lastUpload`-Datum aller Updates) verwendete.
+
+**Formel**: `realDailyProfit = totalProfit / daySpan`  
+**daySpan**: `(maxTimestamp - minTimestamp) / (1000 * 60 * 60 * 24)`
+
+Mit dem falschen, späteren `minTimestamp` war `daySpan` kleiner, was zu einem höheren (falschen) `realDailyProfit` führte.
+
+### Lösung
+
+Die `earliestStartTs`-Logik wurde **exakt vom Analysis Mode kopiert** und im Overlay Mode eingefügt:
+
+**Datei**: `client/src/pages/dashboard.tsx`  
+**Zeilen**: 2331-2351 (Overlay Mode)  
+**Datum**: 31.12.2025 17:00
+
+**Kopierte Logik** (von Analysis Mode Zeilen 1791-1805):
+```tsx
+// ========== GOLDEN STATE UPDATE: 31.12.2025 16:00 - earliestStartTs Logik von Analysis kopiert ==========
+// BERECHNE ECHTEN ZEITRAUM (inkl. Start-Daten)
+// minTimestamp sollte das früheste lastUpload sein, damit Real Profit/Tag korrekt berechnet wird
+// KOPIERT von Analysis Mode (Zeilen 1791-1805) - Analysis bleibt UNVERÄNDERT
+let earliestStartTs = Infinity;
+relevantUpdates.forEach(update => {
+  if (update.lastUpload) {
+    const startDate = parseGermanDate(update.lastUpload);
+    if (startDate) {
+      earliestStartTs = Math.min(earliestStartTs, startDate.getTime());
+    }
+  }
+});
+// Fallback: Wenn kein lastUpload gefunden, nutze erstes End-Event
+if (earliestStartTs === Infinity) {
+  earliestStartTs = endEvents[0]?.timestamp || 0;
+}
+// ========== ENDE GOLDEN STATE UPDATE ==========
+```
+
+**Zeile 2427**: `const minTimestamp = earliestStartTs;` (statt vorher `endEvents[0]?.timestamp`)
+
+### Ergebnis
+
+- **Analysis Mode**: 6.89 USDT ✅
+- **Overlay Mode**: 6.89 USDT ✅ (jetzt identisch)
+
+### Was wurde NICHT verändert
+
+| Golden State Bereich | Status |
+|---------------------|--------|
+| Analysis Mode Logik | ✅ **Unverändert** (Golden State geschützt) |
+| Eye Mode Logik | ✅ Unverändert |
+| Pencil Mode Logik | ✅ Unverändert |
+| Alle anderen Berechnungen | ✅ Unverändert |
+
+### Berechnungsmethodik (Klarstellung)
+
+Die "Real Profit/Tag"-Berechnung basiert auf dem **`lastUpload`-Datum** (Upload-Zeitpunkt), **NICHT** auf dem Bot-Start-Datum das in den Metriken/Screenshot steht.
+
+- `earliestStartTs` = das früheste `lastUpload` aller ausgewählten Updates
+- Das ist der Zeitpunkt, wann das Update in die App hochgeladen wurde
+
+---
+
 ## Architektur-Übersicht der betroffenen States
 
 ```
