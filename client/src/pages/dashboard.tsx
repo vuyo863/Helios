@@ -199,7 +199,7 @@ export default function Dashboard() {
   const [removedBotsFromTable, setRemovedBotsFromTable] = useState<string[]>([]);
   const [selectedChartBotTypes, setSelectedChartBotTypes] = useState<string[]>([]);
   const [alleEintraegeMode, setAlleEintraegeMode] = useState<'compare' | 'added'>('added');
-  const [addedModeView, setAddedModeView] = useState<'analysis' | 'overlay'>('analysis');
+  const [addedModeView, setAddedModeView] = useState<'analysis' | 'overlay'>('overlay');
   const [hoveredBotTypeId, setHoveredBotTypeId] = useState<string | null>(null);
   const [tempSelectedBots, setTempSelectedBots] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
