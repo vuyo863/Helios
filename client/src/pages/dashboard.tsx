@@ -6255,8 +6255,9 @@ export default function Dashboard() {
                 </div>
                 
                 {/* Marker Container - Dynamic Grid aligned with Chart */}
+                {/* WICHTIG: overflow-visible damit gestrichelte Linien in den Chart-Bereich reichen können */}
                 <div 
-                  className="relative h-20 border rounded-sm flex-1 overflow-hidden"
+                  className="relative h-20 border rounded-sm flex-1 overflow-visible"
                   style={{ 
                     marginRight: '30px',
                     borderColor: 'hsl(var(--border))'
@@ -6264,7 +6265,8 @@ export default function Dashboard() {
                   data-testid="chart-marker-container"
                 >
                 {/* Dynamic vertical grid lines - synced with chart X-axis */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-auto" preserveAspectRatio="none">
+                {/* WICHTIG: overflow-visible auf SVG damit gestrichelte Linien sichtbar sind */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-auto" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
                   {/* Horizontal grid lines (static) */}
                   {[0.25, 0.5, 0.75].map((ratio) => (
                     <line
