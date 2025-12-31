@@ -142,10 +142,12 @@ else
 
 ---
 
-## 🔧 STIFT-MODUS (Pencil Mode) - SEPARATE SEKTION
+## 🔒 GOLDEN STATE: Stift-Modus (Pencil Mode)
 
-> **KOMPLETT GETRENNT vom Auge-Modus - eigene States, eigene Logik**
-> Der Stift-Modus (Pencil Mode) ist als vollständig separate Sektion implementiert, um den Golden State des Auge-Modus nicht zu beeinträchtigen.
+> **ACHTUNG: GOLDEN STATE - KEINE ÄNDERUNGEN ERLAUBT!**
+> Der Stift-Modus ist vollständig implementiert, getestet und abgeschlossen.
+> Dieser Code darf NICHT mehr modifiziert werden - 0,0 gar nicht!
+> KOMPLETT GETRENNT vom Auge-Modus - eigene States, eigene Logik.
 
 ### Übersicht Stift-Modus
 
@@ -161,6 +163,7 @@ Der Stift-Modus (aktiviert durch das Stift-Icon im Overlay Mode) ermöglicht:
 - `selectedPencilPeriodKey`: Ausgewählte Period (vor Apply)
 - `appliedPencilPeriodKey`: Angewendete Period (nach Apply)
 - `overlayAnalyzeMode`: Boolean für Analyze-Modus
+- `activePencilBarMetrics`: Set<string> für aktive Bar-Metriken ('profit', 'capital', 'percent', 'avgDaily')
 
 #### 2. Stift-Modus UI Card
 - **Period Details**: Von/Bis Datum, Gesamtprofit
@@ -178,6 +181,21 @@ Der Stift-Modus (aktiviert durch das Stift-Icon im Overlay Mode) ermöglicht:
 - **XAxis-Domain**: Automatischer Zoom auf Period-Zeitraum
 - **Compare-Stil**: Individuelle Bot-Type Linien innerhalb der Period
 
+#### 5. Bar-Chart im Analyze-Modus
+- **Metriken per Content Card auswählbar**: Klick auf Gesamtprofit/Gesamtkapital/Gesamtprofit %/Ø Profit/Tag togglet entsprechende Bars
+- **Farbkodierung**:
+  - Profit: Grün (≥0) / Rot (<0) - `hsl(142,71%,45%)` / `hsl(0,84%,60%)`
+  - Gesamtkapital: Blau - `hsl(217,91%,60%)`
+  - Gesamtprofit %: Lila - `hsl(280,65%,60%)`
+  - Ø Profit/Tag: Orange - `hsl(24,95%,53%)`
+- **Y-Achsen-Formatierung**: Dezimalstellen für kleine Werte (<10), Integer für große Werte
+- **Tooltip**: Zeigt alle aktiven Metriken pro Bot-Type mit Farbkodierung
+
+#### 6. Content Cards im overlayAnalyzeMode
+- **Interaktives Toggle**: Cards zeigen cyan Ring wenn aktive Bar-Metrik
+- **Period-Werte**: Zeigt aggregierte Werte der ausgewählten Period
+- **WICHTIG**: Blockiert NICHT den normalen Analysis-Modus (isMultiBotChartMode Schutz)
+
 ### Code-Referenzen
 
 | Feature | Datei | Ca. Zeilen |
@@ -188,16 +206,32 @@ Der Stift-Modus (aktiviert durch das Stift-Icon im Overlay Mode) ermöglicht:
 | Chart Data Filterung | `dashboard.tsx` | 7083-7094 |
 | XAxis Domain | `dashboard.tsx` | 4218-4251 |
 | Stift-Modus UI | `dashboard.tsx` | 9061-9272 |
+| Pencil Bar Card Handlers | `dashboard.tsx` | 5872-5910 |
+| Pencil Bar Chart Data | `dashboard.tsx` | pencilBarChartData useMemo |
+| Card pointer-events Fix | `dashboard.tsx` | 5648-5649 |
 
 ### Backend-Tests (35 erfolgreich)
 
 - 20 Logik-Tests: Period Key Parsing, Date Parsing, Profit Calculation
 - 15 API-Integration-Tests: Bot Types, Updates, Timestamps, Filtering
 
+### Kritischer Bug-Fix (31.12.2025)
+
+**Problem**: Content Cards im normalen Analysis-Modus (Added-Mode) waren nicht klickbar
+**Ursache**: `pointer-events-none` wurde durch `analyzeMode` global gesetzt, blockierte auch Added-Mode
+**Lösung**: Bedingung geändert zu `analyzeMode && !isMultiBotChartMode` - Cards nur im MainChart Analyze blockiert, Added-Mode IMMER klickbar
+
 ---
 
 ### System Design Choices
-*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase (e.g., MainChart, Compare Mode, Edit-Modus Analysis, Bot-Type CRUD, AI-Analysis page) are designated as "Golden State" and are protected from modification to ensure stability.
+*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are protected from modification to ensure stability. **Aktuell geschützte Module:**
+    - 🔒 **Auge-Modus (Eye Mode)**: Period Comparison, Eye Mode Content Card, Perioden-Profit-Berechnung
+    - 🔒 **Stift-Modus (Pencil Mode)**: Period-Auswahl, Analyze-Modus, Bar-Chart mit 4 Metriken
+    - 🔒 **MainChart**: Single-Bot Ansicht mit Marker-System
+    - 🔒 **Compare Mode**: Multi-Bot Vergleich
+    - 🔒 **Added-Mode Analysis**: Aggregierte Ansicht (Content Cards IMMER klickbar!)
+    - 🔒 **Bot-Type CRUD**: Erstellen, Bearbeiten, Löschen von Bot-Types
+    - 🔒 **AI-Analysis Page**: OpenAI Integration
 *   **Modular Architecture**: Clear separation of concerns between frontend and backend, and within the frontend, distinct modules for different chart functionalities.
 
 ## External Dependencies
