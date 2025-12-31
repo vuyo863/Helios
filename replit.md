@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project provides users with detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features. The goal is to offer comprehensive data analysis for better trading decisions.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project provides users with detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features. The goal is to offer comprehensive data analysis for better trading decisions and to empower users with tools for informed trading decisions.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -15,223 +15,23 @@ The frontend is built with React and TypeScript, utilizing `shadcn/ui` and Tailw
 The dashboard features three main chart modes:
 1.  **MainChart**: Displays detailed performance for a single bot type, including total profit, average daily profit, real daily profit, total capital, and total profit percentage. It supports interactive metric cards, a robust marker system (U1, C1), eye and pencil modes for interaction, and zoom/pan functionalities.
 2.  **Compare Mode**: Enables comparison of two or more bot types, visualizing their performance with color-coded lines, highlighting start/end points of updates, and showing runtime information.
-3.  **Edit (Added) Mode**: Aggregates data from multiple bot types, focusing on end values. It includes an "Analysis" sub-toggle for metric display and a planned "Overlay" feature for alternative data representation.
+3.  **Added Mode**: Aggregates data from multiple bot types, focusing on end values. It includes an "Analysis" sub-toggle for metric display and supports an "Overlay" feature for alternative data representation (Eye Mode, Pencil Mode).
 
 ### Technical Implementations
-*   **State Management**: Extensive use of TypeScript-typed state for managing chart modes (e.g., `isMultiBotChartMode`, `isSingleBotMode`), selected bot types, and interaction modes.
-*   **Data Handling**: `useMemo` hooks optimize data preparation for single bot, added mode, and compare mode charts.
-*   **Color System**: A consistent color palette is used for metrics and chart elements (e.g., green for 'Gesamtprofit', red for end points).
+*   **State Management**: Extensive use of TypeScript-typed state for managing chart modes, selected bot types, and interaction modes.
+*   **Data Handling**: `useMemo` hooks optimize data preparation for various chart modes.
+*   **Color System**: A consistent color palette is used for metrics and chart elements.
 *   **Bot Type Management**: Comprehensive CRUD operations for bot types, including CSV/Excel upload and update history tracking.
+*   **Eye Mode**: Provides an extended overlay view with Period Comparison Cards (showing profit per period and bot contributions), and an Eye Mode Content Card displaying aggregated metrics like total profit, total capital, profit percentage, and average daily profit. This mode includes automatic period division and profit calculation, distinguishing between Closed Bot, Startmetrik (avgRuntime-based), and Vergleich (From/Until-based) calculation methods. Framer Motion is used for sorting animations.
+*   **Pencil Mode**: Allows single-selection of a period for detailed analysis. Users can "Apply" a selection to activate an "Analyze" mode, where the chart zooms to the selected period and displays bot performance in a compare-style view. This mode includes a bar chart with selectable metrics (profit, capital, percent, avgDaily) and color-coding.
 
 ### Feature Specifications
 *   **Marker System**: Allows users to define and interact with specific points on charts for event tracking and analysis.
-*   **Zoom & Pan**: Interactive zooming and panning capabilities on chart axes, particularly in analysis modes.
+*   **Zoom & Pan**: Interactive zooming and panning capabilities on chart axes.
 *   **AI-Analysis**: Integration with OpenAI for automated insights and chart data summarization.
 
----
-
-## 🔒 GOLDEN STATE: Auge-Modus (Eye Mode / Overlay Mode)
-
-> **ACHTUNG: GOLDEN STATE - KEINE ÄNDERUNGEN ERLAUBT!**
-> Der Auge-Modus ist vollständig implementiert, getestet und abgeschlossen.
-> Dieser Code darf NICHT mehr modifiziert werden - 0,0 gar nicht!
-
-### Übersicht Auge-Modus
-
-Der Auge-Modus (aktiviert durch das Auge-Icon im Added Mode) zeigt eine erweiterte Overlay-Ansicht mit:
-- **Period Comparison Cards**: Vergleich von Zeitperioden mit Profit-Berechnung
-- **Eye Mode Content Card**: Aggregierte Metriken für ausgewählte Bot-Types
-- **Sortierung & Animationen**: Interaktive Sortierung mit Framer Motion Animationen
-
-### Implementierte Features
-
-#### 1. Period Comparison Cards
-- **Zeitperioden-Aufteilung**: Automatische Einteilung des Zeitraums in Perioden (1h, 6h, 12h, 1d, 3d, 1w, 2w, 1m)
-- **Profit pro Periode**: Berechnet wie viel Profit in jeder Periode erzielt wurde
-- **Bot-Beiträge**: Zeigt welche Bots wie viel zu jeder Periode beigetragen haben
-- **Sortierung**: Nach Datum (aufsteigend/absteigend) oder Profit (höchster/niedrigster zuerst)
-- **Framer Motion Animationen**: Sanfte 0.3s ease-in-out Animationen beim Sortieren
-
-#### 2. Eye Mode Content Card
-- **Gesamtprofit**: Summe aller Bot-Profite mit Dollarzeichen ($) und Farbkodierung (grün ≥0, rot <0)
-- **Gesamtkapital**: Aggregiertes Investment aller ausgewählten Bots
-- **Profit %**: Prozentuale Rendite
-- **Ø Profit/Tag**: Durchschnittlicher täglicher Profit
-- **Real Profit/Tag**: Tatsächlicher täglicher Profit
-
-#### 3. Perioden-Zeitraum-Berechnung
-- **minTimestamp**: Verwendet das früheste `lastUpload` (Start-Datum) aller relevanten Updates
-- **maxTimestamp**: Verwendet das späteste `thisUpload` (End-Datum)
-- **Wichtig**: Perioden decken den GESAMTEN Bot-Zeitraum ab, nicht nur ab dem ersten sichtbaren Datenpunkt
-
-### Perioden-Profit-Berechnung
-
-Die Perioden-Profit-Berechnung ermittelt, wie viel Profit in einer bestimmten Zeitperiode erzielt wurde. Die Summe aller Perioden ergibt den Kontokart-Wert (z.B. 205.96 USDT).
-
-#### Automatische Unterscheidung der Berechnungsarten
-
-Das System erkennt automatisch, welche Berechnungsart für jedes Update verwendet werden muss:
-
-**Schritt 1: Closed Bot prüfen**
-```
-if (update.status === 'Closed Bots') → Closed-Bot-Berechnung
-```
-
-**Schritt 2: Zeitbasis ermitteln (nur für aktive Bots)**
-```javascript
-// Berechne mit beiden möglichen Zeitbasen:
-calcWithAvgRuntime = avgGridProfitHour × avgRuntimeHours
-calcWithFromUntil = avgGridProfitHour × fromUntilHours
-
-// Prüfe welche näher an overallGridProfitUsdt liegt:
-if (|calcWithAvgRuntime - overallGridProfitUsdt| < |calcWithFromUntil - overallGridProfitUsdt|)
-  → Startmetrik-Modus
-else
-  → Vergleich-Modus
-```
-
-#### Drei Berechnungsarten
-
-| Modus | Wann verwendet | Formel |
-|-------|----------------|--------|
-| **Closed Bot** | `status === 'Closed Bots'` | `profit` einmalig am End-Datum |
-| **Startmetrik** | Neues Update (avgRuntime-basiert) | `avgGridProfitHour × (avgRuntime × Überlappungs-Verhältnis)` |
-| **Vergleich** | Update mit Vorgänger (From/Until-basiert) | `avgGridProfitHour × Überlappungs-Stunden` |
-
-#### Detaillierte Erklärung
-
-**1. Closed Bots**
-- Der `profit`-Wert wird einmalig am End-Datum (`thisUpload`) gutgeschrieben
-- Keine stündliche Berechnung, da der Bot bereits geschlossen ist
-- Beispiel: profit = 4.88 USDT → wird der Periode zugerechnet, in der das End-Datum liegt
-
-**2. Startmetrik (avgRuntime-basiert)**
-- Wird verwendet, wenn das Update eine neue Startmetrik ist (kein Vorgänger)
-- `avgGridProfitHour` wurde aus `overallGridProfitUsdt / avgRuntime` berechnet
-- Perioden-Profit = `avgGridProfitHour × (avgRuntime × (Überlappung / Gesamtdauer))`
-- Beispiel: bhj v1 → 2.85 × 38.47h = 109.64 USDT
-
-**3. Vergleich (From/Until-basiert)**
-- Wird verwendet, wenn das Update einen Vorgänger hat (Differenz-Berechnung)
-- `avgGridProfitHour` wurde aus `overallGridProfitUsdt / (Until - From)` berechnet
-- Perioden-Profit = `avgGridProfitHour × Überlappungs-Stunden`
-- Beispiel: teshh v4 → -0.04 × 469.75h = -18.79 USDT
-
-### Kritische Bug-Fixes (abgeschlossen)
-
-1. **minTimestamp-Korrektur**: Verwendet jetzt frühestes `lastUpload` statt erstes End-Event, damit alle Bot-Laufzeit-Tage in Perioden erfasst werden
-2. **Perioden-Summe validiert**: Summe aller Perioden entspricht dem Kontokart-Wert (~205.96 USDT)
-3. **Dollarzeichen & Farbkodierung**: Gesamtprofit zeigt `{wert} $` mit grün (≥0) oder rot (<0)
-
-### Code-Referenzen
-
-| Feature | Datei | Ca. Zeilen |
-|---------|-------|------------|
-| Perioden-Profit-Berechnung | `dashboard.tsx` | 9038-9094 |
-| Period Comparison Cards | `dashboard.tsx` | 9100-9300 |
-| Eye Mode Content Card | `dashboard.tsx` | 8900-9000 |
-| minTimestamp-Berechnung | `dashboard.tsx` | 1757-1771 |
-| Framer Motion Animationen | `dashboard.tsx` | Period Cards mit `motion.div` |
-
-### Verwendete Technologien im Auge-Modus
-
-- **Framer Motion**: `motion.div` mit `layout` prop für sanfte Card-Animationen
-- **Recharts**: Chart-Darstellung (falls benötigt)
-- **TypeScript**: Vollständig typisierte States und Props
-- **Tailwind CSS**: Styling inkl. dynamische Farbklassen
-
----
-
-## 🔒 GOLDEN STATE: Stift-Modus (Pencil Mode)
-
-> **ACHTUNG: GOLDEN STATE - KEINE ÄNDERUNGEN ERLAUBT!**
-> Der Stift-Modus ist vollständig implementiert, getestet und abgeschlossen.
-> Dieser Code darf NICHT mehr modifiziert werden - 0,0 gar nicht!
-> KOMPLETT GETRENNT vom Auge-Modus - eigene States, eigene Logik.
-
-### Übersicht Stift-Modus
-
-Der Stift-Modus (aktiviert durch das Stift-Icon im Overlay Mode) ermöglicht:
-- **Period-Auswahl**: Single-Select einer Period im Marker-Container
-- **Apply-Workflow**: Auswahl speichern und Analyze-Button aktivieren
-- **Analyze-Modus**: Chart zeigt nur die ausgewählte Period im Compare-Stil
-
-### Implementierte Features
-
-#### 1. Separate States
-- `hoveredPencilPeriodKey`: Hovered Period (null oder Period-Key)
-- `selectedPencilPeriodKey`: Ausgewählte Period (vor Apply)
-- `appliedPencilPeriodKey`: Angewendete Period (nach Apply)
-- `overlayAnalyzeMode`: Boolean für Analyze-Modus
-- `activePencilBarMetrics`: Set<string> für aktive Bar-Metriken ('profit', 'capital', 'percent', 'avgDaily')
-
-#### 2. Stift-Modus UI Card
-- **Period Details**: Von/Bis Datum, Gesamtprofit
-- **Trash-Button**: Auswahl löschen
-- **Analyze-Button**: Aktiviert overlayAnalyzeMode (neonblauer Glow wenn aktiv)
-- **Apply-Button**: Speichert ausgewählte Period
-
-#### 3. Marker-Container Interaktion
-- **Hover**: Zeigt Period-Highlight (neonblau)
-- **Click**: Single-Select (wählt Period aus oder ab)
-- **Deaktiviert**: Wenn overlayAnalyzeMode aktiv
-
-#### 4. Chart-Rendering im Analyze-Modus
-- **Datenfilterung**: `overlayChartData.data` gefiltert auf `overlayAnalyzeModeBounds`
-- **XAxis-Domain**: Automatischer Zoom auf Period-Zeitraum
-- **Compare-Stil**: Individuelle Bot-Type Linien innerhalb der Period
-
-#### 5. Bar-Chart im Analyze-Modus
-- **Metriken per Content Card auswählbar**: Klick auf Gesamtprofit/Gesamtkapital/Gesamtprofit %/Ø Profit/Tag togglet entsprechende Bars
-- **Farbkodierung**:
-  - Profit: Grün (≥0) / Rot (<0) - `hsl(142,71%,45%)` / `hsl(0,84%,60%)`
-  - Gesamtkapital: Blau - `hsl(217,91%,60%)`
-  - Gesamtprofit %: Lila - `hsl(280,65%,60%)`
-  - Ø Profit/Tag: Orange - `hsl(24,95%,53%)`
-- **Y-Achsen-Formatierung**: Dezimalstellen für kleine Werte (<10), Integer für große Werte
-- **Tooltip**: Zeigt alle aktiven Metriken pro Bot-Type mit Farbkodierung
-
-#### 6. Content Cards im overlayAnalyzeMode
-- **Interaktives Toggle**: Cards zeigen cyan Ring wenn aktive Bar-Metrik
-- **Period-Werte**: Zeigt aggregierte Werte der ausgewählten Period
-- **WICHTIG**: Blockiert NICHT den normalen Analysis-Modus (isMultiBotChartMode Schutz)
-
-### Code-Referenzen
-
-| Feature | Datei | Ca. Zeilen |
-|---------|-------|------------|
-| States | `dashboard.tsx` | 283-288 |
-| overlayAnalyzeModeBounds | `dashboard.tsx` | 3025-3049 |
-| Period Interaktion | `dashboard.tsx` | 6099-6134 |
-| Chart Data Filterung | `dashboard.tsx` | 7083-7094 |
-| XAxis Domain | `dashboard.tsx` | 4218-4251 |
-| Stift-Modus UI | `dashboard.tsx` | 9061-9272 |
-| Pencil Bar Card Handlers | `dashboard.tsx` | 5872-5910 |
-| Pencil Bar Chart Data | `dashboard.tsx` | pencilBarChartData useMemo |
-| Card pointer-events Fix | `dashboard.tsx` | 5648-5649 |
-
-### Backend-Tests (35 erfolgreich)
-
-- 20 Logik-Tests: Period Key Parsing, Date Parsing, Profit Calculation
-- 15 API-Integration-Tests: Bot Types, Updates, Timestamps, Filtering
-
-### Kritischer Bug-Fix (31.12.2025)
-
-**Problem**: Content Cards im normalen Analysis-Modus (Added-Mode) waren nicht klickbar
-**Ursache**: `pointer-events-none` wurde durch `analyzeMode` global gesetzt, blockierte auch Added-Mode
-**Lösung**: Bedingung geändert zu `analyzeMode && !isMultiBotChartMode` - Cards nur im MainChart Analyze blockiert, Added-Mode IMMER klickbar
-
----
-
 ### System Design Choices
-*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are protected from modification to ensure stability. **Aktuell geschützte Module:**
-    - 🔒 **Auge-Modus (Eye Mode)**: Period Comparison, Eye Mode Content Card, Perioden-Profit-Berechnung
-    - 🔒 **Stift-Modus (Pencil Mode)**: Period-Auswahl, Analyze-Modus, Bar-Chart mit 4 Metriken
-    - 🔒 **MainChart**: Single-Bot Ansicht mit Marker-System
-    - 🔒 **Compare Mode**: Multi-Bot Vergleich
-    - 🔒 **Added-Mode Analysis**: Aggregierte Ansicht (Content Cards IMMER klickbar!)
-    - 🔒 **Bot-Type CRUD**: Erstellen, Bearbeiten, Löschen von Bot-Types
-    - 🔒 **AI-Analysis Page**: OpenAI Integration
+*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are protected from modification to ensure stability. This includes the Eye Mode, Pencil Mode, MainChart, Compare Mode, Added-Mode Analysis, Bot-Type CRUD, and AI-Analysis Page.
 *   **Modular Architecture**: Clear separation of concerns between frontend and backend, and within the frontend, distinct modules for different chart functionalities.
 
 ## External Dependencies

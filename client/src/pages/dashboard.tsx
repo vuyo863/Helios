@@ -10859,9 +10859,20 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold">
               Alle Einträge
             </h2>
+            {/* HINZUGEFÜGT: 31.12.2025 14:45 - Reset Eye/Pencil States beim Modus-Wechsel
+                Begründung: Compare und Added sind separate Modi, Markierungen sollen nicht übertragen werden */}
             <div className="flex items-center bg-muted rounded-lg p-1 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]" data-testid="toggle-alle-eintraege-mode">
               <button
-                onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAlleEintraegeMode('compare')}
+                onClick={() => {
+                  if (!(analyzeMode || overlayAnalyzeMode) && alleEintraegeMode !== 'compare') {
+                    // Reset Auge-Modus States
+                    setHoveredUpdateId(null);
+                    setLockedUpdateIds(new Set());
+                    // Reset Stift-Modus States
+                    resetPencilAnalyzeState(true);
+                    setAlleEintraegeMode('compare');
+                  }
+                }}
                 disabled={analyzeMode || overlayAnalyzeMode}
                 className={cn(
                   "px-3 py-1 text-sm font-medium rounded-md transition-colors",
@@ -10876,7 +10887,16 @@ export default function Dashboard() {
                 Compare
               </button>
               <button
-                onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAlleEintraegeMode('added')}
+                onClick={() => {
+                  if (!(analyzeMode || overlayAnalyzeMode) && alleEintraegeMode !== 'added') {
+                    // Reset Auge-Modus States
+                    setHoveredUpdateId(null);
+                    setLockedUpdateIds(new Set());
+                    // Reset Stift-Modus States
+                    resetPencilAnalyzeState(true);
+                    setAlleEintraegeMode('added');
+                  }
+                }}
                 disabled={analyzeMode || overlayAnalyzeMode}
                 className={cn(
                   "px-3 py-1 text-sm font-medium rounded-md transition-colors",
