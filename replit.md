@@ -50,6 +50,27 @@ The dashboard features three main chart modes:
 
 ## Änderungslog (Golden State Modifikationen)
 
+### 31.12.2025 15:20 - Analysis↔Overlay Mode-Wechsel Reset
+
+**Problem**: Wenn im Analysis Modus das Auge-Icon aktiviert ist und dann zu Overlay gewechselt wird, bleibt das Auge-Icon aktiv (blau). Das sollte nicht sein da Analysis und Overlay separate Modi sind.
+
+**Lösung**: Beim Toggle zwischen Analysis ↔ Overlay werden alle States auf Default zurückgesetzt:
+- `markerViewActive` → false (Auge-Icon deaktivieren)
+- `markerEditActive` → false (Stift-Icon deaktivieren)
+- `hoveredUpdateId` → null
+- `lockedUpdateIds` → new Set()
+- `resetPencilAnalyzeState(true)` (setzt alle Stift-Modus States zurück)
+
+**Code-Stelle**: `dashboard.tsx` Zeilen 6019-6077
+
+**Auswirkung**: Minimaler Eingriff, NUR der Toggle-Handler wurde erweitert. Keine Logik-Änderungen an:
+- Auge-Modus Funktionalität
+- Stift-Modus Funktionalität
+- Farben/Linien/Verbindungen
+- Chart-Rendering
+
+---
+
 ### 31.12.2025 15:10 - Mode-Wechsel Komplett-Reset
 
 **Problem**: Wenn im Compare Mode etwas im Auge-/Stift-Modus markiert wird und dann zu Added Analysis gewechselt wird, bleiben Markierungen und aktive Icons bestehen. Das sollte nicht sein da Compare und Added separate Modi sind.

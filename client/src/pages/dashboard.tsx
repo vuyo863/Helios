@@ -6014,10 +6014,24 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-bold">Update Verlauf</h3>
                   {/* Toggle für Added-Mode: Analysis vs Overlay - deaktiviert im Analyze-Mode */}
+                  {/* GOLDEN STATE UPDATE: 31.12.2025 15:20 - Reset Eye/Pencil States beim Analysis↔Overlay Wechsel
+                      Begründung: Analysis und Overlay sind separate Modi, komplett auf Default zurücksetzen */}
                   {isMultiBotChartMode && (
                     <div className={`flex items-center bg-muted rounded-md p-0.5 ${(analyzeMode || overlayAnalyzeMode) ? 'opacity-50' : ''}`}>
                       <button
-                        onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAddedModeView('analysis')}
+                        onClick={() => {
+                          if (!(analyzeMode || overlayAnalyzeMode) && addedModeView !== 'analysis') {
+                            // Deaktiviere Auge- und Stift-Icons
+                            setMarkerViewActive(false);
+                            setMarkerEditActive(false);
+                            // Reset Auge-Modus States
+                            setHoveredUpdateId(null);
+                            setLockedUpdateIds(new Set());
+                            // Reset Stift-Modus States
+                            resetPencilAnalyzeState(true);
+                            setAddedModeView('analysis');
+                          }
+                        }}
                         disabled={analyzeMode || overlayAnalyzeMode}
                         className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                           (analyzeMode || overlayAnalyzeMode) 
@@ -6031,7 +6045,19 @@ export default function Dashboard() {
                         Analysis
                       </button>
                       <button
-                        onClick={() => !(analyzeMode || overlayAnalyzeMode) && setAddedModeView('overlay')}
+                        onClick={() => {
+                          if (!(analyzeMode || overlayAnalyzeMode) && addedModeView !== 'overlay') {
+                            // Deaktiviere Auge- und Stift-Icons
+                            setMarkerViewActive(false);
+                            setMarkerEditActive(false);
+                            // Reset Auge-Modus States
+                            setHoveredUpdateId(null);
+                            setLockedUpdateIds(new Set());
+                            // Reset Stift-Modus States
+                            resetPencilAnalyzeState(true);
+                            setAddedModeView('overlay');
+                          }
+                        }}
                         disabled={analyzeMode || overlayAnalyzeMode}
                         className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                           (analyzeMode || overlayAnalyzeMode) 
