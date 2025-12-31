@@ -6594,6 +6594,7 @@ export default function Dashboard() {
                             );
                             
                             let periodProfit = 0;
+                            let hasOverlappingUpdates = false; // Zähle ob überhaupt Updates in dieser Period liegen
                             
                             relevantUpdates.forEach((update: any) => {
                               const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
@@ -6609,6 +6610,9 @@ export default function Dashboard() {
                               const overlapEnd = Math.min(endTs, updateEndTs);
                               
                               if (overlapStart >= overlapEnd) return;
+                              
+                              // Mindestens ein Update überlappt diese Period
+                              hasOverlappingUpdates = true;
                               
                               const isClosedBot = update.status === 'Closed Bots';
                               const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
@@ -6644,12 +6648,15 @@ export default function Dashboard() {
                               }
                             });
                             
-                            const isPositive = periodProfit >= 0;
-                            
-                            // Neon-Farbe: Grün für positiv, Rot für negativ
-                            const neonColor = isPositive 
-                              ? 'hsl(142, 71%, 45%)' // Grün
-                              : 'hsl(0, 84%, 60%)';  // Rot
+                            // Neon-Farbe: GRAU wenn keine Updates, sonst Grün/Rot je nach Profit
+                            let neonColor: string;
+                            if (!hasOverlappingUpdates) {
+                              neonColor = 'hsl(0, 0%, 50%)'; // Grau - keine Daten in dieser Period
+                            } else if (periodProfit >= 0) {
+                              neonColor = 'hsl(142, 71%, 45%)'; // Grün - positiver Profit
+                            } else {
+                              neonColor = 'hsl(0, 84%, 60%)'; // Rot - negativer Profit
+                            }
                             
                             // Neon-Glow am unteren Rand der Period-Box
                             elements.push(
