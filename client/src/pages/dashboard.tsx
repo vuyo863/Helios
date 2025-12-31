@@ -6805,8 +6805,9 @@ export default function Dashboard() {
                         };
                         
                         // Calculate dashed line Y position for closed bot
+                        // WICHTIG: Keine frühe Rückgabe bei !isClosedActive - die Bedingung wird beim Rendern geprüft
+                        // Dies ermöglicht das Rendern der Linie im Auge-/Stift-Modus
                         const getClosedBotChartY = () => {
-                          if (!isClosedActive) return null;
                           
                           // Im Compare-Modus: Verwende compareChartData und Bot-Type-Name
                           if (isMultiSelectCompareMode) {
