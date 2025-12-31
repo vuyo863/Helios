@@ -5799,7 +5799,7 @@ export default function Dashboard() {
                   }
                 };
                 
-                const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string }> = {
+                const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string; infoTooltip?: string }> = {
                   'Gesamtkapital': {
                     label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge',
                     value: getCardValue('Gesamtkapital'),
@@ -5823,12 +5823,14 @@ export default function Dashboard() {
                     value: getCardValue('Ø Profit/Tag'),
                     icon: CalendarIcon,
                     iconColor: 'bg-orange-100 text-orange-600',
+                    infoTooltip: isMultiBotChartMode ? 'Berechnet den Profit pro tatsächlicher Bot-Laufzeit. Nimmt nur die Stunden wo Bots wirklich aktiv waren. Formel: (Gesamtprofit / Laufzeit-Stunden) × 24' : undefined,
                   },
                   'Real Profit/Tag': {
                     label: 'Real Profit/Tag',
                     value: getCardValue('Real Profit/Tag'),
                     icon: Zap,
                     iconColor: 'bg-yellow-100 text-yellow-600',
+                    infoTooltip: isMultiBotChartMode ? 'Berechnet den Profit pro Kalendertag im Graph. Nimmt die Tage von der ersten bis zur letzten Metrik. Formel: Gesamtprofit / Anzahl Tage im Graph' : undefined,
                   },
                 };
                 
@@ -5958,6 +5960,7 @@ export default function Dashboard() {
                         value={config.value}
                         icon={config.icon}
                         iconColor={config.iconColor}
+                        infoTooltip={config.infoTooltip}
                         dropdown={cardId === 'Gesamtkapital' && !isCardEditMode ? (
                           <Popover open={profitPercentDropdownOpen} onOpenChange={setProfitPercentDropdownOpen}>
                             <PopoverTrigger asChild>

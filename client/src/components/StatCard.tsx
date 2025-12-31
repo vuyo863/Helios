@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Info } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface StatCardProps {
   label: string;
@@ -8,15 +9,50 @@ interface StatCardProps {
   iconColor: string;
   dropdown?: React.ReactNode;
   eyeIcon?: React.ReactNode;
+  infoTooltip?: string;
 }
 
-export default function StatCard({ label, value, icon: Icon, iconColor, dropdown, eyeIcon }: StatCardProps) {
+export default function StatCard({ label, value, icon: Icon, iconColor, dropdown, eyeIcon, infoTooltip }: StatCardProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  useEffect(() => {
+    if (showTooltip) {
+      const timer = setTimeout(() => {
+        setShowTooltip(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showTooltip]);
+  
+  const handleInfoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowTooltip(prev => !prev);
+  };
+  
   return (
     <Card className="p-4 h-full">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1 mb-1">
             <p className="text-xs text-muted-foreground whitespace-nowrap">{label}</p>
+            {infoTooltip && (
+              <div className="relative">
+                <Info 
+                  className="h-3 w-3 text-muted-foreground/60 cursor-pointer hover:text-muted-foreground transition-colors" 
+                  onClick={handleInfoClick}
+                  data-testid={`info-icon-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                />
+                {showTooltip && (
+                  <div 
+                    className="absolute left-0 top-5 z-50 w-64 p-3 text-xs bg-popover border border-border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="absolute -top-1.5 left-1 w-3 h-3 bg-popover border-l border-t border-border rotate-45" />
+                    <p className="text-foreground leading-relaxed">{infoTooltip}</p>
+                  </div>
+                )}
+              </div>
+            )}
             {dropdown}
             {eyeIcon}
           </div>
