@@ -2328,6 +2328,25 @@ export default function Dashboard() {
     // Sortiere End-Events chronologisch
     endEvents.sort((a, b) => a.timestamp - b.timestamp);
 
+    // ========== GOLDEN STATE UPDATE: 31.12.2025 16:00 - earliestStartTs Logik von Analysis kopiert ==========
+    // BERECHNE ECHTEN ZEITRAUM (inkl. Start-Daten)
+    // minTimestamp sollte das früheste lastUpload sein, damit Real Profit/Tag korrekt berechnet wird
+    // KOPIERT von Analysis Mode (Zeilen 1791-1805) - Analysis bleibt UNVERÄNDERT
+    let earliestStartTs = Infinity;
+    relevantUpdates.forEach(update => {
+      if (update.lastUpload) {
+        const startDate = parseGermanDate(update.lastUpload);
+        if (startDate) {
+          earliestStartTs = Math.min(earliestStartTs, startDate.getTime());
+        }
+      }
+    });
+    // Fallback: Wenn kein lastUpload gefunden, nutze erstes End-Event
+    if (earliestStartTs === Infinity) {
+      earliestStartTs = endEvents[0]?.timestamp || 0;
+    }
+    // ========== ENDE GOLDEN STATE UPDATE ==========
+
     // ========== ERSTELLE DATENPUNKTE - JEDER END-EVENT SEPARAT ==========
     // Jeder End-Event bekommt seinen eigenen Datenpunkt mit individuellem Profit
     const dataPoints: Array<Record<string, any>> = [];
@@ -2402,7 +2421,8 @@ export default function Dashboard() {
       dataPoints.push(point);
     });
 
-    const minTimestamp = endEvents[0]?.timestamp || 0;
+    // GOLDEN STATE UPDATE: 31.12.2025 16:00 - Verwendet jetzt earliestStartTs statt endEvents[0]?.timestamp
+    const minTimestamp = earliestStartTs;
     const maxTimestamp = endEvents[endEvents.length - 1]?.timestamp || 0;
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
