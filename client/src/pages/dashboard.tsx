@@ -5799,7 +5799,7 @@ export default function Dashboard() {
                   }
                 };
                 
-                const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string; infoTooltip?: string }> = {
+                const cardConfig: Record<string, { label: string; value: string; icon: any; iconColor: string; infoTooltip?: string; tooltipAlign?: 'left' | 'right' }> = {
                   'Gesamtkapital': {
                     label: profitPercentBase === 'gesamtinvestment' ? 'Gesamtkapital' : 'Investitionsmenge',
                     value: getCardValue('Gesamtkapital'),
@@ -5831,6 +5831,7 @@ export default function Dashboard() {
                     icon: Zap,
                     iconColor: 'bg-yellow-100 text-yellow-600',
                     infoTooltip: isMultiBotChartMode ? 'Berechnet den Profit pro Kalendertag im Graph. Nimmt die Tage von der ersten bis zur letzten Metrik. Formel: Gesamtprofit / Anzahl Tage im Graph' : undefined,
+                    tooltipAlign: 'right',
                   },
                 };
                 
@@ -5961,6 +5962,7 @@ export default function Dashboard() {
                         icon={config.icon}
                         iconColor={config.iconColor}
                         infoTooltip={config.infoTooltip}
+                        tooltipAlign={config.tooltipAlign}
                         dropdown={cardId === 'Gesamtkapital' && !isCardEditMode ? (
                           <Popover open={profitPercentDropdownOpen} onOpenChange={setProfitPercentDropdownOpen}>
                             <PopoverTrigger asChild>
