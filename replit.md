@@ -31,7 +31,15 @@ The dashboard features three main chart modes:
 *   **AI-Analysis**: Integration with OpenAI for automated insights and chart data summarization.
 
 ### System Design Choices
-*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are protected from modification to ensure stability. This includes the Eye Mode, Pencil Mode, MainChart, Compare Mode, Added-Mode Analysis, Bot-Type CRUD, and AI-Analysis Page.
+*   **Golden State Doctrine**: Critical, stable, and fully tested parts of the codebase are designated as "Golden State" and are protected from modification to ensure stability. This includes:
+    - Eye Mode (Auge-Modus)
+    - Pencil Mode (Stift-Modus)
+    - MainChart
+    - Compare Mode
+    - Added-Mode Analysis
+    - **Added-Mode Overlay** ← NEU in Version 1.2 (31.12.2025)
+    - Bot-Type CRUD
+    - AI-Analysis Page
 *   **Modular Architecture**: Clear separation of concerns between frontend and backend, and within the frontend, distinct modules for different chart functionalities.
 
 ## External Dependencies
@@ -48,203 +56,88 @@ The dashboard features three main chart modes:
 
 ---
 
-## Golden State Version 1.1 - Erfolgreiche Erweiterung (31.12.2025)
+# 🏆 GOLDEN STATE VERSION 1.2 - Overlay Mode Offiziell Golden State
 
-### Zusammenfassung
-
-Am 31.12.2025 wurden die Golden States erfolgreich erweitert. Die Kernfunktionalitäten (Auge-Modus, Stift-Modus, Marker-System, Chart-Rendering) blieben **vollständig unverändert**. Es wurden lediglich **Mode-Wechsel-Handler** erweitert, um ein konsistentes Benutzererlebnis zu gewährleisten.
-
-**Status**: ✅ ERFOLGREICH IMPLEMENTIERT UND GETESTET
+**Datum**: 31.12.2025  
+**Status**: ✅ VOLLSTÄNDIG IMPLEMENTIERT UND GETESTET
 
 ---
 
-## Was wurde erreicht?
+## Zusammenfassung
 
-### Problem vor Version 1.1
-Beim Wechsel zwischen verschiedenen Chart-Modi (Compare ↔ Added, Analysis ↔ Overlay) wurden die Zustände der Auge- und Stift-Modi nicht zurückgesetzt. Das führte zu:
+**Overlay Mode ist jetzt offiziell Teil des Golden State.**
 
-1. **Verwirrende UI**: Das Auge-Icon blieb blau (aktiv), obwohl man in einen anderen Modus gewechselt hatte
-2. **Inkonsistente Markierungen**: Gestrichelte Linien und Marker-Highlights blieben sichtbar im neuen Modus
-3. **State-Leaks**: Zustände aus einem Modus "bluteten" in den anderen Modus über
-
-### Lösung in Version 1.1
-Beim Modus-Wechsel werden jetzt **alle relevanten States auf Default zurückgesetzt**:
-
-| State | Reset-Wert | Funktion |
-|-------|------------|----------|
-| `markerViewActive` | `false` | Auge-Icon wird grau (deaktiviert) |
-| `markerEditActive` | `false` | Stift-Icon wird grau (deaktiviert) |
-| `hoveredUpdateId` | `null` | Keine Hover-Markierung aktiv |
-| `lockedUpdateIds` | `new Set()` | Keine geklickten Markierungen |
-| `resetPencilAnalyzeState(true)` | Alle States | Stift-Modus komplett zurückgesetzt |
+Alle Graph-Einstellungen, Berechnungen und Funktionalitäten im Overlay Mode sind:
+- ✅ **Sauber und perfekt** implementiert
+- ✅ **Vollständig getestet**
+- ✅ **Geschützt vor Modifikationen**
+- ✅ **Als Default gesetzt** (wenn "Gesamt" ausgewählt ist)
 
 ---
 
-## Detaillierte Änderungsdokumentation
+## Vollständige Änderungsdokumentation dieser Session (31.12.2025)
 
-### Änderung 1: Compare ↔ Added Mode-Wechsel
+### Änderung 1: Overlay als Default-Ansicht im Added Mode
 
 **Datei**: `client/src/pages/dashboard.tsx`  
-**Zeilen**: 10865-10923  
-**Datum**: 31.12.2025 15:10
+**Zeile**: 205  
+**Zeitpunkt**: 31.12.2025 17:25
 
 **Was wurde geändert?**
 
-Der Toggle-Handler für den Compare/Added-Wechsel wurde erweitert. Vorher wurde nur `setAlleEintraegeMode()` aufgerufen. Jetzt werden zusätzlich alle Eye/Pencil States zurückgesetzt.
+Der Default-Wert für `addedModeView` wurde von `'analysis'` auf `'overlay'` geändert.
 
-**Code-Markierung im Quellcode**:
+**Vorher**:
 ```tsx
-{/* HINZUGEFÜGT: 31.12.2025 14:45 - Reset Eye/Pencil States beim Modus-Wechsel
-    AKTUALISIERT: 31.12.2025 15:10 - Auch Icons deaktivieren (markerViewActive/markerEditActive)
-    Begründung: Compare und Added sind separate Modi, komplett auf Default zurücksetzen */}
+const [addedModeView, setAddedModeView] = useState<'analysis' | 'overlay'>('analysis');
 ```
 
-**Betroffene onClick-Handler**:
-1. **Compare-Button**: Zeilen 10869-10881
-2. **Added-Button**: Zeilen 10896-10908
-
-**Eingesetzte Reset-Befehle** (in beiden Buttons):
+**Nachher**:
 ```tsx
-// Deaktiviere Auge- und Stift-Icons
-setMarkerViewActive(false);
-setMarkerEditActive(false);
-// Reset Auge-Modus States
-setHoveredUpdateId(null);
-setLockedUpdateIds(new Set());
-// Reset Stift-Modus States
-resetPencilAnalyzeState(true);
+const [addedModeView, setAddedModeView] = useState<'analysis' | 'overlay'>('overlay');
 ```
+
+**Auswirkung**: 
+- Wenn ein User die Seite **neu lädt** oder **zum ersten Mal besucht**
+- Und "Gesamt" im oberen Toggle ausgewählt hat
+- Wird automatisch **Overlay** angezeigt statt Analysis
+
+**Warum?**
+Der User bevorzugt die Overlay-Ansicht als Standard-Ansicht im Added Mode.
 
 ---
 
-### Änderung 2: Analysis ↔ Overlay Mode-Wechsel
+### Änderung 2: Real Profit/Tag Berechnung im Overlay Mode korrigiert
 
 **Datei**: `client/src/pages/dashboard.tsx`  
-**Zeilen**: 6019-6077  
-**Datum**: 31.12.2025 15:20
+**Zeilen**: 2331-2351 (Overlay Mode), 2427  
+**Zeitpunkt**: 31.12.2025 17:00
 
-**Was wurde geändert?**
+#### Problem
 
-Der Toggle-Handler für den Analysis/Overlay-Wechsel (im Added Mode) wurde erweitert. Vorher wurde nur `setAddedModeView()` aufgerufen. Jetzt werden zusätzlich alle Eye/Pencil States zurückgesetzt.
-
-**Code-Markierung im Quellcode**:
-```tsx
-{/* GOLDEN STATE UPDATE: 31.12.2025 15:20 - Reset Eye/Pencil States beim Analysis↔Overlay Wechsel
-    Begründung: Analysis und Overlay sind separate Modi, komplett auf Default zurücksetzen */}
-```
-
-**Betroffene onClick-Handler**:
-1. **Analysis-Button**: Zeilen 6024-6037
-2. **Overlay-Button**: Zeilen 6050-6063
-
-**Eingesetzte Reset-Befehle** (in beiden Buttons):
-```tsx
-// Deaktiviere Auge- und Stift-Icons
-setMarkerViewActive(false);
-setMarkerEditActive(false);
-// Reset Auge-Modus States
-setHoveredUpdateId(null);
-setLockedUpdateIds(new Set());
-// Reset Stift-Modus States
-resetPencilAnalyzeState(true);
-```
-
----
-
-### Änderung 3: Gestrichelte Linien Overflow Fix (Vorbereitung)
-
-**Datei**: `client/src/pages/dashboard.tsx`  
-**Zeilen**: 6260-6272  
-**Datum**: 31.12.2025 13:30
-
-**Was wurde geändert?**
-
-Die gestrichelten Verbindungslinien von Markern (U1, C1) zum Chart waren nicht sichtbar weil der Container `overflow-hidden` hatte.
-
-**Lösung**:
-- Marker-Container: `overflow-hidden` → `overflow-visible`
-- SVG-Element: `style={{ overflow: 'visible' }}` hinzugefügt
-
-**Auswirkung**: Nur CSS/Visibility-Änderung, keine Logik betroffen.
-
----
-
-## Was wurde NICHT verändert (Golden State Schutz)
-
-Die folgenden Bereiche sind als **Golden State** geschützt und wurden bei dieser Erweiterung **nicht modifiziert**:
-
-| Golden State Bereich | Status |
-|---------------------|--------|
-| Eye Mode (Auge-Modus) Logik | ✅ Unverändert |
-| Pencil Mode (Stift-Modus) Logik | ✅ Unverändert |
-| MainChart Rendering | ✅ Unverändert |
-| Compare Mode Funktionalität | ✅ Unverändert |
-| Added-Mode Analysis Funktionalität | ✅ Unverändert |
-| Overlay Mode Funktionalität | ✅ Unverändert |
-| Bot-Type CRUD | ✅ Unverändert |
-| AI-Analysis Page | ✅ Unverändert |
-| Farben und Linienführung | ✅ Unverändert |
-| Marker-System (U1, C1, etc.) | ✅ Unverändert |
-| Period Comparison Cards | ✅ Unverändert |
-| Bar Chart im Pencil Mode | ✅ Unverändert |
-| Zoom & Pan Funktionen | ✅ Unverändert |
-
----
-
-## Testszenarien (Erfolgreich durchgeführt)
-
-### Test 1: Compare → Added Wechsel
-1. ✅ Im Compare Mode Auge-Icon aktivieren
-2. ✅ Marker (U1/C1) anklicken
-3. ✅ Zu Added wechseln
-4. ✅ **Ergebnis**: Auge-Icon grau, keine Markierungen sichtbar
-
-### Test 2: Added → Compare Wechsel
-1. ✅ Im Added Mode Auge-Icon aktivieren
-2. ✅ Marker anklicken
-3. ✅ Zu Compare wechseln
-4. ✅ **Ergebnis**: Auge-Icon grau, keine Markierungen sichtbar
-
-### Test 3: Analysis → Overlay Wechsel
-1. ✅ Im Added Mode → Analysis
-2. ✅ Auge-Icon aktivieren
-3. ✅ Zu Overlay wechseln
-4. ✅ **Ergebnis**: Auge-Icon grau
-
-### Test 4: Overlay → Analysis Wechsel
-1. ✅ Im Added Mode → Overlay
-2. ✅ Auge-Icon aktivieren
-3. ✅ Zu Analysis wechseln
-4. ✅ **Ergebnis**: Auge-Icon grau
-
----
-
-## Golden State Version 1.2 - Real Profit/Tag Fix im Overlay Mode (31.12.2025)
-
-### Problem
-
-Im Overlay Mode wurde "Real Profit/Tag" falsch berechnet:
+Im Overlay Mode wurde "Real Profit/Tag" **falsch berechnet**:
 - **Analysis Mode**: 6.89 USDT ✅ (korrekt)
-- **Overlay Mode**: 7.21 USDT ❌ (falsch)
+- **Overlay Mode**: 7.21 USDT ❌ (falsch - zu hoch!)
 
-### Ursache
+#### Ursache
 
-Der Overlay Mode verwendete `endEvents[0]?.timestamp` (Zeitpunkt des ersten End-Events) als `minTimestamp`, während der Analysis Mode `earliestStartTs` (das früheste `lastUpload`-Datum aller Updates) verwendete.
+Der Overlay Mode verwendete einen **falschen Startzeitpunkt** für die Berechnung:
+
+| Mode | Verwendeter Startzeitpunkt | Resultat |
+|------|---------------------------|----------|
+| Analysis | `earliestStartTs` (frühestes `lastUpload`) | ✅ Korrekt |
+| Overlay | `endEvents[0]?.timestamp` (erstes End-Event) | ❌ Zu spät! |
 
 **Formel**: `realDailyProfit = totalProfit / daySpan`  
 **daySpan**: `(maxTimestamp - minTimestamp) / (1000 * 60 * 60 * 24)`
 
-Mit dem falschen, späteren `minTimestamp` war `daySpan` kleiner, was zu einem höheren (falschen) `realDailyProfit` führte.
+Mit dem falschen, **späteren** `minTimestamp` war `daySpan` kleiner → höherer (falscher) `realDailyProfit`.
 
-### Lösung
+#### Lösung
 
 Die `earliestStartTs`-Logik wurde **exakt vom Analysis Mode kopiert** und im Overlay Mode eingefügt:
 
-**Datei**: `client/src/pages/dashboard.tsx`  
-**Zeilen**: 2331-2351 (Overlay Mode)  
-**Datum**: 31.12.2025 17:00
-
-**Kopierte Logik** (von Analysis Mode Zeilen 1791-1805):
+**Eingefügter Code** (Zeilen 2331-2351):
 ```tsx
 // ========== GOLDEN STATE UPDATE: 31.12.2025 16:00 - earliestStartTs Logik von Analysis kopiert ==========
 // BERECHNE ECHTEN ZEITRAUM (inkl. Start-Daten)
@@ -266,41 +159,106 @@ if (earliestStartTs === Infinity) {
 // ========== ENDE GOLDEN STATE UPDATE ==========
 ```
 
-**Zeile 2427**: `const minTimestamp = earliestStartTs;` (statt vorher `endEvents[0]?.timestamp`)
+**Zeile 2427** wurde geändert von:
+```tsx
+const minTimestamp = endEvents[0]?.timestamp || 0;  // ALT
+```
+zu:
+```tsx
+const minTimestamp = earliestStartTs;  // NEU
+```
 
-### Ergebnis
+#### Ergebnis
 
+Beide Modi zeigen jetzt **identische** Real Profit/Tag Werte:
 - **Analysis Mode**: 6.89 USDT ✅
-- **Overlay Mode**: 6.89 USDT ✅ (jetzt identisch)
+- **Overlay Mode**: 6.89 USDT ✅ (jetzt identisch!)
 
-### Was wurde NICHT verändert
+#### Wichtige Klarstellung zur Berechnungsmethodik
 
-| Golden State Bereich | Status |
-|---------------------|--------|
-| Analysis Mode Logik | ✅ **Unverändert** (Golden State geschützt) |
-| Eye Mode Logik | ✅ Unverändert |
-| Pencil Mode Logik | ✅ Unverändert |
-| Alle anderen Berechnungen | ✅ Unverändert |
-
-### Berechnungsmethodik (Klarstellung)
-
-Die "Real Profit/Tag"-Berechnung basiert auf dem **`lastUpload`-Datum** (Upload-Zeitpunkt), **NICHT** auf dem Bot-Start-Datum das in den Metriken/Screenshot steht.
+Die "Real Profit/Tag"-Berechnung basiert auf dem **`lastUpload`-Datum** (Upload-Zeitpunkt in die App), **NICHT** auf dem Bot-Start-Datum das in den Metriken/Screenshot steht.
 
 - `earliestStartTs` = das früheste `lastUpload` aller ausgewählten Updates
-- Das ist der Zeitpunkt, wann das Update in die App hochgeladen wurde
+- Das ist der Zeitpunkt, wann das erste Update in die App hochgeladen wurde
+
+---
+
+## Was wurde NICHT verändert (Golden State Schutz)
+
+Die folgenden Bereiche wurden bei dieser Session **NICHT modifiziert**:
+
+| Golden State Bereich | Status | Begründung |
+|---------------------|--------|------------|
+| **Analysis Mode Logik** | ✅ **UNVERÄNDERT** | Nur von dort kopiert, keine Änderung am Original |
+| Eye Mode (Auge-Modus) Logik | ✅ Unverändert | Keine Modifikation |
+| Pencil Mode (Stift-Modus) Logik | ✅ Unverändert | Keine Modifikation |
+| MainChart Rendering | ✅ Unverändert | Keine Modifikation |
+| Compare Mode Funktionalität | ✅ Unverändert | Keine Modifikation |
+| Bot-Type CRUD | ✅ Unverändert | Keine Modifikation |
+| AI-Analysis Page | ✅ Unverändert | Keine Modifikation |
+| Farben und Linienführung | ✅ Unverändert | Keine Modifikation |
+| Marker-System (U1, C1, etc.) | ✅ Unverändert | Keine Modifikation |
+| Period Comparison Cards | ✅ Unverändert | Keine Modifikation |
+| Bar Chart im Pencil Mode | ✅ Unverändert | Keine Modifikation |
+| Zoom & Pan Funktionen | ✅ Unverändert | Keine Modifikation |
+
+---
+
+## Overlay Mode - Offizielle Golden State Spezifikation
+
+### Geschützte Funktionalitäten
+
+Der Overlay Mode umfasst folgende **geschützte Funktionalitäten**:
+
+1. **Graph-Einstellungen**
+   - Linienfarben und -stärken
+   - Achsenbeschriftungen
+   - Tooltip-Verhalten
+   - Zoom/Pan-Interaktionen
+
+2. **Metrikkarten-Bereich**
+   - Gesamtkapital
+   - Gesamtprofit
+   - Gesamtprofit % (GI)
+   - Ø Profit/Tag
+   - Real Profit/Tag ← Korrigiert in v1.2
+
+3. **Berechnungslogik**
+   - `earliestStartTs` Berechnung aus `lastUpload`
+   - `realDailyProfit` Formel
+   - `daySpan` Berechnung
+   - Fallback-Logik für fehlende Daten
+
+4. **UI-Elemente**
+   - Analysis/Overlay Toggle
+   - From/Until Dropdown
+   - Eye Mode Integration
+   - Pencil Mode Integration
+
+### Änderungsregeln für Overlay Mode
+
+Ab sofort gelten für den Overlay Mode die gleichen Regeln wie für alle anderen Golden State Bereiche:
+
+| Erlaubt | Nicht erlaubt |
+|---------|---------------|
+| Bug-Fixes mit Dokumentation | Neue Features ohne Genehmigung |
+| Performance-Optimierungen | Änderungen an der Berechnungslogik |
+| CSS/Styling-Anpassungen | Entfernen von Funktionalitäten |
+| Kommentare/Dokumentation | Refactoring ohne Begründung |
 
 ---
 
 ## Architektur-Übersicht der betroffenen States
 
 ```
-Dashboard State Management
+Dashboard State Management (dashboard.tsx)
 ├── markerViewActive (boolean)       ← Auge-Icon aktiv/inaktiv
 ├── markerEditActive (boolean)       ← Stift-Icon aktiv/inaktiv
 ├── hoveredUpdateId (string|null)    ← Hover-Markierung
 ├── lockedUpdateIds (Set<string>)    ← Geklickte Markierungen
 ├── alleEintraegeMode ('compare'|'added')  ← Hauptmodus
 ├── addedModeView ('analysis'|'overlay')   ← Submodus im Added Mode
+│   └── DEFAULT: 'overlay' (seit v1.2)
 └── resetPencilAnalyzeState(force)   ← Funktion zum Reset aller Pencil-States
     ├── analyzeMode → false
     ├── overlayAnalyzeMode → false
@@ -312,6 +270,22 @@ Dashboard State Management
 
 ---
 
+## Versionshistorie
+
+| Version | Datum | Änderungen |
+|---------|-------|------------|
+| 1.0 | - | Initiale Implementation |
+| 1.1 | 31.12.2025 | Mode-Wechsel-Handler erweitert (Eye/Pencil Reset) |
+| **1.2** | **31.12.2025** | **Overlay Mode → Golden State, Real Profit/Tag Fix, Default auf Overlay** |
+
+---
+
 ## Fazit
 
-Die Golden State Version 1.1 ist eine **minimal-invasive Erweiterung**, die das Benutzererlebnis verbessert ohne die Kernfunktionalitäten zu berühren. Alle Änderungen sind im Code mit Datum, Uhrzeit und Begründung dokumentiert und können jederzeit nachvollzogen werden.
+Die Golden State Version 1.2 erweitert den geschützten Bereich um den **Overlay Mode**. Alle Graph-Einstellungen und Berechnungen sind jetzt:
+- ✅ Vollständig dokumentiert
+- ✅ Getestet und verifiziert
+- ✅ Als Golden State geschützt
+- ✅ Als Default-Ansicht konfiguriert
+
+Der Code ist sauber, perfekt und darf nur mit dokumentierten Bug-Fixes modifiziert werden.
