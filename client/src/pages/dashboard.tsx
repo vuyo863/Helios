@@ -6580,6 +6580,97 @@ export default function Dashboard() {
                           }
                           {/* ========== ENDE OVERLAY STIFT-MODUS PERIOD INTERAKTION ========== */}
                           
+                          {/* ========== BASE-OVERLAY PASSIVE NEON: Profit-basierte Hervorhebung ========== */}
+                          {/* Nur sichtbar wenn: Overlay-Modus aktiv, KEIN Auge-Modus, KEIN Stift-Modus */}
+                          if (isOverlayMode && !markerViewActive && !markerEditActive) {
+                            // Inline Profit-Berechnung für diese Period (3-Modus-Algorithmus)
+                            // VERWENDET die gleiche Logik wie Auge-Modus (nur lesen, nicht modifizieren!)
+                            const startTs = tick;
+                            const endTs = nextTick;
+                            
+                            const selectedIds = selectedChartBotTypes.map(id => String(id));
+                            const relevantUpdates = (allBotTypeUpdates || []).filter((update: any) => 
+                              selectedIds.includes(String(update.botTypeId))
+                            );
+                            
+                            let periodProfit = 0;
+                            
+                            relevantUpdates.forEach((update: any) => {
+                              const updateStartDate = update.lastUpload ? parseGermanDate(update.lastUpload) : null;
+                              const updateEndDate = update.thisUpload ? parseGermanDate(update.thisUpload) : null;
+                              
+                              if (!updateStartDate || !updateEndDate) return;
+                              
+                              const updateStartTs = updateStartDate.getTime();
+                              const updateEndTs = updateEndDate.getTime();
+                              
+                              // Prüfe ob Update die Periode überlappt
+                              const overlapStart = Math.max(startTs, updateStartTs);
+                              const overlapEnd = Math.min(endTs, updateEndTs);
+                              
+                              if (overlapStart >= overlapEnd) return;
+                              
+                              const isClosedBot = update.status === 'Closed Bots';
+                              const avgGridProfitHour = parseFloat(update.avgGridProfitHour) || 0;
+                              const overallGridProfitUsdt = parseFloat(update.overallGridProfitUsdt) || 0;
+                              const profit = parseFloat(update.profit) || 0;
+                              
+                              const fromUntilHours = (updateEndTs - updateStartTs) / (1000 * 60 * 60);
+                              const avgRuntimeHours = parseRuntimeToHours(update.avgRuntime);
+                              const overlapHours = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+                              
+                              if (isClosedBot) {
+                                // CLOSED BOT: profit einmalig am End-Datum
+                                if (updateEndTs >= startTs && updateEndTs < endTs) {
+                                  periodProfit += profit;
+                                }
+                              } else {
+                                // Bestimme welche Basis verwendet wurde
+                                const calcWithAvgRuntime = avgGridProfitHour * avgRuntimeHours;
+                                const calcWithFromUntil = avgGridProfitHour * fromUntilHours;
+                                const diffAvgRuntime = Math.abs(calcWithAvgRuntime - overallGridProfitUsdt);
+                                const diffFromUntil = Math.abs(calcWithFromUntil - overallGridProfitUsdt);
+                                const usesAvgRuntime = diffAvgRuntime < diffFromUntil;
+                                
+                                if (usesAvgRuntime && fromUntilHours > 0) {
+                                  // STARTMETRIK: avgGridProfitHour × anteilige avgRuntime
+                                  const ratio = overlapHours / fromUntilHours;
+                                  const proportionalRuntime = avgRuntimeHours * ratio;
+                                  periodProfit += avgGridProfitHour * proportionalRuntime;
+                                } else {
+                                  // VERGLEICH: avgGridProfitHour × Perioden-Überlappung
+                                  periodProfit += avgGridProfitHour * overlapHours;
+                                }
+                              }
+                            });
+                            
+                            const isPositive = periodProfit >= 0;
+                            
+                            // Neon-Farbe: Grün für positiv, Rot für negativ
+                            const neonColor = isPositive 
+                              ? 'hsl(142, 71%, 45%)' // Grün
+                              : 'hsl(0, 84%, 60%)';  // Rot
+                            
+                            // Neon-Glow am unteren Rand der Period-Box
+                            elements.push(
+                              <line
+                                key={`passive-neon-${periodKey}`}
+                                x1={`${startXPercent + 0.5}%`}
+                                y1="99%"
+                                x2={`${endXPercent - 0.5}%`}
+                                y2="99%"
+                                stroke={neonColor}
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                style={{ 
+                                  pointerEvents: 'none',
+                                  filter: `drop-shadow(0 0 4px ${neonColor}) drop-shadow(0 0 8px ${neonColor})`
+                                }}
+                              />
+                            );
+                          }
+                          {/* ========== ENDE BASE-OVERLAY PASSIVE NEON ========== */}
+                          
                           // Zeit-Label
                           elements.push(
                             <text
