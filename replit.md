@@ -48,60 +48,198 @@ The dashboard features three main chart modes:
 
 ---
 
-## Änderungslog (Golden State Modifikationen)
+## Golden State Version 1.1 - Erfolgreiche Erweiterung (31.12.2025)
 
-### 31.12.2025 15:20 - Analysis↔Overlay Mode-Wechsel Reset
+### Zusammenfassung
 
-**Problem**: Wenn im Analysis Modus das Auge-Icon aktiviert ist und dann zu Overlay gewechselt wird, bleibt das Auge-Icon aktiv (blau). Das sollte nicht sein da Analysis und Overlay separate Modi sind.
+Am 31.12.2025 wurden die Golden States erfolgreich erweitert. Die Kernfunktionalitäten (Auge-Modus, Stift-Modus, Marker-System, Chart-Rendering) blieben **vollständig unverändert**. Es wurden lediglich **Mode-Wechsel-Handler** erweitert, um ein konsistentes Benutzererlebnis zu gewährleisten.
 
-**Lösung**: Beim Toggle zwischen Analysis ↔ Overlay werden alle States auf Default zurückgesetzt:
-- `markerViewActive` → false (Auge-Icon deaktivieren)
-- `markerEditActive` → false (Stift-Icon deaktivieren)
-- `hoveredUpdateId` → null
-- `lockedUpdateIds` → new Set()
-- `resetPencilAnalyzeState(true)` (setzt alle Stift-Modus States zurück)
-
-**Code-Stelle**: `dashboard.tsx` Zeilen 6019-6077
-
-**Auswirkung**: Minimaler Eingriff, NUR der Toggle-Handler wurde erweitert. Keine Logik-Änderungen an:
-- Auge-Modus Funktionalität
-- Stift-Modus Funktionalität
-- Farben/Linien/Verbindungen
-- Chart-Rendering
+**Status**: ✅ ERFOLGREICH IMPLEMENTIERT UND GETESTET
 
 ---
 
-### 31.12.2025 15:10 - Mode-Wechsel Komplett-Reset
+## Was wurde erreicht?
 
-**Problem**: Wenn im Compare Mode etwas im Auge-/Stift-Modus markiert wird und dann zu Added Analysis gewechselt wird, bleiben Markierungen und aktive Icons bestehen. Das sollte nicht sein da Compare und Added separate Modi sind.
+### Problem vor Version 1.1
+Beim Wechsel zwischen verschiedenen Chart-Modi (Compare ↔ Added, Analysis ↔ Overlay) wurden die Zustände der Auge- und Stift-Modi nicht zurückgesetzt. Das führte zu:
 
-**Lösung**: Beim Toggle zwischen Compare ↔ Added werden alle States auf Default zurückgesetzt:
-- `markerViewActive` → false (Auge-Icon deaktivieren)
-- `markerEditActive` → false (Stift-Icon deaktivieren)
-- `hoveredUpdateId` → null
-- `lockedUpdateIds` → new Set()
-- `resetPencilAnalyzeState(true)` (setzt alle Stift-Modus States zurück)
+1. **Verwirrende UI**: Das Auge-Icon blieb blau (aktiv), obwohl man in einen anderen Modus gewechselt hatte
+2. **Inkonsistente Markierungen**: Gestrichelte Linien und Marker-Highlights blieben sichtbar im neuen Modus
+3. **State-Leaks**: Zustände aus einem Modus "bluteten" in den anderen Modus über
 
-**Code-Stelle**: `dashboard.tsx` Zeilen 10865-10923
+### Lösung in Version 1.1
+Beim Modus-Wechsel werden jetzt **alle relevanten States auf Default zurückgesetzt**:
 
-**Auswirkung**: Minimaler Eingriff, NUR der Toggle-Handler wurde erweitert. Keine Logik-Änderungen an:
-- Auge-Modus Funktionalität
-- Stift-Modus Funktionalität
-- Farben/Linien/Verbindungen
-- Chart-Rendering
+| State | Reset-Wert | Funktion |
+|-------|------------|----------|
+| `markerViewActive` | `false` | Auge-Icon wird grau (deaktiviert) |
+| `markerEditActive` | `false` | Stift-Icon wird grau (deaktiviert) |
+| `hoveredUpdateId` | `null` | Keine Hover-Markierung aktiv |
+| `lockedUpdateIds` | `new Set()` | Keine geklickten Markierungen |
+| `resetPencilAnalyzeState(true)` | Alle States | Stift-Modus komplett zurückgesetzt |
 
 ---
 
-### 31.12.2025 13:30 - Gestrichelte Linien Overflow Fix
+## Detaillierte Änderungsdokumentation
 
-**Problem**: Gestrichelte Verbindungslinien von Markern (U1, C1) zum Chart waren nicht sichtbar.
+### Änderung 1: Compare ↔ Added Mode-Wechsel
 
-**Ursache**: Marker-Container hatte `overflow-hidden` was die SVG-Linien bei 80px Höhe abschnitt.
+**Datei**: `client/src/pages/dashboard.tsx`  
+**Zeilen**: 10865-10923  
+**Datum**: 31.12.2025 15:10
 
-**Lösung**: 
+**Was wurde geändert?**
+
+Der Toggle-Handler für den Compare/Added-Wechsel wurde erweitert. Vorher wurde nur `setAlleEintraegeMode()` aufgerufen. Jetzt werden zusätzlich alle Eye/Pencil States zurückgesetzt.
+
+**Code-Markierung im Quellcode**:
+```tsx
+{/* HINZUGEFÜGT: 31.12.2025 14:45 - Reset Eye/Pencil States beim Modus-Wechsel
+    AKTUALISIERT: 31.12.2025 15:10 - Auch Icons deaktivieren (markerViewActive/markerEditActive)
+    Begründung: Compare und Added sind separate Modi, komplett auf Default zurücksetzen */}
+```
+
+**Betroffene onClick-Handler**:
+1. **Compare-Button**: Zeilen 10869-10881
+2. **Added-Button**: Zeilen 10896-10908
+
+**Eingesetzte Reset-Befehle** (in beiden Buttons):
+```tsx
+// Deaktiviere Auge- und Stift-Icons
+setMarkerViewActive(false);
+setMarkerEditActive(false);
+// Reset Auge-Modus States
+setHoveredUpdateId(null);
+setLockedUpdateIds(new Set());
+// Reset Stift-Modus States
+resetPencilAnalyzeState(true);
+```
+
+---
+
+### Änderung 2: Analysis ↔ Overlay Mode-Wechsel
+
+**Datei**: `client/src/pages/dashboard.tsx`  
+**Zeilen**: 6019-6077  
+**Datum**: 31.12.2025 15:20
+
+**Was wurde geändert?**
+
+Der Toggle-Handler für den Analysis/Overlay-Wechsel (im Added Mode) wurde erweitert. Vorher wurde nur `setAddedModeView()` aufgerufen. Jetzt werden zusätzlich alle Eye/Pencil States zurückgesetzt.
+
+**Code-Markierung im Quellcode**:
+```tsx
+{/* GOLDEN STATE UPDATE: 31.12.2025 15:20 - Reset Eye/Pencil States beim Analysis↔Overlay Wechsel
+    Begründung: Analysis und Overlay sind separate Modi, komplett auf Default zurücksetzen */}
+```
+
+**Betroffene onClick-Handler**:
+1. **Analysis-Button**: Zeilen 6024-6037
+2. **Overlay-Button**: Zeilen 6050-6063
+
+**Eingesetzte Reset-Befehle** (in beiden Buttons):
+```tsx
+// Deaktiviere Auge- und Stift-Icons
+setMarkerViewActive(false);
+setMarkerEditActive(false);
+// Reset Auge-Modus States
+setHoveredUpdateId(null);
+setLockedUpdateIds(new Set());
+// Reset Stift-Modus States
+resetPencilAnalyzeState(true);
+```
+
+---
+
+### Änderung 3: Gestrichelte Linien Overflow Fix (Vorbereitung)
+
+**Datei**: `client/src/pages/dashboard.tsx`  
+**Zeilen**: 6260-6272  
+**Datum**: 31.12.2025 13:30
+
+**Was wurde geändert?**
+
+Die gestrichelten Verbindungslinien von Markern (U1, C1) zum Chart waren nicht sichtbar weil der Container `overflow-hidden` hatte.
+
+**Lösung**:
 - Marker-Container: `overflow-hidden` → `overflow-visible`
 - SVG-Element: `style={{ overflow: 'visible' }}` hinzugefügt
 
-**Code-Stelle**: `dashboard.tsx` Zeilen 6260-6272
+**Auswirkung**: Nur CSS/Visibility-Änderung, keine Logik betroffen.
 
-**Auswirkung**: Nur CSS/Visibility, keine Logik-Änderungen.
+---
+
+## Was wurde NICHT verändert (Golden State Schutz)
+
+Die folgenden Bereiche sind als **Golden State** geschützt und wurden bei dieser Erweiterung **nicht modifiziert**:
+
+| Golden State Bereich | Status |
+|---------------------|--------|
+| Eye Mode (Auge-Modus) Logik | ✅ Unverändert |
+| Pencil Mode (Stift-Modus) Logik | ✅ Unverändert |
+| MainChart Rendering | ✅ Unverändert |
+| Compare Mode Funktionalität | ✅ Unverändert |
+| Added-Mode Analysis Funktionalität | ✅ Unverändert |
+| Overlay Mode Funktionalität | ✅ Unverändert |
+| Bot-Type CRUD | ✅ Unverändert |
+| AI-Analysis Page | ✅ Unverändert |
+| Farben und Linienführung | ✅ Unverändert |
+| Marker-System (U1, C1, etc.) | ✅ Unverändert |
+| Period Comparison Cards | ✅ Unverändert |
+| Bar Chart im Pencil Mode | ✅ Unverändert |
+| Zoom & Pan Funktionen | ✅ Unverändert |
+
+---
+
+## Testszenarien (Erfolgreich durchgeführt)
+
+### Test 1: Compare → Added Wechsel
+1. ✅ Im Compare Mode Auge-Icon aktivieren
+2. ✅ Marker (U1/C1) anklicken
+3. ✅ Zu Added wechseln
+4. ✅ **Ergebnis**: Auge-Icon grau, keine Markierungen sichtbar
+
+### Test 2: Added → Compare Wechsel
+1. ✅ Im Added Mode Auge-Icon aktivieren
+2. ✅ Marker anklicken
+3. ✅ Zu Compare wechseln
+4. ✅ **Ergebnis**: Auge-Icon grau, keine Markierungen sichtbar
+
+### Test 3: Analysis → Overlay Wechsel
+1. ✅ Im Added Mode → Analysis
+2. ✅ Auge-Icon aktivieren
+3. ✅ Zu Overlay wechseln
+4. ✅ **Ergebnis**: Auge-Icon grau
+
+### Test 4: Overlay → Analysis Wechsel
+1. ✅ Im Added Mode → Overlay
+2. ✅ Auge-Icon aktivieren
+3. ✅ Zu Analysis wechseln
+4. ✅ **Ergebnis**: Auge-Icon grau
+
+---
+
+## Architektur-Übersicht der betroffenen States
+
+```
+Dashboard State Management
+├── markerViewActive (boolean)       ← Auge-Icon aktiv/inaktiv
+├── markerEditActive (boolean)       ← Stift-Icon aktiv/inaktiv
+├── hoveredUpdateId (string|null)    ← Hover-Markierung
+├── lockedUpdateIds (Set<string>)    ← Geklickte Markierungen
+├── alleEintraegeMode ('compare'|'added')  ← Hauptmodus
+├── addedModeView ('analysis'|'overlay')   ← Submodus im Added Mode
+└── resetPencilAnalyzeState(force)   ← Funktion zum Reset aller Pencil-States
+    ├── analyzeMode → false
+    ├── overlayAnalyzeMode → false
+    ├── selectedPeriodIndex → null
+    ├── selectedPeriodBotDetails → null
+    ├── pencilModeAnalyzeMetric → 'profit'
+    └── Zoom-States zurücksetzen
+```
+
+---
+
+## Fazit
+
+Die Golden State Version 1.1 ist eine **minimal-invasive Erweiterung**, die das Benutzererlebnis verbessert ohne die Kernfunktionalitäten zu berühren. Alle Änderungen sind im Code mit Datum, Uhrzeit und Begründung dokumentiert und können jederzeit nachvollzogen werden.
