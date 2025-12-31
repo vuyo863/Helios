@@ -45,16 +45,16 @@ export default function StatCard({ label, value, icon: Icon, iconColor, dropdown
                 />
                 {showTooltip && (
                   <div 
-                    className={`absolute top-5 w-64 p-3 text-xs bg-popover border border-border rounded-lg shadow-xl animate-in fade-in-0 zoom-in-95 ${
+                    className={`absolute bottom-full mb-2 w-64 p-3 text-xs bg-popover border border-border rounded-lg shadow-xl animate-in fade-in-0 zoom-in-95 ${
                       tooltipAlign === 'right' ? 'right-0' : 'left-0'
                     }`}
                     style={{ zIndex: 9999 }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className={`absolute -top-1.5 w-3 h-3 bg-popover border-l border-t border-border rotate-45 ${
+                    <p className="text-foreground leading-relaxed">{infoTooltip}</p>
+                    <div className={`absolute -bottom-1.5 w-3 h-3 bg-popover border-r border-b border-border rotate-45 ${
                       tooltipAlign === 'right' ? 'right-2' : 'left-1'
                     }`} />
-                    <p className="text-foreground leading-relaxed">{infoTooltip}</p>
                   </div>
                 )}
               </div>
