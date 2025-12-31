@@ -2345,6 +2345,8 @@ export default function Dashboard() {
     if (earliestStartTs === Infinity) {
       earliestStartTs = endEvents[0]?.timestamp || 0;
     }
+    // DEBUG LOG - TEMPORÄR
+    console.log('[OVERLAY DEBUG] earliestStartTs:', new Date(earliestStartTs).toLocaleString('de-DE'), 'endEvents[0]:', endEvents[0]?.timestamp ? new Date(endEvents[0].timestamp).toLocaleString('de-DE') : 'none', 'relevantUpdates.length:', relevantUpdates.length);
     // ========== ENDE GOLDEN STATE UPDATE ==========
 
     // ========== ERSTELLE DATENPUNKTE - JEDER END-EVENT SEPARAT ==========
@@ -2610,6 +2612,8 @@ export default function Dashboard() {
     // ========== REAL PROFIT/TAG ==========
     const daySpan = (overlayChartData.maxTimestamp - overlayChartData.minTimestamp) / (1000 * 60 * 60 * 24);
     const realDailyProfit = daySpan > 0 ? totalProfit / daySpan : totalProfit;
+    // DEBUG LOG - TEMPORÄR
+    console.log('[OVERLAY AGGREGATED] minTimestamp:', new Date(overlayChartData.minTimestamp).toLocaleString('de-DE'), 'maxTimestamp:', new Date(overlayChartData.maxTimestamp).toLocaleString('de-DE'), 'daySpan:', daySpan.toFixed(2), 'totalProfit:', totalProfit.toFixed(2), 'realDailyProfit:', realDailyProfit.toFixed(2));
     
     return {
       profit: totalProfit,
