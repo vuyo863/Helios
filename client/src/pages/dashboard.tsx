@@ -10860,11 +10860,15 @@ export default function Dashboard() {
               Alle Einträge
             </h2>
             {/* HINZUGEFÜGT: 31.12.2025 14:45 - Reset Eye/Pencil States beim Modus-Wechsel
-                Begründung: Compare und Added sind separate Modi, Markierungen sollen nicht übertragen werden */}
+                AKTUALISIERT: 31.12.2025 15:10 - Auch Icons deaktivieren (markerViewActive/markerEditActive)
+                Begründung: Compare und Added sind separate Modi, komplett auf Default zurücksetzen */}
             <div className="flex items-center bg-muted rounded-lg p-1 ring-2 ring-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.6)]" data-testid="toggle-alle-eintraege-mode">
               <button
                 onClick={() => {
                   if (!(analyzeMode || overlayAnalyzeMode) && alleEintraegeMode !== 'compare') {
+                    // Deaktiviere Auge- und Stift-Icons
+                    setMarkerViewActive(false);
+                    setMarkerEditActive(false);
                     // Reset Auge-Modus States
                     setHoveredUpdateId(null);
                     setLockedUpdateIds(new Set());
@@ -10889,6 +10893,9 @@ export default function Dashboard() {
               <button
                 onClick={() => {
                   if (!(analyzeMode || overlayAnalyzeMode) && alleEintraegeMode !== 'added') {
+                    // Deaktiviere Auge- und Stift-Icons
+                    setMarkerViewActive(false);
+                    setMarkerEditActive(false);
                     // Reset Auge-Modus States
                     setHoveredUpdateId(null);
                     setLockedUpdateIds(new Set());

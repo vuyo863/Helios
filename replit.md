@@ -45,3 +45,42 @@ The dashboard features three main chart modes:
 *   **Validation**: Zod for schema validation.
 *   **AI Integration**: OpenAI API.
 *   **Storage**: In-memory `MemStorage` for server-side data handling.
+
+---
+
+## Änderungslog (Golden State Modifikationen)
+
+### 31.12.2025 15:10 - Mode-Wechsel Komplett-Reset
+
+**Problem**: Wenn im Compare Mode etwas im Auge-/Stift-Modus markiert wird und dann zu Added Analysis gewechselt wird, bleiben Markierungen und aktive Icons bestehen. Das sollte nicht sein da Compare und Added separate Modi sind.
+
+**Lösung**: Beim Toggle zwischen Compare ↔ Added werden alle States auf Default zurückgesetzt:
+- `markerViewActive` → false (Auge-Icon deaktivieren)
+- `markerEditActive` → false (Stift-Icon deaktivieren)
+- `hoveredUpdateId` → null
+- `lockedUpdateIds` → new Set()
+- `resetPencilAnalyzeState(true)` (setzt alle Stift-Modus States zurück)
+
+**Code-Stelle**: `dashboard.tsx` Zeilen 10865-10923
+
+**Auswirkung**: Minimaler Eingriff, NUR der Toggle-Handler wurde erweitert. Keine Logik-Änderungen an:
+- Auge-Modus Funktionalität
+- Stift-Modus Funktionalität
+- Farben/Linien/Verbindungen
+- Chart-Rendering
+
+---
+
+### 31.12.2025 13:30 - Gestrichelte Linien Overflow Fix
+
+**Problem**: Gestrichelte Verbindungslinien von Markern (U1, C1) zum Chart waren nicht sichtbar.
+
+**Ursache**: Marker-Container hatte `overflow-hidden` was die SVG-Linien bei 80px Höhe abschnitt.
+
+**Lösung**: 
+- Marker-Container: `overflow-hidden` → `overflow-visible`
+- SVG-Element: `style={{ overflow: 'visible' }}` hinzugefügt
+
+**Code-Stelle**: `dashboard.tsx` Zeilen 6260-6272
+
+**Auswirkung**: Nur CSS/Visibility, keine Logik-Änderungen.
