@@ -6422,6 +6422,9 @@ export default function Dashboard() {
                     const lineHeight = 14;
                     const topPadding = 25;
                     
+                    // Elements-Array für Overlay-Modus (außerhalb definiert für Kombination mit Update-Markern)
+                    const overlayElements: JSX.Element[] = [];
+                    
                     // Im Overlay-Modus: Vertikale Zeitmarkierungsstriche statt Verbindungslinien
                     if (isOverlayMode) {
                       // Verwende eingefrorene Ticks im Eye-Modus ODER Stift-Modus für stabile Period-Keys
@@ -6446,7 +6449,8 @@ export default function Dashboard() {
                         }
                       };
                       
-                      const elements: JSX.Element[] = [];
+                      // Alias für Kompatibilität mit bestehendem Code
+                      const elements = overlayElements;
                       
                       // Striche und Zeitabstände rendern (alle Ticks, nur sichtbare werden gerendert)
                       allTicks.forEach((tick, i) => {
@@ -6697,10 +6701,11 @@ export default function Dashboard() {
                         }
                       });
                       
-                      return elements;
+                      // NICHT mehr hier returnen - Update-Marker werden unten kombiniert
                     }
                     
-                    return updateLanes.map((update, i) => {
+                    // Update-Marker erstellen (für ALLE Modi, auch Overlay für gestrichelte Linien)
+                    const updateMarkers = updateLanes.map((update, i) => {
                       const startX = ((update.startTs - domainStart) / domainRange) * 100;
                       const endX = ((update.endTs - domainStart) / domainRange) * 100;
                       const yPos = topPadding + (update.lane * lineHeight);
@@ -7550,6 +7555,9 @@ export default function Dashboard() {
                         </g>
                       );
                     });
+                    
+                    // Kombiniere Overlay-Elemente (Zeitstriche, Period-Boxen) mit Update-Markern (U1, C1, gestrichelte Linien)
+                    return [...overlayElements, ...updateMarkers.filter(Boolean)];
                   })()}
                 </svg>
                 </div>
