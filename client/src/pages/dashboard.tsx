@@ -5642,8 +5642,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Metric Cards - nur im analyzeMode ausgegraut, overlayAnalyzeMode erlaubt Klicks */}
-        <div className={cn(analyzeMode && "opacity-50 pointer-events-none")}>
+        {/* Metric Cards - nur im MainChart analyzeMode ausgegraut, Added-Mode (isMultiBotChartMode) NIEMALS blockiert */}
+        <div className={cn(analyzeMode && !isMultiBotChartMode && "opacity-50 pointer-events-none")}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
