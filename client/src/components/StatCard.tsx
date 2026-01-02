@@ -31,7 +31,7 @@ export default function StatCard({ label, value, icon: Icon, iconColor, dropdown
   };
   
   return (
-    <Card className="p-4 h-full overflow-visible">
+    <Card className="p-4 h-full overflow-visible" style={{ zIndex: showTooltip ? 100 : 'auto', position: 'relative' }}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0 overflow-visible">
           <div className="flex items-center gap-1 mb-1 overflow-visible">
