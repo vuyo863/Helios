@@ -1749,7 +1749,7 @@ export default function Dashboard() {
       const metricValues: Record<string, number | undefined> = {
         'Gesamtprofit': profit,
         'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
-        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.gridProfitPercent || '0') || 0,
+        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.overallGridProfitPercent || '0') || 0,
         'Ø Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
         'Real Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
       };
@@ -2289,7 +2289,7 @@ export default function Dashboard() {
       const metricValues: Record<string, number | undefined> = {
         'Gesamtprofit': profit,
         'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
-        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.gridProfitPercent || '0') || 0,
+        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.overallGridProfitPercent || '0') || 0,
         'Ø Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
         'Real Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
       };
