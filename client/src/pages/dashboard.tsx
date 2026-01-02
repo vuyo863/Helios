@@ -1746,10 +1746,14 @@ export default function Dashboard() {
       
       // Berechne Werte für ALLE verfügbaren Metriken
       // Closed Bots haben keine täglichen Profit-Werte - undefined damit kein Punkt gerendert wird
+      // Wähle das richtige Prozent-Feld basierend auf profitPercentBase
+      const gridProfitPercentValue = profitPercentBase === 'gesamtinvestment' 
+        ? update.overallGridProfitPercent_gesamtinvestment 
+        : update.overallGridProfitPercent_investitionsmenge;
       const metricValues: Record<string, number | undefined> = {
         'Gesamtprofit': profit,
         'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
-        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.overallGridProfitPercent || '0') || 0,
+        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(gridProfitPercentValue || '0') || 0,
         'Ø Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
         'Real Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
       };
@@ -1883,7 +1887,7 @@ export default function Dashboard() {
     const maxTimestamp = endEvents[endEvents.length - 1]?.timestamp || 0;
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards]);
+  }, [isMultiBotChartMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards, profitPercentBase]);
 
   // ADDED MODE: Berechne Highest und Lowest Value für JEDE aktive Metrik
   // Nicht nur für "Gesamt", sondern für alle Content Cards die aktiv sind
@@ -2286,10 +2290,14 @@ export default function Dashboard() {
       
       // Berechne Werte für ALLE verfügbaren Metriken
       // Closed Bots haben keine täglichen Profit-Werte - undefined damit kein Punkt gerendert wird
+      // Wähle das richtige Prozent-Feld basierend auf profitPercentBase
+      const gridProfitPercentValue = profitPercentBase === 'gesamtinvestment' 
+        ? update.overallGridProfitPercent_gesamtinvestment 
+        : update.overallGridProfitPercent_investitionsmenge;
       const metricValues: Record<string, number | undefined> = {
         'Gesamtprofit': profit,
         'Gesamtkapital': parseFloat(update.totalInvestment || '0') || 0,
-        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(update.overallGridProfitPercent || '0') || 0,
+        'Gesamtprofit %': isClosedBot ? undefined : parseFloat(gridProfitPercentValue || '0') || 0,
         'Ø Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
         'Real Profit/Tag': isClosedBot ? undefined : parseFloat(update.avgGridProfitDay || '0') || 0,
       };
@@ -2426,7 +2434,7 @@ export default function Dashboard() {
     const maxTimestamp = endEvents[endEvents.length - 1]?.timestamp || 0;
 
     return { data: dataPoints, botTypeNames, minTimestamp, maxTimestamp };
-  }, [isOverlayMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards]);
+  }, [isOverlayMode, selectedChartBotTypes, allBotTypeUpdates, availableBotTypes, appliedChartSettings, activeMetricCards, profitPercentBase]);
 
   // ========== OVERLAY: Aggregierte Werte für Content Cards ==========
   // EXAKTE KOPIE von addedModeAggregatedValues (Analysis) - nur mit isOverlayMode als Guard
