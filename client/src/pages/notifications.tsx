@@ -1432,10 +1432,18 @@ export default function Notifications() {
                               {watchlist.map((trendPriceId) => {
                                 const pair = getTrendPrice(trendPriceId);
 
+                                const storedMarketType = pairMarketTypes[trendPriceId] || 'spot';
                                 return (
                                   <Card key={trendPriceId} className="p-4">
                                     <div className="flex items-center justify-between mb-3">
-                                      <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                                        {storedMarketType === 'futures' && (
+                                          <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
+                                            FUTURE
+                                          </span>
+                                        )}
+                                      </div>
                                       <span className="text-sm text-muted-foreground">
                                         ${pair?.price || 'Loading...'}
                                       </span>
@@ -1720,10 +1728,18 @@ export default function Notifications() {
                           {watchlist.map((trendPriceId) => {
                             const pair = getTrendPrice(trendPriceId);
 
+                            const storedMarketType = pairMarketTypes[trendPriceId] || 'spot';
                             return (
                               <Card key={trendPriceId} className="p-4">
                                 <div className="flex items-center justify-between mb-3">
-                                  <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                                    {storedMarketType === 'futures' && (
+                                      <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
+                                        FUTURE
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-sm text-muted-foreground">
                                     ${pair?.price || 'Loading...'}
                                   </span>
@@ -1937,6 +1953,11 @@ export default function Notifications() {
                     <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 pt-4">
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-base">{getTrendPriceName(trendPriceId)}</CardTitle>
+                        {(pairMarketTypes[trendPriceId] || 'spot') === 'futures' && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
+                            FUTURE
+                          </span>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''}
                         </span>
