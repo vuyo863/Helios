@@ -1392,7 +1392,7 @@ export default function Notifications() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">${getLivePrice(tpId)}</span>
+                                  <span className="text-muted-foreground">${pair?.price || 'Loading...'}</span>
                                   {pair?.priceChangePercent24h && (
                                     <span className={cn(
                                       "text-xs font-medium",
