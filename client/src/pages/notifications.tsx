@@ -160,7 +160,15 @@ export default function Notifications() {
           'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
           'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
           'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
-          'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT'
+          'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT',
+          'ICPUSDT', 'VETUSDT', 'XLMUSDT', 'ALGOUSDT', 'EOSUSDT',
+          'XTZUSDT', 'THETAUSDT', 'HBARUSDT', 'EGLDUSDT', 'FLOWUSDT',
+          'CHZUSDT', 'ENJUSDT', 'ZILUSDT', 'BATUSDT', 'ZRXUSDT',
+          'SNXUSDT', 'CRVUSDT', 'YFIUSDT', 'LRCUSDT', 'KSMUSDT',
+          'WAVESUSDT', 'DASHUSDT', 'ZECUSDT', 'ETCUSDT', 'NEOUSDT',
+          'IOSTUSDT', 'ONTUSDT', 'QTUMUSDT', 'IOTAUSDT', 'CELOUSDT',
+          'STXUSDT', 'KAVAUSDT', 'ONEUSDT', 'HOTUSDT', 'RVNUSDT',
+          'ZENUSDT', 'BCHUSDT', 'XMRUSDT', 'STORJUSDT', 'ANKRUSDT'
         ];
         const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
           id: `binance-futures-${index}`,
@@ -220,7 +228,15 @@ export default function Notifications() {
         'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
         'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
         'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
-        'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT'
+        'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT',
+        'ICPUSDT', 'VETUSDT', 'XLMUSDT', 'ALGOUSDT', 'EOSUSDT',
+        'XTZUSDT', 'THETAUSDT', 'HBARUSDT', 'EGLDUSDT', 'FLOWUSDT',
+        'CHZUSDT', 'ENJUSDT', 'ZILUSDT', 'BATUSDT', 'ZRXUSDT',
+        'SNXUSDT', 'CRVUSDT', 'YFIUSDT', 'LRCUSDT', 'KSMUSDT',
+        'WAVESUSDT', 'DASHUSDT', 'ZECUSDT', 'ETCUSDT', 'NEOUSDT',
+        'IOSTUSDT', 'ONTUSDT', 'QTUMUSDT', 'IOTAUSDT', 'CELOUSDT',
+        'STXUSDT', 'KAVAUSDT', 'ONEUSDT', 'HOTUSDT', 'RVNUSDT',
+        'ZENUSDT', 'BCHUSDT', 'XMRUSDT', 'STORJUSDT', 'ANKRUSDT'
       ];
       const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
         id: `binance-futures-${index}`,
