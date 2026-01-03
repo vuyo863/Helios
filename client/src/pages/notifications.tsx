@@ -327,7 +327,11 @@ export default function Notifications() {
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          const index = updated.findIndex(p => p.symbol === ticker.symbol);
+          // WICHTIG: Find by symbol AND check pair.marketType is spot (or undefined for backwards compatibility)
+          const index = updated.findIndex(p => {
+            if (p.symbol !== ticker.symbol) return false;
+            return p.marketType === 'spot' || p.marketType === undefined;
+          });
           if (index !== -1) {
             updated[index] = {
               ...updated[index],
@@ -338,6 +342,7 @@ export default function Notifications() {
               priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
               priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
               lastUpdate: new Date(),
+              marketType: 'spot' as const
             };
           }
         });
@@ -366,11 +371,10 @@ export default function Notifications() {
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          // WICHTIG: Find by symbol AND check stored marketType from pairMarketTypes
+          // WICHTIG: Find by symbol AND check pair.marketType directly (set when adding to watchlist)
           const index = updated.findIndex(p => {
             if (p.symbol !== ticker.symbol) return false;
-            const storedMarketType = pairMarketTypes[p.id] || 'spot';
-            return storedMarketType === 'futures';
+            return p.marketType === 'futures';
           });
           
           if (index !== -1) {
@@ -383,7 +387,7 @@ export default function Notifications() {
               priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
               priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
               lastUpdate: new Date(),
-              marketType: 'futures' as const // Ensure marketType is set
+              marketType: 'futures' as const
             };
           }
         });
