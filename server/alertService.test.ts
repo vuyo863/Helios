@@ -19,6 +19,11 @@ import {
   batchDeleteThresholds,
   deleteSingleThreshold,
   countTotalThresholds,
+  parseThresholdInput,
+  parseThresholdValue,
+  formatThresholdDisplay,
+  isValidThresholdInput,
+  evaluateThresholdWithComma,
   ThresholdConfig,
   AlertResult,
   TrendPriceSettings
@@ -495,5 +500,104 @@ describe('Alert Service - Bulk Threshold Deletion Tests', () => {
     
     expect(result.thresholds.length).toBe(0);
     expect(result.trendPriceId).toBe('BTCUSDT');
+  });
+});
+
+// ==========================================
+// German Decimal Format (Comma) Tests
+// ==========================================
+describe('Alert Service - German Decimal Format (Comma) Tests', () => {
+  
+  // TEST 1: parseThresholdInput converts comma to dot
+  it('should convert comma to dot in threshold input', () => {
+    expect(parseThresholdInput('3,405')).toBe('3.405');
+    expect(parseThresholdInput('50000,99')).toBe('50000.99');
+    expect(parseThresholdInput('0,001')).toBe('0.001');
+  });
+
+  // TEST 2: parseThresholdInput handles dot input unchanged
+  it('should keep dot unchanged in threshold input', () => {
+    expect(parseThresholdInput('3.405')).toBe('3.405');
+    expect(parseThresholdInput('50000.99')).toBe('50000.99');
+  });
+
+  // TEST 3: parseThresholdInput handles whole numbers
+  it('should handle whole numbers without decimal separator', () => {
+    expect(parseThresholdInput('50000')).toBe('50000');
+    expect(parseThresholdInput('3')).toBe('3');
+    expect(parseThresholdInput('100000')).toBe('100000');
+  });
+
+  // TEST 4: parseThresholdValue converts comma format to number
+  it('should parse comma-formatted value to number', () => {
+    expect(parseThresholdValue('3,405')).toBe(3.405);
+    expect(parseThresholdValue('50000,99')).toBe(50000.99);
+    expect(parseThresholdValue('0,001')).toBe(0.001);
+  });
+
+  // TEST 5: formatThresholdDisplay formats number in German locale
+  it('should format threshold in German locale (dot as thousands separator)', () => {
+    expect(formatThresholdDisplay('50000')).toBe('50.000');
+    expect(formatThresholdDisplay('3107')).toBe('3.107');
+    expect(formatThresholdDisplay('1000000')).toBe('1.000.000');
+  });
+
+  // TEST 6: formatThresholdDisplay handles decimal values
+  it('should format decimal values with comma as decimal separator', () => {
+    expect(formatThresholdDisplay('3.405')).toBe('3,405');
+    expect(formatThresholdDisplay('50000.99')).toBe('50.000,99');
+  });
+
+  // TEST 7: isValidThresholdInput validates comma format
+  it('should validate comma-formatted threshold as valid', () => {
+    expect(isValidThresholdInput('3,405')).toBe(true);
+    expect(isValidThresholdInput('50000,99')).toBe(true);
+    expect(isValidThresholdInput('0,001')).toBe(true);
+  });
+
+  // TEST 8: isValidThresholdInput rejects invalid input
+  it('should reject invalid threshold input', () => {
+    expect(isValidThresholdInput('')).toBe(false);
+    expect(isValidThresholdInput('abc')).toBe(false);
+    expect(isValidThresholdInput('   ')).toBe(false);
+    expect(isValidThresholdInput('-100')).toBe(false); // negative not allowed
+  });
+
+  // TEST 9: evaluateThresholdWithComma triggers alert with comma-formatted threshold
+  it('should trigger alert with comma-formatted threshold (increase)', () => {
+    const threshold = createTestThreshold({ 
+      isActive: true, 
+      threshold: '3,405', // German format
+      notifyOnIncrease: true,
+      notifyOnDecrease: false
+    });
+    
+    const result = evaluateThresholdWithComma({
+      currentPrice: 3.50,
+      previousPrice: 3.30,
+      threshold
+    });
+    
+    expect(result.shouldTrigger).toBe(true);
+    expect(result.triggerType).toBe('increase');
+  });
+
+  // TEST 10: evaluateThresholdWithComma triggers alert with comma-formatted threshold (decrease)
+  it('should trigger alert with comma-formatted threshold (decrease)', () => {
+    const threshold = createTestThreshold({ 
+      isActive: true, 
+      threshold: '3,405', // German format
+      notifyOnIncrease: false,
+      notifyOnDecrease: true
+    });
+    
+    const result = evaluateThresholdWithComma({
+      currentPrice: 3.30,
+      previousPrice: 3.50,
+      threshold
+    });
+    
+    expect(result.shouldTrigger).toBe(true);
+    expect(result.triggerType).toBe('decrease');
   });
 });

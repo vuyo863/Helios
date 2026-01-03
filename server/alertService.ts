@@ -303,3 +303,57 @@ export function countTotalThresholds(
     0
   );
 }
+
+/**
+ * Parse threshold input: accept comma as decimal separator (German format)
+ * Converts German decimal format to standard format for internal processing
+ */
+export function parseThresholdInput(value: string): string {
+  if (!value || typeof value !== 'string') return '';
+  return value.replace(',', '.');
+}
+
+/**
+ * Parse threshold value to number, accepting both comma and dot as decimal separator
+ */
+export function parseThresholdValue(value: string): number {
+  if (!value || typeof value !== 'string') return NaN;
+  const normalized = value.replace(',', '.');
+  return parseFloat(normalized);
+}
+
+/**
+ * Format threshold for display: German format (dot as thousands separator, comma as decimal)
+ */
+export function formatThresholdDisplay(value: string): string {
+  if (!value || value.trim() === '') return '';
+  const num = parseFloat(value.replace(',', '.'));
+  if (isNaN(num)) return value;
+  return num.toLocaleString('de-DE', { 
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8
+  });
+}
+
+/**
+ * Validate threshold input: check if value is a valid number
+ */
+export function isValidThresholdInput(value: string): boolean {
+  if (!value || value.trim() === '') return false;
+  const normalized = value.replace(',', '.');
+  const num = parseFloat(normalized);
+  return !isNaN(num) && isFinite(num) && num > 0;
+}
+
+/**
+ * Evaluate threshold alert with comma-formatted threshold value
+ * This handles German decimal format (comma as decimal separator)
+ */
+export function evaluateThresholdWithComma(params: PriceCheckParams): AlertResult {
+  const { threshold } = params;
+  const normalizedThreshold = {
+    ...threshold,
+    threshold: parseThresholdInput(threshold.threshold)
+  };
+  return evaluateThresholdAlert({ ...params, threshold: normalizedThreshold });
+}
