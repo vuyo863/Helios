@@ -1190,7 +1190,7 @@ export default function Notifications() {
         </div>
 
         {/* Aktive Alarmierungen - Immer sichtbar */}
-        <Card className="mb-6">
+        <Card className="ring-2 ring-cyan-600 mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               Aktive Alarmierungen ({activeAlarms.length})
