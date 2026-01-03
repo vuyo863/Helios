@@ -1914,7 +1914,7 @@ export default function Notifications() {
 
                 <ScrollArea className={cn(
                   "w-full",
-                  activeItemCount > 3 ? "h-[350px]" : ""
+                  activeItemCount > 3 ? "h-[280px]" : ""
                 )}>
                   <div className="space-y-4 p-3">
                   {sortedWatchlist.map((trendPriceId) => {
