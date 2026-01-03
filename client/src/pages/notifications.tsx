@@ -1002,6 +1002,12 @@ export default function Notifications() {
            allBinanceFuturesPairs.find(tp => tp.id === id);
   };
 
+  // Get ONLY live price from availableTradingPairs (updated every 2 seconds)
+  const getLivePrice = (id: string): string => {
+    const pair = availableTradingPairs.find(tp => tp.id === id);
+    return pair?.price || 'Loading...';
+  };
+
   // Helper to get the name, falling back to ID if not found
   const getTrendPriceName = (id: string) => {
     return getTrendPrice(id)?.name || id;
@@ -1375,7 +1381,7 @@ export default function Notifications() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">${pair?.price || 'Loading...'}</span>
+                                  <span className="text-muted-foreground">${getLivePrice(tpId)}</span>
                                   {pair?.priceChangePercent24h && (
                                     <span className={cn(
                                       "text-xs font-medium",
@@ -1472,7 +1478,7 @@ export default function Notifications() {
                                         )}
                                       </div>
                                       <span className="text-sm text-muted-foreground">
-                                        ${pair?.price || 'Loading...'}
+                                        ${getLivePrice(trendPriceId)}
                                       </span>
                                     </div>
                                     <Dialog
@@ -1787,7 +1793,7 @@ export default function Notifications() {
                                     )}
                                   </div>
                                   <span className="text-sm text-muted-foreground">
-                                    ${pair?.price || 'Loading...'}
+                                    ${getLivePrice(trendPriceId)}
                                   </span>
                                 </div>
                                 <Dialog
