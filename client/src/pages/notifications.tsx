@@ -86,10 +86,22 @@ export default function Notifications() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Store marketType for each pair
-  const [pairMarketTypes, setPairMarketTypes] = useState<Record<string, 'spot' | 'futures'>>(() => {
+  // Store marketType AND symbol for each pair (symbol needed for stable lookup after page reload)
+  const [pairMarketTypes, setPairMarketTypes] = useState<Record<string, { marketType: 'spot' | 'futures', symbol: string }>>(() => {
     const saved = localStorage.getItem('notifications-pair-market-types');
-    return saved ? JSON.parse(saved) : {};
+    if (!saved) return {};
+    // Migration: Handle old format (just marketType string) and new format (object with marketType and symbol)
+    const parsed = JSON.parse(saved);
+    const migrated: Record<string, { marketType: 'spot' | 'futures', symbol: string }> = {};
+    for (const key in parsed) {
+      if (typeof parsed[key] === 'string') {
+        // Old format: just the marketType string - we'll need to find the symbol later
+        migrated[key] = { marketType: parsed[key] as 'spot' | 'futures', symbol: '' };
+      } else {
+        migrated[key] = parsed[key];
+      }
+    }
+    return migrated;
   });
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
@@ -259,6 +271,36 @@ export default function Notifications() {
     fetchAllBinanceFuturesPairs();
   }, []);
 
+  // Migration: Update pairMarketTypes with symbols for old entries that don't have them
+  useEffect(() => {
+    if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
+    
+    let hasUpdates = false;
+    const updates: Record<string, { marketType: 'spot' | 'futures', symbol: string }> = {};
+    
+    for (const id of watchlist) {
+      const data = pairMarketTypes[id];
+      if (data && !data.symbol) {
+        // Find the symbol from the loaded pairs
+        let foundPair;
+        if (data.marketType === 'futures') {
+          foundPair = allBinanceFuturesPairs.find(p => p.id === id);
+        } else {
+          foundPair = allBinancePairs.find(p => p.id === id);
+        }
+        
+        if (foundPair) {
+          updates[id] = { marketType: data.marketType, symbol: foundPair.symbol };
+          hasUpdates = true;
+        }
+      }
+    }
+    
+    if (hasUpdates) {
+      setPairMarketTypes(prev => ({ ...prev, ...updates }));
+    }
+  }, [allBinancePairs, allBinanceFuturesPairs, watchlist]);
+
   // Load watchlist pairs into availableTradingPairs when data is available
   useEffect(() => {
     if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
@@ -272,27 +314,40 @@ export default function Notifications() {
       const existingPair = availableTradingPairs.find(p => p.id === id);
       if (existingPair) return;
 
-      // Get the stored marketType for this pair
-      const storedMarketType = pairMarketTypes[id] || 'spot';
+      // Get the stored marketType and symbol for this pair
+      const storedData = pairMarketTypes[id];
+      const storedMarketType = storedData?.marketType || 'spot';
+      const storedSymbol = storedData?.symbol || '';
 
       // Try to find in the correct market based on stored type
       let pair;
       if (storedMarketType === 'futures') {
+        // First try by ID
         pair = allBinanceFuturesPairs.find(p => p.id === id);
+        // FALLBACK: Find by stored symbol (stable across page reloads)
+        if (!pair && storedSymbol) {
+          pair = allBinanceFuturesPairs.find(p => p.symbol === storedSymbol);
+        }
       } else {
+        // First try by ID
         pair = allBinancePairs.find(p => p.id === id);
+        // FALLBACK: Find by stored symbol (stable across page reloads)
+        if (!pair && storedSymbol) {
+          pair = allBinancePairs.find(p => p.symbol === storedSymbol);
+        }
       }
 
-      // Fallback: try the other market if not found
+      // Final fallback: try the other market if not found
       if (!pair) {
         pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
       }
       
       if (pair) {
-        // WICHTIG: Ensure marketType is explicitly set from stored value
+        // WICHTIG: Use the ORIGINAL watchlist ID to maintain consistency
         const correctedPair: TrendPrice = {
           ...pair,
-          price: undefined, // Reset price to trigger fresh fetch
+          id: id, // Keep original watchlist ID for consistency
+          price: 'Loading...',
           marketType: storedMarketType as 'spot' | 'futures'
         };
         newPairs.push(correctedPair);
@@ -488,7 +543,7 @@ export default function Notifications() {
       if (!watchlist.includes(pair.id)) return;
       
       // WICHTIG: Use stored marketType from pairMarketTypes, not pair.marketType directly
-      const storedMarketType = pairMarketTypes[pair.id] || 'spot';
+      const storedMarketType = pairMarketTypes[pair.id]?.marketType || 'spot';
       
       if (storedMarketType === 'futures') {
         futuresSymbols.push(pair.symbol);
@@ -848,10 +903,10 @@ export default function Notifications() {
         }]);
       }
       
-      // Store the market type for this pair
+      // Store the market type AND symbol for this pair (symbol needed for stable lookup after page reload)
       setPairMarketTypes(prev => ({
         ...prev,
-        [id]: selectedMarketType
+        [id]: { marketType: selectedMarketType, symbol: pair?.symbol || '' }
       }));
       
       // Initialize settings only if not already existing
@@ -1379,7 +1434,7 @@ export default function Notifications() {
                       <div className="divide-y">
                         {watchlist.map((tpId) => {
                           const pair = getTrendPrice(tpId);
-                          const storedMarketType = pairMarketTypes[tpId] || 'spot'; // WICHTIG: Use stored marketType
+                          const storedMarketType = pairMarketTypes[tpId]?.marketType || 'spot'; // WICHTIG: Use stored marketType
                           
                           return (
                             <div
@@ -1481,7 +1536,7 @@ export default function Notifications() {
                               {watchlist.map((trendPriceId) => {
                                 const pair = getTrendPrice(trendPriceId);
 
-                                const storedMarketType = pairMarketTypes[trendPriceId] || 'spot';
+                                const storedMarketType = pairMarketTypes[trendPriceId]?.marketType || 'spot';
                                 return (
                                   <Card key={trendPriceId} className="p-4">
                                     <div className="flex items-center justify-between mb-3">
@@ -1798,7 +1853,7 @@ export default function Notifications() {
                           {watchlist.map((trendPriceId) => {
                             const pair = getTrendPrice(trendPriceId);
 
-                            const storedMarketType = pairMarketTypes[trendPriceId] || 'spot';
+                            const storedMarketType = pairMarketTypes[trendPriceId]?.marketType || 'spot';
                             return (
                               <Card key={trendPriceId} className="p-4">
                                 <div className="flex items-center justify-between mb-3">
@@ -2071,7 +2126,7 @@ export default function Notifications() {
                     <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 pt-4">
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-base">{getTrendPriceName(trendPriceId)}</CardTitle>
-                        {(pairMarketTypes[trendPriceId] || 'spot') === 'futures' && (
+                        {(pairMarketTypes[trendPriceId]?.marketType || 'spot') === 'futures' && (
                           <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
                             FUTURE
                           </span>
