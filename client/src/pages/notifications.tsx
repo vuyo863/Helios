@@ -757,10 +757,11 @@ export default function Notifications() {
     localStorage.setItem('notifications-pair-market-types', JSON.stringify(pairMarketTypes));
   }, [pairMarketTypes]);
 
-  // Save threshold settings to localStorage whenever they change
-  useEffect(() => {
+  // REMOVED: Automatic save on every change - now only saves on explicit "Speichern" click
+  // Save function to be called explicitly when user clicks "Speichern"
+  const saveSettingsToStorage = () => {
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
-  }, [trendPriceSettings]);
+  };
 
   const [alarmLevelEditMode, setAlarmLevelEditMode] = useState<Record<AlarmLevel, boolean>>({
     harmlos: false,
@@ -1719,6 +1720,8 @@ export default function Notifications() {
                                                           return;
                                                         }
 
+                                                        // WICHTIG: Only save to localStorage when user explicitly clicks Speichern
+                                                        saveSettingsToStorage();
                                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
                                                         setEditingThresholdId(null);
                                                         toast({
@@ -1990,6 +1993,8 @@ export default function Notifications() {
                                               </div>
                                               <Button
                                                 onClick={() => {
+                                                  // WICHTIG: Only save to localStorage when user explicitly clicks Speichern
+                                                  saveSettingsToStorage();
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
                                                   toast({
@@ -2270,6 +2275,8 @@ export default function Notifications() {
                                                         return;
                                                       }
 
+                                                      // WICHTIG: Only save to localStorage when user explicitly clicks Speichern
+                                                      saveSettingsToStorage();
                                                       setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
                                                       toast({
                                                         title: "Gespeichert",
