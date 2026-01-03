@@ -1670,10 +1670,21 @@ export default function Notifications() {
                 );
               }
 
+              // Count how many items have active thresholds (will be rendered)
+              const activeItemCount = watchlist.filter(trendPriceId => {
+                const settings = trendPriceSettings[trendPriceId];
+                const savedThresholds = settings?.thresholds.filter(t => 
+                  t.threshold && 
+                  t.threshold.trim() !== '' && 
+                  (t.notifyOnIncrease || t.notifyOnDecrease)
+                ) || [];
+                return savedThresholds.length > 0;
+              }).length;
+
               return (
                 <ScrollArea className={cn(
                   "w-full",
-                  watchlist.length > 3 ? "h-[600px]" : ""
+                  activeItemCount > 3 ? "h-[350px]" : ""
                 )}>
                   <div className="space-y-4 p-3">
                   {watchlist.map((trendPriceId) => {
