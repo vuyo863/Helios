@@ -147,8 +147,29 @@ export default function Notifications() {
   const fetchAllBinanceFuturesPairs = async () => {
     setIsFuturesLoading(true);
     try {
+      // Try Binance Futures API (may be geo-blocked in some regions)
       const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
       if (!response.ok) {
+        console.warn('Binance Futures API returned non-OK status, trying fallback...');
+        // Try to use popular pairs as fallback
+        const fallbackSymbols = [
+          'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+          'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
+          'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
+          'ARBUSDT', 'OPUSDT', 'PEPEUSDT', 'WIFUSDT', 'ORDIUSDT',
+          'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
+          'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
+          'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
+          'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT'
+        ];
+        const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
+          id: `binance-futures-${index}`,
+          name: symbol.replace('USDT', '/USDT'),
+          symbol: symbol,
+          price: 'Loading...',
+          marketType: 'futures' as const
+        }));
+        setAllBinanceFuturesPairs(fallbackPairs);
         setIsFuturesLoading(false);
         return;
       }
@@ -190,6 +211,25 @@ export default function Notifications() {
 
     } catch (error) {
       console.error('Error fetching Binance Futures pairs:', error);
+      // Network error (likely geo-blocking) - use fallback
+      const fallbackSymbols = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+        'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
+        'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
+        'ARBUSDT', 'OPUSDT', 'PEPEUSDT', 'WIFUSDT', 'ORDIUSDT',
+        'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
+        'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
+        'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
+        'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT'
+      ];
+      const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
+        id: `binance-futures-${index}`,
+        name: symbol.replace('USDT', '/USDT'),
+        symbol: symbol,
+        price: 'Loading...',
+        marketType: 'futures' as const
+      }));
+      setAllBinanceFuturesPairs(fallbackPairs);
     } finally {
       setIsFuturesLoading(false);
     }
@@ -1887,189 +1927,6 @@ export default function Notifications() {
                         </Dialog>
                     </CardHeader>
 
-                    {false && (
-                      <CardContent className="space-y-6 pt-0">
-                        <div className="flex items-center justify-between pb-4 border-b">
-                          <h3 className="font-semibold">Schwellenwerte</h3>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => toggleEditMode(trendPriceId)}
-                            >
-                              {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {settings.thresholds.map((threshold, index) => (
-                            <div key={threshold.id} className="p-4 border rounded-lg space-y-4">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium">Schwellenwert {index + 1}</h4>
-                                {settings.thresholds.length > 1 && isEditing && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeThreshold(trendPriceId, threshold.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-
-                              <div>
-                                <Label htmlFor={`threshold-${threshold.id}`}>Schwellenwert (USDT)</Label>
-                                <Input
-                                  id={`threshold-${threshold.id}`}
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="z.B. 50000"
-                                  value={threshold.threshold}
-                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'threshold', e.target.value)}
-                                  disabled={!isEditing}
-                                  className={cn(!isEditing && "opacity-70")}
-                                />
-                              </div>
-
-                              <div className="space-y-3">
-                                <Label>Benachrichtigungen bei:</Label>
-
-                                {/* Preiserhöhung über Schwellenwert */}
-                                <div className="space-y-2 p-3 rounded-lg border">
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                      id={`increase-${threshold.id}`}
-                                      checked={threshold.notifyOnIncrease}
-                                      onCheckedChange={(checked) =>
-                                        updateThreshold(trendPriceId, threshold.id, 'notifyOnIncrease', checked)
-                                      }
-                                      disabled={!isEditing}
-                                    />
-                                    <Label
-                                      htmlFor={`increase-${threshold.id}`}
-                                      className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
-                                    >
-                                      Preiserhöhung über Schwellenwert
-                                    </Label>
-                                  </div>
-                                  {threshold.notifyOnIncrease && (
-                                    <div className="ml-6 flex items-center gap-2">
-                                      <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
-                                      <select
-                                        className="text-sm border rounded px-2 py-1 bg-background"
-                                        disabled={!isEditing}
-                                        value={threshold.increaseFrequency}
-                                        onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'increaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
-                                      >
-                                        <option value="einmalig">Einmalig</option>
-                                        <option value="wiederholend">Wiederholend</option>
-                                      </select>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Preissenkung unter Schwellenwert */}
-                                <div className="space-y-2 p-3 rounded-lg border">
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                      id={`decrease-${threshold.id}`}
-                                      checked={threshold.notifyOnDecrease}
-                                      onCheckedChange={(checked) =>
-                                        updateThreshold(trendPriceId, threshold.id, 'notifyOnDecrease', checked)
-                                      }
-                                      disabled={!isEditing}
-                                    />
-                                    <Label
-                                      htmlFor={`decrease-${threshold.id}`}
-                                      className={cn("cursor-pointer flex-1", !isEditing && "opacity-70")}
-                                    >
-                                      Preissenkung unter Schwellenwert
-                                    </Label>
-                                  </div>
-                                  {threshold.notifyOnDecrease && (
-                                    <div className="ml-6 flex items-center gap-2">
-                                      <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
-                                      <select
-                                        className="text-sm border rounded px-2 py-1 bg-background"
-                                        disabled={!isEditing}
-                                        value={threshold.decreaseFrequency}
-                                        onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'decreaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
-                                      >
-                                        <option value="einmalig">Einmalig</option>
-                                        <option value="wiederholend">Wiederholend</option>
-                                      </select>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div>
-                                <Label htmlFor={`alarm-${threshold.id}`}>Alarmierungsstufe</Label>
-                                <select
-                                  id={`alarm-${threshold.id}`}
-                                  className="w-full text-sm border rounded px-3 py-2 bg-background"
-                                  disabled={!isEditing}
-                                  value={threshold.alarmLevel}
-                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'alarmLevel', e.target.value as AlarmLevel)}
-                                  style={{
-                                    borderColor: getAlarmLevelColor(threshold.alarmLevel),
-                                    color: getAlarmLevelColor(threshold.alarmLevel)
-                                  }}
-                                >
-                                  <option value="harmlos">Harmlos</option>
-                                  <option value="achtung">Achtung</option>
-                                  <option value="gefährlich">Gefährlich</option>
-                                  <option value="sehr_gefährlich">Sehr Gefährlich</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <Label htmlFor={`note-${threshold.id}`}>Notiz (optional)</Label>
-                                <Input
-                                  id={`note-${threshold.id}`}
-                                  type="text"
-                                  placeholder="z.B. Wichtiger Widerstandslevel"
-                                  value={threshold.note}
-                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'note', e.target.value)}
-                                  disabled={!isEditing}
-                                  className={cn(!isEditing && "opacity-70")}
-                                  style={{
-                                    borderColor: getAlarmLevelColor(threshold.alarmLevel)
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-
-                          {isEditing && (
-                            <Button
-                              variant="outline"
-                              className="w-full"
-                              onClick={() => addThreshold(trendPriceId)}
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Weiteren Schwellenwert hinzufügen
-                            </Button>
-                          )}
-                        </div>
-
-                        {isEditing && (
-                          <div className="flex justify-end gap-2 pt-4 border-t">
-                            <Button
-                              variant="outline"
-                              onClick={() => toggleEditMode(trendPriceId)}
-                            >
-                              Abbrechen
-                            </Button>
-                            <Button onClick={() => toggleEditMode(trendPriceId)}>
-                              Speichern
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    )}
                   </Card>
                 );
               })}
