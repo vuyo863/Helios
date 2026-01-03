@@ -1500,6 +1500,17 @@ export default function Notifications() {
                                     <Dialog
                                       open={editDialogOpen[`new-${trendPriceId}`]}
                                       onOpenChange={(open) => {
+                                        // If closing dialog without saving, remove unsaved threshold
+                                        if (!open && editingThresholdId) {
+                                          setTrendPriceSettings(prev => ({
+                                            ...prev,
+                                            [trendPriceId]: {
+                                              ...prev[trendPriceId],
+                                              thresholds: prev[trendPriceId]?.thresholds?.filter(t => t.id !== editingThresholdId) || []
+                                            }
+                                          }));
+                                          setEditingThresholdId(null);
+                                        }
                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: open }));
                                       }}
                                     >
@@ -1817,6 +1828,17 @@ export default function Notifications() {
                                 <Dialog
                                   open={editDialogOpen[`add-${trendPriceId}`]}
                                   onOpenChange={(open) => {
+                                    // If closing dialog without saving, remove unsaved threshold
+                                    if (!open && editingThresholdId) {
+                                      setTrendPriceSettings(prev => ({
+                                        ...prev,
+                                        [trendPriceId]: {
+                                          ...prev[trendPriceId],
+                                          thresholds: prev[trendPriceId]?.thresholds?.filter(t => t.id !== editingThresholdId) || []
+                                        }
+                                      }));
+                                      setEditingThresholdId(null);
+                                    }
                                     setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: open }));
                                   }}
                                 >
