@@ -1197,73 +1197,72 @@ export default function Notifications() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {activeAlarms.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground text-sm">
-                Keine aktiven Alarmierungen
-              </div>
-            ) : (
-              <div className={cn(
-                "space-y-2",
-                activeAlarms.length > 2 && "max-h-[200px] overflow-y-auto pr-2"
-              )}>
-                {activeAlarms.map((alarm) => (
-                  <div
-                    key={alarm.id}
-                    className="flex items-start justify-between p-3 rounded-lg border gap-3"
-                    style={{ 
-                      borderColor: getAlarmLevelColor(alarm.alarmLevel),
-                      backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}08`
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <div 
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-                          style={{ backgroundColor: getAlarmLevelColor(alarm.alarmLevel) }}
-                        />
-                        <h4 className="font-semibold text-sm">{alarm.trendPriceName}</h4>
-                        <span 
-                          className="text-xs px-1.5 py-0.5 rounded font-medium"
-                          style={{ 
-                            backgroundColor: getAlarmLevelColor(alarm.alarmLevel),
-                            color: 'white'
-                          }}
-                        >
-                          {getAlarmLevelLabel(alarm.alarmLevel)}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {getTimeAgo(alarm.triggeredAt)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        ${alarm.threshold} | {alarm.message}
-                      </p>
-                      {alarm.note && (
-                        <div 
-                          className="text-xs mt-1.5 p-1.5 rounded border-l-2"
-                          style={{ 
-                            borderLeftColor: getAlarmLevelColor(alarm.alarmLevel),
-                            backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}10`
-                          }}
-                        >
-                          {alarm.note}
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => approveAlarm(alarm.id)}
-                      className="flex-shrink-0 h-8"
-                      style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
+            <ScrollArea className="h-[220px]">
+              {activeAlarms.length === 0 ? (
+                <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
+                  Keine aktiven Alarmierungen
+                </div>
+              ) : (
+                <div className="space-y-2 pr-4">
+                  {activeAlarms.map((alarm) => (
+                    <div
+                      key={alarm.id}
+                      className="flex items-start justify-between p-3 rounded-lg border gap-3"
+                      style={{ 
+                        borderColor: getAlarmLevelColor(alarm.alarmLevel),
+                        backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}08`
+                      }}
                     >
-                      <Check className="w-3.5 h-3.5 mr-1" />
-                      Approve
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <div 
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: getAlarmLevelColor(alarm.alarmLevel) }}
+                          />
+                          <h4 className="font-semibold text-sm">{alarm.trendPriceName}</h4>
+                          <span 
+                            className="text-xs px-1.5 py-0.5 rounded font-medium"
+                            style={{ 
+                              backgroundColor: getAlarmLevelColor(alarm.alarmLevel),
+                              color: 'white'
+                            }}
+                          >
+                            {getAlarmLevelLabel(alarm.alarmLevel)}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {getTimeAgo(alarm.triggeredAt)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          ${formatThresholdDisplay(alarm.threshold)} | {alarm.message}
+                        </p>
+                        {alarm.note && (
+                          <div 
+                            className="text-xs mt-1.5 p-1.5 rounded border-l-2"
+                            style={{ 
+                              borderLeftColor: getAlarmLevelColor(alarm.alarmLevel),
+                              backgroundColor: `${getAlarmLevelColor(alarm.alarmLevel)}10`
+                            }}
+                          >
+                            <span className="font-medium">Notiz: </span>{alarm.note}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => approveAlarm(alarm.id)}
+                        className="flex-shrink-0 h-8"
+                        style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
+                      >
+                        <Check className="w-3.5 h-3.5 mr-1" />
+                        Approve
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
 
