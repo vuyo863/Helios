@@ -1983,11 +1983,14 @@ export default function Notifications() {
                     Schwellenwert hinzufügen
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh]" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+                <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                   <DialogHeader>
                     <DialogTitle>Schwellenwert hinzufügen</DialogTitle>
                   </DialogHeader>
-                  <ScrollArea className="max-h-[60vh] pr-4 pl-2">
+                  <ScrollArea className={cn(
+                    "pr-4 pl-2",
+                    watchlist.length > 3 ? "h-[400px]" : ""
+                  )}>
                     <div className="space-y-4">
                       {watchlist.map((trendPriceId) => {
                         const pair = getTrendPrice(trendPriceId);
