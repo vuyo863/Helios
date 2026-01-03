@@ -34,6 +34,7 @@ interface ThresholdConfig {
   decreaseFrequency: 'einmalig' | 'wiederholend';
   alarmLevel: AlarmLevel;
   note: string;
+  isActive: boolean;
 }
 
 interface AlarmLevelConfig {
@@ -900,7 +901,8 @@ export default function Notifications() {
             increaseFrequency: 'einmalig',
             decreaseFrequency: 'einmalig',
             alarmLevel: 'harmlos',
-            note: ''
+            note: '',
+            isActive: true
           }
         ]
       }
@@ -1481,7 +1483,8 @@ export default function Notifications() {
                                               increaseFrequency: 'einmalig',
                                               decreaseFrequency: 'einmalig',
                                               alarmLevel: 'harmlos',
-                                              note: ''
+                                              note: '',
+                                              isActive: true
                                             };
 
                                             setTrendPriceSettings(prev => ({
@@ -1615,55 +1618,72 @@ export default function Notifications() {
                                                   />
                                                 </div>
 
-                                                <div className="flex justify-end gap-2 pt-4 border-t">
-                                                  <Button
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                      // Remove the threshold if cancelled
-                                                      setTrendPriceSettings(prev => ({
-                                                        ...prev,
-                                                        [trendPriceId]: {
-                                                          ...prev[trendPriceId],
-                                                          thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== editingThresholdId)
+                                                <div className="flex items-center justify-between pt-4 border-t">
+                                                  <div className="flex items-center gap-2">
+                                                    <Switch
+                                                      checked={threshold.isActive !== false}
+                                                      onCheckedChange={(checked) => updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked)}
+                                                      className={cn(
+                                                        "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
+                                                      )}
+                                                    />
+                                                    <span className={cn(
+                                                      "text-sm font-medium",
+                                                      threshold.isActive !== false ? "text-blue-500" : "text-gray-500"
+                                                    )}>
+                                                      {threshold.isActive !== false ? "Aktiv" : "Pause"}
+                                                    </span>
+                                                  </div>
+                                                  <div className="flex gap-2">
+                                                    <Button
+                                                      variant="outline"
+                                                      onClick={() => {
+                                                        // Remove the threshold if cancelled
+                                                        setTrendPriceSettings(prev => ({
+                                                          ...prev,
+                                                          [trendPriceId]: {
+                                                            ...prev[trendPriceId],
+                                                            thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== editingThresholdId)
+                                                          }
+                                                        }));
+                                                        setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
+                                                        setEditingThresholdId(null);
+                                                      }}
+                                                    >
+                                                      Abbrechen
+                                                    </Button>
+                                                    <Button
+                                                      onClick={() => {
+                                                        // Validate threshold
+                                                        if (!threshold.threshold || threshold.threshold.trim() === '') {
+                                                          toast({
+                                                            title: "Fehler",
+                                                            description: "Bitte geben Sie einen Schwellenwert ein.",
+                                                            variant: "destructive"
+                                                          });
+                                                          return;
                                                         }
-                                                      }));
-                                                      setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
-                                                      setEditingThresholdId(null);
-                                                    }}
-                                                  >
-                                                    Abbrechen
-                                                  </Button>
-                                                  <Button
-                                                    onClick={() => {
-                                                      // Validate threshold
-                                                      if (!threshold.threshold || threshold.threshold.trim() === '') {
-                                                        toast({
-                                                          title: "Fehler",
-                                                          description: "Bitte geben Sie einen Schwellenwert ein.",
-                                                          variant: "destructive"
-                                                        });
-                                                        return;
-                                                      }
 
-                                                      if (!threshold.notifyOnIncrease && !threshold.notifyOnDecrease) {
-                                                        toast({
-                                                          title: "Fehler",
-                                                          description: "Bitte wählen Sie mindestens eine Benachrichtigungsoption.",
-                                                          variant: "destructive"
-                                                        });
-                                                        return;
-                                                      }
+                                                        if (!threshold.notifyOnIncrease && !threshold.notifyOnDecrease) {
+                                                          toast({
+                                                            title: "Fehler",
+                                                            description: "Bitte wählen Sie mindestens eine Benachrichtigungsoption.",
+                                                            variant: "destructive"
+                                                          });
+                                                          return;
+                                                        }
 
-                                                      setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
-                                                      setEditingThresholdId(null);
-                                                      toast({
-                                                        title: "Gespeichert",
-                                                        description: "Schwellenwert wurde erfolgreich gespeichert.",
-                                                      });
-                                                    }}
-                                                  >
-                                                    Speichern
-                                                  </Button>
+                                                        setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
+                                                        setEditingThresholdId(null);
+                                                        toast({
+                                                          title: "Gespeichert",
+                                                          description: "Schwellenwert wurde erfolgreich gespeichert.",
+                                                        });
+                                                      }}
+                                                    >
+                                                      Speichern
+                                                    </Button>
+                                                  </div>
                                                 </div>
                                               </>
                                             );
@@ -1778,7 +1798,8 @@ export default function Notifications() {
                                           increaseFrequency: 'einmalig',
                                           decreaseFrequency: 'einmalig',
                                           alarmLevel: 'harmlos',
-                                          note: ''
+                                          note: '',
+                                          isActive: true
                                         };
 
                                         setTrendPriceSettings(prev => ({
@@ -1905,7 +1926,22 @@ export default function Notifications() {
                                               />
                                             </div>
 
-                                            <div className="flex justify-end gap-2 pt-4 border-t">
+                                            <div className="flex items-center justify-between pt-4 border-t">
+                                              <div className="flex items-center gap-2">
+                                                <Switch
+                                                  checked={threshold.isActive !== false}
+                                                  onCheckedChange={(checked) => updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked)}
+                                                  className={cn(
+                                                    "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
+                                                  )}
+                                                />
+                                                <span className={cn(
+                                                  "text-sm font-medium",
+                                                  threshold.isActive !== false ? "text-blue-500" : "text-gray-500"
+                                                )}>
+                                                  {threshold.isActive !== false ? "Aktiv" : "Pause"}
+                                                </span>
+                                              </div>
                                               <Button
                                                 onClick={() => {
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
@@ -2143,43 +2179,60 @@ export default function Notifications() {
                                                 />
                                               </div>
 
-                                              <div className="flex justify-end gap-2 pt-4 border-t">
-                                                <Button
-                                                  variant="outline"
-                                                  onClick={() => setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }))}
-                                                >
-                                                  Abbrechen
-                                                </Button>
-                                                <Button
-                                                  onClick={() => {
-                                                    // Validate threshold
-                                                    if (!threshold.threshold || threshold.threshold.trim() === '') {
-                                                      toast({
-                                                        title: "Fehler",
-                                                        description: "Bitte geben Sie einen Schwellenwert ein.",
-                                                        variant: "destructive"
-                                                      });
-                                                      return;
-                                                    }
+                                              <div className="flex items-center justify-between pt-4 border-t">
+                                                <div className="flex items-center gap-2">
+                                                  <Switch
+                                                    checked={threshold.isActive !== false}
+                                                    onCheckedChange={(checked) => updateThreshold(trendPriceId, threshold.id, 'isActive', checked)}
+                                                    className={cn(
+                                                      "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
+                                                    )}
+                                                  />
+                                                  <span className={cn(
+                                                    "text-sm font-medium",
+                                                    threshold.isActive !== false ? "text-blue-500" : "text-gray-500"
+                                                  )}>
+                                                    {threshold.isActive !== false ? "Aktiv" : "Pause"}
+                                                  </span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    variant="outline"
+                                                    onClick={() => setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }))}
+                                                  >
+                                                    Abbrechen
+                                                  </Button>
+                                                  <Button
+                                                    onClick={() => {
+                                                      // Validate threshold
+                                                      if (!threshold.threshold || threshold.threshold.trim() === '') {
+                                                        toast({
+                                                          title: "Fehler",
+                                                          description: "Bitte geben Sie einen Schwellenwert ein.",
+                                                          variant: "destructive"
+                                                        });
+                                                        return;
+                                                      }
 
-                                                    if (!threshold.notifyOnIncrease && !threshold.notifyOnDecrease) {
-                                                      toast({
-                                                        title: "Fehler",
-                                                        description: "Bitte wählen Sie mindestens eine Benachrichtigungsoption.",
-                                                        variant: "destructive"
-                                                      });
-                                                      return;
-                                                    }
+                                                      if (!threshold.notifyOnIncrease && !threshold.notifyOnDecrease) {
+                                                        toast({
+                                                          title: "Fehler",
+                                                          description: "Bitte wählen Sie mindestens eine Benachrichtigungsoption.",
+                                                          variant: "destructive"
+                                                        });
+                                                        return;
+                                                      }
 
-                                                    setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
-                                                    toast({
-                                                      title: "Gespeichert",
-                                                      description: "Schwellenwert wurde erfolgreich gespeichert.",
-                                                    });
-                                                  }}
-                                                >
-                                                  Speichern
-                                                </Button>
+                                                      setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
+                                                      toast({
+                                                        title: "Gespeichert",
+                                                        description: "Schwellenwert wurde erfolgreich gespeichert.",
+                                                      });
+                                                    }}
+                                                  >
+                                                    Speichern
+                                                  </Button>
+                                                </div>
                                               </div>
                                             </div>
                                           </DialogContent>
