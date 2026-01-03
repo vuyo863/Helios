@@ -289,3 +289,141 @@ Der Bug wurde erfolgreich behoben. Die Ursache war ein nicht-existierendes Daten
 ## ============================================================
 ## ENDE ABSCHLUSSBERICHT
 ## ============================================================
+
+---
+## ============================================================
+## NOTIFICATIONS PAGE - DOKUMENTATION
+## Version: Golden State v1.0
+## Datum: 03.01.2026
+## ============================================================
+
+### ÜBERSICHT
+
+Die Notifications-Seite ermöglicht Benutzern, Kryptowährungspreise von Binance Spot und Futures Märkten zu überwachen und benutzerdefinierte Preisschwellenwerte mit Alarmierungen zu konfigurieren.
+
+---
+
+### GOLDEN STATE: WATCHLIST (v1.0)
+
+**Status: ✅ GESCHÜTZT - NICHT ÄNDERN OHNE EXPLIZITE USER-ERLAUBNIS**
+
+#### Komponenten der Watchlist:
+
+| Komponente | Funktion | Status |
+|------------|----------|--------|
+| Trading Pair Suche | Spot/Futures Toggle, Suchfeld | ✅ GESCHÜTZT |
+| Watchlist Anzeige | Zeigt alle hinzugefügten Pairs | ✅ GESCHÜTZT |
+| Live-Preis Updates | Alle 2 Sekunden von Binance API | ✅ GESCHÜTZT |
+| 24h Preisänderung | Prozentuale Änderung in grün/rot | ✅ GESCHÜTZT |
+| Market Type Badge | "FUTURE" Badge für Futures-Pairs | ✅ GESCHÜTZT |
+
+#### Technische Implementation:
+
+**1. Preis-Fetch Logik (fetchSpotPrices / fetchFuturesPrices)**
+```typescript
+// Spot: Sucht nach marketType === 'spot' || marketType === undefined
+const index = updated.findIndex(p => {
+  if (p.symbol !== ticker.symbol) return false;
+  return p.marketType === 'spot' || p.marketType === undefined;
+});
+
+// Futures: Sucht nach marketType === 'futures'
+const index = updated.findIndex(p => {
+  if (p.symbol !== ticker.symbol) return false;
+  return p.marketType === 'futures';
+});
+```
+
+**2. Preis-Update Interval**
+- Interval: 2000ms (2 Sekunden)
+- Separate API-Calls für Spot und Futures
+- Basiert auf `pairMarketTypes` localStorage
+
+**3. Preis-Anzeige Format**
+- Deutsches Format: Punkt als Tausendertrennzeichen
+- Beispiel: 50.000,00 statt 50,000.00
+
+**4. Watchlist Persistence**
+- localStorage Key: `notifications-watchlist`
+- Market Types Key: `notifications-pair-market-types`
+
+---
+
+### GOLDEN STATE: SCHWELLENWERT-SYSTEM (v1.0)
+
+**Status: ✅ GESCHÜTZT - NICHT ÄNDERN OHNE EXPLIZITE USER-ERLAUBNIS**
+
+#### Schwellenwert-Eingabe:
+
+| Feature | Beschreibung | Status |
+|---------|--------------|--------|
+| Komma-Eingabe | Akzeptiert "3,50" als Dezimalwert | ✅ GESCHÜTZT |
+| parseThresholdInput | Konvertiert Komma zu Punkt intern | ✅ GESCHÜTZT |
+| formatThresholdDisplay | Zeigt Werte im deutschen Format | ✅ GESCHÜTZT |
+| isValidThresholdInput | Validiert Eingabe | ✅ GESCHÜTZT |
+
+#### Alarm-Level System:
+
+| Level | Farbe | Beschreibung |
+|-------|-------|--------------|
+| harmlos | Blau (#3B82F6) | Niedrige Priorität |
+| achtung | Gelb (#EAB308) | Mittlere Priorität |
+| gefährlich | Orange (#F97316) | Hohe Priorität |
+| sehr_gefährlich | Rot (#EF4444) | Kritische Priorität |
+
+#### isActive Toggle:
+
+| Zustand | Farbe | Funktion |
+|---------|-------|----------|
+| Aktiv | Blau | Schwellenwert löst Alarme aus |
+| Pause | Grau | Schwellenwert pausiert, keine Alarme |
+
+---
+
+### GOLDEN STATE: AKTIVE ALARMIERUNGEN (v1.0)
+
+**Status: ✅ GESCHÜTZT - NICHT ÄNDERN OHNE EXPLIZITE USER-ERLAUBNIS**
+
+| Feature | Beschreibung | Status |
+|---------|--------------|--------|
+| ScrollArea Höhe | Feste 220px mit Scroll | ✅ GESCHÜTZT |
+| Blaue Umrandung | ring-2 ring-cyan-600 | ✅ GESCHÜTZT |
+| Notiz-Anzeige | "Info: {text}" in der Alarm-Zeile | ✅ GESCHÜTZT |
+| Navbar Badge | Roter Punkt bei aktiven Alarmierungen | ✅ GESCHÜTZT |
+
+---
+
+### BACKEND TESTS (Vitest)
+
+**Alle 42 Tests erfolgreich bestanden am 03.01.2026:**
+
+| Test-Gruppe | Anzahl | Status |
+|-------------|--------|--------|
+| isActive Toggle Tests | 20 | ✅ BESTANDEN |
+| Bulk Threshold Deletion Tests | 12 | ✅ BESTANDEN |
+| German Decimal Format Tests | 10 | ✅ BESTANDEN |
+
+---
+
+### WICHTIGE REGELN
+
+⚠️ **GOLDEN STATE BEREICHE DER NOTIFICATIONS-SEITE NIEMALS ÄNDERN OHNE EXPLIZITE USER-ERLAUBNIS!**
+
+- ❌ KEINE Änderungen an der Watchlist-Logik
+- ❌ KEINE Änderungen an der Preis-Fetch-Logik
+- ❌ KEINE Änderungen am Schwellenwert-System
+- ❌ KEINE Änderungen an der Komma-Eingabe-Logik
+- ❌ KEINE Änderungen am Alarm-Level-System
+
+---
+
+### VERSION HISTORY - NOTIFICATIONS
+
+| Version | Datum | Änderungen |
+|---------|-------|------------|
+| **v1.0** | **03.01.2026** | **Golden State - Watchlist, Schwellenwerte, Alarmierungen** |
+
+---
+## ============================================================
+## ENDE NOTIFICATIONS DOKUMENTATION
+## ============================================================
