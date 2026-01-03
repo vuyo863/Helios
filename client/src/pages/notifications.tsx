@@ -1709,13 +1709,14 @@ export default function Notifications() {
                 <>
                 {/* Schwellenwert hinzufügen Button und Sortierung - OBEN */}
                 <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-2" data-testid="button-add-threshold">
-                        <Plus className="w-4 h-4" />
-                        Schwellenwert hinzufügen
-                      </Button>
-                    </DialogTrigger>
+                  <div className="flex items-center gap-3">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="flex items-center gap-2" data-testid="button-add-threshold">
+                          <Plus className="w-4 h-4" />
+                          Schwellenwert hinzufügen
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
                       <DialogHeader>
                         <DialogTitle>Schwellenwert hinzufügen</DialogTitle>
@@ -1904,7 +1905,11 @@ export default function Notifications() {
                         </div>
                       </ScrollArea>
                     </DialogContent>
-                  </Dialog>
+                    </Dialog>
+                    <span className="text-sm text-muted-foreground">
+                      {activeItemCount} Trading Pair{activeItemCount !== 1 ? 's' : ''} aktiv
+                    </span>
+                  </div>
 
                   {/* Sortier-Toggle */}
                   <Button
