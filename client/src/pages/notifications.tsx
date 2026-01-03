@@ -1008,6 +1008,24 @@ export default function Notifications() {
     return pair?.price || 'Loading...';
   };
 
+  // Parse threshold input: accept comma as decimal separator (German format)
+  const parseThresholdInput = (value: string): string => {
+    // Replace comma with dot for internal storage
+    return value.replace(',', '.');
+  };
+
+  // Format threshold for display: German format (dot as thousands separator, comma as decimal)
+  const formatThresholdDisplay = (value: string): string => {
+    if (!value || value.trim() === '') return '';
+    const num = parseFloat(value.replace(',', '.'));
+    if (isNaN(num)) return value;
+    // Format with German locale: 3.107,50
+    return num.toLocaleString('de-DE', { 
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 8 // Support crypto decimals
+    });
+  };
+
   // Helper to get the name, falling back to ID if not found
   const getTrendPriceName = (id: string) => {
     return getTrendPrice(id)?.name || id;
@@ -1548,11 +1566,11 @@ export default function Notifications() {
                                                   <Label htmlFor={`new-threshold-${editingThresholdId}`}>Schwellenwert (USDT)</Label>
                                                   <Input
                                                     id={`new-threshold-${editingThresholdId}`}
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="z.B. 50000"
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    placeholder="z.B. 50000 oder 3,50"
                                                     value={threshold.threshold}
-                                                    onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'threshold', e.target.value)}
+                                                    onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'threshold', parseThresholdInput(e.target.value))}
                                                   />
                                                 </div>
 
@@ -1863,11 +1881,11 @@ export default function Notifications() {
                                               <Label htmlFor={`add-threshold-${editingThresholdId}`}>Schwellenwert (USDT)</Label>
                                               <Input
                                                 id={`add-threshold-${editingThresholdId}`}
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="z.B. 50000"
+                                                type="text"
+                                                inputMode="decimal"
+                                                placeholder="z.B. 50000 oder 3,50"
                                                 value={threshold.threshold}
-                                                onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'threshold', e.target.value)}
+                                                onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'threshold', parseThresholdInput(e.target.value))}
                                               />
                                             </div>
 
@@ -2110,11 +2128,11 @@ export default function Notifications() {
                                                 <Label htmlFor={`edit-threshold-${threshold.id}`}>Schwellenwert (USDT)</Label>
                                                 <Input
                                                   id={`edit-threshold-${threshold.id}`}
-                                                  type="number"
-                                                  step="0.01"
-                                                  placeholder="z.B. 50000"
+                                                  type="text"
+                                                  inputMode="decimal"
+                                                  placeholder="z.B. 50000 oder 3,50"
                                                   value={threshold.threshold}
-                                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'threshold', e.target.value)}
+                                                  onChange={(e) => updateThreshold(trendPriceId, threshold.id, 'threshold', parseThresholdInput(e.target.value))}
                                                 />
                                               </div>
 
@@ -2283,7 +2301,7 @@ export default function Notifications() {
                                     <div className="space-y-2 text-sm">
                                       <div>
                                         <span className="font-medium">Schwellenwert: </span>
-                                        <span className="text-muted-foreground">${threshold.threshold || 'Nicht gesetzt'}</span>
+                                        <span className="text-muted-foreground">${formatThresholdDisplay(threshold.threshold) || 'Nicht gesetzt'}</span>
                                       </div>
                                       <div>
                                         <span className="font-medium">Benachrichtigung: </span>
