@@ -1675,7 +1675,7 @@ export default function Notifications() {
                   "w-full",
                   watchlist.length > 3 ? "h-[600px]" : ""
                 )}>
-                  <div className="space-y-4 pr-4 pl-2">
+                  <div className="space-y-4 p-3">
                   {watchlist.map((trendPriceId) => {
                     const settings = trendPriceSettings[trendPriceId];
 
