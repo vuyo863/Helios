@@ -336,7 +336,82 @@ export default function Notifications() {
     }
   };
 
-  
+  // Funktion zum Abrufen der Preise für Spot-Vorschläge (Suchergebnisse)
+  const fetchSuggestionSpotPrices = async (symbols: string[]) => {
+    if (symbols.length === 0) return;
+
+    try {
+      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
+      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`);
+
+      if (!response.ok) {
+        console.error('Failed to fetch suggestion prices from Binance Spot API');
+        return;
+      }
+
+      const data = await response.json();
+
+      setAllBinancePairs(prev => {
+        const updated = [...prev];
+        data.forEach((ticker: any) => {
+          const index = updated.findIndex(p => p.symbol === ticker.symbol);
+          if (index !== -1) {
+            updated[index] = {
+              ...updated[index],
+              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }),
+              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
+            };
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error fetching suggestion spot prices:', error);
+    }
+  };
+
+  // Funktion zum Abrufen der Preise für Futures-Vorschläge (Suchergebnisse)
+  const fetchSuggestionFuturesPrices = async (symbols: string[]) => {
+    if (symbols.length === 0) return;
+
+    try {
+      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
+      const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[${symbolsParam}]`);
+
+      if (!response.ok) {
+        console.error('Failed to fetch suggestion prices from Binance Futures API');
+        return;
+      }
+
+      const data = await response.json();
+
+      setAllBinanceFuturesPairs(prev => {
+        const updated = [...prev];
+        data.forEach((ticker: any) => {
+          const index = updated.findIndex(p => p.symbol === ticker.symbol);
+          if (index !== -1) {
+            updated[index] = {
+              ...updated[index],
+              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }),
+              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
+            };
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error fetching suggestion futures prices:', error);
+    }
+  };
+
+  // Ref for suggestion price fetch timeout (moved before useEffect usage)
+  const suggestionPriceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initial fetch und regelmäßige Updates für Watchlist Trading Pairs
   useEffect(() => {
@@ -659,6 +734,35 @@ export default function Notifications() {
           !watchlist.includes(pair.id)
         )
         .slice(0, 10); // Zeige maximal 10 Vorschläge
+
+  // Fetch prices for current search suggestions (debounced)
+  useEffect(() => {
+    // Clear previous timeout
+    if (suggestionPriceTimeoutRef.current) {
+      clearTimeout(suggestionPriceTimeoutRef.current);
+    }
+
+    // Only fetch if we have suggestions
+    if (filteredSuggestions.length === 0) return;
+
+    // Get symbols for current suggestions
+    const symbols = filteredSuggestions.map(p => p.symbol);
+
+    // Debounce the fetch to avoid too many API calls while typing
+    suggestionPriceTimeoutRef.current = setTimeout(() => {
+      if (marketType === 'spot') {
+        fetchSuggestionSpotPrices(symbols);
+      } else {
+        fetchSuggestionFuturesPrices(symbols);
+      }
+    }, 300); // Wait 300ms after user stops typing
+
+    return () => {
+      if (suggestionPriceTimeoutRef.current) {
+        clearTimeout(suggestionPriceTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, marketType]);
 
   const addToWatchlist = (id: string) => {
     if (!watchlist.includes(id)) {
