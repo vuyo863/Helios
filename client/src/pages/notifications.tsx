@@ -1325,7 +1325,7 @@ export default function Notifications() {
                     </div>
                   ) : (
                     <ScrollArea className={cn(
-                      watchlist.length > 3 ? "h-[250px]" : ""
+                      watchlist.length > 3 ? "h-[220px] max-h-[220px]" : ""
                     )}>
                       <div className="divide-y">
                         {watchlist.map((tpId) => {
