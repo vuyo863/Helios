@@ -1324,51 +1324,55 @@ export default function Notifications() {
                       <p className="text-xs mt-1">Suchen Sie Trading Pairs und fügen Sie sie hinzu</p>
                     </div>
                   ) : (
-                    <div className="divide-y">
-                      {watchlist.map((tpId) => {
-                        const pair = getTrendPrice(tpId);
-                        const storedMarketType = pairMarketTypes[tpId] || 'spot'; // WICHTIG: Use stored marketType
-                        
-                        return (
-                          <div
-                            key={tpId}
-                            className="flex items-center justify-between p-3 hover-elevate"
-                            data-testid={`watchlist-item-${pair?.name}`}
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-medium">{pair?.name}</p>
-                                {storedMarketType === 'futures' && (
-                                  <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
-                                    FUTURE
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-muted-foreground">${pair?.price || 'Loading...'}</span>
-                                {pair?.priceChangePercent24h && (
-                                  <span className={cn(
-                                    "text-xs font-medium",
-                                    parseFloat(pair.priceChangePercent24h) >= 0 ? "text-green-500" : "text-red-500"
-                                  )}>
-                                    {parseFloat(pair.priceChangePercent24h) >= 0 ? "+" : ""}
-                                    {pair.priceChangePercent24h}% (24h)
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeFromWatchlist(tpId)}
-                              className="text-destructive hover:text-destructive"
+                    <ScrollArea className={cn(
+                      watchlist.length > 3 ? "h-[250px]" : ""
+                    )}>
+                      <div className="divide-y">
+                        {watchlist.map((tpId) => {
+                          const pair = getTrendPrice(tpId);
+                          const storedMarketType = pairMarketTypes[tpId] || 'spot'; // WICHTIG: Use stored marketType
+                          
+                          return (
+                            <div
+                              key={tpId}
+                              className="flex items-center justify-between p-3 hover-elevate"
+                              data-testid={`watchlist-item-${pair?.name}`}
                             >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-medium">{pair?.name}</p>
+                                  {storedMarketType === 'futures' && (
+                                    <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-medium">
+                                      FUTURE
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-muted-foreground">${pair?.price || 'Loading...'}</span>
+                                  {pair?.priceChangePercent24h && (
+                                    <span className={cn(
+                                      "text-xs font-medium",
+                                      parseFloat(pair.priceChangePercent24h) >= 0 ? "text-green-500" : "text-red-500"
+                                    )}>
+                                      {parseFloat(pair.priceChangePercent24h) >= 0 ? "+" : ""}
+                                      {pair.priceChangePercent24h}% (24h)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeFromWatchlist(tpId)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
                   )}
                 </div>
               </div>
