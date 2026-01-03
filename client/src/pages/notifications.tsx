@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, ArrowUp, ArrowDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -928,6 +929,30 @@ export default function Notifications() {
     toast({
       title: "Schwellenwert gelöscht",
       description: "Der Schwellenwert wurde erfolgreich entfernt.",
+    });
+  };
+
+  const deleteAllThresholdsForPair = (trendPriceId: string) => {
+    const currentSettings = trendPriceSettings[trendPriceId];
+    if (!currentSettings) return;
+
+    const thresholdCount = currentSettings.thresholds.filter(t => 
+      t.threshold && 
+      t.threshold.trim() !== '' && 
+      (t.notifyOnIncrease || t.notifyOnDecrease)
+    ).length;
+
+    setTrendPriceSettings(prev => ({
+      ...prev,
+      [trendPriceId]: {
+        ...prev[trendPriceId],
+        thresholds: []
+      }
+    }));
+
+    toast({
+      title: "Alle Schwellenwerte gelöscht",
+      description: `${thresholdCount} Schwellenwert${thresholdCount !== 1 ? 'e' : ''} für ${getTrendPriceName(trendPriceId)} wurden entfernt.`,
     });
   };
 
@@ -2029,20 +2054,21 @@ export default function Notifications() {
                           {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''}
                         </span>
                       </div>
-                      {/* View Dialog - Eye Icon */}
-                      <Dialog 
-                        open={viewDialogOpen[trendPriceId]} 
-                        onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
-                      >
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
-                            <DialogHeader>
-                              <DialogTitle>Schwellenwerte für {getTrendPriceName(trendPriceId)}</DialogTitle>
-                            </DialogHeader>
+                      <div className="flex items-center gap-1">
+                        {/* View Dialog - Eye Icon */}
+                        <Dialog 
+                          open={viewDialogOpen[trendPriceId]} 
+                          onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
+                        >
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" data-testid={`button-view-thresholds-${trendPriceId}`}>
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+                              <DialogHeader>
+                                <DialogTitle>Schwellenwerte für {getTrendPriceName(trendPriceId)}</DialogTitle>
+                              </DialogHeader>
                             <ScrollArea className={cn(
                               "w-full",
                               savedThresholds.length > 2 ? "h-[400px]" : ""
@@ -2287,6 +2313,32 @@ export default function Notifications() {
                             </ScrollArea>
                           </DialogContent>
                         </Dialog>
+                        {/* Delete All Thresholds - Trash Icon */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" data-testid={`button-delete-all-thresholds-${trendPriceId}`}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Alle Schwellenwerte löschen?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Möchten Sie wirklich alle {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''} für {getTrendPriceName(trendPriceId)} löschen? Das Trading Pair bleibt in der Watchlist.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deleteAllThresholdsForPair(trendPriceId)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Alle löschen
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </CardHeader>
 
                   </Card>

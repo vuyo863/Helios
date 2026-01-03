@@ -10,8 +10,18 @@ import {
   getActiveThresholds,
   toggleThresholdStatus,
   createThreshold,
+  deleteAllThresholdsForPair,
+  deleteAllThresholdsFromMap,
+  getThresholdCount,
+  getActiveThresholdCount,
+  hasTradingPair,
+  areThresholdsEmpty,
+  batchDeleteThresholds,
+  deleteSingleThreshold,
+  countTotalThresholds,
   ThresholdConfig,
-  AlertResult
+  AlertResult,
+  TrendPriceSettings
 } from './alertService';
 
 // Helper to create test thresholds
@@ -302,5 +312,188 @@ describe('Alert Service - isActive Toggle Tests', () => {
       threshold
     });
     expect(resultDecrease.shouldTrigger).toBe(false);
+  });
+});
+
+// Helper to create test settings
+const createTestSettings = (trendPriceId: string, thresholdCount: number): TrendPriceSettings => ({
+  trendPriceId,
+  thresholds: Array.from({ length: thresholdCount }, (_, i) => 
+    createThreshold(`threshold-${i}`, `${50000 + i * 1000}`, {
+      notifyOnIncrease: true,
+      notifyOnDecrease: true,
+      isActive: true
+    })
+  )
+});
+
+describe('Alert Service - Bulk Threshold Deletion Tests', () => {
+  
+  // TEST 1: Delete all thresholds for a single pair
+  it('should delete all thresholds for a trading pair', () => {
+    const settings = createTestSettings('BTCUSDT', 5);
+    expect(settings.thresholds.length).toBe(5);
+    
+    const result = deleteAllThresholdsForPair(settings);
+    
+    expect(result.thresholds.length).toBe(0);
+    expect(result.trendPriceId).toBe('BTCUSDT');
+  });
+
+  // TEST 2: Delete preserves trading pair in map
+  it('should preserve trading pair entry when deleting thresholds from map', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': createTestSettings('BTCUSDT', 3),
+      'ETHUSDT': createTestSettings('ETHUSDT', 2)
+    };
+    
+    const result = deleteAllThresholdsFromMap(settingsMap, 'BTCUSDT');
+    
+    expect(result['BTCUSDT']).toBeDefined();
+    expect(result['BTCUSDT'].thresholds.length).toBe(0);
+    expect(result['BTCUSDT'].trendPriceId).toBe('BTCUSDT');
+    expect(result['ETHUSDT'].thresholds.length).toBe(2);
+  });
+
+  // TEST 3: Delete non-existent pair returns unchanged map
+  it('should return unchanged map when deleting from non-existent pair', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': createTestSettings('BTCUSDT', 3)
+    };
+    
+    const result = deleteAllThresholdsFromMap(settingsMap, 'NONEXISTENT');
+    
+    expect(result).toEqual(settingsMap);
+    expect(result['BTCUSDT'].thresholds.length).toBe(3);
+  });
+
+  // TEST 4: Get threshold count
+  it('should correctly count thresholds', () => {
+    const settings = createTestSettings('BTCUSDT', 7);
+    expect(getThresholdCount(settings)).toBe(7);
+    
+    const emptySettings = createTestSettings('ETHUSDT', 0);
+    expect(getThresholdCount(emptySettings)).toBe(0);
+    
+    expect(getThresholdCount(undefined)).toBe(0);
+  });
+
+  // TEST 5: Get active threshold count (only configured ones)
+  it('should count only active/configured thresholds', () => {
+    const settings: TrendPriceSettings = {
+      trendPriceId: 'BTCUSDT',
+      thresholds: [
+        createThreshold('t1', '50000', { notifyOnIncrease: true }),
+        createThreshold('t2', '', { notifyOnIncrease: true }),
+        createThreshold('t3', '51000', { notifyOnDecrease: true }),
+        createThreshold('t4', '52000', { notifyOnIncrease: false, notifyOnDecrease: false }),
+      ]
+    };
+    
+    expect(getActiveThresholdCount(settings)).toBe(2);
+  });
+
+  // TEST 6: Check if trading pair exists
+  it('should correctly check if trading pair exists in map', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': createTestSettings('BTCUSDT', 3),
+      'ETHUSDT': createTestSettings('ETHUSDT', 2)
+    };
+    
+    expect(hasTradingPair(settingsMap, 'BTCUSDT')).toBe(true);
+    expect(hasTradingPair(settingsMap, 'ETHUSDT')).toBe(true);
+    expect(hasTradingPair(settingsMap, 'XRPUSDT')).toBe(false);
+  });
+
+  // TEST 7: Check if thresholds are empty
+  it('should correctly identify empty thresholds', () => {
+    const emptySettings: TrendPriceSettings = {
+      trendPriceId: 'BTCUSDT',
+      thresholds: []
+    };
+    
+    const nonEmptySettings = createTestSettings('ETHUSDT', 3);
+    
+    expect(areThresholdsEmpty(emptySettings)).toBe(true);
+    expect(areThresholdsEmpty(nonEmptySettings)).toBe(false);
+    expect(areThresholdsEmpty(undefined)).toBe(true);
+  });
+
+  // TEST 8: Batch delete thresholds for multiple pairs
+  it('should batch delete thresholds for multiple trading pairs', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': createTestSettings('BTCUSDT', 3),
+      'ETHUSDT': createTestSettings('ETHUSDT', 2),
+      'XRPUSDT': createTestSettings('XRPUSDT', 4)
+    };
+    
+    const result = batchDeleteThresholds(settingsMap, ['BTCUSDT', 'XRPUSDT']);
+    
+    expect(result['BTCUSDT'].thresholds.length).toBe(0);
+    expect(result['ETHUSDT'].thresholds.length).toBe(2);
+    expect(result['XRPUSDT'].thresholds.length).toBe(0);
+    expect(hasTradingPair(result, 'BTCUSDT')).toBe(true);
+    expect(hasTradingPair(result, 'XRPUSDT')).toBe(true);
+  });
+
+  // TEST 9: Delete single threshold from pair
+  it('should delete a single threshold from trading pair', () => {
+    const settings: TrendPriceSettings = {
+      trendPriceId: 'BTCUSDT',
+      thresholds: [
+        createThreshold('keep-1', '50000', { notifyOnIncrease: true }),
+        createThreshold('delete-me', '51000', { notifyOnIncrease: true }),
+        createThreshold('keep-2', '52000', { notifyOnIncrease: true }),
+      ]
+    };
+    
+    const result = deleteSingleThreshold(settings, 'delete-me');
+    
+    expect(result.thresholds.length).toBe(2);
+    expect(result.thresholds.map(t => t.id)).toContain('keep-1');
+    expect(result.thresholds.map(t => t.id)).toContain('keep-2');
+    expect(result.thresholds.map(t => t.id)).not.toContain('delete-me');
+  });
+
+  // TEST 10: Count total thresholds across all pairs
+  it('should count total thresholds across all trading pairs', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': createTestSettings('BTCUSDT', 3),
+      'ETHUSDT': createTestSettings('ETHUSDT', 2),
+      'XRPUSDT': createTestSettings('XRPUSDT', 5)
+    };
+    
+    expect(countTotalThresholds(settingsMap)).toBe(10);
+    
+    const afterDelete = batchDeleteThresholds(settingsMap, ['BTCUSDT']);
+    expect(countTotalThresholds(afterDelete)).toBe(7);
+  });
+
+  // TEST 11: Verify watchlist entry persists after deletion
+  it('should verify that watchlist entry persists after threshold deletion', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': createTestSettings('BTCUSDT', 5),
+      'ETHUSDT': createTestSettings('ETHUSDT', 3)
+    };
+    
+    const result = deleteAllThresholdsFromMap(settingsMap, 'BTCUSDT');
+    
+    expect(Object.keys(result).length).toBe(2);
+    expect('BTCUSDT' in result).toBe(true);
+    expect('ETHUSDT' in result).toBe(true);
+    expect(result['BTCUSDT'].trendPriceId).toBe('BTCUSDT');
+  });
+
+  // TEST 12: Delete from empty thresholds list
+  it('should handle deletion from already empty thresholds', () => {
+    const settings: TrendPriceSettings = {
+      trendPriceId: 'BTCUSDT',
+      thresholds: []
+    };
+    
+    const result = deleteAllThresholdsForPair(settings);
+    
+    expect(result.thresholds.length).toBe(0);
+    expect(result.trendPriceId).toBe('BTCUSDT');
   });
 });

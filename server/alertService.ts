@@ -183,3 +183,123 @@ export function createThreshold(
     isActive: options.isActive ?? true
   };
 }
+
+/**
+ * Trading Pair Settings Interface
+ */
+export interface TrendPriceSettings {
+  trendPriceId: string;
+  thresholds: ThresholdConfig[];
+}
+
+/**
+ * Delete all thresholds for a specific trading pair
+ * Returns the updated settings with empty thresholds array
+ */
+export function deleteAllThresholdsForPair(settings: TrendPriceSettings): TrendPriceSettings {
+  return {
+    ...settings,
+    thresholds: []
+  };
+}
+
+/**
+ * Delete all thresholds from a settings map for a specific pair
+ * Preserves the watchlist entry (settings object) but clears thresholds
+ */
+export function deleteAllThresholdsFromMap(
+  settingsMap: Record<string, TrendPriceSettings>,
+  trendPriceId: string
+): Record<string, TrendPriceSettings> {
+  if (!settingsMap[trendPriceId]) {
+    return settingsMap;
+  }
+  
+  return {
+    ...settingsMap,
+    [trendPriceId]: {
+      ...settingsMap[trendPriceId],
+      thresholds: []
+    }
+  };
+}
+
+/**
+ * Get threshold count for a trading pair
+ */
+export function getThresholdCount(settings: TrendPriceSettings | undefined): number {
+  if (!settings) return 0;
+  return settings.thresholds.length;
+}
+
+/**
+ * Get active (configured) threshold count
+ * Only counts thresholds with valid configuration
+ */
+export function getActiveThresholdCount(settings: TrendPriceSettings | undefined): number {
+  if (!settings) return 0;
+  return settings.thresholds.filter(t => 
+    t.threshold && 
+    t.threshold.trim() !== '' && 
+    (t.notifyOnIncrease || t.notifyOnDecrease)
+  ).length;
+}
+
+/**
+ * Check if trading pair exists in settings map
+ */
+export function hasTradingPair(
+  settingsMap: Record<string, TrendPriceSettings>,
+  trendPriceId: string
+): boolean {
+  return trendPriceId in settingsMap;
+}
+
+/**
+ * Check if thresholds are empty after deletion
+ */
+export function areThresholdsEmpty(settings: TrendPriceSettings | undefined): boolean {
+  if (!settings) return true;
+  return settings.thresholds.length === 0;
+}
+
+/**
+ * Batch delete thresholds for multiple trading pairs
+ */
+export function batchDeleteThresholds(
+  settingsMap: Record<string, TrendPriceSettings>,
+  trendPriceIds: string[]
+): Record<string, TrendPriceSettings> {
+  let result = { ...settingsMap };
+  
+  for (const id of trendPriceIds) {
+    result = deleteAllThresholdsFromMap(result, id);
+  }
+  
+  return result;
+}
+
+/**
+ * Delete a single threshold from a trading pair
+ */
+export function deleteSingleThreshold(
+  settings: TrendPriceSettings,
+  thresholdId: string
+): TrendPriceSettings {
+  return {
+    ...settings,
+    thresholds: settings.thresholds.filter(t => t.id !== thresholdId)
+  };
+}
+
+/**
+ * Count total thresholds across all trading pairs
+ */
+export function countTotalThresholds(
+  settingsMap: Record<string, TrendPriceSettings>
+): number {
+  return Object.values(settingsMap).reduce(
+    (total, settings) => total + settings.thresholds.length,
+    0
+  );
+}
