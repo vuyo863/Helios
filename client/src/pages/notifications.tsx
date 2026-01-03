@@ -1835,6 +1835,19 @@ export default function Notifications() {
                                                     Preiserhöhung über Schwellenwert
                                                   </Label>
                                                 </div>
+                                                {threshold.notifyOnIncrease && (
+                                                  <div className="ml-6 flex items-center gap-2">
+                                                    <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                                    <select
+                                                      className="text-sm border rounded px-2 py-1 bg-background"
+                                                      value={threshold.increaseFrequency}
+                                                      onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'increaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                                    >
+                                                      <option value="einmalig">Einmalig</option>
+                                                      <option value="wiederholend">Wiederholend</option>
+                                                    </select>
+                                                  </div>
+                                                )}
                                               </div>
 
                                               <div className="space-y-2 p-3 rounded-lg border">
@@ -1850,6 +1863,19 @@ export default function Notifications() {
                                                     Preissenkung unter Schwellenwert
                                                   </Label>
                                                 </div>
+                                                {threshold.notifyOnDecrease && (
+                                                  <div className="ml-6 flex items-center gap-2">
+                                                    <Label className="text-sm text-muted-foreground">Häufigkeit:</Label>
+                                                    <select
+                                                      className="text-sm border rounded px-2 py-1 bg-background"
+                                                      value={threshold.decreaseFrequency}
+                                                      onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'decreaseFrequency', e.target.value as 'einmalig' | 'wiederholend')}
+                                                    >
+                                                      <option value="einmalig">Einmalig</option>
+                                                      <option value="wiederholend">Wiederholend</option>
+                                                    </select>
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
 
