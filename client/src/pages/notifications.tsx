@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, ArrowUp, ArrowDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -737,6 +737,7 @@ export default function Notifications() {
   const [expandedDropdowns, setExpandedDropdowns] = useState<string[]>([]);
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
+  const [notificationSortOrder, setNotificationSortOrder] = useState<'asc' | 'desc'>('asc');
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
 
@@ -1681,13 +1682,24 @@ export default function Notifications() {
                 return savedThresholds.length > 0;
               }).length;
 
+              // Sort watchlist alphabetically based on notificationSortOrder
+              const sortedWatchlist = [...watchlist].sort((a, b) => {
+                const nameA = getTrendPriceName(a).toLowerCase();
+                const nameB = getTrendPriceName(b).toLowerCase();
+                if (notificationSortOrder === 'asc') {
+                  return nameA.localeCompare(nameB);
+                } else {
+                  return nameB.localeCompare(nameA);
+                }
+              });
+
               return (
                 <ScrollArea className={cn(
                   "w-full",
                   activeItemCount > 3 ? "h-[350px]" : ""
                 )}>
                   <div className="space-y-4 p-3">
-                  {watchlist.map((trendPriceId) => {
+                  {sortedWatchlist.map((trendPriceId) => {
                     const settings = trendPriceSettings[trendPriceId];
 
                     // Only show if there are saved thresholds that are active
@@ -1961,6 +1973,216 @@ export default function Notifications() {
                 </ScrollArea>
               );
             })()}
+
+            {/* Schwellenwert hinzufügen Button und Sortierung */}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2" data-testid="button-add-threshold">
+                    <Plus className="w-4 h-4" />
+                    Schwellenwert hinzufügen
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh]" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+                  <DialogHeader>
+                    <DialogTitle>Schwellenwert hinzufügen</DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[60vh] pr-4 pl-2">
+                    <div className="space-y-4">
+                      {watchlist.map((trendPriceId) => {
+                        const pair = getTrendPrice(trendPriceId);
+
+                        return (
+                          <Card key={trendPriceId} className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-lg font-semibold">{pair?.name || trendPriceId}</h3>
+                              <span className="text-sm text-muted-foreground">
+                                ${pair?.price || 'Loading...'}
+                              </span>
+                            </div>
+                            <Dialog
+                              open={editDialogOpen[`add-${trendPriceId}`]}
+                              onOpenChange={(open) => {
+                                setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: open }));
+                              }}
+                            >
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full flex items-center justify-center gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    
+                                    // Initialize settings if they don't exist
+                                    if (!trendPriceSettings[trendPriceId]) {
+                                      setTrendPriceSettings(prev => ({
+                                        ...prev,
+                                        [trendPriceId]: {
+                                          trendPriceId,
+                                          thresholds: []
+                                        }
+                                      }));
+                                    }
+
+                                    // Create a new threshold
+                                    const newThreshold: ThresholdConfig = {
+                                      id: crypto.randomUUID(),
+                                      threshold: '',
+                                      notifyOnIncrease: false,
+                                      notifyOnDecrease: false,
+                                      increaseFrequency: 'einmalig',
+                                      decreaseFrequency: 'einmalig',
+                                      alarmLevel: 'harmlos',
+                                      note: ''
+                                    };
+
+                                    setTrendPriceSettings(prev => ({
+                                      ...prev,
+                                      [trendPriceId]: {
+                                        ...prev[trendPriceId],
+                                        thresholds: [...(prev[trendPriceId]?.thresholds || []), newThreshold]
+                                      }
+                                    }));
+
+                                    // Set editing threshold and open dialog
+                                    setEditingThresholdId(newThreshold.id);
+                                    setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: true, [newThreshold.id]: true }));
+                                  }}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  Schwellenwert hinzufügen
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+                                <DialogHeader>
+                                  <DialogTitle>Neuen Schwellenwert konfigurieren</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 pl-2">
+                                  {editingThresholdId && trendPriceSettings[trendPriceId]?.thresholds.find(t => t.id === editingThresholdId) && (() => {
+                                    const threshold = trendPriceSettings[trendPriceId].thresholds.find(t => t.id === editingThresholdId)!;
+                                    return (
+                                      <>
+                                        <div>
+                                          <Label htmlFor={`add-threshold-${editingThresholdId}`}>Schwellenwert (USDT)</Label>
+                                          <Input
+                                            id={`add-threshold-${editingThresholdId}`}
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="z.B. 50000"
+                                            value={threshold.threshold}
+                                            onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'threshold', e.target.value)}
+                                          />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                          <Label>Benachrichtigungen bei:</Label>
+
+                                          <div className="space-y-2 p-3 rounded-lg border">
+                                            <div className="flex items-center space-x-2">
+                                              <Checkbox
+                                                id={`add-increase-${editingThresholdId}`}
+                                                checked={threshold.notifyOnIncrease}
+                                                onCheckedChange={(checked) =>
+                                                  updateThreshold(trendPriceId, editingThresholdId, 'notifyOnIncrease', checked)
+                                                }
+                                              />
+                                              <Label htmlFor={`add-increase-${editingThresholdId}`} className="cursor-pointer flex-1">
+                                                Preiserhöhung über Schwellenwert
+                                              </Label>
+                                            </div>
+                                          </div>
+
+                                          <div className="space-y-2 p-3 rounded-lg border">
+                                            <div className="flex items-center space-x-2">
+                                              <Checkbox
+                                                id={`add-decrease-${editingThresholdId}`}
+                                                checked={threshold.notifyOnDecrease}
+                                                onCheckedChange={(checked) =>
+                                                  updateThreshold(trendPriceId, editingThresholdId, 'notifyOnDecrease', checked)
+                                                }
+                                              />
+                                              <Label htmlFor={`add-decrease-${editingThresholdId}`} className="cursor-pointer flex-1">
+                                                Preissenkung unter Schwellenwert
+                                              </Label>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div>
+                                          <Label htmlFor={`add-alarm-${editingThresholdId}`}>Alarmierungsstufe</Label>
+                                          <select
+                                            id={`add-alarm-${editingThresholdId}`}
+                                            className="w-full text-sm border rounded px-3 py-2 bg-background"
+                                            value={threshold.alarmLevel}
+                                            onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'alarmLevel', e.target.value as AlarmLevel)}
+                                          >
+                                            <option value="harmlos">Harmlos (Info)</option>
+                                            <option value="achtung">Achtung (Warnung)</option>
+                                            <option value="gefährlich">Gefährlich (Alert)</option>
+                                            <option value="sehr_gefährlich">Sehr Gefährlich (Kritisch)</option>
+                                          </select>
+                                        </div>
+
+                                        <div>
+                                          <Label htmlFor={`add-note-${editingThresholdId}`}>Notiz (optional)</Label>
+                                          <Input
+                                            id={`add-note-${editingThresholdId}`}
+                                            type="text"
+                                            placeholder="z.B. Wichtiger Widerstandslevel"
+                                            value={threshold.note}
+                                            onChange={(e) => updateThreshold(trendPriceId, editingThresholdId, 'note', e.target.value)}
+                                          />
+                                        </div>
+
+                                        <div className="flex justify-end gap-2 pt-4 border-t">
+                                          <Button
+                                            onClick={() => {
+                                              setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
+                                              setEditingThresholdId(null);
+                                              toast({
+                                                title: "Gespeichert",
+                                                description: "Schwellenwert wurde erfolgreich hinzugefügt.",
+                                              });
+                                            }}
+                                          >
+                                            Speichern
+                                          </Button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
+
+              {/* Sortier-Toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNotificationSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="flex items-center gap-2"
+                data-testid="button-sort-notifications"
+              >
+                {notificationSortOrder === 'asc' ? (
+                  <>
+                    <ArrowUp className="w-4 h-4" />
+                    A-Z
+                  </>
+                ) : (
+                  <>
+                    <ArrowDown className="w-4 h-4" />
+                    Z-A
+                  </>
+                )}
+              </Button>
+            </div>
             </>
             )}
           </CardContent>
