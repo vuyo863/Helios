@@ -1957,7 +1957,7 @@ export default function Notifications() {
                             </DialogHeader>
                             <ScrollArea className={cn(
                               "w-full",
-                              savedThresholds.length > 3 ? "h-[500px]" : ""
+                              savedThresholds.length > 2 ? "h-[400px]" : ""
                             )}>
                               <div className="space-y-3 pr-4 pl-2">
                                 {savedThresholds.map((threshold, index) => (
