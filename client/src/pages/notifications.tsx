@@ -1323,11 +1323,6 @@ export default function Notifications() {
                           >
                             {getAlarmLevelLabel(alarm.alarmLevel)}
                           </span>
-                          {alarm.note && (
-                            <span className="text-xs text-muted-foreground italic">
-                              Info: {alarm.note}
-                            </span>
-                          )}
                           <span className="text-xs text-muted-foreground ml-auto">
                             {getTimeAgo(alarm.triggeredAt)}
                           </span>
@@ -1335,6 +1330,11 @@ export default function Notifications() {
                         <p className="text-xs text-muted-foreground">
                           ${formatThresholdDisplay(alarm.threshold)} | {alarm.message}
                         </p>
+                        {alarm.note && (
+                          <p className="text-xs text-muted-foreground mt-1 italic border-l-2 border-cyan-500 pl-2">
+                            📝 {alarm.note}
+                          </p>
+                        )}
                       </div>
                       <Button
                         variant="outline"
