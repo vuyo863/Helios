@@ -625,6 +625,9 @@ export default function Notifications() {
     }
   });
 
+  // Track which threshold is currently being edited (for excluding from alerts)
+  const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
+
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
     // Check all trading pairs with thresholds
@@ -639,6 +642,9 @@ export default function Notifications() {
       if (isNaN(currentPrice)) return;
 
       settings.thresholds.forEach((threshold) => {
+        // Skip if this threshold is currently being edited (not yet saved)
+        if (threshold.id === editingThresholdId) return;
+        
         // Skip if threshold value is empty
         if (!threshold.threshold || threshold.threshold.trim() === '') return;
 
@@ -775,7 +781,7 @@ export default function Notifications() {
         }
       });
     });
-  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast]);
+  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId]);
 
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
@@ -799,7 +805,6 @@ export default function Notifications() {
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [viewDialogOpen, setViewDialogOpen] = useState<Record<string, boolean>>({});
   const [notificationSortOrder, setNotificationSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
   
   // Ref to track if save button was clicked (to distinguish from X/ESC close)
