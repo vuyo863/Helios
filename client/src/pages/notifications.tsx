@@ -1536,10 +1536,12 @@ export default function Notifications() {
             <>
 
             {/* Check if there are any saved thresholds across all watchlist items */}
+            {/* WICHTIG: Exclude currently editing threshold from this check to prevent dialog from closing */}
             {(() => {
               const hasAnyThresholds = watchlist.some(trendPriceId => {
                 const settings = trendPriceSettings[trendPriceId];
                 const savedThresholds = settings?.thresholds.filter(t => 
+                  t.id !== editingThresholdId && // Exclude threshold being edited
                   t.threshold && 
                   t.threshold.trim() !== '' && 
                   (t.notifyOnIncrease || t.notifyOnDecrease)
