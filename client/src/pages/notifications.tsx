@@ -854,7 +854,7 @@ export default function Notifications() {
 
   // Sortierung für aktive Alarmierungen
   type AlarmSortOption = 'neueste' | 'älteste' | 'dringlichkeit';
-  const [alarmSortOption, setAlarmSortOption] = useState<AlarmSortOption>('neueste');
+  const [alarmSortOption, setAlarmSortOption] = useState<AlarmSortOption>('dringlichkeit');
 
   // Sortierte Alarme basierend auf ausgewählter Option
   const sortedActiveAlarms = [...activeAlarms].sort((a, b) => {
