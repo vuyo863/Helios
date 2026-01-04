@@ -1064,6 +1064,26 @@ export default function Notifications() {
     }
   };
 
+  // Ermittle höchste Gefahrstufe der aktiven Alarme für die Section-Umrandung
+  const getHighestAlarmLevel = (): AlarmLevel | null => {
+    if (activeAlarms.length === 0) return null;
+    
+    const priority: AlarmLevel[] = ['sehr_gefährlich', 'gefährlich', 'achtung', 'harmlos'];
+    for (const level of priority) {
+      if (activeAlarms.some(alarm => alarm.alarmLevel === level)) {
+        return level;
+      }
+    }
+    return 'harmlos';
+  };
+
+  // Farbe für die "Aktive Alarmierungen" Section-Umrandung
+  const getActiveAlarmsSectionColor = (): string => {
+    const highestLevel = getHighestAlarmLevel();
+    if (!highestLevel) return '#0891B2'; // Cyan/Neonblau wenn keine Alarme
+    return getAlarmLevelColor(highestLevel);
+  };
+
   const toggleEditMode = (trendPriceId: string) => {
     setEditMode(prev => ({
       ...prev,
@@ -1283,8 +1303,8 @@ export default function Notifications() {
           </div>
         </div>
 
-        {/* Aktive Alarmierungen - Immer sichtbar */}
-        <Card className="ring-2 ring-cyan-600 mb-6">
+        {/* Aktive Alarmierungen - Immer sichtbar, Umrandung passt sich höchster Gefahrstufe an */}
+        <Card className="ring-2 mb-6" style={{ '--tw-ring-color': getActiveAlarmsSectionColor() } as React.CSSProperties}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               Aktive Alarmierungen ({activeAlarms.length})
