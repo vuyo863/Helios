@@ -978,13 +978,17 @@ export default function Notifications() {
     // Lösche den Schwellenwert
     const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
 
-    setTrendPriceSettings(prev => ({
-      ...prev,
+    // Berechne neuen State und speichere direkt im localStorage
+    const newSettings = {
+      ...trendPriceSettings,
       [trendPriceId]: {
-        ...prev[trendPriceId],
+        ...trendPriceSettings[trendPriceId],
         thresholds: updatedThresholds
       }
-    }));
+    };
+
+    setTrendPriceSettings(newSettings);
+    localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
 
     toast({
       title: "Schwellenwert gelöscht",
@@ -1002,13 +1006,17 @@ export default function Notifications() {
       (t.notifyOnIncrease || t.notifyOnDecrease)
     ).length;
 
-    setTrendPriceSettings(prev => ({
-      ...prev,
+    // Berechne neuen State und speichere direkt im localStorage
+    const newSettings = {
+      ...trendPriceSettings,
       [trendPriceId]: {
-        ...prev[trendPriceId],
+        ...trendPriceSettings[trendPriceId],
         thresholds: []
       }
-    }));
+    };
+
+    setTrendPriceSettings(newSettings);
+    localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
 
     toast({
       title: "Alle Schwellenwerte gelöscht",
