@@ -801,6 +801,9 @@ export default function Notifications() {
   const [notificationSortOrder, setNotificationSortOrder] = useState<'asc' | 'desc'>('asc');
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState<Record<string, boolean>>({});
+  
+  // Ref to track if save button was clicked (to distinguish from X/ESC close)
+  const isSavingThresholdRef = useRef(false);
 
   // Save watchlist to localStorage whenever it changes
   useEffect(() => {
@@ -1063,30 +1066,22 @@ export default function Notifications() {
     }));
   };
 
-  // Helper: Remove incomplete threshold when dialog is closed without saving
-  const cleanupIncompleteThreshold = (trendPriceId: string, thresholdId: string | null) => {
+  // Helper: Remove unsaved threshold when dialog is closed without clicking "Speichern"
+  // WICHTIG: This ALWAYS removes the threshold - it's only called when user closes via X/ESC, not via Save
+  const cleanupUnsavedThreshold = (trendPriceId: string, thresholdId: string | null) => {
     if (!thresholdId) return;
     
     const settings = trendPriceSettings[trendPriceId];
     if (!settings) return;
     
-    const threshold = settings.thresholds.find(t => t.id === thresholdId);
-    if (!threshold) return;
-    
-    // Check if threshold is incomplete (no value or no notification type selected)
-    const hasValue = threshold.threshold && threshold.threshold.trim() !== '';
-    const hasNotification = threshold.notifyOnIncrease || threshold.notifyOnDecrease;
-    
-    if (!hasValue || !hasNotification) {
-      // Remove the incomplete threshold
-      setTrendPriceSettings(prev => ({
-        ...prev,
-        [trendPriceId]: {
-          ...prev[trendPriceId],
-          thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== thresholdId)
-        }
-      }));
-    }
+    // Remove the threshold since user did not click "Speichern"
+    setTrendPriceSettings(prev => ({
+      ...prev,
+      [trendPriceId]: {
+        ...prev[trendPriceId],
+        thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== thresholdId)
+      }
+    }));
   };
 
   const getTrendPrice = (id: string) => {
@@ -1592,8 +1587,12 @@ export default function Notifications() {
                                       open={editDialogOpen[`new-${trendPriceId}`]}
                                       onOpenChange={(open) => {
                                         if (!open) {
-                                          // Dialog is closing - cleanup incomplete threshold
-                                          cleanupIncompleteThreshold(trendPriceId, editingThresholdId);
+                                          // Dialog is closing - check if it was via Save or via X/ESC
+                                          if (!isSavingThresholdRef.current) {
+                                            // User closed via X/ESC - remove unsaved threshold
+                                            cleanupUnsavedThreshold(trendPriceId, editingThresholdId);
+                                          }
+                                          isSavingThresholdRef.current = false;
                                           setEditingThresholdId(null);
                                         }
                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: open }));
@@ -1816,7 +1815,8 @@ export default function Notifications() {
                                                           return;
                                                         }
 
-                                                        // WICHTIG: Only save to localStorage when user explicitly clicks Speichern
+                                                        // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
+                                                        isSavingThresholdRef.current = true;
                                                         saveSettingsToStorage();
                                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
                                                         setEditingThresholdId(null);
@@ -1914,8 +1914,12 @@ export default function Notifications() {
                                   open={editDialogOpen[`add-${trendPriceId}`]}
                                   onOpenChange={(open) => {
                                     if (!open) {
-                                      // Dialog is closing - cleanup incomplete threshold
-                                      cleanupIncompleteThreshold(trendPriceId, editingThresholdId);
+                                      // Dialog is closing - check if it was via Save or via X/ESC
+                                      if (!isSavingThresholdRef.current) {
+                                        // User closed via X/ESC - remove unsaved threshold
+                                        cleanupUnsavedThreshold(trendPriceId, editingThresholdId);
+                                      }
+                                      isSavingThresholdRef.current = false;
                                       setEditingThresholdId(null);
                                     }
                                     setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: open }));
@@ -2094,7 +2098,8 @@ export default function Notifications() {
                                               </div>
                                               <Button
                                                 onClick={() => {
-                                                  // WICHTIG: Only save to localStorage when user explicitly clicks Speichern
+                                                  // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
+                                                  isSavingThresholdRef.current = true;
                                                   saveSettingsToStorage();
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
