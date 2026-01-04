@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, ArrowUp, ArrowDown } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -851,6 +852,25 @@ export default function Notifications() {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
   }, [activeAlarms]);
 
+  // Sortierung für aktive Alarmierungen
+  type AlarmSortOption = 'neueste' | 'älteste' | 'dringlichkeit';
+  const [alarmSortOption, setAlarmSortOption] = useState<AlarmSortOption>('neueste');
+
+  // Sortierte Alarme basierend auf ausgewählter Option
+  const sortedActiveAlarms = [...activeAlarms].sort((a, b) => {
+    switch (alarmSortOption) {
+      case 'neueste':
+        return new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime();
+      case 'älteste':
+        return new Date(a.triggeredAt).getTime() - new Date(b.triggeredAt).getTime();
+      case 'dringlichkeit':
+        const priorityOrder: AlarmLevel[] = ['sehr_gefährlich', 'gefährlich', 'achtung', 'harmlos'];
+        return priorityOrder.indexOf(a.alarmLevel) - priorityOrder.indexOf(b.alarmLevel);
+      default:
+        return 0;
+    }
+  });
+
   // Gefilterte Vorschläge basierend auf Suchanfrage und Market Type
   const allPairsForCurrentMarket = marketType === 'spot' ? allBinancePairs : allBinanceFuturesPairs;
   const filteredSuggestions = searchQuery.trim() === '' 
@@ -1314,19 +1334,34 @@ export default function Notifications() {
           style={{ '--tw-ring-color': getActiveAlarmsSectionColor(), '--ring-color': getActiveAlarmsSectionColor() } as React.CSSProperties}
         >
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              Aktive Alarmierungen ({activeAlarms.length})
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                Aktive Alarmierungen ({activeAlarms.length})
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sortieren:</span>
+                <Select value={alarmSortOption} onValueChange={(value) => setAlarmSortOption(value as AlarmSortOption)}>
+                  <SelectTrigger className="w-[140px] h-8" data-testid="select-alarm-sort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="neueste" data-testid="sort-option-neueste">Neueste</SelectItem>
+                    <SelectItem value="älteste" data-testid="sort-option-älteste">Älteste</SelectItem>
+                    <SelectItem value="dringlichkeit" data-testid="sort-option-dringlichkeit">Dringlichkeit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[220px]">
-              {activeAlarms.length === 0 ? (
+              {sortedActiveAlarms.length === 0 ? (
                 <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
                   Keine aktiven Alarmierungen
                 </div>
               ) : (
                 <div className="space-y-2 pr-4">
-                  {activeAlarms.map((alarm) => (
+                  {sortedActiveAlarms.map((alarm) => (
                     <div
                       key={alarm.id}
                       className="flex items-start justify-between p-3 rounded-lg border gap-3"
