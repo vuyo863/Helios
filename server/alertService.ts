@@ -357,3 +357,146 @@ export function evaluateThresholdWithComma(params: PriceCheckParams): AlertResul
   };
   return evaluateThresholdAlert({ ...params, threshold: normalizedThreshold });
 }
+
+// ==========================================
+// Persistence Logic Functions
+// For testing localStorage-like persistence
+// ==========================================
+
+/**
+ * Simulate removing a threshold and returning new state + serialized data
+ * This mirrors the frontend removeThreshold logic for testing
+ */
+export function removeThresholdWithPersistence(
+  settingsMap: Record<string, TrendPriceSettings>,
+  trendPriceId: string,
+  thresholdId: string
+): { newState: Record<string, TrendPriceSettings>; serialized: string } {
+  const currentSettings = settingsMap[trendPriceId];
+  if (!currentSettings) {
+    return { newState: settingsMap, serialized: JSON.stringify(settingsMap) };
+  }
+
+  const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
+  const newState = {
+    ...settingsMap,
+    [trendPriceId]: {
+      ...currentSettings,
+      thresholds: updatedThresholds
+    }
+  };
+
+  return { newState, serialized: JSON.stringify(newState) };
+}
+
+/**
+ * Simulate deleting all thresholds for a pair and returning new state + serialized data
+ * This mirrors the frontend deleteAllThresholdsForPair logic for testing
+ */
+export function deleteAllThresholdsWithPersistence(
+  settingsMap: Record<string, TrendPriceSettings>,
+  trendPriceId: string
+): { newState: Record<string, TrendPriceSettings>; serialized: string } {
+  const currentSettings = settingsMap[trendPriceId];
+  if (!currentSettings) {
+    return { newState: settingsMap, serialized: JSON.stringify(settingsMap) };
+  }
+
+  const newState = {
+    ...settingsMap,
+    [trendPriceId]: {
+      ...currentSettings,
+      thresholds: []
+    }
+  };
+
+  return { newState, serialized: JSON.stringify(newState) };
+}
+
+/**
+ * Deserialize settings from storage (simulates localStorage.getItem + JSON.parse)
+ */
+export function deserializeSettings(serialized: string): Record<string, TrendPriceSettings> | null {
+  try {
+    return JSON.parse(serialized);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Verify that serialized state matches expected state
+ */
+export function verifyPersistedState(
+  serialized: string,
+  expectedThresholdCount: number,
+  trendPriceId: string
+): { isValid: boolean; actualCount: number; message: string } {
+  const parsed = deserializeSettings(serialized);
+  if (!parsed) {
+    return { isValid: false, actualCount: -1, message: 'Failed to parse serialized state' };
+  }
+
+  const settings = parsed[trendPriceId];
+  if (!settings) {
+    return { isValid: expectedThresholdCount === 0, actualCount: 0, message: 'Trading pair not found' };
+  }
+
+  const actualCount = settings.thresholds.length;
+  const isValid = actualCount === expectedThresholdCount;
+
+  return {
+    isValid,
+    actualCount,
+    message: isValid 
+      ? `Persisted correctly: ${actualCount} thresholds` 
+      : `Mismatch: expected ${expectedThresholdCount}, got ${actualCount}`
+  };
+}
+
+/**
+ * Verify threshold was deleted from persisted state
+ */
+export function verifyThresholdDeleted(
+  serialized: string,
+  trendPriceId: string,
+  thresholdId: string
+): boolean {
+  const parsed = deserializeSettings(serialized);
+  if (!parsed || !parsed[trendPriceId]) return true;
+  return !parsed[trendPriceId].thresholds.some(t => t.id === thresholdId);
+}
+
+/**
+ * Simulate adding a threshold (for testing incomplete add scenarios)
+ */
+export function addThresholdToSettings(
+  settingsMap: Record<string, TrendPriceSettings>,
+  trendPriceId: string,
+  threshold: ThresholdConfig
+): Record<string, TrendPriceSettings> {
+  const currentSettings = settingsMap[trendPriceId] || { trendPriceId, thresholds: [] };
+  return {
+    ...settingsMap,
+    [trendPriceId]: {
+      ...currentSettings,
+      thresholds: [...currentSettings.thresholds, threshold]
+    }
+  };
+}
+
+/**
+ * Check if a threshold is "complete" (has value and notification type selected)
+ */
+export function isThresholdComplete(threshold: ThresholdConfig): boolean {
+  const hasValue = typeof threshold.threshold === 'string' && threshold.threshold.trim() !== '';
+  const hasNotification = threshold.notifyOnIncrease || threshold.notifyOnDecrease;
+  return hasValue && hasNotification;
+}
+
+/**
+ * Filter incomplete thresholds (for cancel dialog logic)
+ */
+export function filterIncompleteThresholds(thresholds: ThresholdConfig[]): ThresholdConfig[] {
+  return thresholds.filter(t => isThresholdComplete(t));
+}

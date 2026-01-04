@@ -24,6 +24,14 @@ import {
   formatThresholdDisplay,
   isValidThresholdInput,
   evaluateThresholdWithComma,
+  removeThresholdWithPersistence,
+  deleteAllThresholdsWithPersistence,
+  deserializeSettings,
+  verifyPersistedState,
+  verifyThresholdDeleted,
+  addThresholdToSettings,
+  isThresholdComplete,
+  filterIncompleteThresholds,
   ThresholdConfig,
   AlertResult,
   TrendPriceSettings
@@ -599,5 +607,216 @@ describe('Alert Service - German Decimal Format (Comma) Tests', () => {
     
     expect(result.shouldTrigger).toBe(true);
     expect(result.triggerType).toBe('decrease');
+  });
+});
+
+// ==========================================
+// Threshold Deletion Persistence Tests
+// ==========================================
+describe('Alert Service - Threshold Deletion Persistence Tests', () => {
+  
+  // TEST 1: Remove single threshold and verify persistence
+  it('should persist deletion of single threshold correctly', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'ETHUSDT': {
+        trendPriceId: 'ETHUSDT',
+        thresholds: [
+          createThreshold('t1', '3000', { notifyOnIncrease: true }),
+          createThreshold('t2', '3500', { notifyOnDecrease: true }),
+          createThreshold('t3', '4000', { notifyOnIncrease: true })
+        ]
+      }
+    };
+
+    const { newState, serialized } = removeThresholdWithPersistence(settingsMap, 'ETHUSDT', 't2');
+
+    expect(newState['ETHUSDT'].thresholds.length).toBe(2);
+    expect(verifyThresholdDeleted(serialized, 'ETHUSDT', 't2')).toBe(true);
+    expect(verifyPersistedState(serialized, 2, 'ETHUSDT').isValid).toBe(true);
+  });
+
+  // TEST 2: Delete all thresholds and verify persistence
+  it('should persist deletion of all thresholds correctly', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': {
+        trendPriceId: 'BTCUSDT',
+        thresholds: [
+          createThreshold('t1', '50000', { notifyOnIncrease: true }),
+          createThreshold('t2', '55000', { notifyOnDecrease: true })
+        ]
+      }
+    };
+
+    const { newState, serialized } = deleteAllThresholdsWithPersistence(settingsMap, 'BTCUSDT');
+
+    expect(newState['BTCUSDT'].thresholds.length).toBe(0);
+    expect(verifyPersistedState(serialized, 0, 'BTCUSDT').isValid).toBe(true);
+  });
+
+  // TEST 3: Deserialized state matches original deletion
+  it('should deserialize persisted state after deletion correctly', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'XRPUSDT': {
+        trendPriceId: 'XRPUSDT',
+        thresholds: [
+          createThreshold('t1', '0.5', { notifyOnIncrease: true }),
+          createThreshold('t2', '0.6', { notifyOnDecrease: true })
+        ]
+      }
+    };
+
+    const { serialized } = removeThresholdWithPersistence(settingsMap, 'XRPUSDT', 't1');
+    const deserialized = deserializeSettings(serialized);
+
+    expect(deserialized).not.toBeNull();
+    expect(deserialized!['XRPUSDT'].thresholds.length).toBe(1);
+    expect(deserialized!['XRPUSDT'].thresholds[0].id).toBe('t2');
+  });
+
+  // TEST 4: Multiple deletions persist sequentially
+  it('should persist multiple sequential deletions correctly', () => {
+    let settingsMap: Record<string, TrendPriceSettings> = {
+      'ADAUSDT': {
+        trendPriceId: 'ADAUSDT',
+        thresholds: [
+          createThreshold('t1', '0.3', { notifyOnIncrease: true }),
+          createThreshold('t2', '0.4', { notifyOnDecrease: true }),
+          createThreshold('t3', '0.5', { notifyOnIncrease: true })
+        ]
+      }
+    };
+
+    // Delete first threshold
+    let result = removeThresholdWithPersistence(settingsMap, 'ADAUSDT', 't1');
+    settingsMap = result.newState;
+    expect(verifyPersistedState(result.serialized, 2, 'ADAUSDT').isValid).toBe(true);
+
+    // Delete second threshold
+    result = removeThresholdWithPersistence(settingsMap, 'ADAUSDT', 't2');
+    settingsMap = result.newState;
+    expect(verifyPersistedState(result.serialized, 1, 'ADAUSDT').isValid).toBe(true);
+
+    // Delete last threshold
+    result = removeThresholdWithPersistence(settingsMap, 'ADAUSDT', 't3');
+    expect(verifyPersistedState(result.serialized, 0, 'ADAUSDT').isValid).toBe(true);
+  });
+
+  // TEST 5: Deletion from non-existent pair returns original state
+  it('should return unchanged state when deleting from non-existent pair', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'BTCUSDT': {
+        trendPriceId: 'BTCUSDT',
+        thresholds: [createThreshold('t1', '50000', { notifyOnIncrease: true })]
+      }
+    };
+
+    const { newState, serialized } = removeThresholdWithPersistence(settingsMap, 'NONEXISTENT', 't1');
+
+    expect(newState).toEqual(settingsMap);
+    expect(JSON.parse(serialized)).toEqual(settingsMap);
+  });
+
+  // TEST 6: Trading pair entry persists after all thresholds deleted
+  it('should keep trading pair entry after all thresholds deleted', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'SOLUSDT': {
+        trendPriceId: 'SOLUSDT',
+        thresholds: [createThreshold('t1', '100', { notifyOnIncrease: true })]
+      }
+    };
+
+    const { serialized } = deleteAllThresholdsWithPersistence(settingsMap, 'SOLUSDT');
+    const deserialized = deserializeSettings(serialized);
+
+    expect(deserialized).not.toBeNull();
+    expect('SOLUSDT' in deserialized!).toBe(true);
+    expect(deserialized!['SOLUSDT'].trendPriceId).toBe('SOLUSDT');
+    expect(deserialized!['SOLUSDT'].thresholds.length).toBe(0);
+  });
+
+  // TEST 7: Verify persisted state detects mismatch
+  it('should detect mismatch in persisted state', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'DOTUSDT': {
+        trendPriceId: 'DOTUSDT',
+        thresholds: [
+          createThreshold('t1', '5', { notifyOnIncrease: true }),
+          createThreshold('t2', '6', { notifyOnDecrease: true })
+        ]
+      }
+    };
+
+    const { serialized } = removeThresholdWithPersistence(settingsMap, 'DOTUSDT', 't1');
+
+    // Expect 1 threshold, but check for wrong count
+    const result = verifyPersistedState(serialized, 5, 'DOTUSDT');
+    expect(result.isValid).toBe(false);
+    expect(result.actualCount).toBe(1);
+  });
+
+  // TEST 8: Deserialize invalid JSON returns null
+  it('should return null for invalid JSON', () => {
+    expect(deserializeSettings('not valid json')).toBeNull();
+    expect(deserializeSettings('')).toBeNull();
+    expect(deserializeSettings('{broken')).toBeNull();
+  });
+
+  // TEST 9: Add threshold to settings
+  it('should add threshold to settings correctly', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {
+      'LINKUSDT': {
+        trendPriceId: 'LINKUSDT',
+        thresholds: []
+      }
+    };
+
+    const newThreshold = createThreshold('new-t1', '15', { notifyOnIncrease: true });
+    const result = addThresholdToSettings(settingsMap, 'LINKUSDT', newThreshold);
+
+    expect(result['LINKUSDT'].thresholds.length).toBe(1);
+    expect(result['LINKUSDT'].thresholds[0].id).toBe('new-t1');
+  });
+
+  // TEST 10: Add threshold to non-existent pair creates new entry
+  it('should create new pair entry when adding threshold to non-existent pair', () => {
+    const settingsMap: Record<string, TrendPriceSettings> = {};
+
+    const newThreshold = createThreshold('t1', '100', { notifyOnIncrease: true });
+    const result = addThresholdToSettings(settingsMap, 'NEWPAIR', newThreshold);
+
+    expect('NEWPAIR' in result).toBe(true);
+    expect(result['NEWPAIR'].trendPriceId).toBe('NEWPAIR');
+    expect(result['NEWPAIR'].thresholds.length).toBe(1);
+  });
+
+  // TEST 11: isThresholdComplete checks value and notification
+  it('should correctly identify complete vs incomplete thresholds', () => {
+    const complete = createThreshold('c1', '100', { notifyOnIncrease: true });
+    const noValue = createThreshold('c2', '', { notifyOnIncrease: true });
+    const noNotification = createThreshold('c3', '100', { notifyOnIncrease: false, notifyOnDecrease: false });
+    const whitespaceValue = createThreshold('c4', '   ', { notifyOnIncrease: true });
+
+    expect(isThresholdComplete(complete)).toBe(true);
+    expect(isThresholdComplete(noValue)).toBe(false);
+    expect(isThresholdComplete(noNotification)).toBe(false);
+    expect(isThresholdComplete(whitespaceValue)).toBe(false);
+  });
+
+  // TEST 12: filterIncompleteThresholds removes incomplete ones
+  it('should filter out incomplete thresholds correctly', () => {
+    const thresholds = [
+      createThreshold('complete-1', '100', { notifyOnIncrease: true }),
+      createThreshold('incomplete-1', '', { notifyOnIncrease: true }),
+      createThreshold('complete-2', '200', { notifyOnDecrease: true }),
+      createThreshold('incomplete-2', '300', { notifyOnIncrease: false, notifyOnDecrease: false })
+    ];
+
+    const filtered = filterIncompleteThresholds(thresholds);
+
+    expect(filtered.length).toBe(2);
+    expect(filtered.map(t => t.id)).toContain('complete-1');
+    expect(filtered.map(t => t.id)).toContain('complete-2');
+    expect(filtered.map(t => t.id)).not.toContain('incomplete-1');
+    expect(filtered.map(t => t.id)).not.toContain('incomplete-2');
   });
 });

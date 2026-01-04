@@ -1063,6 +1063,32 @@ export default function Notifications() {
     }));
   };
 
+  // Helper: Remove incomplete threshold when dialog is closed without saving
+  const cleanupIncompleteThreshold = (trendPriceId: string, thresholdId: string | null) => {
+    if (!thresholdId) return;
+    
+    const settings = trendPriceSettings[trendPriceId];
+    if (!settings) return;
+    
+    const threshold = settings.thresholds.find(t => t.id === thresholdId);
+    if (!threshold) return;
+    
+    // Check if threshold is incomplete (no value or no notification type selected)
+    const hasValue = threshold.threshold && threshold.threshold.trim() !== '';
+    const hasNotification = threshold.notifyOnIncrease || threshold.notifyOnDecrease;
+    
+    if (!hasValue || !hasNotification) {
+      // Remove the incomplete threshold
+      setTrendPriceSettings(prev => ({
+        ...prev,
+        [trendPriceId]: {
+          ...prev[trendPriceId],
+          thresholds: prev[trendPriceId].thresholds.filter(t => t.id !== thresholdId)
+        }
+      }));
+    }
+  };
+
   const getTrendPrice = (id: string) => {
     // Search in available pairs first, then all pairs (both Spot and Futures)
     return availableTradingPairs.find(tp => tp.id === id) || 
@@ -1563,6 +1589,11 @@ export default function Notifications() {
                                     <Dialog
                                       open={editDialogOpen[`new-${trendPriceId}`]}
                                       onOpenChange={(open) => {
+                                        if (!open) {
+                                          // Dialog is closing - cleanup incomplete threshold
+                                          cleanupIncompleteThreshold(trendPriceId, editingThresholdId);
+                                          setEditingThresholdId(null);
+                                        }
                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: open }));
                                       }}
                                     >
@@ -1880,6 +1911,11 @@ export default function Notifications() {
                                 <Dialog
                                   open={editDialogOpen[`add-${trendPriceId}`]}
                                   onOpenChange={(open) => {
+                                    if (!open) {
+                                      // Dialog is closing - cleanup incomplete threshold
+                                      cleanupIncompleteThreshold(trendPriceId, editingThresholdId);
+                                      setEditingThresholdId(null);
+                                    }
                                     setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: open }));
                                   }}
                                 >
