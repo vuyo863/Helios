@@ -1084,6 +1084,11 @@ export default function Notifications() {
     return getAlarmLevelColor(highestLevel);
   };
 
+  // Prüft ob die Section blinken soll (nur bei "Sehr Gefährlich")
+  const shouldBlinkActiveAlarmsSection = (): boolean => {
+    return getHighestAlarmLevel() === 'sehr_gefährlich';
+  };
+
   const toggleEditMode = (trendPriceId: string) => {
     setEditMode(prev => ({
       ...prev,
@@ -1304,7 +1309,10 @@ export default function Notifications() {
         </div>
 
         {/* Aktive Alarmierungen - Immer sichtbar, Umrandung passt sich höchster Gefahrstufe an */}
-        <Card className="ring-2 mb-6" style={{ '--tw-ring-color': getActiveAlarmsSectionColor() } as React.CSSProperties}>
+        <Card 
+          className={cn("ring-2 mb-6", shouldBlinkActiveAlarmsSection() && "animate-pulse-ring")}
+          style={{ '--tw-ring-color': getActiveAlarmsSectionColor(), '--ring-color': getActiveAlarmsSectionColor() } as React.CSSProperties}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               Aktive Alarmierungen ({activeAlarms.length})

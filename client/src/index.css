@@ -316,6 +316,22 @@ input[type="number"].no-spinner {
   animation: compareEyeBlink 2.4s ease-in-out forwards;
 }
 
+/* Pulse Ring Animation - Rotes Warnblinken für "Sehr Gefährlich" Alarme */
+@keyframes pulseRing {
+  0%, 100% { 
+    box-shadow: 0 0 0 2px var(--ring-color, #EF4444);
+    opacity: 1;
+  }
+  50% { 
+    box-shadow: 0 0 12px 4px var(--ring-color, #EF4444);
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulseRing 2.5s ease-in-out infinite;
+}
+
 @media print {
   @page {
     margin: 2cm;
