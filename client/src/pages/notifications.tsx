@@ -2805,15 +2805,6 @@ export default function Notifications() {
                             </div>
                           </DialogContent>
                         </Dialog>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteAlarmLevel(level)}
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          data-testid={`button-delete-alarm-level-${level}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
 
