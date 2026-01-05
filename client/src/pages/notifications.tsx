@@ -2557,7 +2557,7 @@ export default function Notifications() {
         </Card>
 
         {/* Alarmierungsstufen konfigurieren Section */}
-        <Card className="ring-2 ring-cyan-600" style={{ overflow: 'visible' }}>
+        <Card className="ring-2 ring-cyan-600">
           <CardHeader>
             <CardTitle className="text-xl">Alarmierungsstufen konfigurieren</CardTitle>
           </CardHeader>
@@ -2565,7 +2565,6 @@ export default function Notifications() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(Object.keys(alarmLevelConfigs) as AlarmLevel[]).map((level) => {
                 const config = alarmLevelConfigs[level];
-                const isEditing = alarmLevelEditMode[level];
                 const color = getAlarmLevelColor(level);
 
                 return (
@@ -2576,224 +2575,290 @@ export default function Notifications() {
                         <h4 className="font-semibold">{getAlarmLevelLabel(level)}</h4>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleAlarmLevelEdit(level)}
-                          className="h-8 w-8"
-                        >
-                          {isEditing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                        </Button>
+                        {/* Edit Button - Opens Dialog */}
+                        <Dialog open={alarmLevelEditMode[level]} onOpenChange={(open) => {
+                          if (!open) {
+                            // Beim Schließen ohne Speichern: Config zurücksetzen auf localStorage
+                            const stored = localStorage.getItem('alarm-level-configs');
+                            if (stored) {
+                              try {
+                                const parsed = JSON.parse(stored);
+                                if (parsed[level]) {
+                                  setAlarmLevelConfigs(prev => ({
+                                    ...prev,
+                                    [level]: parsed[level]
+                                  }));
+                                }
+                              } catch {}
+                            }
+                          }
+                          setAlarmLevelEditMode(prev => ({ ...prev, [level]: open }));
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              data-testid={`button-edit-alarm-level-${level}`}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded" style={{ backgroundColor: color }}></div>
+                                {getAlarmLevelLabel(level)} bearbeiten
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div>
+                                <Label className="text-sm font-medium mb-2 block">Benachrichtigungskanäle</Label>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${level}-push`} className="text-sm cursor-pointer">Push-Benachrichtigung</Label>
+                                    <Switch
+                                      id={`${level}-push`}
+                                      checked={config.channels.push}
+                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'push', checked)}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${level}-email`} className="text-sm cursor-pointer">E-Mail</Label>
+                                    <Switch
+                                      id={`${level}-email`}
+                                      checked={config.channels.email}
+                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'email', checked)}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${level}-sms`} className="text-sm cursor-pointer">SMS</Label>
+                                    <Switch
+                                      id={`${level}-sms`}
+                                      checked={config.channels.sms}
+                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'sms', checked)}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${level}-webhook`} className="text-sm cursor-pointer">Webhook</Label>
+                                    <Switch
+                                      id={`${level}-webhook`}
+                                      checked={config.channels.webhook}
+                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webhook', checked)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="pt-2 border-t">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <Label htmlFor={`${level}-approval`} className="text-sm font-medium cursor-pointer">
+                                      Approval erforderlich
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                      Alarm muss manuell bestätigt werden
+                                    </p>
+                                  </div>
+                                  <Switch
+                                    id={`${level}-approval`}
+                                    checked={config.requiresApproval}
+                                    onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'requiresApproval', checked)}
+                                  />
+                                </div>
+
+                                {/* Wiederholung */}
+                                <div className="space-y-2 mb-3">
+                                  <Label className="text-sm font-medium">Wiederholung</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={config.repeatCount === 'infinite' ? '' : config.repeatCount}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value);
+                                        if (!isNaN(val) && val > 0) {
+                                          updateAlarmLevelConfig(level, 'repeatCount', val);
+                                        }
+                                      }}
+                                      placeholder="Anzahl"
+                                      className="w-24"
+                                      disabled={config.repeatCount === 'infinite'}
+                                    />
+                                    <Button
+                                      variant={config.repeatCount === 'infinite' ? 'default' : 'outline'}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (config.repeatCount === 'infinite') {
+                                          updateAlarmLevelConfig(level, 'repeatCount', 1);
+                                        } else {
+                                          updateAlarmLevelConfig(level, 'repeatCount', 'infinite');
+                                          if (!config.requiresApproval) {
+                                            updateAlarmLevelConfig(level, 'requiresApproval', true);
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      ∞ Unendlich
+                                    </Button>
+                                    <span className="text-xs text-muted-foreground">
+                                      {config.repeatCount === 'infinite' ? 'Bis Approval' : `${config.repeatCount}x`}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Sequenz */}
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-medium">Sequenz (Pause zwischen Wiederholungen)</Label>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                      <Label htmlFor={`${level}-hours`} className="text-xs text-muted-foreground">Stunden</Label>
+                                      <Input
+                                        id={`${level}-hours`}
+                                        type="number"
+                                        min="0"
+                                        value={config.sequenceHours}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          if (!isNaN(val) && val >= 0) {
+                                            updateAlarmLevelConfig(level, 'sequenceHours', val);
+                                          }
+                                        }}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`${level}-minutes`} className="text-xs text-muted-foreground">Minuten</Label>
+                                      <Input
+                                        id={`${level}-minutes`}
+                                        type="number"
+                                        min="0"
+                                        max="59"
+                                        value={config.sequenceMinutes}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          if (!isNaN(val) && val >= 0 && val <= 59) {
+                                            updateAlarmLevelConfig(level, 'sequenceMinutes', val);
+                                          }
+                                        }}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`${level}-seconds`} className="text-xs text-muted-foreground">Sekunden</Label>
+                                      <Input
+                                        id={`${level}-seconds`}
+                                        type="number"
+                                        min="0"
+                                        max="59"
+                                        value={config.sequenceSeconds}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          if (!isNaN(val) && val >= 0 && val <= 59) {
+                                            updateAlarmLevelConfig(level, 'sequenceSeconds', val);
+                                          }
+                                        }}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => {
+                                  // Cancel: Restore from localStorage
+                                  const stored = localStorage.getItem('alarm-level-configs');
+                                  if (stored) {
+                                    try {
+                                      const parsed = JSON.parse(stored);
+                                      if (parsed[level]) {
+                                        setAlarmLevelConfigs(prev => ({
+                                          ...prev,
+                                          [level]: parsed[level]
+                                        }));
+                                      }
+                                    } catch {}
+                                  }
+                                  setAlarmLevelEditMode(prev => ({ ...prev, [level]: false }));
+                                }}
+                                data-testid={`button-cancel-alarm-level-${level}`}
+                              >
+                                Abbrechen
+                              </Button>
+                              <Button 
+                                onClick={() => {
+                                  // Save to localStorage
+                                  localStorage.setItem('alarm-level-configs', JSON.stringify(alarmLevelConfigs));
+                                  setAlarmLevelEditMode(prev => ({ ...prev, [level]: false }));
+                                  toast({
+                                    title: "Gespeichert",
+                                    description: `Einstellungen für "${getAlarmLevelLabel(level)}" wurden gespeichert.`,
+                                  });
+                                }}
+                                data-testid={`button-save-alarm-level-${level}`}
+                              >
+                                Speichern
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => deleteAlarmLevel(level)}
                           className="h-8 w-8 text-destructive hover:text-destructive"
+                          data-testid={`button-delete-alarm-level-${level}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
 
-                    {isEditing ? (
-                      <div className="space-y-3">
-                        <div>
-                          <Label className="text-sm font-medium mb-2 block">Benachrichtigungskanäle</Label>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${level}-push`} className="text-sm cursor-pointer">Push-Benachrichtigung</Label>
-                              <Switch
-                                id={`${level}-push`}
-                                checked={config.channels.push}
-                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'push', checked)}
-                              />
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${level}-email`} className="text-sm cursor-pointer">E-Mail</Label>
-                              <Switch
-                                id={`${level}-email`}
-                                checked={config.channels.email}
-                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'email', checked)}
-                              />
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${level}-sms`} className="text-sm cursor-pointer">SMS</Label>
-                              <Switch
-                                id={`${level}-sms`}
-                                checked={config.channels.sms}
-                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'sms', checked)}
-                              />
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${level}-webhook`} className="text-sm cursor-pointer">Webhook</Label>
-                              <Switch
-                                id={`${level}-webhook`}
-                                checked={config.channels.webhook}
-                                onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webhook', checked)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <Label htmlFor={`${level}-approval`} className="text-sm font-medium cursor-pointer">
-                                Approval erforderlich
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                Alarm muss manuell bestätigt werden
-                              </p>
-                            </div>
-                            <Switch
-                              id={`${level}-approval`}
-                              checked={config.requiresApproval}
-                              onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'requiresApproval', checked)}
-                            />
-                          </div>
-
-                          {/* Wiederholung */}
-                          <div className="space-y-2 mb-3">
-                            <Label className="text-sm font-medium">Wiederholung</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                min="1"
-                                value={config.repeatCount === 'infinite' ? '' : config.repeatCount}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value);
-                                  if (!isNaN(val) && val > 0) {
-                                    updateAlarmLevelConfig(level, 'repeatCount', val);
-                                  }
-                                }}
-                                placeholder="Anzahl"
-                                className="w-24"
-                                disabled={config.repeatCount === 'infinite'}
-                              />
-                              <Button
-                                variant={config.repeatCount === 'infinite' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => {
-                                  if (config.repeatCount === 'infinite') {
-                                    updateAlarmLevelConfig(level, 'repeatCount', 1);
-                                  } else {
-                                    updateAlarmLevelConfig(level, 'repeatCount', 'infinite');
-                                    // Automatisch Approval erforderlich aktivieren bei Unendlich
-                                    if (!config.requiresApproval) {
-                                      updateAlarmLevelConfig(level, 'requiresApproval', true);
-                                    }
-                                  }
-                                }}
-                              >
-                                ∞ Unendlich
-                              </Button>
-                              <span className="text-xs text-muted-foreground">
-                                {config.repeatCount === 'infinite' ? 'Bis Approval' : `${config.repeatCount}x`}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Sequenz (Pause zwischen Wiederholungen) */}
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">Sequenz (Pause zwischen Wiederholungen)</Label>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <Label htmlFor={`${level}-hours`} className="text-xs text-muted-foreground">Stunden</Label>
-                                <Input
-                                  id={`${level}-hours`}
-                                  type="number"
-                                  min="0"
-                                  value={config.sequenceHours}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    if (!isNaN(val) && val >= 0) {
-                                      updateAlarmLevelConfig(level, 'sequenceHours', val);
-                                    }
-                                  }}
-                                  className="text-sm"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor={`${level}-minutes`} className="text-xs text-muted-foreground">Minuten</Label>
-                                <Input
-                                  id={`${level}-minutes`}
-                                  type="number"
-                                  min="0"
-                                  max="59"
-                                  value={config.sequenceMinutes}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    if (!isNaN(val) && val >= 0 && val <= 59) {
-                                      updateAlarmLevelConfig(level, 'sequenceMinutes', val);
-                                    }
-                                  }}
-                                  className="text-sm"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor={`${level}-seconds`} className="text-xs text-muted-foreground">Sekunden</Label>
-                                <Input
-                                  id={`${level}-seconds`}
-                                  type="number"
-                                  min="0"
-                                  max="59"
-                                  value={config.sequenceSeconds}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    if (!isNaN(val) && val >= 0 && val <= 59) {
-                                      updateAlarmLevelConfig(level, 'sequenceSeconds', val);
-                                    }
-                                  }}
-                                  className="text-sm"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                    {/* Nur Zusammenfassung anzeigen - keine Inline-Bearbeitung mehr */}
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <span className="font-medium">Aktive Kanäle: </span>
+                        <span className="text-muted-foreground">
+                          {Object.entries(config.channels)
+                            .filter(([_, active]) => active)
+                            .map(([channel]) => {
+                              const channelNames: Record<string, string> = {
+                                push: 'Push',
+                                email: 'E-Mail',
+                                sms: 'SMS',
+                                webhook: 'Webhook'
+                              };
+                              return channelNames[channel];
+                            })
+                            .join(', ') || 'Keine'}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="text-sm">
-                          <span className="font-medium">Aktive Kanäle: </span>
-                          <span className="text-muted-foreground">
-                            {Object.entries(config.channels)
-                              .filter(([_, active]) => active)
-                              .map(([channel]) => {
-                                const channelNames: Record<string, string> = {
-                                  push: 'Push',
-                                  email: 'E-Mail',
-                                  sms: 'SMS',
-                                  webhook: 'Webhook'
-                                };
-                                return channelNames[channel];
-                              })
-                              .join(', ') || 'Keine'}
-                          </span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="font-medium">Approval: </span>
-                          <span className="text-muted-foreground">
-                            {config.requiresApproval ? 'Erforderlich' : 'Nicht erforderlich'}
-                          </span>
-                        </div>
-                        {config.requiresApproval && (
-                          <>
-                            <div className="text-sm">
-                              <span className="font-medium">Wiederholung: </span>
-                              <span className="text-muted-foreground">
-                                {config.repeatCount === 'infinite' ? '∞ (Bis Approval)' : `${config.repeatCount}x`}
-                              </span>
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-medium">Sequenz: </span>
-                              <span className="text-muted-foreground">
+                      <div className="text-sm">
+                        <span className="font-medium">Approval: </span>
+                        <span className="text-muted-foreground">
+                          {config.requiresApproval ? 'Erforderlich' : 'Nicht erforderlich'}
+                        </span>
+                      </div>
+                      {config.requiresApproval && (
+                        <>
+                          <div className="text-sm">
+                            <span className="font-medium">Wiederholung: </span>
+                            <span className="text-muted-foreground">
+                              {config.repeatCount === 'infinite' ? '∞ (Bis Approval)' : `${config.repeatCount}x`}
+                            </span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium">Sequenz: </span>
+                            <span className="text-muted-foreground">
                                 {config.sequenceHours}h {config.sequenceMinutes}m {config.sequenceSeconds}s
                               </span>
                             </div>
                           </>
                         )}
                       </div>
-                    )}
                   </div>
                 );
               })}
