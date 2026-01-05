@@ -1192,13 +1192,6 @@ export default function Notifications() {
     }));
   };
 
-  const deleteAlarmLevel = (level: AlarmLevel) => {
-    if (confirm(`Möchten Sie die Alarmierungsstufe "${getAlarmLevelLabel(level)}" wirklich löschen?`)) {
-      // In production, this would remove the level from the config
-      console.log(`Alarmierungsstufe ${level} gelöscht`);
-    }
-  };
-
   const approveAlarm = (alarmId: string) => {
     setActiveAlarms(prev => {
       const updated = prev.filter(alarm => alarm.id !== alarmId);
