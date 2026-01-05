@@ -2817,7 +2817,7 @@ export default function Notifications() {
                       </div>
                     </div>
 
-                    {/* Nur Zusammenfassung anzeigen - keine Inline-Bearbeitung mehr */}
+                    {/* Zusammenfassung - immer 4 Zeilen für konstante Höhe */}
                     <div className="space-y-2">
                       <div className="text-sm">
                         <span className="font-medium">Aktive Kanäle: </span>
@@ -2842,23 +2842,20 @@ export default function Notifications() {
                           {config.requiresApproval ? 'Erforderlich' : 'Nicht erforderlich'}
                         </span>
                       </div>
-                      {config.requiresApproval && (
-                        <>
-                          <div className="text-sm">
-                            <span className="font-medium">Wiederholung: </span>
-                            <span className="text-muted-foreground">
-                              {config.repeatCount === 'infinite' ? '∞ (Bis Approval)' : `${config.repeatCount}x`}
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Sequenz: </span>
-                            <span className="text-muted-foreground">
-                                {config.sequenceHours}h {config.sequenceMinutes}m {config.sequenceSeconds}s
-                              </span>
-                            </div>
-                          </>
-                        )}
+                      {/* Immer alle 4 Zeilen rendern für konstante Höhe - unsichtbar wenn nicht zutreffend */}
+                      <div className="text-sm" style={{ visibility: config.requiresApproval ? 'visible' : 'hidden' }}>
+                        <span className="font-medium">Wiederholung: </span>
+                        <span className="text-muted-foreground">
+                          {config.repeatCount === 'infinite' ? '∞ (Bis Approval)' : `${config.repeatCount}x`}
+                        </span>
                       </div>
+                      <div className="text-sm" style={{ visibility: config.requiresApproval ? 'visible' : 'hidden' }}>
+                        <span className="font-medium">Sequenz: </span>
+                        <span className="text-muted-foreground">
+                          {config.sequenceHours}h {config.sequenceMinutes}m {config.sequenceSeconds}s
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
