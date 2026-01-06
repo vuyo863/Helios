@@ -104,7 +104,7 @@ function App() {
     if (oneSignalInitialized) return;
 
     OneSignal.init({
-      appId: '6f15f4f1-93dc-491f-ba4a-c78354f46858',
+      appId: import.meta.env.VITE_ONESIGNAL_APP_ID || '6f15f4f1-93dc-491f-ba4a-c78354f46858',
       allowLocalhostAsSecureOrigin: true,
     }).then(() => {
       setOneSignalInitialized(true);

@@ -45,3 +45,5 @@ integrations = ["javascript_mem_db:1.0.0", "javascript_openai_ai_integrations:1.
 [userenv]
 
 [userenv.shared]
+ONESIGNAL_APP_ID = "6f15f4f1-93dc-491f-ba4a-c78354f46858"
+VITE_ONESIGNAL_APP_ID = "6f15f4f1-93dc-491f-ba4a-c78354f46858"

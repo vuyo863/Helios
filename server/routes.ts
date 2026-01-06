@@ -2388,13 +2388,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { title, message, alarmLevel } = req.body;
 
-      const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || '6f15f4f1-93dc-491f-ba4a-c78354f46858';
+      const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
       const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
-      if (!ONESIGNAL_REST_API_KEY) {
+      if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
         return res.status(400).json({
           success: false,
-          error: "OneSignal REST API Key not configured. Please set ONESIGNAL_REST_API_KEY environment variable."
+          error: "OneSignal not configured. Please set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables."
         });
       }
 
