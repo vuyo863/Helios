@@ -2408,7 +2408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contents: { en: message },
         data: { alarmLevel, timestamp: new Date().toISOString() },
         chrome_web_icon: 'https://cdn-icons-png.flaticon.com/512/2645/2645890.png',
-        url: '/notifications'
+        url: 'https://helios-ai.replit.app/notifications'
       };
 
       // If playerId provided, send to specific device. Otherwise, send to all.
