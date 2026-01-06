@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project aims to provide users with detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features, to empower better trading decisions. It also includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project aims to provide users with detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features, to empower better trading decisions. It also includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to provide a comprehensive tool for cryptocurrency traders using Pionex bots, offering market potential through enhanced analytical capabilities and timely notifications.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -16,37 +16,34 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive interface. Recharts is used for dynamic data visualization, and Wouter for client-side routing.
-
-The dashboard offers three primary chart modes:
-1.  **MainChart**: Displays detailed performance for a single bot type.
-2.  **Compare Mode**: Compares the performance of two or more bot types.
-3.  **Added Mode**: Aggregates data from multiple bot types, with an "Analysis" sub-toggle and an "Overlay" feature.
-
-Key interactive features include a marker system (U1, C1), eye and pencil modes for detailed interaction, and zoom/pan functionalities. Info-Tooltips provide explanations for key metrics.
-
-The Notifications page features a watchlist with live price updates (every 2 seconds) from Binance API for Spot and Futures pairs, displaying 24h price changes and market type badges. It also includes a threshold system with comma-input support, four alarm levels (harmlos, achtung, gefährlich, sehr_gefährlich), and an `isActive` toggle. Active alerts are displayed in a fixed-height scroll area with a blue border and a red badge in the Navbar.
+The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive interface. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard offers three primary chart modes: MainChart (single bot type), Compare Mode (multiple bot types), and Added Mode (aggregated data with Analysis and Overlay features). Interactive features include a marker system (U1, C1), eye and pencil modes, zoom/pan, and Info-Tooltips. The Notifications page includes a watchlist with live price updates from Binance API, a threshold system with four alarm levels, and active alerts display. Web Push Notifications are integrated via OneSignal for real-time alerts.
 
 ### Technical Implementations
-- **State Management**: TypeScript-typed state manages chart modes, bot types, and interaction.
+- **State Management**: TypeScript-typed state for chart modes, bot types, and interactions.
 - **Data Handling**: `useMemo` hooks optimize data preparation.
-- **Bot Type Management**: Supports CRUD operations for bot types, including CSV/Excel upload and update history.
-- **Eye Mode**: Provides an extended overlay view with Period Comparison Cards and aggregated metrics.
-- **Pencil Mode**: Allows single-period selection for detailed analysis, including a bar chart for performance metrics.
-- **Notifications Data Persistence**: Watchlist and pair market types are persisted in `localStorage`. Futures pair identification includes a robust symbol-based fallback mechanism to ensure stability across page reloads, with automatic migration for older data formats.
+- **Bot Type Management**: CRUD operations, CSV/Excel upload, and update history.
+- **Eye Mode**: Extended overlay view with Period Comparison Cards and aggregated metrics.
+- **Pencil Mode**: Single-period selection for detailed analysis with bar charts.
+- **Notifications Data Persistence**: Watchlist and pair market types are persisted in `localStorage`. Futures pair identification uses a robust symbol-based fallback.
+- **OneSignal Integration**: Configured for web push notifications, initialized only on the production URL, player ID stored and used for targeted delivery.
+- **Backend Service Worker Route**: Express.js serves `OneSignalSDKWorker.js` with correct headers.
+- **Backend Notification Route**: Handles web push requests, targeting specific players or all subscribed users.
 
 ### Feature Specifications
-- **Marker System**: Defines interactive points on charts for event analysis.
+- **Marker System**: Interactive points on charts for event analysis.
 - **Zoom & Pan**: Interactive chart navigation.
-- **AI-Analysis**: Integration with OpenAI for automated insights and data summarization.
-- **Info-Tooltips**: Provides explanations for key metrics like "Ø Profit/Tag" and "Real Profit/Tag" in Added Mode.
-- **Notifications Watchlist**: Real-time price tracking from Binance for Spot and Futures pairs.
-- **Threshold System**: Configurable price alerts with different priority levels and activation states.
-- **German Formatting**: Prices and thresholds are displayed in German number format (e.g., 50.000,00).
+- **AI-Analysis**: Integration with OpenAI for automated insights.
+- **Info-Tooltips**: Explanations for key metrics.
+- **Notifications Watchlist**: Real-time price tracking from Binance.
+- **Threshold System**: Configurable price alerts with priority levels.
+- **German Formatting**: Prices and thresholds displayed in German number format.
+- **Web Push Notifications**: Real-time alerts via OneSignal when browser is minimized, on another tab, or device is locked.
 
 ### System Design Choices
-- **Modular Architecture**: Clear separation of concerns between frontend and backend, and within frontend components.
-- **Stable ID Handling**: For Notifications, futures pairs use a symbol-based lookup to counteract unstable index-based IDs after reloads, ensuring data integrity.
+- **Modular Architecture**: Clear separation of concerns.
+- **Stable ID Handling**: Symbol-based lookup for futures pairs in Notifications.
+- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key for secure and targeted notifications.
+- **Targeted Notifications**: Utilizes `include_player_ids` for direct delivery to specific users.
 
 ## External Dependencies
 - **Database**: Neon Serverless PostgreSQL with Drizzle ORM.
@@ -55,193 +52,5 @@ The Notifications page features a watchlist with live price updates (every 2 sec
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
 - **Storage**: In-memory `MemStorage` for server-side data handling.
-- **Crypto Data**: Binance API (for Spot and Futures market data).
-
----
-
-## Web Push Notifications - OneSignal Integration (AUSFÜHRLICHER BERICHT)
-
-### Übersicht & Ziel
-Web Push Notifications sollen funktionieren, wenn:
-- Der Browser minimiert ist
-- Der User auf einem anderen Tab ist
-- Das Gerät gesperrt ist (Desktop bleibt an)
-
-**Technologie**: OneSignal Web Push SDK v16
-
-### Konfiguration & IDs
-
-#### OneSignal Dashboard
-- **App Name**: Helios
-- **App ID**: `6f15f4f1-93dc-491f-ba4a-c78354f46858`
-- **Site URL**: `https://helios-ai.replit.app` (MUSS exakt übereinstimmen!)
-- **REST API Key**: Gespeichert als Secret `ONESIGNAL_REST_API_KEY`
-
-#### Replit Deployment
-- **Published URL**: `https://helios-ai.replit.app`
-- **Deployment Type**: Autoscale (4 vCPU / 8 GiB RAM / 3 Max)
-- **Visibility**: Public
-
-### Architektur & Dateien
-
-#### 1. Service Worker (`client/public/OneSignalSDKWorker.js`)
-```javascript
-importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
-```
-- **Pfad**: Muss im Root `/` sein
-- **Serving**: Express serviert mit korrekten Headers:
-  - `Content-Type: application/javascript`
-  - `Service-Worker-Allowed: /`
-- **Prüfung**: `curl -I https://helios-ai.replit.app/OneSignalSDKWorker.js`
-
-#### 2. Frontend Initialisierung (`client/src/App.tsx`)
-```typescript
-// WICHTIG: OneSignal nur auf der Produktions-URL initialisieren!
-function isOneSignalAllowedDomain(): boolean {
-  const hostname = window.location.hostname;
-  return hostname === 'helios-ai.replit.app';
-}
-
-useEffect(() => {
-  if (!isOneSignalAllowedDomain()) {
-    console.log('OneSignal: Skipping initialization (only works on helios-ai.replit.app)');
-    return;
-  }
-
-  OneSignal.init({
-    appId: "6f15f4f1-93dc-491f-ba4a-c78354f46858",
-    allowLocalhostAsSecureOrigin: true,
-    notifyButton: { enable: true, ... },
-  }).then(() => {
-    // Player ID im localStorage speichern für spätere API-Calls
-    const playerId = OneSignal.User.PushSubscription.id;
-    if (playerId) {
-      localStorage.setItem('onesignal-player-id', playerId);
-      console.log('OneSignal Player ID stored:', playerId);
-    }
-    
-    // Auf Subscription-Änderungen reagieren
-    OneSignal.User.PushSubscription.addEventListener('change', (event) => {
-      const newPlayerId = OneSignal.User.PushSubscription.id;
-      if (newPlayerId) {
-        localStorage.setItem('onesignal-player-id', newPlayerId);
-      }
-    });
-  });
-}, []);
-```
-
-#### 3. Backend Service Worker Route (`server/index.ts`)
-```typescript
-// Service Worker mit korrekten Headers servieren
-app.get('/OneSignalSDKWorker.js', (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript');
-  res.setHeader('Service-Worker-Allowed', '/');
-  res.sendFile(path.join(process.cwd(), 'client/public/OneSignalSDKWorker.js'));
-});
-```
-
-#### 4. Backend Notification Route (`server/routes.ts`)
-```typescript
-app.post("/api/notifications/web-push", async (req, res) => {
-  const { title, message, alarmLevel, playerId } = req.body;
-  
-  const notificationPayload = {
-    app_id: process.env.ONESIGNAL_APP_ID,
-    headings: { en: title },
-    contents: { en: message },
-    data: { alarmLevel, timestamp: new Date().toISOString() },
-    url: '/notifications'
-  };
-
-  // GELÖST: Wenn playerId vorhanden, direkt an diesen User senden
-  if (playerId) {
-    notificationPayload.include_player_ids = [playerId];
-    console.log(`Targeting specific player: ${playerId}`);
-  } else {
-    notificationPayload.included_segments = ['All'];
-    console.log('Targeting all subscribed users');
-  }
-  
-  const response = await fetch("https://onesignal.com/api/v1/notifications", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Basic ${process.env.ONESIGNAL_REST_API_KEY}`,
-    },
-    body: JSON.stringify(notificationPayload),
-  });
-});
-```
-
-#### 5. Alert Service (`server/alertService.ts`)
-- Prüft alle 30 Sekunden auf aktive Thresholds
-- Sendet Notifications wenn Preisschwellen überschritten werden
-- Verwendet `/api/notifications/send` Endpoint
-
-### Aktueller Status (GELÖST ✅)
-
-#### Was funktioniert ✅
-1. **Service Worker**: Korrekt registriert und serviert
-2. **OneSignal Initialisierung**: Nur auf `helios-ai.replit.app` (Dev-Domains werden übersprungen)
-3. **User Subscription**: `opted in: true`
-4. **Player ID Speicherung**: Automatisch im `localStorage` unter Key `onesignal-player-id`
-5. **Player ID Übertragung**: Frontend sendet Player ID an Backend bei jedem Web Push Request
-6. **Backend Targeting**: Verwendet `include_player_ids: [playerId]` für direkte Zustellung
-7. **OneSignal Dashboard**: Site URL korrekt konfiguriert
-
-#### Implementation Details
-
-**Flow (GELÖST)**:
-```
-1. App.tsx: OneSignal.init() nur auf helios-ai.replit.app
-2. Nach Initialisierung: Player ID wird in localStorage gespeichert
-3. Bei Subscription-Änderungen: Event Listener aktualisiert localStorage
-4. notifications.tsx: Holt Player ID aus localStorage vor jedem Web Push Request
-5. Backend: Verwendet include_player_ids: [playerId] für direkte Zustellung
-```
-
-**Logs (korrekt)**:
-```
-OneSignal initialized successfully
-OneSignal Player ID stored: b24a27c3-b1cd-4da3-b017-328cee52079b
-Using player ID for direct targeting: b24a27c3-b1cd-4da3-b017-328cee52079b
-Targeting specific player: b24a27c3-b1cd-4da3-b017-328cee52079b  ← KORREKT!
-```
-
-### Debug-Checkliste
-
-#### Browser-Seite
-1. Console öffnen → `OneSignal initialized successfully` ?
-2. Player ID gespeichert? → `OneSignal Player ID stored: xxx`
-3. Bei Test Alarm: `Using player ID for direct targeting: xxx`
-4. Browser Notifications erlaubt? → Schloss-Symbol in Adressleiste → Notifications → Allow
-
-#### OneSignal Dashboard
-1. Settings → Web Configuration → Site URL = `https://helios-ai.replit.app`
-2. Audience → All Users → Ist der User gelistet?
-3. Delivery → Messages → Wurden Notifications gesendet? Wie viele empfangen?
-
-#### Server-Seite
-1. Logs prüfen: `Targeting specific player: xxx` = KORREKT
-2. `Targeting all subscribed users` = Fallback (nur wenn keine Player ID)
-
-### Bekannte Einschränkungen
-
-1. **Binance API Geo-Blocking**: Futures API gibt 418/451 in manchen Regionen
-2. **Browser Extension Fehler**: `content-all.js` Fehler kommen von Browser Extensions (ignorieren)
-3. **sw.ts:20 Warnung**: Kommt von internem Vite/Replit Service Worker, NICHT von unserer App
-4. **Dev-Umgebung**: OneSignal funktioniert NUR auf `https://helios-ai.replit.app`
-
-### Relevante Dateien
-
-| Datei | Zweck |
-|-------|-------|
-| `client/src/App.tsx` | OneSignal Initialisierung, Player ID im localStorage speichern |
-| `client/src/pages/notifications.tsx` | Test Alarm Button, Player ID aus localStorage lesen |
-| `server/routes.ts` | Web Push Endpoint mit Player ID Support |
-| `client/public/OneSignalSDKWorker.js` | Service Worker Datei |
-
-### Zusammenfassung
-
-**Status**: ✅ GELÖST - OneSignal Web Push funktioniert jetzt mit direktem Player ID Targeting. Die Player ID wird automatisch im localStorage gespeichert und bei jedem Web Push Request ans Backend gesendet.
+- **Crypto Data**: Binance API (Spot and Futures market data).
+- **Web Push Notifications**: OneSignal Web Push SDK v16.
