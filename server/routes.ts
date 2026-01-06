@@ -2417,14 +2417,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await response.json();
+      console.log("OneSignal API Response:", JSON.stringify(result, null, 2));
 
       if (response.ok) {
+        // Check if there were any recipients
+        const recipientCount = result.recipients || 0;
+        console.log(`Web Push sent to ${recipientCount} recipient(s)`);
+        
         res.json({
           success: true,
           notificationId: result.id,
-          recipients: result.recipients
+          recipients: recipientCount,
+          message: recipientCount > 0 
+            ? `Notification sent to ${recipientCount} device(s)` 
+            : 'No subscribers found - make sure you clicked "Allow" on the notification prompt'
         });
       } else {
+        console.error("OneSignal API Error:", result);
         res.status(400).json({
           success: false,
           error: result.errors?.[0] || 'Failed to send web push notification'

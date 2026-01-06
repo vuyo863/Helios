@@ -1313,9 +1313,10 @@ export default function Notifications() {
 
       if (webPushResult.success) {
         toast({
-          title: "✅ Web Push gesendet!",
-          description: `Browser-Benachrichtigung erfolgreich gesendet`,
+          title: webPushResult.recipients > 0 ? "✅ Web Push gesendet!" : "⚠️ Keine Abonnenten",
+          description: webPushResult.message || `Browser-Benachrichtigung erfolgreich gesendet`,
           duration: 5000,
+          variant: webPushResult.recipients > 0 ? "default" : "destructive",
         });
       } else {
         console.error('Web Push error:', webPushResult.error);
