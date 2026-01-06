@@ -1294,6 +1294,47 @@ export default function Notifications() {
         duration: 5000,
       });
     }
+
+    // Web Push Benachrichtigung senden via OneSignal
+    try {
+      const webPushResponse = await fetch('/api/notifications/web-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: `🔔 Sehr Gefährlich - ${mockAlarm.trendPriceName}`,
+          message: `${mockAlarm.message}. ${mockAlarm.note}`,
+          alarmLevel: mockAlarm.alarmLevel
+        })
+      });
+
+      const webPushResult = await webPushResponse.json();
+
+      if (webPushResult.success) {
+        toast({
+          title: "✅ Web Push gesendet!",
+          description: `Browser-Benachrichtigung erfolgreich gesendet`,
+          duration: 5000,
+        });
+      } else {
+        console.error('Web Push error:', webPushResult.error);
+        toast({
+          title: "⚠️ Web Push-Fehler",
+          description: webPushResult.error || "Web Push konnte nicht gesendet werden",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Web Push notification error:', error);
+      toast({
+        title: "❌ Web Push-Fehler",
+        description: "Verbindung zum Server fehlgeschlagen",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
   };
 
   const getTimeAgo = (date: Date | string): string => {
