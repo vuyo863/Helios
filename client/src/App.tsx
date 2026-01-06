@@ -106,6 +106,28 @@ function App() {
     OneSignal.init({
       appId: import.meta.env.VITE_ONESIGNAL_APP_ID || '6f15f4f1-93dc-491f-ba4a-c78354f46858',
       allowLocalhostAsSecureOrigin: true,
+      notifyButton: {
+        enable: true,
+        size: 'medium',
+        position: 'bottom-right',
+        prenotify: false,
+        showCredit: false,
+        text: {
+          'tip.state.unsubscribed': 'Benachrichtigungen aktivieren',
+          'tip.state.subscribed': 'Benachrichtigungen aktiv',
+          'tip.state.blocked': 'Benachrichtigungen blockiert',
+          'message.prenotify': 'Klicken um Benachrichtigungen zu aktivieren',
+          'message.action.subscribed': 'Danke fürs Abonnieren!',
+          'message.action.subscribing': 'Wird aktiviert...',
+          'message.action.resubscribed': 'Du erhältst jetzt Benachrichtigungen',
+          'message.action.unsubscribed': 'Du erhältst keine Benachrichtigungen mehr',
+          'dialog.main.title': 'Push-Benachrichtigungen verwalten',
+          'dialog.main.button.subscribe': 'Aktivieren',
+          'dialog.main.button.unsubscribe': 'Deaktivieren',
+          'dialog.blocked.title': 'Benachrichtigungen freigeben',
+          'dialog.blocked.message': 'Folge diesen Anweisungen um Benachrichtigungen zu erlauben:',
+        },
+      },
     }).then(() => {
       setOneSignalInitialized(true);
       console.log('OneSignal initialized successfully');
