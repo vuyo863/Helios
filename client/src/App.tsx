@@ -110,8 +110,13 @@ function App() {
       setOneSignalInitialized(true);
       console.log('OneSignal initialized successfully');
       
-      // Prompt user to subscribe to push notifications
-      OneSignal.Slidedown.promptPush();
+      // Check subscription status (optedIn is a boolean, not a Promise in v5)
+      const isOptedIn = OneSignal.User.PushSubscription.optedIn;
+      console.log('OneSignal Push Subscription opted in:', isOptedIn);
+      if (!isOptedIn) {
+        // Prompt user to subscribe to push notifications
+        OneSignal.Slidedown.promptPush();
+      }
     }).catch((error) => {
       console.error('OneSignal initialization error:', error);
     });
