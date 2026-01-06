@@ -1,0 +1,73 @@
+index-DNZQ5Kfy.js:460  Error fetching Binance pairs: TypeError: Failed to fetch
+A @ index-DNZQ5Kfy.js:460
+await in A
+(anonymous) @ index-DNZQ5Kfy.js:460
+aw @ index-DNZQ5Kfy.js:40
+th @ index-DNZQ5Kfy.js:40
+DO @ index-DNZQ5Kfy.js:40
+Du @ index-DNZQ5Kfy.js:38
+n7 @ index-DNZQ5Kfy.js:40
+od @ index-DNZQ5Kfy.js:40
+x4 @ index-DNZQ5Kfy.js:40
+S @ index-DNZQ5Kfy.js:25
+_ @ index-DNZQ5Kfy.js:25
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+ie @ index-DNZQ5Kfy.js:25
+ee @ index-DNZQ5Kfy.js:25
+e.unstable_scheduleCallback @ index-DNZQ5Kfy.js:25
+N4 @ index-DNZQ5Kfy.js:40
+zo @ index-DNZQ5Kfy.js:40
+Ss @ index-DNZQ5Kfy.js:40
+cw @ index-DNZQ5Kfy.js:40
+uw.render.sD.render @ index-DNZQ5Kfy.js:40
+(anonymous) @ index-DNZQ5Kfy.js:460
+index-DNZQ5Kfy.js:460  Error fetching Binance Futures pairs: TypeError: Failed to fetch
+z @ index-DNZQ5Kfy.js:460
+await in z
+(anonymous) @ index-DNZQ5Kfy.js:460
+aw @ index-DNZQ5Kfy.js:40
+th @ index-DNZQ5Kfy.js:40
+DO @ index-DNZQ5Kfy.js:40
+Du @ index-DNZQ5Kfy.js:38
+n7 @ index-DNZQ5Kfy.js:40
+od @ index-DNZQ5Kfy.js:40
+x4 @ index-DNZQ5Kfy.js:40
+S @ index-DNZQ5Kfy.js:25
+_ @ index-DNZQ5Kfy.js:25
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+ie @ index-DNZQ5Kfy.js:25
+ee @ index-DNZQ5Kfy.js:25
+e.unstable_scheduleCallback @ index-DNZQ5Kfy.js:25
+N4 @ index-DNZQ5Kfy.js:40
+zo @ index-DNZQ5Kfy.js:40
+Ss @ index-DNZQ5Kfy.js:40
+cw @ index-DNZQ5Kfy.js:40
+uw.render.sD.render @ index-DNZQ5Kfy.js:40
+(anonymous) @ index-DNZQ5Kfy.js:460
+content-all.js:176   Uncaught (in promise) TypeError: Failed to fetch
+    at gM (content-all.js:176:48843)
+    at v6e (content-all.js:956:36316)
+    at content-all.js:2388:10535
+    at content-all.js:2388:10939
+gM @ content-all.js:176
+v6e @ content-all.js:956
+(anonymous) @ content-all.js:2388
+(anonymous) @ content-all.js:2388
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+index-DNZQ5Kfy.js:460 OneSignal initialized successfully
+index-DNZQ5Kfy.js:460 OneSignal Push Subscription opted in: true
+index-DNZQ5Kfy.js:460 Using player ID for direct targeting: b24a27c3-b1cd-4da3-b017-328cee52079b
