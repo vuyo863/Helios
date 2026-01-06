@@ -1,0 +1,72 @@
+. Upload Service Worker Files
+The OneSignal Service Worker is required for push notifications to function. You have two options:
+1
+Option 1: Create File Manually (Recommended)
+
+Create a new file named OneSignalSDKWorker.js
+Add this single line of code:
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+Upload the file to your website’s root directory
+2
+Option 2: Download and Upload
+
+Download the OneSignal SDK files
+Unzip the download
+Upload OneSignalSDKWorker.js to your server
+​
+File Hosting Requirements
+Default Location: The service worker must be accessible at https://yoursite.com/OneSignalSDKWorker.js
+Custom Location: If you need to place the file in a subfolder, see our OneSignal Service Worker Guide for detailed instructions.
+Need a custom location? For subfolder placement or migrating from another push provider, follow our OneSignal Service Worker Guide.
+
+Service worker file download interface
+
+Legacy Setup Alert: If your site was set up before November 22, 2021, and you’re currently using two service worker files (OneSignalSDKWorker.js and OneSignalSDKUpdaterWorker.js), continue hosting both files to prevent service worker issues.
+New setups only require the single OneSignalSDKWorker.js file.
+​
+5. Add Code to Your Website
+​
+Basic Implementation
+Add this code to your website’s <head> section. Replace YOUR_ONESIGNAL_APP_ID with your actual App ID from the OneSignal dashboard.
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(function(OneSignal) {
+    OneSignal.init({
+      appId: "YOUR_ONESIGNAL_APP_ID",
+      safari_web_id: "YOUR_SAFARI_WEB_ID", // Only needed if using custom Safari certificate
+      notifyButton: {
+        enable: true, // Shows the OneSignal bell icon
+      },
+    });
+  });
+</script>
+​
+Framework-Specific Setup
+If you’re using a JavaScript framework, follow these specialized guides:
+Angular Setup
+React JS Setup
+Vue JS Setup
+​
+Next Steps After Code Installation
+Initialize the SDK: The code above handles basic initialization
+Configure Prompting: Set up when and how users are prompted - see Permission Requests
+Add Custom Logic: Use the Web SDK Reference for advanced features
+Common Integration Points:
+Custom prompt timing based on user behavior
+Segmentation and user tagging
+Event tracking and analytics
+A/B testing different notification strategies
+​
+Test Your Setup
+​
+Verify Installation
+Visit your website - you should see the OneSignal bell icon (if enabled)
+Click the bell to trigger the browser’s native permission prompt
+Subscribe to notifications
+Check browser console for any JavaScript errors
+​
+Send Test Notification
+Find your test subscription: Follow Find & Set Test Subscriptions
+Send a test push: Use our guide to send yourself a Push Notification
+Verify delivery across different browsers and devices
