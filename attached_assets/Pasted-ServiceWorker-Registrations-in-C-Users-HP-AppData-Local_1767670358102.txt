@@ -1,0 +1,93 @@
+ServiceWorker
+Registrations in: C:\Users\HP\AppData\Local\Microsoft\Edge\User Data\Default (134)
+Scope: chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/
+Storage key:
+Origin: chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd
+Top level site: chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd
+Ancestor chain bit: SameSite
+Registration ID: 329
+Navigation preload enabled: false
+Navigation preload header length: 4
+Active worker:
+Installation Status: ACTIVATED
+Running Status: RUNNING
+Fetch handler existence: DOES_NOT_EXIST
+Fetch handler type: NO_HANDLER
+Script: chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/sw.js
+Version ID: 1618
+Renderer process ID: 22772
+Renderer thread ID: 1
+DevTools agent route ID: 1
+Log:
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [DurationMetricsStorageImpl] ░░ update _viewDurationTable for 9318949e-a5e9-4b35-9e71-09724f6c1506-00-2exiw1hhay1ts.janeway.replit.dev: [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm INFO [lib.tracking.call.service] ░░ gnar.pingMaybe ","message_level":1,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm INFO [lib.tracking.call.service] ░░ gnar.pingMaybe ","message_level":1,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"renderBadge\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"updateUninstallUrl\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"brandingChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm INFO [lib.tracking.call.service] ░░ gnar.pingMaybe ","message_level":1,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"renderBadge\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"updateUninstallUrl\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"brandingChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm INFO [lib.tracking.call.service] ░░ gnar.pingMaybe ","message_level":1,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [DurationMetricsStorageImpl] ░░ update _viewDurationTable for serviceworker-internals: [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [DurationMetricsStorageImpl] ░░ update _viewDurationTable for serviceworker-internals: [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"renderBadge\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"updateUninstallUrl\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"brandingChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm INFO [lib.tracking.call.service] ░░ gnar.pingMaybe ","message_level":1,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [DurationMetricsStorageImpl] ░░ update _viewDurationTable for serviceworker-internals: [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [FEMetricsLoggerImpl] ░░ No metrics to send to VM","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [DurationMetricsStorageImpl] ░░ update _viewDurationTable for replit.com: [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"activeTabChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"viewDurationTracking\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [DurationMetricsStorageImpl] ░░ update _viewDurationTable for replit.com: [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"renderBadge\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"updateUninstallUrl\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm DEBUG [SideEffectManager] ░░ SideEffect \"brandingChange\" was called with:  [object Object]","message_level":0,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+Console: {"lineNumber":2,"message":"grm INFO [lib.tracking.call.service] ░░ gnar.pingMaybe ","message_level":1,"sourceIdentifier":3,"sourceURL":"chrome-extension://cnlefmmeadmemmdciolhbnfeacpdfbkd/src/js/Grammarly-bg.js"}
+
+ 
+Scope: chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/
+Storage key:
+Origin: chrome-extension://dhoenijjpgpeimemopealfcbiecgceod
+Top level site: chrome-extension://dhoenijjpgpeimemopealfcbiecgceod
+Ancestor chain bit: SameSite
+Registration ID: 315
+Navigation preload enabled: false
+Navigation preload header length: 4
+Active worker:
+Installation Status: ACTIVATED
+Running Status: RUNNING
+Fetch handler existence: DOES_NOT_EXIST
+Fetch handler type: NO_HANDLER
+Script: chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/background.js
+Version ID: 1543
+Renderer process ID: 8624
+Renderer thread ID: 248
+DevTools agent route ID: 254
+Client:
+ID: 2f722f5e-57c3-4340-84d0-a24af5e5aff9
+URL: chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/record-background.html
+Client:
+ID: c2456511-616f-4eb5-9fdb-84ee99d18ae4
+URL:
+Log:
+Console: {"lineNumber":14,"message":"Uncaught (in promise) Error: Failed to inject content script","message_level":3,"sourceIdentifier":1,"sourceURL":"chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/background.js"}
+Console: {"lineNumber":1,"message":"Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.","message_level":3,"sourceIdentifier":1,"sourceURL":"chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/background.js"}
+Console: {"lineNumber":1,"message":"Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.","message_level":3,"sourceIdentifier":1,"sourceURL":"chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/background.js"}
+Console: {"lineNumber":1,"message":"Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.","message_level":3,"sourceIdentifier":1,"sourceURL":"chrome-extension://dhoenijjpgpeimemopealfcbiecgceod/background.js"}
+
+ 
