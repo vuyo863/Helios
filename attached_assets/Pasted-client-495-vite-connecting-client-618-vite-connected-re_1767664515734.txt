@@ -1,0 +1,115 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+inpage.js:166 [Violation] 'message' handler took 176ms
+notifications.tsx:169   GET https://fapi.binance.com/fapi/v1/exchangeInfo 418 (I'm a teapot)
+fetchAllBinanceFuturesPairs @ notifications.tsx:169
+(anonymous) @ notifications.tsx:284
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+schedulePerformWorkUntilDeadline @ scheduler.development.js:564
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+ReactDOMHydrationRoot.render.ReactDOMRoot.render @ react-dom.development.js:29353
+(anonymous) @ main.tsx:5
+notifications.tsx:174  Binance Futures API is geo-blocked (418/451). Using fallback pairs with no live prices.
+fetchAllBinanceFuturesPairs @ notifications.tsx:174
+await in fetchAllBinanceFuturesPairs
+(anonymous) @ notifications.tsx:284
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+schedulePerformWorkUntilDeadline @ scheduler.development.js:564
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+ReactDOMHydrationRoot.render.ReactDOMRoot.render @ react-dom.development.js:29353
+(anonymous) @ main.tsx:5
+notifications.tsx:179  Binance Futures API returned non-OK status, trying fallback...
+fetchAllBinanceFuturesPairs @ notifications.tsx:179
+await in fetchAllBinanceFuturesPairs
+(anonymous) @ notifications.tsx:284
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+schedulePerformWorkUntilDeadline @ scheduler.development.js:564
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+ReactDOMHydrationRoot.render.ReactDOMRoot.render @ react-dom.development.js:29353
+(anonymous) @ main.tsx:5
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+App.tsx:111 OneSignal initialized successfully
+App.tsx:115 OneSignal Push Subscription opted in: true
