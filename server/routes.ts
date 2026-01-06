@@ -2412,9 +2412,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // If playerId provided, send to specific device. Otherwise, send to all.
+      // Note: OneSignal renamed 'player_id' to 'subscription_id' in newer API
       if (playerId) {
-        notificationPayload.include_player_ids = [playerId];
-        console.log(`Targeting specific player: ${playerId}`);
+        // Use both old and new format for compatibility
+        notificationPayload.include_subscription_ids = [playerId];
+        console.log(`Targeting specific subscription: ${playerId}`);
       } else {
         notificationPayload.included_segments = ['All'];
         console.log('Targeting all subscribed users');
