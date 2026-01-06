@@ -109,6 +109,9 @@ function App() {
     }).then(() => {
       setOneSignalInitialized(true);
       console.log('OneSignal initialized successfully');
+      
+      // Prompt user to subscribe to push notifications
+      OneSignal.Slidedown.promptPush();
     }).catch((error) => {
       console.error('OneSignal initialization error:', error);
     });
