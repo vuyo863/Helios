@@ -2398,29 +2398,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get player_id from request body (optional - for direct targeting)
-      const { playerId } = req.body;
-      
-      // Build notification payload
+      // Build notification payload - ALWAYS broadcast to all subscribers
       const notificationPayload: any = {
         app_id: ONESIGNAL_APP_ID,
         headings: { en: title },
         contents: { en: message },
         data: { alarmLevel, timestamp: new Date().toISOString() },
         chrome_web_icon: 'https://cdn-icons-png.flaticon.com/512/2645/2645890.png',
-        url: 'https://helios-ai.replit.app/notifications'
+        url: 'https://helios-ai.replit.app/notifications',
+        included_segments: ['All']
       };
-
-      // If playerId provided, send to specific device. Otherwise, send to all.
-      // Note: OneSignal renamed 'player_id' to 'subscription_id' in newer API
-      if (playerId) {
-        // Use both old and new format for compatibility
-        notificationPayload.include_subscription_ids = [playerId];
-        console.log(`Targeting specific subscription: ${playerId}`);
-      } else {
-        notificationPayload.included_segments = ['All'];
-        console.log('Targeting all subscribed users');
-      }
+      console.log('Broadcasting notification to all subscribed users');
 
       // Send notification
       const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -2445,9 +2433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           notificationId: result.id,
           recipients: result.recipients ?? -1,
-          message: playerId 
-            ? `Notification sent directly to player ${playerId.substring(0, 8)}...` 
-            : 'Notification queued for all subscribed devices',
+          message: 'Notification broadcasted to all subscribed devices',
           debug: {
             onesignalResponse: result,
             sentPayload: notificationPayload
