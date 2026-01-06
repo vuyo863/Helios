@@ -1,8 +1,22 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+import fs from "fs";
 
 const app = express();
+
+// Serve OneSignal service worker directly (bypass Vite to avoid ESM wrapper)
+app.get('/OneSignalSDKWorker.js', (_req, res) => {
+  const workerPath = path.resolve(import.meta.dirname, '..', 'client', 'public', 'OneSignalSDKWorker.js');
+  if (fs.existsSync(workerPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.sendFile(workerPath);
+  } else {
+    res.status(404).send('Service worker not found');
+  }
+});
 
 declare module 'http' {
   interface IncomingMessage {
