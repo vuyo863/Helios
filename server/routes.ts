@@ -2475,6 +2475,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to check subscription status at OneSignal
+  app.get('/api/check-subscription/:subscriptionId', async (req, res) => {
+    try {
+      const { subscriptionId } = req.params;
+      const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+      const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
+      if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+        return res.status(400).json({ error: "OneSignal not configured" });
+      }
+
+      // Query OneSignal API for player/subscription details (legacy endpoint still works)
+      const response = await fetch(
+        `https://onesignal.com/api/v1/players/${subscriptionId}?app_id=${ONESIGNAL_APP_ID}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const result = await response.json();
+      console.log("OneSignal Subscription Check:", JSON.stringify(result, null, 2));
+
+      res.json({
+        subscriptionId,
+        status: response.status,
+        onesignalResponse: result
+      });
+    } catch (error: any) {
+      console.error("Subscription check error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Helper functions
   function getAlarmColor(level: string): string {
     switch (level) {

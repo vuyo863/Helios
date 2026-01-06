@@ -1,0 +1,178 @@
+# Keys & IDs
+
+> Understand your OneSignal App ID, API Keys, and how to manage them securely. Learn where to find your keys, create new ones, and migrate from legacy API keys.
+
+Your OneSignal account includes both public IDs and private API keys that are essential for configuring your apps and accessing the OneSignal API. This guide explains where to find them, how to manage them, and best practices for secure usage.
+
+***
+
+## App ID
+
+The App ID is a unique public identifier for your OneSignal project, formatted as a UUID v4. It is distinct from your private API keys and is required for:
+
+* SDK initialization – [Mobile SDK setup](./mobile-sdk-setup), [Web SDK setup](./web-sdk-setup)
+* API calls – [Create message](/reference/create-message), [Create user](/reference/create-user), and others.
+
+Find your App ID under **Settings > Keys & IDs** in the OneSignal Dashboard or via the [View apps](/reference/view-apps) API.
+
+<Frame caption="Keys & IDs page to find your App ID and App API keys.">
+  <img src="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=6a39364c8ca631b3a0623e704fedc8af" data-og-width="2722" width="2722" data-og-height="1330" height="1330" data-path="images/dashboard/dashboard-keys-and-ids-app-id.jpg" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?w=280&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=e7ac18062e901a11b429b50a549b4e10 280w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?w=560&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=4cd882cc3cd9aeb7ca0fb3dfb6086f26 560w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?w=840&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=363cf748307934eae9070d16c687a99f 840w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?w=1100&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=c38b11a7e74ecacb0cd1929426cad5bf 1100w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?w=1650&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=bb23a0888f64bfb2c6b449db7b706e69 1650w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id.jpg?w=2500&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=b0a7c50373f9ee1c0fdad03ddfe5fc86 2500w" />
+</Frame>
+
+<br />
+
+<Frame caption="Example where to find your App ID.">
+  <img src="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=07fa6040dbc41ffa7dff116a0b1ad575" data-og-width="1375" width="1375" data-og-height="528" height="528" data-path="images/dashboard/dashboard-keys-and-ids-app-id-number.jpg" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?w=280&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=4167b84e76b6ea33fa230c7ed2dfa05f 280w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?w=560&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=a849d7cde99e99c1a6c9da6b0886ab1c 560w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?w=840&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=e2d4c6d7349b105b58d856350ea7e3dd 840w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?w=1100&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=d5c94c58ff5043bac39ccf194f924e49 1100w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?w=1650&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=601276d895887668498da2126c870189 1650w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-app-id-number.jpg?w=2500&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=91575e2c65c850ac1539e50d4c73a25a 2500w" />
+</Frame>
+
+### Organization ID
+
+Your Organization ID (Org ID) is a unique identifier in UUID v4 format that groups all apps under your billing plan. It is required for APIs related to:
+
+* App management – [Create an app](/reference/create-an-app), [Update an app](/reference/update-an-app).
+
+You can find your `organization_id` in the dashboard under **Organizations > Your Organization** or via the [View an app](/reference/view-an-app) API.
+
+<Frame caption="Example showing how to find your Organization ID in the OneSignal dashboard.">
+  <img src="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=1eb04ea366fd8177fc83bcf0b12d687e" data-og-width="1846" width="1846" data-og-height="538" height="538" data-path="images/dashboard/dashboard-keys-and-ids-organization-id.jpg" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?w=280&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=822d1ce94d90f187a82334dc8ddba91d 280w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?w=560&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=2e37bc5e56ed753e6e6449b8990e86e7 560w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?w=840&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=44875441e9457e6263742117f5ea93dd 840w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?w=1100&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=09347428e95f7cc31f75c89983948a80 1100w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?w=1650&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=80d41eeab065d18b9880989923f867e3 1650w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/dashboard-keys-and-ids-organization-id.jpg?w=2500&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=23c9274982c0926e5b0b8fd6dbafa579 2500w" />
+</Frame>
+
+***
+
+## API keys
+
+There are two types of API keys:
+
+1. App API Keys
+2. Organization API Key – A private key used for configuring apps and API keys within an Organization.
+
+### App API key
+
+Your app API key is a private key used for most REST API requests related to a specific app.
+
+* App API keys can be created under **Settings > Keys & IDs** or [Create an API Key](#create-api-keys).
+* They can only be viewed once created.
+* Include this key in the `Authorization` header using the `key` authentication scheme:
+
+  ```http  theme={null}
+  Authorization: key YOUR_REST_API_KEY
+  ```
+
+<Warning>
+  Treat App API Keys like a password. Do not share it, expose it in your app code, or store it in public repositories like GitHub.
+</Warning>
+
+### Organization API key
+
+Your organization API key is a private key used for managing apps and app API keys within an Organization. It is required for API requests such as:
+
+* App configuration – [Creating apps](/reference/create-an-app), [Viewing apps](/reference/view-apps)
+* API key management – [Create API key](/reference/create-api-key), [Delete API key](/reference/delete-api-key), [Update API key](/reference/update-api-key)
+
+To create an organization API key, navigate to **Organizations > your org > Keys & IDs** in your OneSignal Dashboard.
+
+<Frame caption="The Organization API key replaces the legacy User Auth key.">
+  <img src="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=d014d99705d175a153d43444b42adca3" data-og-width="1846" width="1846" data-og-height="840" height="840" data-path="images/dashboard/default-org-api-keys-and-ids.jpg" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?w=280&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=989118dfce02e381b04f0f17734650d5 280w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?w=560&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=18422756cc437e314138009a0dc98e8d 560w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?w=840&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=243e5028035c1ae63c8f1a5a9d8076d7 840w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?w=1100&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=3655ce18fc35aebee3a6b9687dceedc3 1100w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?w=1650&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=a447b70d3d7e8747ff382e9aece13c07 1650w, https://mintcdn.com/onesignal/W0DIQbUDatcgdZf6/images/dashboard/default-org-api-keys-and-ids.jpg?w=2500&fit=max&auto=format&n=W0DIQbUDatcgdZf6&q=85&s=2fba7f4b9108a6d0f3e80afde8f111ed 2500w" />
+</Frame>
+
+As with app API keys, you can configure up to 16 org keys and include IP allowlisting configuration.
+
+***
+
+## Create API keys
+
+* App API Key – Go to your app’s **Settings > Keys & IDs** or use the [Create API key](/reference/create-api-key) API.
+* Organization API Key – Go to your organization's **Keys & IDs** section.
+
+Click **Add Key** to open the creation modal.
+
+<Frame caption="API keys are only visible once. Use Add Key to generate one.">
+  <img src="https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=30c7f657c663c040a916958357d46922" data-og-width="1464" width="1464" data-og-height="630" height="630" data-path="images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?w=280&fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=21da1bbddd46203fb84dbcc64d9a18f5 280w, https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?w=560&fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=92294119acf8b9156bce5ff28f6e2b1e 560w, https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?w=840&fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=668d163b1de5c4efdd8041928cde5f78 840w, https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?w=1100&fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=7a305b41dfc6991602f90e9a57db442b 1100w, https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?w=1650&fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=33e38b56765d011414382fc7da5d75be 1650w, https://mintcdn.com/onesignal/6tscVAtiSqz353kV/images/docs/9f590d021be57131df946faf1aafe9179706717305dc8b8e6cd28657f2ce73e1-Screenshot_2024-12-02_at_2.41.45_PM.png?w=2500&fit=max&auto=format&n=6tscVAtiSqz353kV&q=85&s=fc9dec2f6f3591a54a9c6d6e62b4ed09 2500w" />
+</Frame>
+
+Give your key a descriptive name (e.g., “CRM Sync Service”).
+
+### IP allowlist
+
+Optionally, restrict API key usage to specific IP addresses by enabling IP Allowlisting.
+Enter space-separated CIDR blocks (e.g., `192.0.2.0/24 192.0.2.123/32`).
+Requests from non-allowed IPs will be denied.
+
+<Frame caption="Creating an API key with optional IP allowlist.">
+  <img src="https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=d2687921db6608a2a2e8c4ff52ce89c3" data-og-width="764" width="764" data-og-height="542" height="542" data-path="images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?w=280&fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=b9797009a8eaffca0c9f9967fee20f17 280w, https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?w=560&fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=7f13b9553ddc1d9a44cfb0f486b91b04 560w, https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?w=840&fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=d307ef76a6d2a20a2548dbdfd73d61d8 840w, https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?w=1100&fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=1c73151ee34fa612fc7119b267fa9ee5 1100w, https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?w=1650&fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=04336284947c576374905cbaf6b54f1f 1650w, https://mintcdn.com/onesignal/tNi1OgLc_p9hiq7_/images/docs/1ef65bb43edf88887e66e3d4b3656041f2657a8147b5088406f932ba027996bc-Screenshot_2024-12-02_at_2.43.20_PM.png?w=2500&fit=max&auto=format&n=tNi1OgLc_p9hiq7_&q=85&s=156e4f3ba83713030a0d29f2d152170d 2500w" />
+</Frame>
+
+### View API keys
+
+After clicking **Create**, your API key will be shown once. Save it securely.
+
+<Frame caption="Generated API key (displayed only once).">
+  <img src="https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=bad020bd251f37bdd05c77ac061c7ea1" data-og-width="764" width="764" data-og-height="768" height="768" data-path="images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?w=280&fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=61cab41788af9d46e556c47eb03787ea 280w, https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?w=560&fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=fae6deb899e7174f924aae2187609881 560w, https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?w=840&fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=73b276afd72fe82b7a72ab6a4eff940d 840w, https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?w=1100&fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=4de8a25abcb15333df11e99c45860b51 1100w, https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?w=1650&fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=cf5ac06afa909b247510ce54a059f411 1650w, https://mintcdn.com/onesignal/9_Q1FZLh6C0BFLq-/images/docs/beea445a650b5e0c671e04a8f6b6325e3ac5b07a57c740eb48a0a93fa67317f9-Screenshot_2024-12-02_at_2.48.30_PM.png?w=2500&fit=max&auto=format&n=9_Q1FZLh6C0BFLq-&q=85&s=dd85513f6cb28388b1fb69e51a06179d 2500w" />
+</Frame>
+
+After clicking **Continue**, the key will no longer be viewable.
+
+***
+
+## Key management
+
+After creating a key, you can manage it via the key list interface:
+
+<Frame caption="Key ID is only a label for reference, not the actual API key.">
+  <img src="https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=f3464df2b7d063bb81eca2d5a7f21040" data-og-width="1992" width="1992" data-og-height="902" height="902" data-path="images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?w=280&fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=8beef0e65fa30a92b8c2a1c73d3e48b1 280w, https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?w=560&fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=e55e66be1080ccf616238cb05480ed85 560w, https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?w=840&fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=44f99642338ba5a39863877433b6a41b 840w, https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?w=1100&fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=f79b984b6ba7e8abebd78bd06a196f32 1100w, https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?w=1650&fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=8a00b4f4f9b5cc0ffc051de60ab302eb 1650w, https://mintcdn.com/onesignal/4HyuQPBpu-4xjmQC/images/docs/d2d9589a34c75894ace59a5796d7b4d118147916ddc409726af35c18d3b7fd9e-Screenshot_2024-12-09_at_3.04.53_PM.png?w=2500&fit=max&auto=format&n=4HyuQPBpu-4xjmQC&q=85&s=358510425eabfaa691d0dbf3f68b2f84 2500w" />
+</Frame>
+
+### Edit API keys
+
+Via the dashboard or [Update API key](/reference/update-api-key) API:
+
+* Update the name or IP allowlist
+* Does not change the secret—no app code changes needed
+
+### Rotate API keys
+
+Via the dashboard or [Rotate API key](/reference/rotate-api-key) API:
+
+* Replaces the key’s secret
+* Keep the same name and IP settings
+* You must update your app or integration with the new key
+
+### Delete API keys
+
+Via the dashboard or [Delete API key](/reference/delete-api-key) API:
+
+* Deletes the key permanently
+* Blocks any further API access using that key
+
+***
+
+## Migrating from legacy API keys
+
+We introduced rich API key management on November 14, 2024.
+
+**Migration Steps**
+
+1. Create a new rich API key (see above).
+2. Replace the legacy key in your codebase.
+3. Update API calls to use `https://api.onesignal.com` instead of the old `https://onesignal.com/api/v1/` URL.
+4. Delete or click "Disable Legacy Key" on the legacy key from the **Keys & IDs** page.
+
+***
+
+## Disabling your app
+
+Disabling an app will block:
+
+* New notifications
+* Scheduled notifications waiting to be sent
+
+It will not block new device subscriptions. To prevent those, you must remove OneSignal code from your app.
+
+Disabled apps can be re-enabled at any time in the dashboard.
+
+***
+
+
+---
+
+> To find navigation and other pages in this documentation, fetch the llms.txt file at: https://documentation.onesignal.com/llms.txt
