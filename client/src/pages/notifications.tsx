@@ -1334,6 +1334,19 @@ export default function Notifications() {
 
     // Web Push Benachrichtigung senden via OneSignal
     try {
+      // Get the current user's player ID for direct targeting
+      let playerId: string | null = null;
+      try {
+        // @ts-ignore - OneSignal is loaded globally
+        if (typeof window !== 'undefined' && window.OneSignal) {
+          // @ts-ignore
+          playerId = await window.OneSignal.User?.PushSubscription?.id;
+          console.log('Using player ID for direct targeting:', playerId);
+        }
+      } catch (e) {
+        console.log('Could not get player ID, falling back to segment targeting');
+      }
+
       const webPushResponse = await fetch('/api/notifications/web-push', {
         method: 'POST',
         headers: {
@@ -1342,7 +1355,8 @@ export default function Notifications() {
         body: JSON.stringify({
           title: `🔔 Sehr Gefährlich - ${mockAlarm.trendPriceName}`,
           message: `${mockAlarm.message}. ${mockAlarm.note}`,
-          alarmLevel: mockAlarm.alarmLevel
+          alarmLevel: mockAlarm.alarmLevel,
+          playerId: playerId // Send player ID for direct targeting
         })
       });
 

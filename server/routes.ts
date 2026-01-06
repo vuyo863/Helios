@@ -2398,22 +2398,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Send notification to all subscribed users
+      // Get player_id from request body (optional - for direct targeting)
+      const { playerId } = req.body;
+      
+      // Build notification payload
+      const notificationPayload: any = {
+        app_id: ONESIGNAL_APP_ID,
+        headings: { en: title },
+        contents: { en: message },
+        data: { alarmLevel, timestamp: new Date().toISOString() },
+        chrome_web_icon: 'https://cdn-icons-png.flaticon.com/512/2645/2645890.png',
+        url: '/notifications'
+      };
+
+      // If playerId provided, send to specific device. Otherwise, send to all.
+      if (playerId) {
+        notificationPayload.include_player_ids = [playerId];
+        console.log(`Targeting specific player: ${playerId}`);
+      } else {
+        notificationPayload.included_segments = ['All'];
+        console.log('Targeting all subscribed users');
+      }
+
+      // Send notification
       const response = await fetch('https://onesignal.com/api/v1/notifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
         },
-        body: JSON.stringify({
-          app_id: ONESIGNAL_APP_ID,
-          included_segments: ['All'], // Send to all subscribed users
-          headings: { en: title },
-          contents: { en: message },
-          data: { alarmLevel, timestamp: new Date().toISOString() },
-          chrome_web_icon: 'https://cdn-icons-png.flaticon.com/512/2645/2645890.png',
-          url: '/notifications' // Open notifications page when clicked
-        })
+        body: JSON.stringify(notificationPayload)
       });
 
       const result = await response.json();
