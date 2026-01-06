@@ -112,6 +112,9 @@ export default function Notifications() {
   const [allBinanceFuturesPairs, setAllBinanceFuturesPairs] = useState<TrendPrice[]>([]);
   const [isFuturesLoading, setIsFuturesLoading] = useState(true);
   const [isSpotLoading, setIsSpotLoading] = useState(true);
+  
+  // Track if Futures API is geo-blocked (418 error) to prevent constant polling
+  const [isFuturesBlocked, setIsFuturesBlocked] = useState(false);
 
   // Funktion zum Laden aller verfügbaren Binance Spot Trading Pairs
   const fetchAllBinancePairs = async () => {
@@ -164,6 +167,14 @@ export default function Notifications() {
     try {
       // Try Binance Futures API (may be geo-blocked in some regions)
       const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
+      
+      // Check for geo-block (418 "I'm a teapot" or 451 "Unavailable for Legal Reasons")
+      const isGeoBlocked = response.status === 418 || response.status === 451;
+      if (isGeoBlocked) {
+        console.warn('Binance Futures API is geo-blocked (418/451). Using fallback pairs with no live prices.');
+        setIsFuturesBlocked(true);
+      }
+      
       if (!response.ok) {
         console.warn('Binance Futures API returned non-OK status, trying fallback...');
         // Try to use popular pairs as fallback
@@ -185,11 +196,12 @@ export default function Notifications() {
           'STXUSDT', 'KAVAUSDT', 'ONEUSDT', 'HOTUSDT', 'RVNUSDT',
           'ZENUSDT', 'BCHUSDT', 'XMRUSDT', 'STORJUSDT', 'ANKRUSDT'
         ];
+        // Use isGeoBlocked directly (sync) instead of state (async)
         const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
           id: `binance-futures-${index}`,
           name: symbol.replace('USDT', '/USDT'),
           symbol: symbol,
-          price: 'Loading...',
+          price: isGeoBlocked ? 'N/A (Geo-Blocked)' : 'Loading...',
           marketType: 'futures' as const
         }));
         setAllBinanceFuturesPairs(fallbackPairs);
@@ -412,10 +424,20 @@ export default function Notifications() {
   // Funktion zum Abrufen der aktuellen Preise von Binance Futures API
   const fetchFuturesPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
+    
+    // Skip if Futures API is geo-blocked
+    if (isFuturesBlocked) return;
 
     try {
       const symbolsParam = symbols.map(s => `"${s}"`).join(',');
       const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[${symbolsParam}]`);
+
+      if (response.status === 418 || response.status === 451) {
+        // Geo-blocked - stop polling to prevent console spam
+        console.warn('Binance Futures API geo-blocked (418/451). Stopping futures price polling.');
+        setIsFuturesBlocked(true);
+        return;
+      }
 
       if (!response.ok) {
         console.error('Failed to fetch futures prices from Binance API');
@@ -494,10 +516,20 @@ export default function Notifications() {
   // Funktion zum Abrufen der Preise für Futures-Vorschläge (Suchergebnisse)
   const fetchSuggestionFuturesPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
+    
+    // Skip if Futures API is geo-blocked
+    if (isFuturesBlocked) return;
 
     try {
       const symbolsParam = symbols.map(s => `"${s}"`).join(',');
       const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[${symbolsParam}]`);
+
+      if (response.status === 418 || response.status === 451) {
+        // Geo-blocked - stop polling to prevent console spam
+        console.warn('Binance Futures API geo-blocked (418/451). Stopping suggestion price polling.');
+        setIsFuturesBlocked(true);
+        return;
+      }
 
       if (!response.ok) {
         console.error('Failed to fetch suggestion prices from Binance Futures API');
@@ -1170,6 +1202,11 @@ export default function Notifications() {
   // Get ONLY live price from availableTradingPairs (updated every 2 seconds)
   const getLivePrice = (id: string): string => {
     const pair = availableTradingPairs.find(tp => tp.id === id);
+    const storedData = pairMarketTypes[id];
+    // If Futures are geo-blocked and this is a futures pair, show N/A
+    if (isFuturesBlocked && storedData?.marketType === 'futures') {
+      return 'N/A (Geo-Blocked)';
+    }
     return pair?.price || 'Loading...';
   };
 
@@ -1312,11 +1349,13 @@ export default function Notifications() {
       const webPushResult = await webPushResponse.json();
 
       if (webPushResult.success) {
+        // recipients: -1 means "unknown" (API doesn't return count), show success
+        const isSuccess = webPushResult.recipients === -1 || webPushResult.recipients > 0;
         toast({
-          title: webPushResult.recipients > 0 ? "✅ Web Push gesendet!" : "⚠️ Keine Abonnenten",
+          title: isSuccess ? "✅ Web Push gesendet!" : "⚠️ Keine Abonnenten",
           description: webPushResult.message || `Browser-Benachrichtigung erfolgreich gesendet`,
           duration: 5000,
-          variant: webPushResult.recipients > 0 ? "default" : "destructive",
+          variant: isSuccess ? "default" : "destructive",
         });
       } else {
         console.error('Web Push error:', webPushResult.error);
@@ -1610,8 +1649,10 @@ export default function Notifications() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-                                  <span className="text-muted-foreground">${pair?.price || 'Loading...'}</span>
-                                  {pair?.priceChangePercent24h && (
+                                  <span className="text-muted-foreground">
+                                    ${isFuturesBlocked && storedMarketType === 'futures' ? 'N/A (Geo-Blocked)' : (pair?.price || 'Loading...')}
+                                  </span>
+                                  {pair?.priceChangePercent24h && !(isFuturesBlocked && storedMarketType === 'futures') && (
                                     <span className={cn(
                                       "text-xs font-medium",
                                       parseFloat(pair.priceChangePercent24h) >= 0 ? "text-green-500" : "text-red-500"

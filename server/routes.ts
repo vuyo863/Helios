@@ -2419,24 +2419,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await response.json();
       console.log("OneSignal API Response:", JSON.stringify(result, null, 2));
 
-      if (response.ok) {
-        // Check if there were any recipients
-        const recipientCount = result.recipients || 0;
-        console.log(`Web Push sent to ${recipientCount} recipient(s)`);
+      if (response.ok && result.id) {
+        // OneSignal v1 API returns { id, external_id } on success
+        // The 'recipients' field is no longer returned in modern API responses
+        // If we got an ID, the notification was queued successfully
+        console.log(`Web Push notification queued with ID: ${result.id}`);
         
         res.json({
           success: true,
           notificationId: result.id,
-          recipients: recipientCount,
-          message: recipientCount > 0 
-            ? `Notification sent to ${recipientCount} device(s)` 
-            : 'No subscribers found - make sure you clicked "Allow" on the notification prompt'
+          recipients: -1, // -1 indicates "unknown" (API doesn't return recipient count)
+          message: 'Notification queued for all subscribed devices'
+        });
+      } else if (result.errors) {
+        console.error("OneSignal API Error:", result.errors);
+        res.status(400).json({
+          success: false,
+          error: result.errors?.[0] || 'Failed to send web push notification'
         });
       } else {
         console.error("OneSignal API Error:", result);
         res.status(400).json({
           success: false,
-          error: result.errors?.[0] || 'Failed to send web push notification'
+          error: 'Failed to send web push notification'
         });
       }
     } catch (error: any) {
