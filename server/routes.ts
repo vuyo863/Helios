@@ -2432,20 +2432,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await response.json();
       console.log("OneSignal API Response:", JSON.stringify(result, null, 2));
+      console.log("OneSignal API Status:", response.status);
+      console.log("Sent Payload:", JSON.stringify(notificationPayload, null, 2));
 
       if (response.ok && result.id) {
-        // OneSignal v1 API returns { id, external_id } on success
-        // The 'recipients' field is no longer returned in modern API responses
-        // If we got an ID, the notification was queued successfully
-        console.log(`Web Push notification queued with ID: ${result.id}`);
+        // OneSignal v1 API returns { id, external_id, recipients } on success
+        console.log(`Web Push notification queued with ID: ${result.id}, recipients: ${result.recipients}`);
         
         res.json({
           success: true,
           notificationId: result.id,
-          recipients: -1, // -1 indicates "unknown" (API doesn't return recipient count)
+          recipients: result.recipients ?? -1,
           message: playerId 
             ? `Notification sent directly to player ${playerId.substring(0, 8)}...` 
-            : 'Notification queued for all subscribed devices'
+            : 'Notification queued for all subscribed devices',
+          debug: {
+            onesignalResponse: result,
+            sentPayload: notificationPayload
+          }
         });
       } else if (result.errors) {
         console.error("OneSignal API Error:", result.errors);
