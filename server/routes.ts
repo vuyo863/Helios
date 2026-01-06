@@ -2443,7 +2443,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           notificationId: result.id,
           recipients: -1, // -1 indicates "unknown" (API doesn't return recipient count)
-          message: 'Notification queued for all subscribed devices'
+          message: playerId 
+            ? `Notification sent directly to player ${playerId.substring(0, 8)}...` 
+            : 'Notification queued for all subscribed devices'
         });
       } else if (result.errors) {
         console.error("OneSignal API Error:", result.errors);
