@@ -14,6 +14,7 @@ import Notifications from "@/pages/notifications";
 import NotFound from "@/pages/not-found";
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
+import OneSignal from 'react-onesignal';
 
 function Router() {
   return (
@@ -96,6 +97,23 @@ function GlobalNotificationToast() {
 }
 
 function App() {
+  const [oneSignalInitialized, setOneSignalInitialized] = useState(false);
+
+  // Initialize OneSignal for Web Push Notifications
+  useEffect(() => {
+    if (oneSignalInitialized) return;
+
+    OneSignal.init({
+      appId: '6f15f4f1-93dc-491f-ba4a-c78354f46858',
+      allowLocalhostAsSecureOrigin: true,
+    }).then(() => {
+      setOneSignalInitialized(true);
+      console.log('OneSignal initialized successfully');
+    }).catch((error) => {
+      console.error('OneSignal initialization error:', error);
+    });
+  }, [oneSignalInitialized]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

@@ -2380,6 +2380,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // ONESIGNAL WEB PUSH NOTIFICATION ENDPOINT
+  // ============================================================================
+
+  app.post("/api/notifications/web-push", async (req, res) => {
+    try {
+      const { title, message, alarmLevel } = req.body;
+
+      const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || '6f15f4f1-93dc-491f-ba4a-c78354f46858';
+      const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
+      if (!ONESIGNAL_REST_API_KEY) {
+        return res.status(400).json({
+          success: false,
+          error: "OneSignal REST API Key not configured. Please set ONESIGNAL_REST_API_KEY environment variable."
+        });
+      }
+
+      // Send notification to all subscribed users
+      const response = await fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
+        },
+        body: JSON.stringify({
+          app_id: ONESIGNAL_APP_ID,
+          included_segments: ['All'], // Send to all subscribed users
+          headings: { en: title },
+          contents: { en: message },
+          data: { alarmLevel, timestamp: new Date().toISOString() },
+          chrome_web_icon: 'https://cdn-icons-png.flaticon.com/512/2645/2645890.png',
+          url: '/notifications' // Open notifications page when clicked
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        res.json({
+          success: true,
+          notificationId: result.id,
+          recipients: result.recipients
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.errors?.[0] || 'Failed to send web push notification'
+        });
+      }
+    } catch (error: any) {
+      console.error("Web Push notification error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Helper functions
   function getAlarmColor(level: string): string {
     switch (level) {

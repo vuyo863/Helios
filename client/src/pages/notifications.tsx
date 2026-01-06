@@ -45,7 +45,7 @@ interface AlarmLevelConfig {
     push: boolean;
     email: boolean;
     sms: boolean;
-    webhook: boolean;
+    webPush: boolean;
   };
   requiresApproval: boolean;
   repeatCount: number | 'infinite'; // Anzahl Wiederholungen oder 'infinite'
@@ -590,7 +590,7 @@ export default function Notifications() {
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
     harmlos: {
       level: 'harmlos',
-      channels: { push: true, email: false, sms: false, webhook: false },
+      channels: { push: true, email: false, sms: false, webPush: false },
       requiresApproval: false,
       repeatCount: 1,
       sequenceHours: 0,
@@ -599,7 +599,7 @@ export default function Notifications() {
     },
     achtung: {
       level: 'achtung',
-      channels: { push: true, email: true, sms: false, webhook: false },
+      channels: { push: true, email: true, sms: false, webPush: false },
       requiresApproval: false,
       repeatCount: 1,
       sequenceHours: 0,
@@ -608,7 +608,7 @@ export default function Notifications() {
     },
     gefährlich: {
       level: 'gefährlich',
-      channels: { push: true, email: true, sms: false, webhook: true },
+      channels: { push: true, email: true, sms: false, webPush: true },
       requiresApproval: true,
       repeatCount: 3,
       sequenceHours: 0,
@@ -617,7 +617,7 @@ export default function Notifications() {
     },
     sehr_gefährlich: {
       level: 'sehr_gefährlich',
-      channels: { push: true, email: true, sms: true, webhook: true },
+      channels: { push: true, email: true, sms: true, webPush: true },
       requiresApproval: true,
       repeatCount: 'infinite',
       sequenceHours: 0,
@@ -697,13 +697,26 @@ export default function Notifications() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                channels: { email: true, sms: false, webhook: false },
+                channels: { email: true, sms: false, webPush: false },
                 recipient: 'hollvuyo@gmail.com',
                 subject: `🚨 Pionex Alert - ${getAlarmLevelLabel(threshold.alarmLevel)}`,
                 message: message,
                 alarmLevel: threshold.alarmLevel
               })
             }).catch(err => console.error('Email notification error:', err));
+          }
+
+          // Send Web Push notification via OneSignal
+          if (alarmConfig.channels.webPush) {
+            fetch('/api/notifications/web-push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `🔔 ${getAlarmLevelLabel(threshold.alarmLevel)} - Schwellenwert erreicht!`,
+                message: message,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('Web Push notification error:', err));
           }
 
           // Handle repeating notifications
@@ -757,13 +770,26 @@ export default function Notifications() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                channels: { email: true, sms: false, webhook: false },
+                channels: { email: true, sms: false, webPush: false },
                 recipient: 'hollvuyo@gmail.com',
                 subject: `🚨 Pionex Alert - ${getAlarmLevelLabel(threshold.alarmLevel)}`,
                 message: message,
                 alarmLevel: threshold.alarmLevel
               })
             }).catch(err => console.error('Email notification error:', err));
+          }
+
+          // Send Web Push notification via OneSignal
+          if (alarmConfig.channels.webPush) {
+            fetch('/api/notifications/web-push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `🔔 ${getAlarmLevelLabel(threshold.alarmLevel)} - Schwellenwert unterschritten!`,
+                message: message,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('Web Push notification error:', err));
           }
 
           // Handle repeating notifications
@@ -1234,7 +1260,7 @@ export default function Notifications() {
           channels: {
             email: true,
             sms: false,
-            webhook: false
+            webPush: false
           },
           recipient: 'hollvuyo@gmail.com',
           subject: '🚨 Pionex Trading Alert - Sehr Gefährlich',
@@ -2633,11 +2659,11 @@ export default function Notifications() {
                                     />
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <Label htmlFor={`${level}-webhook`} className="text-sm cursor-pointer">Webhook</Label>
+                                    <Label htmlFor={`${level}-webPush`} className="text-sm cursor-pointer">Web Push (Browser)</Label>
                                     <Switch
-                                      id={`${level}-webhook`}
-                                      checked={config.channels.webhook}
-                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webhook', checked)}
+                                      id={`${level}-webPush`}
+                                      checked={config.channels.webPush}
+                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webPush', checked)}
                                     />
                                   </div>
                                 </div>
@@ -2813,7 +2839,7 @@ export default function Notifications() {
                                 push: 'Push',
                                 email: 'E-Mail',
                                 sms: 'SMS',
-                                webhook: 'Webhook'
+                                webPush: 'Web Push'
                               };
                               return channelNames[channel];
                             })
