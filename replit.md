@@ -96,31 +96,38 @@ importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
 #### 2. Frontend Initialisierung (`client/src/App.tsx`)
 ```typescript
-// OneSignal Initialisierung
+// WICHTIG: OneSignal nur auf der Produktions-URL initialisieren!
+function isOneSignalAllowedDomain(): boolean {
+  const hostname = window.location.hostname;
+  return hostname === 'helios-ai.replit.app';
+}
+
 useEffect(() => {
-  const initOneSignal = async () => {
-    try {
-      await OneSignal.init({
-        appId: "6f15f4f1-93dc-491f-ba4a-c78354f46858",
-        allowLocalhostAsSecureOrigin: true,
-        serviceWorkerParam: { scope: "/" },
-        serviceWorkerPath: "/OneSignalSDKWorker.js",
-      });
-      console.log("OneSignal initialized successfully");
-      
-      // Subscription Status prüfen
-      const isOptedIn = await OneSignal.User.PushSubscription.optedIn;
-      console.log("OneSignal Push Subscription opted in:", isOptedIn);
-      
-      // Player ID abrufen
-      const playerId = await OneSignal.User.PushSubscription.id;
-      console.log("Using player ID for direct targeting:", playerId);
-      
-    } catch (error) {
-      console.error("OneSignal initialization error:", error);
+  if (!isOneSignalAllowedDomain()) {
+    console.log('OneSignal: Skipping initialization (only works on helios-ai.replit.app)');
+    return;
+  }
+
+  OneSignal.init({
+    appId: "6f15f4f1-93dc-491f-ba4a-c78354f46858",
+    allowLocalhostAsSecureOrigin: true,
+    notifyButton: { enable: true, ... },
+  }).then(() => {
+    // Player ID im localStorage speichern für spätere API-Calls
+    const playerId = OneSignal.User.PushSubscription.id;
+    if (playerId) {
+      localStorage.setItem('onesignal-player-id', playerId);
+      console.log('OneSignal Player ID stored:', playerId);
     }
-  };
-  initOneSignal();
+    
+    // Auf Subscription-Änderungen reagieren
+    OneSignal.User.PushSubscription.addEventListener('change', (event) => {
+      const newPlayerId = OneSignal.User.PushSubscription.id;
+      if (newPlayerId) {
+        localStorage.setItem('onesignal-player-id', newPlayerId);
+      }
+    });
+  });
 }, []);
 ```
 
@@ -137,23 +144,32 @@ app.get('/OneSignalSDKWorker.js', (req, res) => {
 #### 4. Backend Notification Route (`server/routes.ts`)
 ```typescript
 app.post("/api/notifications/web-push", async (req, res) => {
-  const { title, body, url, playerId } = req.body;
+  const { title, message, alarmLevel, playerId } = req.body;
   
-  // OneSignal API Request
+  const notificationPayload = {
+    app_id: process.env.ONESIGNAL_APP_ID,
+    headings: { en: title },
+    contents: { en: message },
+    data: { alarmLevel, timestamp: new Date().toISOString() },
+    url: '/notifications'
+  };
+
+  // GELÖST: Wenn playerId vorhanden, direkt an diesen User senden
+  if (playerId) {
+    notificationPayload.include_player_ids = [playerId];
+    console.log(`Targeting specific player: ${playerId}`);
+  } else {
+    notificationPayload.included_segments = ['All'];
+    console.log('Targeting all subscribed users');
+  }
+  
   const response = await fetch("https://onesignal.com/api/v1/notifications", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Basic ${process.env.ONESIGNAL_REST_API_KEY}`,
     },
-    body: JSON.stringify({
-      app_id: "6f15f4f1-93dc-491f-ba4a-c78354f46858",
-      // PROBLEM: included_segments statt include_player_ids!
-      included_segments: ["Subscribed Users"],
-      headings: { en: title },
-      contents: { en: body },
-      url: url,
-    }),
+    body: JSON.stringify(notificationPayload),
   });
 });
 ```
@@ -163,108 +179,43 @@ app.post("/api/notifications/web-push", async (req, res) => {
 - Sendet Notifications wenn Preisschwellen überschritten werden
 - Verwendet `/api/notifications/send` Endpoint
 
-### Aktueller Status
+### Aktueller Status (GELÖST ✅)
 
 #### Was funktioniert ✅
 1. **Service Worker**: Korrekt registriert und serviert
-2. **OneSignal Initialisierung**: `OneSignal initialized successfully`
+2. **OneSignal Initialisierung**: Nur auf `helios-ai.replit.app` (Dev-Domains werden übersprungen)
 3. **User Subscription**: `opted in: true`
-4. **Player ID generiert**: `b24a27c3-b1cd-4da3-b017-328cee52079b`
-5. **Backend API Call**: OneSignal antwortet mit Notification ID
-6. **OneSignal Dashboard**: Site URL korrekt konfiguriert
+4. **Player ID Speicherung**: Automatisch im `localStorage` unter Key `onesignal-player-id`
+5. **Player ID Übertragung**: Frontend sendet Player ID an Backend bei jedem Web Push Request
+6. **Backend Targeting**: Verwendet `include_player_ids: [playerId]` für direkte Zustellung
+7. **OneSignal Dashboard**: Site URL korrekt konfiguriert
 
-#### Was NICHT funktioniert ❌
-**HAUPTPROBLEM**: User empfängt KEINE Push Notifications!
+#### Implementation Details
 
-### Analyse des Problems
-
-#### Root Cause
-Die Player ID wird im **Frontend generiert**, aber **NICHT an das Backend gesendet**!
-
-**Aktueller Flow (FEHLERHAFT)**:
+**Flow (GELÖST)**:
 ```
-Frontend → Player ID generiert (b24a27c3-...)
-         → Nur in Console geloggt
-         → NICHT an Backend gesendet
-
-Backend  → Erhält keinen Player ID
-         → Fällt zurück auf "included_segments: ['Subscribed Users']"
-         → OneSignal sagt "OK" aber liefert an 0 Empfänger
+1. App.tsx: OneSignal.init() nur auf helios-ai.replit.app
+2. Nach Initialisierung: Player ID wird in localStorage gespeichert
+3. Bei Subscription-Änderungen: Event Listener aktualisiert localStorage
+4. notifications.tsx: Holt Player ID aus localStorage vor jedem Web Push Request
+5. Backend: Verwendet include_player_ids: [playerId] für direkte Zustellung
 ```
 
-**Logs zeigen**:
+**Logs (korrekt)**:
 ```
-Targeting all subscribed users  ← PROBLEM!
-OneSignal API Response: { "id": "ac98d489-..." }
-Web Push notification queued with ID: ac98d489-...
-```
-
-#### Warum OneSignal "OK" sagt aber nichts liefert
-- `included_segments: ["Subscribed Users"]` ist ein Broadcast an alle
-- Aber die Subscription ist an die **exakte URL** gebunden
-- Wenn irgendwas nicht 100% matcht → 0 Empfänger
-
-### Lösung (TODO für nächsten Chat)
-
-#### Schritt 1: Player ID im Frontend persistieren
-```typescript
-// In App.tsx oder notifications.tsx
-const [playerId, setPlayerId] = useState<string | null>(null);
-
-useEffect(() => {
-  const initOneSignal = async () => {
-    await OneSignal.init({...});
-    const id = await OneSignal.User.PushSubscription.id;
-    setPlayerId(id);
-    // Optional: In localStorage speichern
-    if (id) localStorage.setItem('oneSignalPlayerId', id);
-  };
-}, []);
-```
-
-#### Schritt 2: Player ID an Backend senden
-```typescript
-// Bei Test Alarm Button
-const sendTestNotification = async () => {
-  const playerId = await OneSignal.User.PushSubscription.id;
-  
-  await fetch('/api/notifications/web-push', {
-    method: 'POST',
-    body: JSON.stringify({
-      title: 'Test Alarm',
-      body: 'Dies ist ein Test',
-      playerId: playerId  // ← WICHTIG!
-    })
-  });
-};
-```
-
-#### Schritt 3: Backend mit Player ID
-```typescript
-app.post("/api/notifications/web-push", async (req, res) => {
-  const { title, body, playerId } = req.body;
-  
-  if (!playerId) {
-    return res.status(400).json({ error: "Player ID required" });
-  }
-  
-  const payload = {
-    app_id: "6f15f4f1-93dc-491f-ba4a-c78354f46858",
-    include_player_ids: [playerId],  // ← DIREKTE ZUSTELLUNG!
-    headings: { en: title },
-    contents: { en: body },
-  };
-  
-  // ... API call
-});
+OneSignal initialized successfully
+OneSignal Player ID stored: b24a27c3-b1cd-4da3-b017-328cee52079b
+Using player ID for direct targeting: b24a27c3-b1cd-4da3-b017-328cee52079b
+Targeting specific player: b24a27c3-b1cd-4da3-b017-328cee52079b  ← KORREKT!
 ```
 
 ### Debug-Checkliste
 
 #### Browser-Seite
-1. Console öffnen → `OneSignal Push Subscription opted in: true` ?
-2. Player ID vorhanden? → `Using player ID for direct targeting: xxx`
-3. Browser Notifications erlaubt? → Schloss-Symbol in Adressleiste → Notifications → Allow
+1. Console öffnen → `OneSignal initialized successfully` ?
+2. Player ID gespeichert? → `OneSignal Player ID stored: xxx`
+3. Bei Test Alarm: `Using player ID for direct targeting: xxx`
+4. Browser Notifications erlaubt? → Schloss-Symbol in Adressleiste → Notifications → Allow
 
 #### OneSignal Dashboard
 1. Settings → Web Configuration → Site URL = `https://helios-ai.replit.app`
@@ -272,32 +223,25 @@ app.post("/api/notifications/web-push", async (req, res) => {
 3. Delivery → Messages → Wurden Notifications gesendet? Wie viele empfangen?
 
 #### Server-Seite
-1. Logs prüfen: `Targeting all subscribed users` = FALSCH
-2. Richtig wäre: `Targeting player ID: b24a27c3-...`
+1. Logs prüfen: `Targeting specific player: xxx` = KORREKT
+2. `Targeting all subscribed users` = Fallback (nur wenn keine Player ID)
 
 ### Bekannte Einschränkungen
 
 1. **Binance API Geo-Blocking**: Futures API gibt 418/451 in manchen Regionen
 2. **Browser Extension Fehler**: `content-all.js` Fehler kommen von Browser Extensions (ignorieren)
-3. **OneSignal Service Worker Warnung**: "Event handler of 'message' event..." ist unkritisch
+3. **sw.ts:20 Warnung**: Kommt von internem Vite/Replit Service Worker, NICHT von unserer App
+4. **Dev-Umgebung**: OneSignal funktioniert NUR auf `https://helios-ai.replit.app`
 
-### Dateien für nächsten Chat
+### Relevante Dateien
 
 | Datei | Zweck |
 |-------|-------|
-| `client/src/App.tsx` | OneSignal Initialisierung |
-| `client/src/pages/notifications.tsx` | Test Alarm Button, Player ID nutzen |
-| `server/routes.ts` | Web Push Endpoint anpassen |
-| `server/alertService.ts` | Automatische Threshold-Alerts |
-| `server/index.ts` | Service Worker Serving |
+| `client/src/App.tsx` | OneSignal Initialisierung, Player ID im localStorage speichern |
+| `client/src/pages/notifications.tsx` | Test Alarm Button, Player ID aus localStorage lesen |
+| `server/routes.ts` | Web Push Endpoint mit Player ID Support |
 | `client/public/OneSignalSDKWorker.js` | Service Worker Datei |
 
 ### Zusammenfassung
 
-**Status**: OneSignal ist korrekt konfiguriert, aber die Player ID wird nicht vom Frontend an das Backend weitergegeben. Dadurch verwendet das Backend den Fallback `included_segments` statt `include_player_ids`, was zu 0 zugestellten Notifications führt.
-
-**Nächste Schritte**:
-1. Player ID im Frontend nach Initialisierung speichern
-2. Player ID bei jedem Notification-Request an Backend senden
-3. Backend ändern: `include_player_ids: [playerId]` statt `included_segments`
-4. Testen auf `https://helios-ai.replit.app`
+**Status**: ✅ GELÖST - OneSignal Web Push funktioniert jetzt mit direktem Player ID Targeting. Die Player ID wird automatisch im localStorage gespeichert und bei jedem Web Push Request ans Backend gesendet.

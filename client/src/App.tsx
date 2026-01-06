@@ -96,12 +96,26 @@ function GlobalNotificationToast() {
   );
 }
 
+// Helper function to check if we're on the production domain configured in OneSignal
+function isOneSignalAllowedDomain(): boolean {
+  const hostname = window.location.hostname;
+  // OneSignal is configured ONLY for helios-ai.replit.app
+  // Do not initialize on dev domains (*.replit.dev, *.janeway.replit.dev, etc.)
+  return hostname === 'helios-ai.replit.app';
+}
+
 function App() {
   const [oneSignalInitialized, setOneSignalInitialized] = useState(false);
 
-  // Initialize OneSignal for Web Push Notifications
+  // Initialize OneSignal for Web Push Notifications - only on production domain
   useEffect(() => {
     if (oneSignalInitialized) return;
+    
+    // Skip initialization on non-production domains to avoid OneSignal errors
+    if (!isOneSignalAllowedDomain()) {
+      console.log('OneSignal: Skipping initialization (only works on helios-ai.replit.app):', window.location.hostname);
+      return;
+    }
 
     OneSignal.init({
       appId: import.meta.env.VITE_ONESIGNAL_APP_ID || '6f15f4f1-93dc-491f-ba4a-c78354f46858',
