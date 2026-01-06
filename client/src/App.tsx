@@ -135,6 +135,26 @@ function App() {
       // Check subscription status (optedIn is a boolean, not a Promise in v5)
       const isOptedIn = OneSignal.User.PushSubscription.optedIn;
       console.log('OneSignal Push Subscription opted in:', isOptedIn);
+      
+      // Get and store Player ID for direct targeting
+      const playerId = OneSignal.User.PushSubscription.id;
+      if (playerId) {
+        localStorage.setItem('onesignal-player-id', playerId);
+        console.log('OneSignal Player ID stored:', playerId);
+      } else {
+        console.log('OneSignal Player ID not yet available, will be set on subscription');
+      }
+      
+      // Listen for subscription changes to capture Player ID
+      OneSignal.User.PushSubscription.addEventListener('change', (event: any) => {
+        console.log('OneSignal subscription changed:', event);
+        const newPlayerId = OneSignal.User.PushSubscription.id;
+        if (newPlayerId) {
+          localStorage.setItem('onesignal-player-id', newPlayerId);
+          console.log('OneSignal Player ID updated:', newPlayerId);
+        }
+      });
+      
       if (!isOptedIn) {
         // Prompt user to subscribe to push notifications
         OneSignal.Slidedown.promptPush();

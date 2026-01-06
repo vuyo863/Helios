@@ -740,13 +740,15 @@ export default function Notifications() {
 
           // Send Web Push notification via OneSignal
           if (alarmConfig.channels.webPush) {
+            const webPushPlayerId = localStorage.getItem('onesignal-player-id');
             fetch('/api/notifications/web-push', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 title: `🔔 ${getAlarmLevelLabel(threshold.alarmLevel)} - Schwellenwert erreicht!`,
                 message: message,
-                alarmLevel: threshold.alarmLevel
+                alarmLevel: threshold.alarmLevel,
+                playerId: webPushPlayerId
               })
             }).catch(err => console.error('Web Push notification error:', err));
           }
@@ -813,13 +815,15 @@ export default function Notifications() {
 
           // Send Web Push notification via OneSignal
           if (alarmConfig.channels.webPush) {
+            const webPushPlayerId = localStorage.getItem('onesignal-player-id');
             fetch('/api/notifications/web-push', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 title: `🔔 ${getAlarmLevelLabel(threshold.alarmLevel)} - Schwellenwert unterschritten!`,
                 message: message,
-                alarmLevel: threshold.alarmLevel
+                alarmLevel: threshold.alarmLevel,
+                playerId: webPushPlayerId
               })
             }).catch(err => console.error('Web Push notification error:', err));
           }
@@ -1334,17 +1338,18 @@ export default function Notifications() {
 
     // Web Push Benachrichtigung senden via OneSignal
     try {
-      // Get the current user's player ID for direct targeting
-      let playerId: string | null = null;
-      try {
-        // @ts-ignore - OneSignal is loaded globally
-        if (typeof window !== 'undefined' && window.OneSignal) {
-          // @ts-ignore
-          playerId = await window.OneSignal.User?.PushSubscription?.id;
-          console.log('Using player ID for direct targeting:', playerId);
-        }
-      } catch (e) {
-        console.log('Could not get player ID, falling back to segment targeting');
+      // Get the current user's player ID from localStorage (stored by App.tsx OneSignal init)
+      const playerId = localStorage.getItem('onesignal-player-id');
+      console.log('Using player ID for direct targeting:', playerId);
+      
+      if (!playerId) {
+        console.warn('No OneSignal Player ID found. User may not be subscribed to push notifications.');
+        toast({
+          title: "Web Push nicht verfügbar",
+          description: "Bitte aktiviere zuerst Push-Benachrichtigungen über den roten Glocken-Button unten rechts.",
+          variant: "destructive",
+          duration: 5000,
+        });
       }
 
       const webPushResponse = await fetch('/api/notifications/web-push', {
