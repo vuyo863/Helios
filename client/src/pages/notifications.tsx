@@ -1383,7 +1383,7 @@ export default function Notifications() {
   // ============================================================================
 
   const triggerNativePushAlarm = async () => {
-    // Alarm in activeAlarms hinzufügen (genau wie bei triggerMockAlarm)
+    // Alarm erstellen
     const nativePushAlarm: ActiveAlarm = {
       id: crypto.randomUUID(),
       trendPriceName: 'ETH/USDT',
@@ -1394,13 +1394,13 @@ export default function Notifications() {
       note: 'NATIVE PUSH TEST: iOS/Android Benachrichtigung'
     };
 
+    // Optimistic UI Update - Alarm sofort hinzufügen
     setActiveAlarms(prev => [...prev, nativePushAlarm]);
 
-    // Toast: Alarm wurde lokal ausgelöst
     toast({
-      title: "Native Push Alarm ausgelöst!",
+      title: "Native Push wird gesendet...",
       description: `${nativePushAlarm.trendPriceName}: ${nativePushAlarm.message}`,
-      duration: 5000,
+      duration: 3000,
     });
 
     // Native Push via Backend an OneSignal senden
@@ -1417,6 +1417,20 @@ export default function Notifications() {
         })
       });
 
+      // Handle non-2xx responses
+      if (!response.ok) {
+        console.error('[NATIVE PUSH] HTTP Error:', response.status);
+        // Rollback: Remove the alarm on failure
+        setActiveAlarms(prev => prev.filter(a => a.id !== nativePushAlarm.id));
+        toast({
+          title: "Native Push Fehler",
+          description: `HTTP ${response.status}: Server-Fehler`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+
       const result = await response.json();
       console.log('[NATIVE PUSH] Backend Response:', result);
 
@@ -1427,6 +1441,8 @@ export default function Notifications() {
           duration: 5000,
         });
       } else {
+        // Rollback: Remove the alarm on failure
+        setActiveAlarms(prev => prev.filter(a => a.id !== nativePushAlarm.id));
         toast({
           title: "Native Push Fehler",
           description: result.error || "Push konnte nicht gesendet werden",
@@ -1436,6 +1452,8 @@ export default function Notifications() {
       }
     } catch (error: any) {
       console.error('[NATIVE PUSH] Error:', error);
+      // Rollback: Remove the alarm on error
+      setActiveAlarms(prev => prev.filter(a => a.id !== nativePushAlarm.id));
       toast({
         title: "Verbindungsfehler",
         description: "Backend nicht erreichbar",

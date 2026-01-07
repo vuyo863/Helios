@@ -2537,7 +2537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`[TEST ${testId}] OneSignal configured: App ID = ${ONESIGNAL_APP_ID.substring(0, 8)}...`);
+      console.log(`[TEST ${testId}] OneSignal configured: YES`);
 
       // Build notification payload for Native Push (same API, but targets PWA subscribers)
       const notificationPayload = {
@@ -2558,8 +2558,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAnyWeb: true
       };
 
-      console.log(`[TEST ${testId}] Sending to OneSignal...`);
-      console.log(`[TEST ${testId}] Payload:`, JSON.stringify(notificationPayload, null, 2));
+      console.log(`[TEST ${testId}] Sending to OneSignal... Title: "${title}"`);
+      // Redacted sensitive data from logs
 
       // Send notification via OneSignal
       const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -2573,8 +2573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await response.json();
       
-      console.log(`[TEST ${testId}] OneSignal Status: ${response.status}`);
-      console.log(`[TEST ${testId}] OneSignal Response:`, JSON.stringify(result, null, 2));
+      console.log(`[TEST ${testId}] OneSignal Status: ${response.status}, Notification ID: ${result.id || 'FAILED'}, Recipients: ${result.recipients ?? 0}`);
 
       if (response.ok && result.id) {
         console.log(`[TEST ${testId}] SUCCESS - Notification ID: ${result.id}, Recipients: ${result.recipients}`);
