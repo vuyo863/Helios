@@ -620,43 +620,72 @@ export default function Notifications() {
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
 
   // Alarmierungsstufen Konfiguration - moved up before useEffect
-  const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
-    harmlos: {
-      level: 'harmlos',
-      channels: { push: true, email: false, sms: false, webPush: false, nativePush: false },
-      requiresApproval: false,
-      repeatCount: 1,
-      sequenceHours: 0,
-      sequenceMinutes: 0,
-      sequenceSeconds: 0
-    },
-    achtung: {
-      level: 'achtung',
-      channels: { push: true, email: true, sms: false, webPush: false, nativePush: false },
-      requiresApproval: false,
-      repeatCount: 1,
-      sequenceHours: 0,
-      sequenceMinutes: 0,
-      sequenceSeconds: 0
-    },
-    gefährlich: {
-      level: 'gefährlich',
-      channels: { push: true, email: true, sms: false, webPush: true, nativePush: false },
-      requiresApproval: true,
-      repeatCount: 3,
-      sequenceHours: 0,
-      sequenceMinutes: 5,
-      sequenceSeconds: 0
-    },
-    sehr_gefährlich: {
-      level: 'sehr_gefährlich',
-      channels: { push: true, email: true, sms: true, webPush: true, nativePush: false },
-      requiresApproval: true,
-      repeatCount: 'infinite',
-      sequenceHours: 0,
-      sequenceMinutes: 1,
-      sequenceSeconds: 0
+  const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>(() => {
+    // Default configuration
+    const defaults: Record<AlarmLevel, AlarmLevelConfig> = {
+      harmlos: {
+        level: 'harmlos',
+        channels: { push: true, email: false, sms: false, webPush: false, nativePush: false },
+        requiresApproval: false,
+        repeatCount: 1,
+        sequenceHours: 0,
+        sequenceMinutes: 0,
+        sequenceSeconds: 0
+      },
+      achtung: {
+        level: 'achtung',
+        channels: { push: true, email: true, sms: false, webPush: false, nativePush: false },
+        requiresApproval: false,
+        repeatCount: 1,
+        sequenceHours: 0,
+        sequenceMinutes: 0,
+        sequenceSeconds: 0
+      },
+      gefährlich: {
+        level: 'gefährlich',
+        channels: { push: true, email: true, sms: false, webPush: true, nativePush: false },
+        requiresApproval: true,
+        repeatCount: 3,
+        sequenceHours: 0,
+        sequenceMinutes: 5,
+        sequenceSeconds: 0
+      },
+      sehr_gefährlich: {
+        level: 'sehr_gefährlich',
+        channels: { push: true, email: true, sms: true, webPush: true, nativePush: false },
+        requiresApproval: true,
+        repeatCount: 'infinite',
+        sequenceHours: 0,
+        sequenceMinutes: 1,
+        sequenceSeconds: 0
+      }
+    };
+
+    // Try to load from localStorage
+    try {
+      const stored = localStorage.getItem('alarm-level-configs');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Merge stored values with defaults (to handle new fields like nativePush)
+        const merged: Record<AlarmLevel, AlarmLevelConfig> = { ...defaults };
+        for (const level of Object.keys(defaults) as AlarmLevel[]) {
+          if (parsed[level]) {
+            merged[level] = {
+              ...defaults[level],
+              ...parsed[level],
+              channels: {
+                ...defaults[level].channels,
+                ...parsed[level].channels
+              }
+            };
+          }
+        }
+        return merged;
+      }
+    } catch (err) {
+      console.error('Error loading alarm-level-configs from localStorage:', err);
     }
+    return defaults;
   });
 
   // Track which threshold is currently being edited (for excluding from alerts)
