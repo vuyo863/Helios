@@ -46,6 +46,7 @@ interface AlarmLevelConfig {
     email: boolean;
     sms: boolean;
     webPush: boolean;
+    nativePush: boolean;
   };
   requiresApproval: boolean;
   repeatCount: number | 'infinite'; // Anzahl Wiederholungen oder 'infinite'
@@ -622,7 +623,7 @@ export default function Notifications() {
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>({
     harmlos: {
       level: 'harmlos',
-      channels: { push: true, email: false, sms: false, webPush: false },
+      channels: { push: true, email: false, sms: false, webPush: false, nativePush: false },
       requiresApproval: false,
       repeatCount: 1,
       sequenceHours: 0,
@@ -631,7 +632,7 @@ export default function Notifications() {
     },
     achtung: {
       level: 'achtung',
-      channels: { push: true, email: true, sms: false, webPush: false },
+      channels: { push: true, email: true, sms: false, webPush: false, nativePush: false },
       requiresApproval: false,
       repeatCount: 1,
       sequenceHours: 0,
@@ -640,7 +641,7 @@ export default function Notifications() {
     },
     gefährlich: {
       level: 'gefährlich',
-      channels: { push: true, email: true, sms: false, webPush: true },
+      channels: { push: true, email: true, sms: false, webPush: true, nativePush: false },
       requiresApproval: true,
       repeatCount: 3,
       sequenceHours: 0,
@@ -649,7 +650,7 @@ export default function Notifications() {
     },
     sehr_gefährlich: {
       level: 'sehr_gefährlich',
-      channels: { push: true, email: true, sms: true, webPush: true },
+      channels: { push: true, email: true, sms: true, webPush: true, nativePush: false },
       requiresApproval: true,
       repeatCount: 'infinite',
       sequenceHours: 0,
@@ -2749,6 +2750,14 @@ export default function Notifications() {
                                       onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webPush', checked)}
                                     />
                                   </div>
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${level}-nativePush`} className="text-sm cursor-pointer">Native Push (iOS/Android)</Label>
+                                    <Switch
+                                      id={`${level}-nativePush`}
+                                      checked={config.channels.nativePush}
+                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'nativePush', checked)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
 
@@ -2922,7 +2931,8 @@ export default function Notifications() {
                                 push: 'Push',
                                 email: 'E-Mail',
                                 sms: 'SMS',
-                                webPush: 'Web Push'
+                                webPush: 'Web Push',
+                                nativePush: 'Native Push'
                               };
                               return channelNames[channel];
                             })
