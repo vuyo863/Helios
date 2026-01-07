@@ -2614,6 +2614,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`========== END TEST #${testId} ==========\n`);
   });
 
+  // ========== DEBUG: OneSignal Subscriber List ==========
+  // Shows all registered devices at OneSignal
+  app.get('/api/onesignal/subscribers', async (req, res) => {
+    const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+    const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
+    if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'OneSignal not configured'
+      });
+    }
+
+    try {
+      // Fetch players/devices from OneSignal
+      const response = await fetch(`https://onesignal.com/api/v1/players?app_id=${ONESIGNAL_APP_ID}&limit=50`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return res.status(response.status).json({
+          success: false,
+          error: data.errors || 'Failed to fetch subscribers',
+          raw: data
+        });
+      }
+
+      // Parse and format subscriber data
+      const subscribers = (data.players || []).map((player: any) => ({
+        id: player.id,
+        deviceType: getDeviceTypeName(player.device_type),
+        deviceTypeId: player.device_type,
+        lastActive: player.last_active,
+        createdAt: player.created_at,
+        invalid: player.invalid_identifier || false,
+        subscribed: player.notification_types !== -2,
+        platform: player.device_os || 'unknown',
+        tags: player.tags || {}
+      }));
+
+      res.json({
+        success: true,
+        totalCount: data.total_count || subscribers.length,
+        subscribers,
+        summary: {
+          total: subscribers.length,
+          active: subscribers.filter((s: any) => s.subscribed && !s.invalid).length,
+          invalid: subscribers.filter((s: any) => s.invalid).length,
+          unsubscribed: subscribers.filter((s: any) => !s.subscribed).length
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching OneSignal subscribers:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Helper: Device type names
+  function getDeviceTypeName(type: number): string {
+    const types: { [key: number]: string } = {
+      0: 'iOS (Native)',
+      1: 'Android (Native)',
+      2: 'Amazon Fire',
+      3: 'Windows Phone',
+      4: 'Chrome App',
+      5: 'Chrome Web Push',
+      6: 'Safari (macOS)',
+      7: 'Safari (iOS - deprecated)',
+      8: 'Safari iOS',
+      9: 'Email',
+      10: 'Huawei',
+      11: 'Firefox Web Push',
+      12: 'macOS Native',
+      13: 'SMS',
+      14: 'Safari (macOS 13+)',
+      17: 'Edge Web Push'
+    };
+    return types[type] || `Unknown (${type})`;
+  }
+
+  // ========== IMPROVED: Enhanced Web Push with Retry ==========
+  app.post('/api/notifications/push-enhanced', async (req, res) => {
+    const { title, message, alarmLevel, retryCount = 0 } = req.body;
+    const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+    const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
+    if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'OneSignal not configured'
+      });
+    }
+
+    const maxRetries = 2;
+    let lastError = null;
+    let successResult = null;
+
+    // Try sending with retries
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const notificationPayload = {
+          app_id: ONESIGNAL_APP_ID,
+          headings: { en: title },
+          contents: { en: message },
+          data: { 
+            alarmLevel, 
+            timestamp: new Date().toISOString(),
+            channel: 'push-enhanced',
+            attempt: attempt + 1
+          },
+          chrome_web_icon: 'https://helios-ai.replit.app/icon-192.png',
+          url: 'https://helios-ai.replit.app/notifications',
+          included_segments: ['All'],
+          // iOS specific settings for better delivery
+          ios_badgeType: 'Increase',
+          ios_badgeCount: 1,
+          // Priority settings
+          priority: 10,
+          // TTL: 24 hours
+          ttl: 86400
+        };
+
+        const response = await fetch('https://onesignal.com/api/v1/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
+          },
+          body: JSON.stringify(notificationPayload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.id) {
+          successResult = result;
+          console.log(`[PUSH-ENHANCED] Success on attempt ${attempt + 1}: ID ${result.id}, Recipients: ${result.recipients}`);
+          break;
+        } else {
+          lastError = result.errors?.[0] || 'Unknown error';
+          console.log(`[PUSH-ENHANCED] Attempt ${attempt + 1} failed:`, lastError);
+          
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+          }
+        }
+      } catch (error: any) {
+        lastError = error.message;
+        console.error(`[PUSH-ENHANCED] Attempt ${attempt + 1} error:`, error.message);
+        
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+        }
+      }
+    }
+
+    if (successResult) {
+      res.json({
+        success: true,
+        notificationId: successResult.id,
+        recipients: successResult.recipients ?? 0,
+        message: 'Enhanced push notification sent successfully'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: lastError || 'Failed after all retries',
+        retriesAttempted: maxRetries + 1
+      });
+    }
+  });
+
   // Helper functions
   function getAlarmColor(level: string): string {
     switch (level) {
