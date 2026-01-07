@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project aims to provide users with detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features, to empower better trading decisions. It also includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to provide a comprehensive tool for cryptocurrency traders using Pionex bots, offering market potential through enhanced analytical capabilities and timely notifications.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project provides detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features. It also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -11,39 +11,47 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   1. **Trendpreise & Watchlist**: Search, Spot/Futures toggle, watchlist display with prices
   2. **Benachrichtigungen konfigurieren**: Threshold dialog system, dialog behavior (no auto-close, no auto-save on X/ESC), explicit "Speichern" requirement, cleanup of unsaved thresholds, draft exclusion from alerts
   3. **Aktive Alarmierungen**: Dynamic border color based on highest danger level, red blinking animation for "Sehr Gefährlich", sorting dropdown (Dringlichkeit default), scroll container with fixed height
+- **Golden State - Push Benachrichtigungen**: Der folgende Toggle und seine Funktion sind Golden State und dürfen NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+  - **Toggle:** "Push Benachrichtigungen (iOS, Android, Browser)" in den Alarm-Level Einstellungen
+  - **Funktion:** Sendet Push-Nachrichten an ALLE registrierten Geräte (iPhone, iPad, Windows Chrome) via OneSignal
+  - **Backend-Routen:** `/api/notifications/web-push`, `/api/test-native-push`, `/api/notifications/push-enhanced`
+  - **Unified Logic:** Ein Toggle kontrolliert beide internen Werte (webPush + nativePush), da OneSignal keine Geräte-Trennung unterstützt
+  - **Push Test Button:** Versteckt hinter Auge-Symbol (Eye/EyeOff Toggle) in der Header-Zeile der Notifications-Seite
 - **Workflow**: For the Notifications page, adding or editing a threshold, or changing its alarm level, requires an explicit "Speichern" (Save) button click; there is no auto-save for these actions. Dialog cleanup is automatic: when a "new threshold" dialog is closed (via X, ESC, or outside click) without saving, any incomplete threshold (missing value or notification type) is automatically removed from state. The `hasAnyThresholds` check excludes the currently editing threshold to prevent dialog auto-close during editing.
 
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive interface. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard offers three primary chart modes: MainChart (single bot type), Compare Mode (multiple bot types), and Added Mode (aggregated data with Analysis and Overlay features). Interactive features include a marker system (U1, C1), eye and pencil modes, zoom/pan, and Info-Tooltips. The Notifications page includes a watchlist with live price updates from Binance API, a threshold system with four alarm levels, and active alerts display. Web Push Notifications are integrated via OneSignal for real-time alerts.
+The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for a responsive interface. Recharts is utilized for dynamic data visualization, and Wouter for client-side routing. The dashboard features MainChart, Compare Mode, and Added Mode (with Analysis and Overlay). Interactive elements include a marker system, zoom/pan, and Info-Tooltips. The Notifications page incorporates a watchlist with live Binance price updates, a configurable threshold system with four alarm levels, and an active alerts display. Web Push Notifications are integrated via OneSignal.
 
 ### Technical Implementations
-- **State Management**: TypeScript-typed state for chart modes, bot types, and interactions.
-- **Data Handling**: `useMemo` hooks optimize data preparation.
-- **Bot Type Management**: CRUD operations, CSV/Excel upload, and update history.
-- **Eye Mode**: Extended overlay view with Period Comparison Cards and aggregated metrics.
-- **Pencil Mode**: Single-period selection for detailed analysis with bar charts.
+- **State Management**: TypeScript-typed state for various application components.
+- **Data Handling**: Optimized with `useMemo` hooks.
+- **Bot Type Management**: Supports CRUD operations, CSV/Excel upload, and update history.
 - **Notifications Data Persistence**: Watchlist and pair market types are persisted in `localStorage`. Futures pair identification uses a robust symbol-based fallback.
-- **OneSignal Integration**: Configured for web push notifications, initialized only on the production URL, player ID stored and used for targeted delivery.
-- **Backend Service Worker Route**: Express.js serves `OneSignalSDKWorker.js` with correct headers.
-- **Backend Notification Route**: Handles web push requests, targeting specific players or all subscribed users.
+- **OneSignal Integration**: Configured for web push notifications, initialized on the production URL, with player ID storage for targeted delivery.
+- **Backend Service Worker Route**: Express.js serves `OneSignalSDKWorker.js`.
+- **Backend Notification Route**: Handles web push requests for specific players or all subscribed users.
+- **Unified Push Logic**: A single frontend toggle controls both `webPush` and `nativePush` states due to OneSignal limitations, sending one notification to all subscribers (desktop and PWA).
+- **Enhanced Push Route**: `/api/notifications/push-enhanced` includes retry logic, iOS optimizations, and a 24-hour TTL for improved delivery.
 
 ### Feature Specifications
-- **Marker System**: Interactive points on charts for event analysis.
-- **Zoom & Pan**: Interactive chart navigation.
-- **AI-Analysis**: Integration with OpenAI for automated insights.
-- **Info-Tooltips**: Explanations for key metrics.
-- **Notifications Watchlist**: Real-time price tracking from Binance.
-- **Threshold System**: Configurable price alerts with priority levels.
+- **Marker System**: Interactive points on charts.
+- **Zoom & Pan**: Chart navigation.
+- **AI-Analysis**: Integration with OpenAI for insights.
+- **Info-Tooltips**: Explanations for metrics.
+- **Notifications Watchlist**: Real-time price tracking.
+- **Threshold System**: Configurable price alerts.
 - **German Formatting**: Prices and thresholds displayed in German number format.
-- **Web Push Notifications**: Real-time alerts via OneSignal when browser is minimized, on another tab, or device is locked.
+- **Web Push Notifications**: Real-time alerts via OneSignal.
+- **Native Push Notifications (PWA)**: Supported on iOS (16.4+) and Android via PWA, leveraging OneSignal.
+- **Push Test Button**: Hidden by default, accessible via an eye icon to prevent accidental triggers.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
-- **Stable ID Handling**: Symbol-based lookup for futures pairs in Notifications.
-- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key for secure and targeted notifications.
-- **Targeted Notifications**: Utilizes `include_player_ids` for direct delivery to specific users.
+- **Stable ID Handling**: Symbol-based lookup for futures pairs.
+- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key for secure and targeted notifications using `include_player_ids`.
+- **PWA Infrastructure**: `manifest.json` and Apple Meta-Tags for PWA support on mobile devices.
 
 ## External Dependencies
 - **Database**: Neon Serverless PostgreSQL with Drizzle ORM.
@@ -54,136 +62,3 @@ The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind 
 - **Storage**: In-memory `MemStorage` for server-side data handling.
 - **Crypto Data**: Binance API (Spot and Futures market data).
 - **Web Push Notifications**: OneSignal Web Push SDK v16.
-
----
-
-## iOS/Android Native Push Notifications (PWA)
-
-### Status: ✅ FUNKTIONIERT - Erfolgreich getestet am 07.01.2026
-
-Native Push Notifications funktionieren auf iOS (iPhone, iPad) und Android via PWA (Progressive Web App) Ansatz.
-
----
-
-### Wie es funktioniert
-
-**Voraussetzungen für den User:**
-1. App auf `helios-ai.replit.app` öffnen (Safari auf iOS, Chrome auf Android)
-2. PWA zum Home-Screen hinzufügen ("Zum Home-Bildschirm")
-3. Push-Benachrichtigungen erlauben wenn gefragt
-4. iOS 16.4+ erforderlich
-
-**Technischer Ablauf:**
-1. User klickt "NATIVE PUSH ALARM" Button auf der Notifications-Seite
-2. Frontend sendet POST Request an `/api/test-native-push`
-3. Backend sendet Notification via OneSignal API an alle Subscriber
-4. OneSignal liefert die Nachricht an alle PWA-installierten Geräte
-
----
-
-### Implementierung (07.01.2026)
-
-**Backend-Route:** `/api/test-native-push` (server/routes.ts)
-- Komplett separater Code vom bestehenden Web Push (Golden State Doctrine)
-- Sendet Broadcast an alle Subscriber via `included_segments: ['All']`
-- iOS/Android Flags aktiviert: `isIos: true`, `isAndroid: true`, `isAnyWeb: true`
-- Logs enthalten keine sensiblen Daten (Security Fix)
-
-**PWA-Infrastruktur:**
-- `client/public/manifest.json` - PWA Manifest mit iOS-Einstellungen
-- `client/public/icon-192.png` und `icon-512.png` - App Icons
-- `client/index.html` - Apple Meta-Tags für PWA-Support
-
-**Frontend:** `client/src/pages/notifications.tsx`
-- `triggerNativePushAlarm()` Funktion mit Error Handling
-- Optimistic UI Update mit Rollback bei Fehlern
-- Separater "NATIVE PUSH ALARM" Button
-
----
-
-### Getestete Geräte
-
-| Gerät | Status | Datum |
-|-------|--------|-------|
-| iPhone | ✅ Funktioniert | 07.01.2026 |
-| iPad | ✅ Funktioniert | 07.01.2026 |
-
----
-
-### API Response Beispiel
-
-```json
-{
-  "success": true,
-  "testId": 1767749177415,
-  "notificationId": "bcc672ba-7d67-499a-a8ed-100a0818937d",
-  "recipients": 0,
-  "message": "Native Push notification sent successfully"
-}
-```
-
-**Hinweis:** `recipients: 0` bedeutet, dass zum Zeitpunkt des Tests noch keine PWA-Subscriber registriert waren. Nach der PWA-Installation auf iPhone/iPad werden Nachrichten korrekt zugestellt.
-
----
-
-### Relevante Dateien
-
-- `server/routes.ts` - Backend Native Push Route (Zeile ~2501-2613)
-- `client/src/pages/notifications.tsx` - Frontend Native Push Funktion
-- `client/public/manifest.json` - PWA Manifest
-- `client/index.html` - Apple Meta-Tags
-- `client/public/icon-192.png` / `icon-512.png` - PWA Icons
-
----
-
-### OneSignal Technische Limitierung (Wichtig!)
-
-**Problem:** OneSignal behandelt iOS Safari PWA und Desktop Chrome identisch (`device_type = 5`). Es gibt **keine native Möglichkeit** sie zu unterscheiden.
-
-**Konsequenz:**
-- Web Push und Native Push Toggles sind beide aktiv, aber nutzen dasselbe OneSignal-System
-- Wenn **einer** der beiden Toggles AN ist → Nachricht wird an ALLE Subscriber gesendet (Desktop + Mobile PWA)
-- Die Trennung ist nur auf Toggle-Ebene - nicht auf Empfänger-Ebene
-
-**Aktuelle Lösung (07.01.2026):**
-- Frontend prüft: `webPush || nativePush` → sendet nur EINE Nachricht
-- Verhindert Duplikate wenn beide Toggles AN sind
-- Nutzt `/api/notifications/web-push` Route für alle Push-Nachrichten
-
-**Zukünftige Verbesserung (nicht implementiert):**
-- OneSignal Tags nutzen: beim PWA-Subscribe einen Tag `platform: ios-pwa` setzen
-- Dann Filter nach Tags für echte Kanaltrennung
-
----
-
-### Web Push und Native Push Unified (07.01.2026)
-
-Die beiden Kanäle sind jetzt vereint um Duplikate zu vermeiden:
-- **Wenn Web Push AN + Native Push AUS** → Nachricht wird gesendet
-- **Wenn Web Push AUS + Native Push AN** → Nachricht wird gesendet  
-- **Wenn beide AN** → nur EINE Nachricht wird gesendet
-- **Wenn beide AUS** → keine Nachricht
-
-Die Toggles geben dem User Kontrolle, ob er Push-Benachrichtigungen will - aber aufgrund der OneSignal-Limitierung erreichen sie immer alle Subscriber (Desktop + Mobile).
-
----
-
-### Enhanced Push Route (07.01.2026)
-
-**Neue Route:** `/api/notifications/push-enhanced`
-
-Verbesserte Push-Logik für bessere iOS-Zustellung:
-- **Retry-Logik:** Bis zu 3 Versuche mit steigender Wartezeit
-- **iOS-Optimierungen:** `ios_badgeType`, `ios_badgeCount`, `priority: 10`
-- **TTL:** 24 Stunden (Nachricht bleibt in Queue wenn Gerät offline)
-- **High Priority:** Für sofortige Zustellung
-
-**Debug-Endpunkt:** `/api/onesignal/subscribers`
-- Zeigt alle registrierten Geräte bei OneSignal
-- Device-Type Analyse (Chrome, Edge, Safari iOS, etc.)
-- Subscriber-Status (aktiv, invalid, unsubscribed)
-
-**Erkenntnisse vom Subscriber-Check:**
-- iOS Safari PWA registriert sich als `device_type = 17` (Edge Web Push)
-- Nicht als `device_type = 5` (Chrome) wie ursprünglich angenommen
-- Platform-Nummern 16.x und 18.x = iOS Versionen
