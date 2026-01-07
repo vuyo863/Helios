@@ -1407,8 +1407,23 @@ export default function Notifications() {
               size="sm"
               onClick={triggerMockAlarm}
               className="bg-red-500 hover:bg-red-600"
+              data-testid="button-test-alarm"
             >
-              🧪 TEST ALARM
+              TEST ALARM
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                toast({
+                  title: "Native Push Test",
+                  description: "Native Push Funktion wird implementiert...",
+                });
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="button-native-push-alarm"
+            >
+              Native Push Alarm
             </Button>
             <div className="flex items-center gap-2">
               <Activity className={cn(
