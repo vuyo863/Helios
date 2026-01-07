@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, EyeOff, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -106,6 +106,7 @@ export default function Notifications() {
     return migrated;
   });
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
+  const [showTestButton, setShowTestButton] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
   const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
 
@@ -1524,23 +1525,24 @@ export default function Notifications() {
             <h1 className="text-2xl font-bold" data-testid="heading-notifications">Notifications</h1>
           </div>
           <div className="flex items-center gap-3">
+            {showTestButton && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={triggerNativePushAlarm}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="button-push-test"
+              >
+                Push Test
+              </Button>
+            )}
             <Button
-              variant="destructive"
-              size="sm"
-              onClick={triggerMockAlarm}
-              className="bg-red-500 hover:bg-red-600"
-              data-testid="button-test-alarm"
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowTestButton(!showTestButton)}
+              data-testid="button-toggle-test-visibility"
             >
-              TEST ALARM
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={triggerNativePushAlarm}
-              className="bg-blue-600 hover:bg-blue-700"
-              data-testid="button-native-push-alarm"
-            >
-              Native Push Alarm
+              {showTestButton ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </Button>
             <div className="flex items-center gap-2">
               <Activity className={cn(
