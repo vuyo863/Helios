@@ -1378,6 +1378,31 @@ export default function Notifications() {
     }
   };
 
+  // Native Push Test-Funktion: Alarm auslösen und Native Push senden
+  const triggerNativePushAlarm = async () => {
+    // Alarm in activeAlarms hinzufügen (genau wie bei triggerMockAlarm)
+    const nativePushAlarm: ActiveAlarm = {
+      id: crypto.randomUUID(),
+      trendPriceName: 'ETH/USDT',
+      threshold: '3500',
+      alarmLevel: 'gefährlich',
+      triggeredAt: new Date(),
+      message: 'Native Push Test - Preis über 3500 USDT',
+      note: 'NATIVE PUSH TEST: iOS/Android Benachrichtigung'
+    };
+
+    setActiveAlarms(prev => [...prev, nativePushAlarm]);
+
+    // Toast-Benachrichtigung
+    toast({
+      title: "Native Push Alarm ausgelöst!",
+      description: `${nativePushAlarm.trendPriceName}: ${nativePushAlarm.message}`,
+      duration: 10000,
+    });
+
+    // TODO: Native Push via OneSignal senden (wird später implementiert)
+  };
+
   const getTimeAgo = (date: Date | string): string => {
     const now = new Date();
     const alarmDate = typeof date === 'string' ? new Date(date) : date;
@@ -1414,12 +1439,7 @@ export default function Notifications() {
             <Button
               variant="default"
               size="sm"
-              onClick={() => {
-                toast({
-                  title: "Native Push Test",
-                  description: "Native Push Funktion wird implementiert...",
-                });
-              }}
+              onClick={triggerNativePushAlarm}
               className="bg-blue-600 hover:bg-blue-700"
               data-testid="button-native-push-alarm"
             >
