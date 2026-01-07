@@ -2398,17 +2398,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Build notification payload - ALWAYS broadcast to all subscribers
+      // Build notification payload - broadcasts to all web push subscribers
+      // Note: OneSignal treats iOS Safari PWA and Desktop Chrome the same (device_type 5)
+      // Separation between Web Push and Native Push channels is handled at the frontend toggle level
       const notificationPayload: any = {
         app_id: ONESIGNAL_APP_ID,
         headings: { en: title },
         contents: { en: message },
-        data: { alarmLevel, timestamp: new Date().toISOString() },
+        data: { alarmLevel, timestamp: new Date().toISOString(), channel: 'web-push' },
         chrome_web_icon: 'https://cdn-icons-png.flaticon.com/512/2645/2645890.png',
         url: 'https://helios-ai.replit.app/notifications',
         included_segments: ['All']
       };
-      console.log('Broadcasting notification to all subscribed users');
+      console.log('Broadcasting Web Push notification to all subscribers');
 
       // Send notification
       const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -2539,7 +2541,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[TEST ${testId}] OneSignal configured: YES`);
 
-      // Build notification payload for Native Push (same API, but targets PWA subscribers)
+      // Build notification payload for Native Push - broadcasts to all subscribers
+      // Note: OneSignal treats iOS Safari PWA and Desktop Chrome the same (device_type 5)
+      // The "Native Push" toggle is for user preference - both channels use the same OneSignal API
+      // Future improvement: Use OneSignal tags to distinguish between desktop and mobile subscribers
       const notificationPayload = {
         app_id: ONESIGNAL_APP_ID,
         headings: { en: title, de: title },
@@ -2547,15 +2552,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: { 
           alarmLevel: alarmLevel || 'gefährlich',
           testId,
-          source: 'native-push-test',
+          source: 'native-push',
+          channel: 'native-push',
           timestamp: new Date().toISOString()
         },
         chrome_web_icon: 'https://helios-ai.replit.app/icon-192.png',
         url: 'https://helios-ai.replit.app/notifications',
-        included_segments: ['All'],
-        isIos: true,
-        isAndroid: true,
-        isAnyWeb: true
+        included_segments: ['All']
       };
 
       console.log(`[TEST ${testId}] Sending to OneSignal... Title: "${title}"`);

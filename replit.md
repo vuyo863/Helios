@@ -136,6 +136,32 @@ Native Push Notifications funktionieren auf iOS (iPhone, iPad) und Android via P
 
 ---
 
-### Web Push (Desktop) - Status: ⚠️ Separates Problem
+### OneSignal Technische Limitierung (Wichtig!)
 
-Das bestehende Web Push für Desktop-Browser (Bell-Toggle, Test-Alarm) hat weiterhin Zustellungsprobleme. Dies ist ein separates Issue und betrifft nicht die Native Push Funktionalität für iOS/Android.
+**Problem:** OneSignal behandelt iOS Safari PWA und Desktop Chrome identisch (`device_type = 5`). Es gibt **keine native Möglichkeit** sie zu unterscheiden.
+
+**Konsequenz:**
+- Web Push und Native Push Toggles sind beide aktiv, aber nutzen dasselbe OneSignal-System
+- Wenn **einer** der beiden Toggles AN ist → Nachricht wird an ALLE Subscriber gesendet (Desktop + Mobile PWA)
+- Die Trennung ist nur auf Toggle-Ebene - nicht auf Empfänger-Ebene
+
+**Aktuelle Lösung (07.01.2026):**
+- Frontend prüft: `webPush || nativePush` → sendet nur EINE Nachricht
+- Verhindert Duplikate wenn beide Toggles AN sind
+- Nutzt `/api/notifications/web-push` Route für alle Push-Nachrichten
+
+**Zukünftige Verbesserung (nicht implementiert):**
+- OneSignal Tags nutzen: beim PWA-Subscribe einen Tag `platform: ios-pwa` setzen
+- Dann Filter nach Tags für echte Kanaltrennung
+
+---
+
+### Web Push und Native Push Unified (07.01.2026)
+
+Die beiden Kanäle sind jetzt vereint um Duplikate zu vermeiden:
+- **Wenn Web Push AN + Native Push AUS** → Nachricht wird gesendet
+- **Wenn Web Push AUS + Native Push AN** → Nachricht wird gesendet  
+- **Wenn beide AN** → nur EINE Nachricht wird gesendet
+- **Wenn beide AUS** → keine Nachricht
+
+Die Toggles geben dem User Kontrolle, ob er Push-Benachrichtigungen will - aber aufgrund der OneSignal-Limitierung erreichen sie immer alle Subscriber (Desktop + Mobile).

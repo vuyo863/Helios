@@ -768,8 +768,11 @@ export default function Notifications() {
             }).catch(err => console.error('Email notification error:', err));
           }
 
-          // Send Web Push notification via OneSignal (broadcasts to all subscribers)
-          if (alarmConfig.channels.webPush) {
+          // Send Push notification via OneSignal (Web Push and Native Push share the same backend)
+          // OneSignal treats iOS Safari PWA and Desktop Chrome the same, so we only send ONE notification
+          // if either Web Push OR Native Push is enabled to avoid duplicates
+          const shouldSendPushNotification = alarmConfig.channels.webPush || alarmConfig.channels.nativePush;
+          if (shouldSendPushNotification) {
             fetch('/api/notifications/web-push', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -778,20 +781,7 @@ export default function Notifications() {
                 message: message,
                 alarmLevel: threshold.alarmLevel
               })
-            }).catch(err => console.error('Web Push notification error:', err));
-          }
-
-          // Send Native Push notification via OneSignal (iOS/Android PWA)
-          if (alarmConfig.channels.nativePush) {
-            fetch('/api/test-native-push', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                title: `${getAlarmLevelLabel(threshold.alarmLevel)} - ${pair.name}`,
-                message: message,
-                alarmLevel: threshold.alarmLevel
-              })
-            }).catch(err => console.error('Native Push notification error:', err));
+            }).catch(err => console.error('Push notification error:', err));
           }
 
           // Handle repeating notifications
@@ -854,8 +844,11 @@ export default function Notifications() {
             }).catch(err => console.error('Email notification error:', err));
           }
 
-          // Send Web Push notification via OneSignal (broadcasts to all subscribers)
-          if (alarmConfig.channels.webPush) {
+          // Send Push notification via OneSignal (Web Push and Native Push share the same backend)
+          // OneSignal treats iOS Safari PWA and Desktop Chrome the same, so we only send ONE notification
+          // if either Web Push OR Native Push is enabled to avoid duplicates
+          const shouldSendPushNotificationDecrease = alarmConfig.channels.webPush || alarmConfig.channels.nativePush;
+          if (shouldSendPushNotificationDecrease) {
             fetch('/api/notifications/web-push', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -864,20 +857,7 @@ export default function Notifications() {
                 message: message,
                 alarmLevel: threshold.alarmLevel
               })
-            }).catch(err => console.error('Web Push notification error:', err));
-          }
-
-          // Send Native Push notification via OneSignal (iOS/Android PWA)
-          if (alarmConfig.channels.nativePush) {
-            fetch('/api/test-native-push', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                title: `${getAlarmLevelLabel(threshold.alarmLevel)} - ${pair.name}`,
-                message: message,
-                alarmLevel: threshold.alarmLevel
-              })
-            }).catch(err => console.error('Native Push notification error:', err));
+            }).catch(err => console.error('Push notification error:', err));
           }
 
           // Handle repeating notifications
