@@ -2498,6 +2498,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // NATIVE PUSH NOTIFICATION TEST ENDPOINT (iOS/Android via OneSignal PWA)
+  // ============================================================================
+
+  app.post("/api/test-native-push", async (req, res) => {
+    const testId = Date.now();
+    console.log(`\n========== NATIVE PUSH TEST #${testId} ==========`);
+    
+    try {
+      const { title, message, alarmLevel } = req.body;
+
+      console.log(`[TEST ${testId}] Request received:`, { title, message, alarmLevel });
+
+      // Validate required fields
+      if (!title || !message) {
+        console.log(`[TEST ${testId}] FAILED: Missing required fields`);
+        return res.status(400).json({
+          success: false,
+          testId,
+          error: "Missing required fields: title and message are required"
+        });
+      }
+
+      const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+      const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
+      if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+        console.log(`[TEST ${testId}] FAILED: OneSignal not configured`);
+        return res.status(400).json({
+          success: false,
+          testId,
+          error: "OneSignal not configured. Please set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY.",
+          configStatus: {
+            appIdSet: !!ONESIGNAL_APP_ID,
+            apiKeySet: !!ONESIGNAL_REST_API_KEY
+          }
+        });
+      }
+
+      console.log(`[TEST ${testId}] OneSignal configured: App ID = ${ONESIGNAL_APP_ID.substring(0, 8)}...`);
+
+      // Build notification payload for Native Push (same API, but targets PWA subscribers)
+      const notificationPayload = {
+        app_id: ONESIGNAL_APP_ID,
+        headings: { en: title, de: title },
+        contents: { en: message, de: message },
+        data: { 
+          alarmLevel: alarmLevel || 'gefährlich',
+          testId,
+          source: 'native-push-test',
+          timestamp: new Date().toISOString()
+        },
+        chrome_web_icon: 'https://helios-ai.replit.app/icon-192.png',
+        url: 'https://helios-ai.replit.app/notifications',
+        included_segments: ['All'],
+        isIos: true,
+        isAndroid: true,
+        isAnyWeb: true
+      };
+
+      console.log(`[TEST ${testId}] Sending to OneSignal...`);
+      console.log(`[TEST ${testId}] Payload:`, JSON.stringify(notificationPayload, null, 2));
+
+      // Send notification via OneSignal
+      const response = await fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
+        },
+        body: JSON.stringify(notificationPayload)
+      });
+
+      const result = await response.json();
+      
+      console.log(`[TEST ${testId}] OneSignal Status: ${response.status}`);
+      console.log(`[TEST ${testId}] OneSignal Response:`, JSON.stringify(result, null, 2));
+
+      if (response.ok && result.id) {
+        console.log(`[TEST ${testId}] SUCCESS - Notification ID: ${result.id}, Recipients: ${result.recipients}`);
+        
+        res.json({
+          success: true,
+          testId,
+          notificationId: result.id,
+          recipients: result.recipients ?? 0,
+          message: 'Native Push notification sent successfully',
+          debug: {
+            onesignalNotificationId: result.id,
+            recipientCount: result.recipients,
+            externalId: result.external_id
+          }
+        });
+      } else {
+        console.log(`[TEST ${testId}] FAILED - OneSignal Error:`, result.errors || result);
+        res.status(400).json({
+          success: false,
+          testId,
+          error: result.errors?.[0] || 'Failed to send native push notification',
+          onesignalResponse: result
+        });
+      }
+    } catch (error: any) {
+      console.error(`[TEST ${testId}] ERROR:`, error.message);
+      res.status(500).json({
+        success: false,
+        testId,
+        error: error.message
+      });
+    }
+    
+    console.log(`========== END TEST #${testId} ==========\n`);
+  });
+
   // Helper functions
   function getAlarmColor(level: string): string {
     switch (level) {

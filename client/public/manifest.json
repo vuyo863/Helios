@@ -1,0 +1,26 @@
+{
+  "name": "Pionex Bot Profit Tracker",
+  "short_name": "Pionex Tracker",
+  "description": "Verwalten und analysieren Sie Ihre Pionex Trading-Bot Gewinne mit detaillierten Statistiken und Alarmen.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "lang": "de"
+}

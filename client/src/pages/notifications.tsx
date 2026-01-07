@@ -1378,7 +1378,10 @@ export default function Notifications() {
     }
   };
 
-  // Native Push Test-Funktion: Alarm auslösen und Native Push senden
+  // ============================================================================
+  // NATIVE PUSH TEST SECTION - Komplett separater Bereich für iOS/Android Push
+  // ============================================================================
+
   const triggerNativePushAlarm = async () => {
     // Alarm in activeAlarms hinzufügen (genau wie bei triggerMockAlarm)
     const nativePushAlarm: ActiveAlarm = {
@@ -1393,15 +1396,58 @@ export default function Notifications() {
 
     setActiveAlarms(prev => [...prev, nativePushAlarm]);
 
-    // Toast-Benachrichtigung
+    // Toast: Alarm wurde lokal ausgelöst
     toast({
       title: "Native Push Alarm ausgelöst!",
       description: `${nativePushAlarm.trendPriceName}: ${nativePushAlarm.message}`,
-      duration: 10000,
+      duration: 5000,
     });
 
-    // TODO: Native Push via OneSignal senden (wird später implementiert)
+    // Native Push via Backend an OneSignal senden
+    try {
+      const response = await fetch('/api/test-native-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: `Gefährlich - ${nativePushAlarm.trendPriceName}`,
+          message: `${nativePushAlarm.message}. ${nativePushAlarm.note}`,
+          alarmLevel: nativePushAlarm.alarmLevel
+        })
+      });
+
+      const result = await response.json();
+      console.log('[NATIVE PUSH] Backend Response:', result);
+
+      if (result.success) {
+        toast({
+          title: "Native Push gesendet!",
+          description: `ID: ${result.notificationId}, Empfänger: ${result.recipients}`,
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "Native Push Fehler",
+          description: result.error || "Push konnte nicht gesendet werden",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } catch (error: any) {
+      console.error('[NATIVE PUSH] Error:', error);
+      toast({
+        title: "Verbindungsfehler",
+        description: "Backend nicht erreichbar",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
   };
+
+  // ============================================================================
+  // END NATIVE PUSH TEST SECTION
+  // ============================================================================
 
   const getTimeAgo = (date: Date | string): string => {
     const now = new Date();
