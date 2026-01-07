@@ -2875,19 +2875,14 @@ export default function Notifications() {
                                     />
                                   </div>
                                   <div className="flex items-center justify-between">
-                                    <Label htmlFor={`${level}-webPush`} className="text-sm cursor-pointer">Web Push (Browser)</Label>
+                                    <Label htmlFor={`${level}-pushNotifications`} className="text-sm cursor-pointer">Push Benachrichtigungen (iOS, Android, Browser)</Label>
                                     <Switch
-                                      id={`${level}-webPush`}
-                                      checked={config.channels.webPush}
-                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'webPush', checked)}
-                                    />
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <Label htmlFor={`${level}-nativePush`} className="text-sm cursor-pointer">Native Push (iOS/Android)</Label>
-                                    <Switch
-                                      id={`${level}-nativePush`}
-                                      checked={config.channels.nativePush}
-                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'nativePush', checked)}
+                                      id={`${level}-pushNotifications`}
+                                      checked={config.channels.webPush || config.channels.nativePush}
+                                      onCheckedChange={(checked) => {
+                                        updateAlarmLevelConfig(level, 'webPush', checked);
+                                        updateAlarmLevelConfig(level, 'nativePush', checked);
+                                      }}
                                     />
                                   </div>
                                 </div>
@@ -3063,11 +3058,12 @@ export default function Notifications() {
                                 push: 'Push',
                                 email: 'E-Mail',
                                 sms: 'SMS',
-                                webPush: 'Web Push',
-                                nativePush: 'Native Push'
+                                webPush: 'Push Benachrichtigungen',
+                                nativePush: ''
                               };
                               return channelNames[channel];
                             })
+                            .filter(name => name !== '')
                             .join(', ') || 'Keine'}
                         </span>
                       </div>
