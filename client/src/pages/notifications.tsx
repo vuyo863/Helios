@@ -752,6 +752,19 @@ export default function Notifications() {
             }).catch(err => console.error('Web Push notification error:', err));
           }
 
+          // Send Native Push notification via OneSignal (iOS/Android PWA)
+          if (alarmConfig.channels.nativePush) {
+            fetch('/api/test-native-push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `${getAlarmLevelLabel(threshold.alarmLevel)} - ${pair.name}`,
+                message: message,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('Native Push notification error:', err));
+          }
+
           // Handle repeating notifications
           if (threshold.increaseFrequency === 'wiederholend') {
             const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
@@ -823,6 +836,19 @@ export default function Notifications() {
                 alarmLevel: threshold.alarmLevel
               })
             }).catch(err => console.error('Web Push notification error:', err));
+          }
+
+          // Send Native Push notification via OneSignal (iOS/Android PWA)
+          if (alarmConfig.channels.nativePush) {
+            fetch('/api/test-native-push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `${getAlarmLevelLabel(threshold.alarmLevel)} - ${pair.name}`,
+                message: message,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('Native Push notification error:', err));
           }
 
           // Handle repeating notifications
