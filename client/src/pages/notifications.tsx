@@ -768,12 +768,11 @@ export default function Notifications() {
             }).catch(err => console.error('Email notification error:', err));
           }
 
-          // Send Push notification via OneSignal (Web Push and Native Push share the same backend)
-          // OneSignal treats iOS Safari PWA and Desktop Chrome the same, so we only send ONE notification
-          // if either Web Push OR Native Push is enabled to avoid duplicates
+          // Send Push notification via OneSignal Enhanced Route (better iOS delivery)
+          // Uses retry logic, iOS-specific settings, and high priority for reliable delivery
           const shouldSendPushNotification = alarmConfig.channels.webPush || alarmConfig.channels.nativePush;
           if (shouldSendPushNotification) {
-            fetch('/api/notifications/web-push', {
+            fetch('/api/notifications/push-enhanced', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -844,12 +843,11 @@ export default function Notifications() {
             }).catch(err => console.error('Email notification error:', err));
           }
 
-          // Send Push notification via OneSignal (Web Push and Native Push share the same backend)
-          // OneSignal treats iOS Safari PWA and Desktop Chrome the same, so we only send ONE notification
-          // if either Web Push OR Native Push is enabled to avoid duplicates
+          // Send Push notification via OneSignal Enhanced Route (better iOS delivery)
+          // Uses retry logic, iOS-specific settings, and high priority for reliable delivery
           const shouldSendPushNotificationDecrease = alarmConfig.channels.webPush || alarmConfig.channels.nativePush;
           if (shouldSendPushNotificationDecrease) {
-            fetch('/api/notifications/web-push', {
+            fetch('/api/notifications/push-enhanced', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

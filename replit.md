@@ -165,3 +165,25 @@ Die beiden Kanäle sind jetzt vereint um Duplikate zu vermeiden:
 - **Wenn beide AUS** → keine Nachricht
 
 Die Toggles geben dem User Kontrolle, ob er Push-Benachrichtigungen will - aber aufgrund der OneSignal-Limitierung erreichen sie immer alle Subscriber (Desktop + Mobile).
+
+---
+
+### Enhanced Push Route (07.01.2026)
+
+**Neue Route:** `/api/notifications/push-enhanced`
+
+Verbesserte Push-Logik für bessere iOS-Zustellung:
+- **Retry-Logik:** Bis zu 3 Versuche mit steigender Wartezeit
+- **iOS-Optimierungen:** `ios_badgeType`, `ios_badgeCount`, `priority: 10`
+- **TTL:** 24 Stunden (Nachricht bleibt in Queue wenn Gerät offline)
+- **High Priority:** Für sofortige Zustellung
+
+**Debug-Endpunkt:** `/api/onesignal/subscribers`
+- Zeigt alle registrierten Geräte bei OneSignal
+- Device-Type Analyse (Chrome, Edge, Safari iOS, etc.)
+- Subscriber-Status (aktiv, invalid, unsubscribed)
+
+**Erkenntnisse vom Subscriber-Check:**
+- iOS Safari PWA registriert sich als `device_type = 17` (Edge Web Push)
+- Nicht als `device_type = 5` (Chrome) wie ursprünglich angenommen
+- Platform-Nummern 16.x und 18.x = iOS Versionen
