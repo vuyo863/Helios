@@ -1,0 +1,55 @@
+deinuser@webapp-90er-us:~/webapp$ pm2 logs webapp --lines 30
+[TAILING] Tailing last 30 lines for [webapp] process (change the value with --lines option)
+/home/deinuser/.pm2/logs/webapp-error.log last 30 lines:
+0|webapp   |     at successSteps (node:internal/deps/undici/undici:5833:27)
+0|webapp   |     at fullyReadBody (node:internal/deps/undici/undici:4725:9)
+0|webapp   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp   |     at async consumeBody (node:internal/deps/undici/undici:5842:7)
+0|webapp   |     at async execute (file:///home/deinuser/webapp/node_modules/@neondatabase/serverless/index.mjs:1550:33)
+0|webapp   |     at async NeonHttpPreparedQuery.execute (file:///home/deinuser/webapp/node_modules/drizzle-orm/neon-http/session.js:40:20)
+0|webapp   |     at async DbStorage.getAllBotTypes (file:///home/deinuser/webapp/dist/index.js:237:12)
+0|webapp   |     at async file:///home/deinuser/webapp/dist/index.js:1592:25
+0|webapp   | Error fetching bot types: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+0|webapp   |     at JSON.parse (<anonymous>)
+0|webapp   |     at parseJSONFromBytes (node:internal/deps/undici/undici:5852:19)
+0|webapp   |     at successSteps (node:internal/deps/undici/undici:5833:27)
+0|webapp   |     at fullyReadBody (node:internal/deps/undici/undici:4725:9)
+0|webapp   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp   |     at async consumeBody (node:internal/deps/undici/undici:5842:7)
+0|webapp   |     at async execute (file:///home/deinuser/webapp/node_modules/@neondatabase/serverless/index.mjs:1550:33)
+0|webapp   |     at async NeonHttpPreparedQuery.execute (file:///home/deinuser/webapp/node_modules/drizzle-orm/neon-http/session.js:40:20)
+0|webapp   |     at async DbStorage.getAllBotTypes (file:///home/deinuser/webapp/dist/index.js:237:12)
+0|webapp   |     at async file:///home/deinuser/webapp/dist/index.js:1592:25
+0|webapp   | Error fetching bot types: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+0|webapp   |     at JSON.parse (<anonymous>)
+0|webapp   |     at parseJSONFromBytes (node:internal/deps/undici/undici:5852:19)
+0|webapp   |     at successSteps (node:internal/deps/undici/undici:5833:27)
+0|webapp   |     at fullyReadBody (node:internal/deps/undici/undici:4725:9)
+0|webapp   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp   |     at async consumeBody (node:internal/deps/undici/undici:5842:7)
+0|webapp   |     at async execute (file:///home/deinuser/webapp/node_modules/@neondatabase/serverless/index.mjs:1550:33)
+0|webapp   |     at async NeonHttpPreparedQuery.execute (file:///home/deinuser/webapp/node_modules/drizzle-orm/neon-http/session.js:40:20)
+0|webapp   |     at async DbStorage.getAllBotTypes (file:///home/deinuser/webapp/dist/index.js:237:12)
+0|webapp   |     at async file:///home/deinuser/webapp/dist/index.js:1592:25
+
+/home/deinuser/.pm2/logs/webapp-out.log last 30 lines:
+0|webapp   | 8:15:09 AM [express] GET /api/bot-types 500 in 3ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 8:15:10 AM [express] GET /api/bot-type-updates 500 in 4ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 8:15:10 AM [express] GET /api/bot-types 500 in 4ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 8:15:10 AM [express] GET /api/bot-types 500 in 3ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 8:15:10 AM [express] GET /api/bot-type-updates 500 in 3ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 8:15:30 AM [express] GET /api/entries 500 in 8ms :: {"error":"Failed to fetch entries"}
+0|webapp   | 8:15:30 AM [express] GET /api/bot-types 500 in 9ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 8:15:30 AM [express] GET /api/bot-type-updates 500 in 11ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 8:15:32 AM [express] GET /api/bot-types 500 in 6ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 8:15:32 AM [express] GET /api/bot-type-updates 500 in 5ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 8:31:26 AM [express] POST /api 200 in 1ms
+0|webapp   | 8:31:27 AM [express] POST /api/route 200 in 2ms
+0|webapp   | 1:11:10 PM [express] GET /api/entries 500 in 11ms :: {"error":"Failed to fetch entries"}
+0|webapp   | 1:11:10 PM [express] GET /api/bot-type-updates 500 in 4ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 1:11:10 PM [express] GET /api/bot-types 500 in 5ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 6:54:39 PM [express] GET /api/bot-type-updates 500 in 20ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 6:54:39 PM [express] GET /api/entries 500 in 16ms :: {"error":"Failed to fetch entries"}
+0|webapp   | 6:54:39 PM [express] GET /api/bot-types 500 in 9ms :: {"error":"Failed to fetch bot types"}
+0|webapp   | 6:54:41 PM [express] GET /api/bot-type-updates 500 in 5ms :: {"error":"Failed to fetch all updates"}
+0|webapp   | 6:54:41 PM [express] GET /api/bot-types 500 in 5ms :: {"error":"Failed to fetch bot types"}
