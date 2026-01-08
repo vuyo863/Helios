@@ -113,7 +113,7 @@ function App() {
     
     // Skip initialization on non-production domains to avoid OneSignal errors
     if (!isOneSignalAllowedDomain()) {
-      console.log('OneSignal: Skipping initialization (only works on helios-ai.replit.app):', window.location.hostname);
+      console.log('OneSignal: Skipping initialization (only works on helios-ai.replit.app or helios-ai.app):', window.location.hostname);
       return;
     }
 
