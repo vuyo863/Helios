@@ -1,0 +1,30 @@
+|webapp  | 7:28:19 PM [express] serving on port 5000
+0|webapp  | (node:24655) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+0|webapp  | (Use `node --trace-warnings ...` to show where the warning was created)
+0|webapp  | 7:30:21 PM [express] GET /api/entries 500 in 88ms :: {"error":"Failed to fetch entries"}
+0|webapp  | Error fetching bot types: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+0|webapp  |     at JSON.parse (<anonymous>)
+0|webapp  |     at parseJSONFromBytes (node:internal/deps/undici/undici:5852:19)
+0|webapp  |     at successSteps (node:internal/deps/undici/undici:5833:27)
+0|webapp  |     at fullyReadBody (node:internal/deps/undici/undici:4725:9)
+0|webapp  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp  |     at async consumeBody (node:internal/deps/undici/undici:5842:7)
+0|webapp  |     at async execute (file:///home/deinuser/webapp/node_modules/@neondatabase/serverless/index.mjs:1550:33)
+0|webapp  |     at async NeonHttpPreparedQuery.execute (file:///home/deinuser/webapp/node_modules/drizzle-orm/neon-http/session.js:40:20)
+0|webapp  |     at async DbStorage.getAllBotTypes (file:///home/deinuser/webapp/dist/index.js:237:12)
+0|webapp  |     at async file:///home/deinuser/webapp/dist/index.js:1595:25
+0|webapp  | 7:30:21 PM [express] GET /api/bot-types 500 in 43ms :: {"error":"Failed to fetch bot types"}
+0|webapp  | 7:30:21 PM [express] GET /api/bot-type-updates 500 in 41ms :: {"error":"Failed to fetch all updates"}
+0|webapp  | Error fetching bot types: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+0|webapp  |     at JSON.parse (<anonymous>)
+0|webapp  |     at parseJSONFromBytes (node:internal/deps/undici/undici:5852:19)
+0|webapp  |     at successSteps (node:internal/deps/undici/undici:5833:27)
+0|webapp  |     at fullyReadBody (node:internal/deps/undici/undici:4725:9)
+0|webapp  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp  |     at async consumeBody (node:internal/deps/undici/undici:5842:7)
+0|webapp  |     at async execute (file:///home/deinuser/webapp/node_modules/@neondatabase/serverless/index.mjs:1550:33)
+0|webapp  |     at async NeonHttpPreparedQuery.execute (file:///home/deinuser/webapp/node_modules/drizzle-orm/neon-http/session.js:40:20)
+0|webapp  |     at async DbStorage.getAllBotTypes (file:///home/deinuser/webapp/dist/index.js:237:12)
+0|webapp  |     at async file:///home/deinuser/webapp/dist/index.js:1595:25
+0|webapp  | 7:30:24 PM [express] GET /api/bot-types 500 in 7ms :: {"error":"Failed to fetch bot types"}
+0|webapp  | 7:30:24 PM [express] GET /api/bot-type-updates 500 in 7ms :: {"error":"Failed to fetch all updates"}
