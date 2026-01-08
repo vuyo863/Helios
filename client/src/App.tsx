@@ -99,9 +99,9 @@ function GlobalNotificationToast() {
 // Helper function to check if we're on the production domain configured in OneSignal
 function isOneSignalAllowedDomain(): boolean {
   const hostname = window.location.hostname;
-  // OneSignal is configured ONLY for helios-ai.replit.app
+  // OneSignal is configured for production domains (Replit + external server)
   // Do not initialize on dev domains (*.replit.dev, *.janeway.replit.dev, etc.)
-  return hostname === 'helios-ai.replit.app';
+  return hostname === 'helios-ai.replit.app' || hostname === 'helios-ai.app';
 }
 
 function App() {
