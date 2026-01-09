@@ -762,7 +762,8 @@ export default function Notifications() {
             const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
             const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
             const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
-            // Total time = (repetitions - 1) * sequence + restwartezeit (first notification is immediate)
+            // Total time = repetitions * sequence + restwartezeit
+            // First notification is immediate, then (repeatCount-1) more with sequence delay, then restwartezeit
             const totalMs = Math.max(0, repeatCount - 1) * sequenceMs + restwartezeitMs;
             autoDismissAt = new Date(Date.now() + totalMs);
           }
@@ -865,6 +866,8 @@ export default function Notifications() {
             const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
             const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
             const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
+            // Total time = (repeatCount-1) * sequence + restwartezeit
+            // First notification immediate, then remaining with sequence delay, then restwartezeit countdown
             const totalMs = Math.max(0, repeatCount - 1) * sequenceMs + restwartezeitMs;
             autoDismissAtDecrease = new Date(Date.now() + totalMs);
           }
@@ -1027,27 +1030,26 @@ export default function Notifications() {
   // Countdown tick - forces re-render every second for countdown display
   const [countdownTick, setCountdownTick] = useState(0);
 
+  // Dedicated timer for countdown display updates (independent of alarms)
+  useEffect(() => {
+    const tickInterval = setInterval(() => {
+      setCountdownTick(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(tickInterval);
+  }, []); // Empty deps - runs once on mount
+
   // Auto-dismiss alarms when their autoDismissAt time is reached
   useEffect(() => {
     const checkAutoDismiss = () => {
       const now = new Date();
-      const alarmsToRemove: string[] = [];
-      
-      activeAlarms.forEach(alarm => {
-        if (alarm.autoDismissAt) {
+      setActiveAlarms(prev => {
+        const remaining = prev.filter(alarm => {
+          if (!alarm.autoDismissAt) return true;
           const dismissTime = new Date(alarm.autoDismissAt);
-          if (now >= dismissTime) {
-            alarmsToRemove.push(alarm.id);
-          }
-        }
+          return now < dismissTime;
+        });
+        return remaining.length !== prev.length ? remaining : prev;
       });
-
-      if (alarmsToRemove.length > 0) {
-        setActiveAlarms(prev => prev.filter(a => !alarmsToRemove.includes(a.id)));
-      }
-
-      // Update countdown tick to force re-render of countdown displays
-      setCountdownTick(prev => prev + 1);
     };
 
     // Check every second for auto-dismiss
@@ -1055,7 +1057,7 @@ export default function Notifications() {
     checkAutoDismiss(); // Check immediately
 
     return () => clearInterval(interval);
-  }, [activeAlarms]);
+  }, []); // Empty deps - single interval for checking
 
   // Sortierung für aktive Alarmierungen
   type AlarmSortOption = 'neueste' | 'älteste' | 'dringlichkeit';
