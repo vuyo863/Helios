@@ -53,6 +53,9 @@ interface AlarmLevelConfig {
   sequenceHours: number;
   sequenceMinutes: number;
   sequenceSeconds: number;
+  restwartezeitHours: number;
+  restwartezeitMinutes: number;
+  restwartezeitSeconds: number;
 }
 
 interface ActiveAlarm {
@@ -635,7 +638,10 @@ export default function Notifications() {
         repeatCount: 1,
         sequenceHours: 0,
         sequenceMinutes: 0,
-        sequenceSeconds: 0
+        sequenceSeconds: 0,
+        restwartezeitHours: 0,
+        restwartezeitMinutes: 1,
+        restwartezeitSeconds: 0
       },
       achtung: {
         level: 'achtung',
@@ -644,7 +650,10 @@ export default function Notifications() {
         repeatCount: 1,
         sequenceHours: 0,
         sequenceMinutes: 0,
-        sequenceSeconds: 0
+        sequenceSeconds: 0,
+        restwartezeitHours: 0,
+        restwartezeitMinutes: 2,
+        restwartezeitSeconds: 0
       },
       gefährlich: {
         level: 'gefährlich',
@@ -653,7 +662,10 @@ export default function Notifications() {
         repeatCount: 3,
         sequenceHours: 0,
         sequenceMinutes: 5,
-        sequenceSeconds: 0
+        sequenceSeconds: 0,
+        restwartezeitHours: 0,
+        restwartezeitMinutes: 5,
+        restwartezeitSeconds: 0
       },
       sehr_gefährlich: {
         level: 'sehr_gefährlich',
@@ -662,7 +674,10 @@ export default function Notifications() {
         repeatCount: 'infinite',
         sequenceHours: 0,
         sequenceMinutes: 1,
-        sequenceSeconds: 0
+        sequenceSeconds: 0,
+        restwartezeitHours: 0,
+        restwartezeitMinutes: 10,
+        restwartezeitSeconds: 0
       }
     };
 
