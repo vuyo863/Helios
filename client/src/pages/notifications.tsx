@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, EyeOff, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, EyeOff, ArrowUp, ArrowDown, ArrowUpDown, Timer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -1024,6 +1024,9 @@ export default function Notifications() {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
   }, [activeAlarms]);
 
+  // Countdown tick - forces re-render every second for countdown display
+  const [countdownTick, setCountdownTick] = useState(0);
+
   // Auto-dismiss alarms when their autoDismissAt time is reached
   useEffect(() => {
     const checkAutoDismiss = () => {
@@ -1042,6 +1045,9 @@ export default function Notifications() {
       if (alarmsToRemove.length > 0) {
         setActiveAlarms(prev => prev.filter(a => !alarmsToRemove.includes(a.id)));
       }
+
+      // Update countdown tick to force re-render of countdown displays
+      setCountdownTick(prev => prev + 1);
     };
 
     // Check every second for auto-dismiss
@@ -1793,6 +1799,25 @@ export default function Notifications() {
                         {alarm.note && (
                           <p className="text-xs text-muted-foreground mt-1 italic border-l-2 border-cyan-500 pl-2">
                             📝 {alarm.note}
+                          </p>
+                        )}
+                        {/* Auto-dismiss countdown - uses countdownTick to force re-render */}
+                        {alarm.autoDismissAt && (
+                          <p className="text-xs text-orange-500 dark:text-orange-400 mt-1 flex items-center gap-1" data-tick={countdownTick}>
+                            <Timer className="w-3 h-3" />
+                            Auto-Dismiss in: {(() => {
+                              const now = new Date();
+                              const dismissTime = new Date(alarm.autoDismissAt);
+                              const diffMs = dismissTime.getTime() - now.getTime();
+                              if (diffMs <= 0) return "Gleich...";
+                              const diffSec = Math.floor(diffMs / 1000);
+                              const hours = Math.floor(diffSec / 3600);
+                              const minutes = Math.floor((diffSec % 3600) / 60);
+                              const seconds = diffSec % 60;
+                              if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+                              if (minutes > 0) return `${minutes}m ${seconds}s`;
+                              return `${seconds}s`;
+                            })()}
                           </p>
                         )}
                       </div>
@@ -3318,19 +3343,29 @@ export default function Notifications() {
                           {config.requiresApproval ? 'Erforderlich' : 'Nicht erforderlich'}
                         </span>
                       </div>
-                      {/* Immer alle 4 Zeilen rendern für konstante Höhe - unsichtbar wenn nicht zutreffend */}
-                      <div className="text-sm" style={{ visibility: config.requiresApproval ? 'visible' : 'hidden' }}>
+                      {/* Wiederholung - immer zeigen */}
+                      <div className="text-sm">
                         <span className="font-medium">Wiederholung: </span>
                         <span className="text-muted-foreground">
                           {config.repeatCount === 'infinite' ? '∞ (Bis Approval)' : `${config.repeatCount}x`}
                         </span>
                       </div>
-                      <div className="text-sm" style={{ visibility: config.requiresApproval ? 'visible' : 'hidden' }}>
+                      {/* Sequenz - immer zeigen */}
+                      <div className="text-sm">
                         <span className="font-medium">Sequenz: </span>
                         <span className="text-muted-foreground">
                           {config.sequenceHours}h {config.sequenceMinutes}m {config.sequenceSeconds}s
                         </span>
                       </div>
+                      {/* Restwartezeit - nur wenn Approval aus */}
+                      {!config.requiresApproval && config.repeatCount !== 'infinite' && (
+                        <div className="text-sm">
+                          <span className="font-medium">Restwartezeit: </span>
+                          <span className="text-muted-foreground">
+                            {config.restwartezeitHours}h {config.restwartezeitMinutes}m {config.restwartezeitSeconds}s (Auto-Dismiss)
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
