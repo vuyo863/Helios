@@ -46,6 +46,9 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **Web Push Notifications**: Real-time alerts via OneSignal.
 - **Native Push Notifications (PWA)**: Supported on iOS (16.4+) and Android via PWA, leveraging OneSignal.
 - **Push Test Button**: Hidden by default, accessible via an eye icon to prevent accidental triggers.
+- **SMS Notifications**: Twilio-integrated SMS alerts when price thresholds are triggered.
+- **Alarm Approval System**: "Approval erforderlich" toggle per alarm level; when active, alarms require manual dismissal.
+- **Auto-Dismiss (Restwartezeit)**: When approval is OFF and repeatCount is finite, alarms auto-dismiss after (repeatCount-1)*sequence + restwartezeit; countdown timer displays remaining time in active alarms.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
