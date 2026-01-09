@@ -1,0 +1,156 @@
+📩 PROMPT FÜR REPLIT (KOPIEREN & SENDEN)
+
+Titel: Kritischer Architektur-Bug: Neon wird bei jedem Pull wieder aktiviert – dauerhafte Lösung nötig
+
+Hallo,
+
+wir haben einen kritischen Architekturfehler im aktuellen Setup identifiziert, der bei jedem git pull auf einem externen Server (VPS) die Anwendung bricht.
+
+🔴 Das Problem
+
+Die App wurde ursprünglich für Replit/Neon entwickelt und nutzt in mehreren Dateien:
+
+@neondatabase/serverless
+
+drizzle-orm/neon-http
+
+Sobald auf dem externen Server ein
+
+git pull origin main
+
+
+ausgeführt wird, kommen diese Neon-Imports automatisch zurück, obwohl der Server:
+
+lokales PostgreSQL nutzt
+
+keine Neon-HTTP-Verbindung haben darf
+
+keinen TLS-Bypass (NODE_TLS_REJECT_UNAUTHORIZED=0) braucht
+
+Das führt reproduzierbar zu folgenden Fehlern:
+
+SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+at @neondatabase/serverless
+
+
+und außerdem zu:
+
+FAILED: OneSignal not configured
+
+
+(obwohl die ENV korrekt gesetzt ist – sie wird nur nie erreicht, weil der falsche DB-Adapter läuft).
+
+🧠 Die wahre Ursache
+
+Es gibt keine saubere Trennung zwischen:
+
+Replit-spezifischer DB-Logik (Neon)
+
+Server-spezifischer DB-Logik (node-postgres / pg)
+
+Beides liegt im selben Branch / selben Codepfad.
+
+Dadurch passiert Folgendes:
+
+Server wird korrekt auf pg + drizzle-orm/node-postgres umgestellt
+
+App läuft stabil
+
+Beim nächsten git pull kommt Neon-Code zurück
+
+Server crasht wieder
+
+Das ist nicht tragbar für Produktion.
+
+✅ Wie wir es manuell gefixt haben (Beweis)
+
+Auf dem Server mussten wir jedes Mal manuell:
+
+Neon komplett entfernen aus:
+
+server/storage-db.ts
+
+server/routes.ts
+
+Umstellen auf:
+
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+
+
+Neu builden
+
+PM2 neu starten
+
+Erst dann waren die Logs wieder sauber:
+
+[express] serving on port 5000
+(no errors)
+
+🟢 Die notwendige dauerhafte Lösung (sehr wichtig)
+
+Eine dieser Lösungen MUSS umgesetzt werden, sonst ist der Workflow dauerhaft kaputt:
+
+Option A (empfohlen): Environment-basierte DB-Auswahl
+
+Zentral in einer Datei (z. B. server/db.ts):
+
+if (process.env.RUNTIME_ENV === "server") {
+  // pg + drizzle-orm/node-postgres
+} else {
+  // neon + drizzle-orm/neon-http
+}
+
+
+Replit setzt: RUNTIME_ENV=replit
+
+Server setzt: RUNTIME_ENV=server
+
+Kein manuelles Editieren mehr
+
+git pull ist sicher
+
+Option B: Branch-Trennung
+
+main → Server (pg)
+
+replit → Neon
+
+Replit entwickelt auf replit
+
+Server pulled nur main
+
+Option C (schlechteste, aber möglich):
+
+Neon-Code komplett entfernen
+
+Auch Replit nutzt dann pg oder Neon nur noch über ENV-Abstraktion
+
+❗ Warum das wichtig ist
+
+Aktuell gilt:
+
+❌ Jeder git pull kann die Produktion crashen
+
+❌ Manuelle Server-Hacks sind nötig
+
+❌ OneSignal-Fehler sind Folgefehler, nicht Ursache
+
+Das ist kein Benutzerfehler, sondern ein Architekturproblem im Repo.
+
+✅ Erwartetes Ergebnis nach Fix
+
+git pull auf dem Server ist immer sicher
+
+Keine Neon-Imports mehr auf Server
+
+OneSignal funktioniert sofort (ENV war korrekt)
+
+Kein manueller Code-Fix mehr nötig
+
+Bitte gebt Bescheid, welche Option ihr umsetzt.
+So wie es jetzt ist, ist das Setup nicht produktionsfähig.
+
+Danke.
+
+🧾 Zusatz für dich, Sir (kurz & klar):
