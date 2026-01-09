@@ -53,8 +53,23 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key for secure and targeted notifications using `include_player_ids`.
 - **PWA Infrastructure**: `manifest.json` and Apple Meta-Tags for PWA support on mobile devices.
 
+### Multi-Environment Database Architecture
+The application supports both Replit and external server deployments using a unified codebase:
+- **Central DB Configuration**: `server/db.ts` handles environment-based database selection
+- **Environment Variable**: `RUNTIME_ENV` determines which adapter to use:
+  - `RUNTIME_ENV=replit` → Uses `@neondatabase/serverless` + `drizzle-orm/neon-http`
+  - `RUNTIME_ENV=server` → Uses `pg` (node-postgres) + `drizzle-orm/node-postgres`
+- **git pull Safety**: No manual code changes needed after pulling - the same code works on both environments
+- **Logging**: Console output shows `[DB] Using Neon serverless (replit mode)` or `[DB] Using node-postgres (server mode)`
+
+### OneSignal Domain Configuration
+Push notifications are configured for multiple production domains:
+- `helios-ai.replit.app` - Replit production domain
+- `helios-ai.app` - External server domain
+- Dev domains are automatically skipped to prevent OneSignal errors
+
 ## External Dependencies
-- **Database**: Neon Serverless PostgreSQL with Drizzle ORM.
+- **Database**: Environment-based - Neon Serverless (Replit) or local PostgreSQL (server) with Drizzle ORM.
 - **Backend Framework**: Express.js with TypeScript.
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
