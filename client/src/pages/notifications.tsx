@@ -72,6 +72,16 @@ interface ActiveAlarm {
   repetitionsTotal?: number;
   restwartezeitEndsAt?: Date;
   autoDismissAt?: Date;
+  // Repetition tracking
+  lastNotifiedAt?: Date;
+  sequenceMs?: number;
+  channels?: {
+    push: boolean;
+    email: boolean;
+    sms: boolean;
+    webPush: boolean;
+    nativePush: boolean;
+  };
 }
 
 interface TrendPriceSettings {
@@ -769,6 +779,9 @@ export default function Notifications() {
             autoDismissAt = new Date(Date.now() + totalMs);
           }
 
+          // Calculate sequence in ms for repetitions
+          const alarmSequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+
           // Create active alarm
           const newAlarm: ActiveAlarm = {
             id: crypto.randomUUID(),
@@ -781,7 +794,10 @@ export default function Notifications() {
             requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
-            autoDismissAt: autoDismissAt
+            autoDismissAt: autoDismissAt,
+            lastNotifiedAt: new Date(),
+            sequenceMs: alarmSequenceMs,
+            channels: { ...alarmConfig.channels }
           };
 
           setActiveAlarms(prev => [...prev, newAlarm]);
@@ -874,6 +890,9 @@ export default function Notifications() {
             autoDismissAtDecrease = new Date(Date.now() + totalMs);
           }
 
+          // Calculate sequence in ms for repetitions
+          const alarmSequenceMsDecrease = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+
           // Create active alarm
           const newAlarm: ActiveAlarm = {
             id: crypto.randomUUID(),
@@ -886,7 +905,10 @@ export default function Notifications() {
             requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
-            autoDismissAt: autoDismissAtDecrease
+            autoDismissAt: autoDismissAtDecrease,
+            lastNotifiedAt: new Date(),
+            sequenceMs: alarmSequenceMsDecrease,
+            channels: { ...alarmConfig.channels }
           };
 
           setActiveAlarms(prev => [...prev, newAlarm]);
@@ -1061,6 +1083,106 @@ export default function Notifications() {
 
     return () => clearInterval(interval);
   }, []); // Empty deps - single interval for checking
+
+  // Repetition logic - send notifications based on sequence timing
+  useEffect(() => {
+    const checkRepetitions = () => {
+      const now = new Date();
+      
+      setActiveAlarms(prev => {
+        let hasChanges = false;
+        const updated = prev.map(alarm => {
+          // Skip if no repetitions needed or already completed all
+          if (!alarm.sequenceMs || alarm.sequenceMs <= 0) return alarm;
+          if (!alarm.lastNotifiedAt) return alarm;
+          
+          // If infinite or still has repetitions left
+          const isInfinite = alarm.repetitionsTotal === undefined;
+          const hasRepsLeft = alarm.repetitionsTotal !== undefined && 
+            (alarm.repetitionsCompleted || 1) < alarm.repetitionsTotal;
+          
+          if (!isInfinite && !hasRepsLeft) return alarm;
+          
+          // Check if sequence time has passed since last notification
+          const lastNotified = new Date(alarm.lastNotifiedAt);
+          const timeSinceLastNotify = now.getTime() - lastNotified.getTime();
+          
+          if (timeSinceLastNotify >= alarm.sequenceMs) {
+            hasChanges = true;
+            const newRepCount = (alarm.repetitionsCompleted || 1) + 1;
+            
+            // Send notifications for this alarm
+            const alarmMessage = `[Wiederholung ${newRepCount}${alarm.repetitionsTotal ? `/${alarm.repetitionsTotal}` : ''}] ${alarm.trendPriceName}: ${alarm.message}`;
+            
+            // Send via configured channels
+            if (alarm.channels?.push) {
+              // In-app toast
+              console.log(`[REPETITION] Toast: ${alarmMessage}`);
+            }
+            
+            if (alarm.channels?.email) {
+              fetch('/api/notifications/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  channels: { email: true, sms: false, webPush: false },
+                  recipient: 'hollvuyo@gmail.com',
+                  subject: `🔁 Pionex Alert Wiederholung ${newRepCount}`,
+                  message: alarmMessage,
+                  alarmLevel: alarm.alarmLevel
+                })
+              }).catch(err => console.error('Repetition email error:', err));
+              console.log(`[REPETITION] Email sent: ${alarmMessage}`);
+            }
+            
+            if (alarm.channels?.webPush || alarm.channels?.nativePush) {
+              fetch('/api/notifications/push-enhanced', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: `🔁 Wiederholung ${newRepCount}${alarm.repetitionsTotal ? `/${alarm.repetitionsTotal}` : ''}`,
+                  message: `${alarm.trendPriceName}: ${alarm.message}`,
+                  alarmLevel: alarm.alarmLevel
+                })
+              }).catch(err => console.error('Repetition push error:', err));
+              console.log(`[REPETITION] Push sent: ${alarmMessage}`);
+            }
+            
+            if (alarm.channels?.sms) {
+              const smsPhoneNumber = localStorage.getItem('sms-phone-number');
+              if (smsPhoneNumber) {
+                fetch('/api/send-sms', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    to: smsPhoneNumber,
+                    message: alarmMessage,
+                    alarmLevel: alarm.alarmLevel
+                  })
+                }).catch(err => console.error('Repetition SMS error:', err));
+                console.log(`[REPETITION] SMS sent: ${alarmMessage}`);
+              }
+            }
+            
+            return {
+              ...alarm,
+              repetitionsCompleted: newRepCount,
+              lastNotifiedAt: now
+            };
+          }
+          
+          return alarm;
+        });
+        
+        return hasChanges ? updated : prev;
+      });
+    };
+
+    // Check every second for pending repetitions
+    const interval = setInterval(checkRepetitions, 1000);
+    
+    return () => clearInterval(interval);
+  }, []); // Empty deps - single interval
 
   // Sortierung für aktive Alarmierungen
   type AlarmSortOption = 'neueste' | 'älteste' | 'dringlichkeit';
@@ -1386,18 +1508,33 @@ export default function Notifications() {
   };
 
   const updateAlarmLevelConfig = (level: AlarmLevel, field: keyof AlarmLevelConfig['channels'] | 'requiresApproval' | 'repeatCount' | 'sequenceHours' | 'sequenceMinutes' | 'sequenceSeconds' | 'restwartezeitHours' | 'restwartezeitMinutes' | 'restwartezeitSeconds', value: boolean | number | 'infinite') => {
-    setAlarmLevelConfigs(prev => ({
-      ...prev,
-      [level]: {
-        ...prev[level],
-        ...(field === 'requiresApproval' 
-          ? { requiresApproval: value as boolean }
-          : field === 'repeatCount' || field === 'sequenceHours' || field === 'sequenceMinutes' || field === 'sequenceSeconds' || field === 'restwartezeitHours' || field === 'restwartezeitMinutes' || field === 'restwartezeitSeconds'
-          ? { [field]: value }
-          : { channels: { ...prev[level].channels, [field]: value as boolean } }
-        )
+    setAlarmLevelConfigs(prev => {
+      const currentConfig = prev[level];
+      let updates: Partial<AlarmLevelConfig> = {};
+      
+      if (field === 'requiresApproval') {
+        updates = { requiresApproval: value as boolean };
+      } else if (field === 'repeatCount') {
+        updates = { [field]: value };
+        // WICHTIG: Bei "infinite" Wiederholungen muss Approval erforderlich sein
+        if (value === 'infinite') {
+          updates.requiresApproval = true;
+        }
+      } else if (field === 'sequenceHours' || field === 'sequenceMinutes' || field === 'sequenceSeconds' || 
+                 field === 'restwartezeitHours' || field === 'restwartezeitMinutes' || field === 'restwartezeitSeconds') {
+        updates = { [field]: value };
+      } else {
+        updates = { channels: { ...currentConfig.channels, [field]: value as boolean } };
       }
-    }));
+      
+      return {
+        ...prev,
+        [level]: {
+          ...currentConfig,
+          ...updates
+        }
+      };
+    });
   };
 
   const toggleAlarmLevelEdit = (level: AlarmLevel) => {
