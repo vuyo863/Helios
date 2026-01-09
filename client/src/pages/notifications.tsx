@@ -1501,8 +1501,12 @@ export default function Notifications() {
     }
 
     // SMS senden wenn Toggle aktiv und Telefonnummer vorhanden
-    const smsConfig = alarmLevelConfigs['gefährlich'];
-    if (smsConfig.channels.sms && smsPhoneNumber) {
+    // Prüfe beide gefährlichen Level - sende SMS wenn einer von beiden SMS aktiviert hat
+    const currentAlarmLevel = nativePushAlarm.alarmLevel as AlarmLevel;
+    const smsConfig = alarmLevelConfigs[currentAlarmLevel] || alarmLevelConfigs['gefährlich'];
+    const anySmsEnabled = alarmLevelConfigs['gefährlich'].channels.sms || alarmLevelConfigs['sehr_gefährlich'].channels.sms;
+    
+    if (anySmsEnabled && smsPhoneNumber) {
       console.log('[SMS TEST] SMS Toggle aktiv, sende SMS...');
       try {
         const smsResponse = await fetch('/api/send-sms', {
@@ -1543,7 +1547,7 @@ export default function Notifications() {
           duration: 5000,
         });
       }
-    } else if (smsConfig.channels.sms && !smsPhoneNumber) {
+    } else if (anySmsEnabled && !smsPhoneNumber) {
       toast({
         title: "SMS nicht gesendet",
         description: "Keine Telefonnummer hinterlegt",
