@@ -1515,14 +1515,14 @@ export default function Notifications() {
       if (field === 'requiresApproval') {
         updates = { requiresApproval: value as boolean };
       } else if (field === 'repeatCount') {
-        updates = { [field]: value };
+        updates = { repeatCount: value as number | 'infinite' };
         // WICHTIG: Bei "infinite" Wiederholungen muss Approval erforderlich sein
         if (value === 'infinite') {
           updates.requiresApproval = true;
         }
       } else if (field === 'sequenceHours' || field === 'sequenceMinutes' || field === 'sequenceSeconds' || 
                  field === 'restwartezeitHours' || field === 'restwartezeitMinutes' || field === 'restwartezeitSeconds') {
-        updates = { [field]: value };
+        updates = { [field]: value as number };
       } else {
         updates = { channels: { ...currentConfig.channels, [field]: value as boolean } };
       }
@@ -1563,7 +1563,8 @@ export default function Notifications() {
       alarmLevel: 'sehr_gefährlich',
       triggeredAt: new Date(),
       message: 'Preis über 50000 USDT gestiegen',
-      note: 'TEST: Wichtiger Widerstandslevel durchbrochen!'
+      note: 'TEST: Wichtiger Widerstandslevel durchbrochen!',
+      requiresApproval: true
     };
 
     setActiveAlarms(prev => [...prev, mockAlarm]);
@@ -1679,7 +1680,8 @@ export default function Notifications() {
       alarmLevel: 'gefährlich',
       triggeredAt: new Date(),
       message: 'Native Push Test - Preis über 3500 USDT',
-      note: 'NATIVE PUSH TEST: iOS/Android Benachrichtigung'
+      note: 'NATIVE PUSH TEST: iOS/Android Benachrichtigung',
+      requiresApproval: true
     };
 
     // Optimistic UI Update - Alarm sofort hinzufügen
