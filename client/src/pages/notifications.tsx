@@ -1114,6 +1114,34 @@ export default function Notifications() {
             hasChanges = true;
             const newRepCount = (alarm.repetitionsCompleted || 1) + 1;
             
+            // Recalculate autoDismissAt dynamically based on remaining repetitions
+            // This prevents the auto-dismiss from firing prematurely due to timing drift
+            let newAutoDismissAt = alarm.autoDismissAt;
+            if (alarm.autoDismissAt && alarm.repetitionsTotal !== undefined) {
+              const remainingReps = alarm.repetitionsTotal - newRepCount;
+              if (remainingReps > 0) {
+                // Get restwartezeit from localStorage (use default if not found)
+                const alarmConfigs = JSON.parse(localStorage.getItem('alarm-level-configs') || '{}');
+                const config = alarmConfigs[alarm.alarmLevel];
+                const restwartezeitMs = config ? 
+                  (config.restwartezeitHours * 3600 + config.restwartezeitMinutes * 60 + config.restwartezeitSeconds) * 1000 
+                  : 10000;
+                // Extend dismiss time: remaining reps * sequence + restwartezeit
+                const newTotalMs = remainingReps * effectiveSequenceMs + restwartezeitMs;
+                newAutoDismissAt = new Date(now.getTime() + newTotalMs);
+                console.log(`[AUTO-DISMISS] Extended: ${remainingReps} reps left x ${effectiveSequenceMs}ms + ${restwartezeitMs}ms rest = ${newTotalMs}ms, new dismiss at ${newAutoDismissAt.toISOString()}`);
+              } else {
+                // Last repetition completed - set dismiss to now + restwartezeit
+                const alarmConfigs = JSON.parse(localStorage.getItem('alarm-level-configs') || '{}');
+                const config = alarmConfigs[alarm.alarmLevel];
+                const restwartezeitMs = config ? 
+                  (config.restwartezeitHours * 3600 + config.restwartezeitMinutes * 60 + config.restwartezeitSeconds) * 1000 
+                  : 10000;
+                newAutoDismissAt = new Date(now.getTime() + restwartezeitMs);
+                console.log(`[AUTO-DISMISS] Final rep done, dismiss in ${restwartezeitMs}ms at ${newAutoDismissAt.toISOString()}`);
+              }
+            }
+            
             // Send notifications for this alarm
             const alarmMessage = `[Wiederholung ${newRepCount}${alarm.repetitionsTotal ? `/${alarm.repetitionsTotal}` : ''}] ${alarm.trendPriceName}: ${alarm.message}`;
             
@@ -1170,7 +1198,8 @@ export default function Notifications() {
             return {
               ...alarm,
               repetitionsCompleted: newRepCount,
-              lastNotifiedAt: now
+              lastNotifiedAt: now,
+              autoDismissAt: newAutoDismissAt
             };
           }
           
