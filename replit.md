@@ -49,6 +49,8 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **SMS Notifications**: Twilio-integrated SMS alerts when price thresholds are triggered.
 - **Alarm Approval System**: "Approval erforderlich" toggle per alarm level; when active, alarms require manual dismissal.
 - **Auto-Dismiss (Restwartezeit)**: When approval is OFF and repeatCount is finite, alarms auto-dismiss after (repeatCount-1)*sequence + restwartezeit; countdown timer displays remaining time in active alarms.
+- **Active Repetition System**: Alarms now send actual repeated notifications (email, SMS, push) based on sequence timing. useEffect checks every second and sends notifications when timeSinceLastNotify >= sequenceMs. ActiveAlarm tracks lastNotifiedAt, sequenceMs, and channels for repetition.
+- **Infinite Approval Safety**: When repeatCount='infinite' is selected, requiresApproval is automatically forced to true to prevent endless notification spam.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
