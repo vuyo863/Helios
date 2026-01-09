@@ -107,6 +107,10 @@ export default function Notifications() {
   });
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const [showTestButton, setShowTestButton] = useState(false);
+  const [smsPhoneNumber, setSmsPhoneNumber] = useState<string>(() => {
+    const saved = localStorage.getItem('notifications-sms-phone-number');
+    return saved || '';
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
   const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
 
@@ -1495,6 +1499,58 @@ export default function Notifications() {
         duration: 5000,
       });
     }
+
+    // SMS senden wenn Toggle aktiv und Telefonnummer vorhanden
+    const smsConfig = alarmLevelConfigs['gefährlich'];
+    if (smsConfig.channels.sms && smsPhoneNumber) {
+      console.log('[SMS TEST] SMS Toggle aktiv, sende SMS...');
+      try {
+        const smsResponse = await fetch('/api/send-sms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            to: smsPhoneNumber,
+            message: `${nativePushAlarm.trendPriceName}: ${nativePushAlarm.message}`,
+            alarmLevel: nativePushAlarm.alarmLevel
+          })
+        });
+
+        const smsResult = await smsResponse.json();
+        
+        if (smsResult.success) {
+          toast({
+            title: "SMS gesendet!",
+            description: `An ${smsPhoneNumber.slice(0, 4)}***`,
+            duration: 5000,
+          });
+        } else {
+          console.error('[SMS] Error:', smsResult.error);
+          toast({
+            title: "SMS Fehler",
+            description: smsResult.error || "SMS konnte nicht gesendet werden",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      } catch (smsError: any) {
+        console.error('[SMS] Error:', smsError);
+        toast({
+          title: "SMS Fehler",
+          description: "Verbindung fehlgeschlagen",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } else if (smsConfig.channels.sms && !smsPhoneNumber) {
+      toast({
+        title: "SMS nicht gesendet",
+        description: "Keine Telefonnummer hinterlegt",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
   };
 
   // ============================================================================
@@ -2868,13 +2924,34 @@ export default function Notifications() {
                                       onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'email', checked)}
                                     />
                                   </div>
-                                  <div className="flex items-center justify-between">
-                                    <Label htmlFor={`${level}-sms`} className="text-sm cursor-pointer">SMS</Label>
-                                    <Switch
-                                      id={`${level}-sms`}
-                                      checked={config.channels.sms}
-                                      onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'sms', checked)}
-                                    />
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label htmlFor={`${level}-sms`} className="text-sm cursor-pointer">SMS</Label>
+                                      <Switch
+                                        id={`${level}-sms`}
+                                        checked={config.channels.sms}
+                                        onCheckedChange={(checked) => updateAlarmLevelConfig(level, 'sms', checked)}
+                                      />
+                                    </div>
+                                    {config.channels.sms && (
+                                      <div className="pl-4">
+                                        <Label htmlFor={`${level}-sms-phone`} className="text-xs text-muted-foreground mb-1 block">
+                                          Telefonnummer (mit Ländervorwahl, z.B. +49...)
+                                        </Label>
+                                        <Input
+                                          id={`${level}-sms-phone`}
+                                          type="tel"
+                                          placeholder="+49123456789"
+                                          value={smsPhoneNumber}
+                                          onChange={(e) => {
+                                            setSmsPhoneNumber(e.target.value);
+                                            localStorage.setItem('notifications-sms-phone-number', e.target.value);
+                                          }}
+                                          className="h-8 text-sm"
+                                          data-testid={`input-sms-phone-${level}`}
+                                        />
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex items-center justify-between">
                                     <Label htmlFor={`${level}-pushNotifications`} className="text-sm cursor-pointer">Push Benachrichtigungen (iOS, Android, Browser)</Label>

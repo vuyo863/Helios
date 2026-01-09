@@ -2610,6 +2610,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`========== END TEST #${testId} ==========\n`);
   });
 
+  // ============================================================================
+  // SMS NOTIFICATION ENDPOINT (Twilio)
+  // ============================================================================
+  app.post("/api/send-sms", async (req, res) => {
+    const smsId = Date.now();
+    console.log(`\n========== SMS NOTIFICATION #${smsId} ==========`);
+    
+    try {
+      const { to, message, alarmLevel } = req.body;
+
+      console.log(`[SMS ${smsId}] Request received:`, { to: to ? '***' + to.slice(-4) : 'missing', messageLength: message?.length, alarmLevel });
+
+      // Validate required fields
+      if (!to || !message) {
+        console.log(`[SMS ${smsId}] FAILED: Missing required fields`);
+        return res.status(400).json({
+          success: false,
+          smsId,
+          error: "Missing required fields: 'to' (phone number) and 'message' are required"
+        });
+      }
+
+      const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+      const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+      const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+
+      if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+        console.log(`[SMS ${smsId}] FAILED: Twilio not configured`);
+        return res.status(400).json({
+          success: false,
+          smsId,
+          error: "Twilio not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER.",
+          configStatus: {
+            accountSidSet: !!TWILIO_ACCOUNT_SID,
+            authTokenSet: !!TWILIO_AUTH_TOKEN,
+            phoneNumberSet: !!TWILIO_PHONE_NUMBER
+          }
+        });
+      }
+
+      console.log(`[SMS ${smsId}] Twilio configured: YES`);
+
+      // Send SMS via Twilio API
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+      const authString = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
+
+      const formData = new URLSearchParams();
+      formData.append('To', to);
+      formData.append('From', TWILIO_PHONE_NUMBER);
+      formData.append('Body', message);
+
+      console.log(`[SMS ${smsId}] Sending SMS to ${to.slice(0, 4)}***...`);
+
+      const response = await fetch(twilioUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${authString}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData.toString()
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.sid) {
+        console.log(`[SMS ${smsId}] SUCCESS - Message SID: ${result.sid}, Status: ${result.status}`);
+        res.json({
+          success: true,
+          smsId,
+          messageSid: result.sid,
+          status: result.status,
+          message: 'SMS sent successfully'
+        });
+      } else {
+        console.log(`[SMS ${smsId}] FAILED - Twilio Error:`, result.message || result);
+        res.status(400).json({
+          success: false,
+          smsId,
+          error: result.message || 'Failed to send SMS',
+          twilioResponse: result
+        });
+      }
+    } catch (error: any) {
+      console.error(`[SMS ${smsId}] ERROR:`, error.message);
+      res.status(500).json({
+        success: false,
+        smsId,
+        error: error.message
+      });
+    }
+
+    console.log(`========== END SMS #${smsId} ==========\n`);
+  });
+
   // ========== DEBUG: OneSignal Subscriber List ==========
   // Shows all registered devices at OneSignal
   app.get('/api/onesignal/subscribers', async (req, res) => {
