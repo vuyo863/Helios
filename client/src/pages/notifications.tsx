@@ -1516,7 +1516,7 @@ export default function Notifications() {
           },
           body: JSON.stringify({
             to: smsPhoneNumber,
-            message: `${nativePushAlarm.trendPriceName}: ${nativePushAlarm.message}`,
+            message: `[${nativePushAlarm.alarmLevel.toUpperCase()}] ${nativePushAlarm.trendPriceName}: ${nativePushAlarm.message}`,
             alarmLevel: nativePushAlarm.alarmLevel
           })
         });
