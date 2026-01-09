@@ -788,6 +788,20 @@ export default function Notifications() {
             }).catch(err => console.error('Push notification error:', err));
           }
 
+          // Send SMS notification if enabled for this alarm level
+          if (alarmConfig.channels.sms && smsPhoneNumber) {
+            const smsMessage = `[${threshold.alarmLevel.toUpperCase()}] ${pair.name}: Preis über ${thresholdValue} USDT${threshold.note ? ` - ${threshold.note}` : ''}`;
+            fetch('/api/send-sms', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: smsPhoneNumber,
+                message: smsMessage,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('SMS notification error:', err));
+          }
+
           // Handle repeating notifications
           if (threshold.increaseFrequency === 'wiederholend') {
             const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
@@ -861,6 +875,20 @@ export default function Notifications() {
                 alarmLevel: threshold.alarmLevel
               })
             }).catch(err => console.error('Push notification error:', err));
+          }
+
+          // Send SMS notification if enabled for this alarm level (decrease)
+          if (alarmConfig.channels.sms && smsPhoneNumber) {
+            const smsMessage = `[${threshold.alarmLevel.toUpperCase()}] ${pair.name}: Preis unter ${thresholdValue} USDT${threshold.note ? ` - ${threshold.note}` : ''}`;
+            fetch('/api/send-sms', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: smsPhoneNumber,
+                message: smsMessage,
+                alarmLevel: threshold.alarmLevel
+              })
+            }).catch(err => console.error('SMS notification error:', err));
           }
 
           // Handle repeating notifications
