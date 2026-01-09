@@ -1886,25 +1886,6 @@ export default function Notifications() {
                 Aktive Alarmierungen ({activeAlarms.length})
               </CardTitle>
               <div className="flex items-center gap-2">
-                {activeAlarms.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setActiveAlarms([]);
-                      localStorage.removeItem('active-alarms');
-                      toast({
-                        title: "Alle Alarme gelöscht",
-                        description: "Alle aktiven Alarmierungen wurden entfernt.",
-                      });
-                    }}
-                    className="text-destructive hover:text-destructive"
-                    data-testid="button-clear-all-alarms"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Alle löschen
-                  </Button>
-                )}
                 <span className="text-sm text-muted-foreground">Sortieren:</span>
                 <Select value={alarmSortOption} onValueChange={(value) => setAlarmSortOption(value as AlarmSortOption)}>
                   <SelectTrigger className="w-[140px] h-8" data-testid="select-alarm-sort">

@@ -60,7 +60,10 @@ Backend REST API endpoints for active alarm synchronization:
 - `POST /api/active-alarms` - Create new active alarm
 - `PATCH /api/active-alarms/:id` - Update alarm (repetition count, lastNotifiedAt)
 - `DELETE /api/active-alarms/:id` - Delete/Approve single alarm
-- `DELETE /api/active-alarms` - Delete all active alarms
+
+**Note:** There is NO "delete all" endpoint or button - alarms are only removed via:
+1. Manual approval (DELETE single alarm) for `requiresApproval=true` alarms
+2. Auto-dismiss after repetitions complete + Restwartezeit expires for `requiresApproval=false` alarms
 
 Console log prefixes for debugging: `[ACTIVE-ALARMS]`, `[API]`
 

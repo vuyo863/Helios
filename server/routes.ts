@@ -1838,17 +1838,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // DELETE all active alarms
-  app.delete("/api/active-alarms", async (req, res) => {
-    try {
-      await storage.deleteAllActiveAlarms();
-      console.log("[API] DELETE /api/active-alarms - all alarms cleared");
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete all alarms" });
-    }
-  });
-
   // POST Bidirectional Hover Logging (for testing)
   app.post("/api/log-hover", (req, res) => {
     const { event, key, botTypeName, timestamp, mode, direction } = req.body;
