@@ -237,3 +237,36 @@ export const insertGraphSettingsSchema = createInsertSchema(graphSettings).omit(
 
 export type InsertGraphSettings = z.infer<typeof insertGraphSettingsSchema>;
 export type GraphSettings = typeof graphSettings.$inferSelect;
+
+// ===== ACTIVE ALARMS (for cross-device synchronization) =====
+// Stores active alarms in memory/server for sync across all devices
+
+export const activeAlarmSchema = z.object({
+  id: z.string(),
+  trendPriceName: z.string(),
+  threshold: z.string(),
+  alarmLevel: z.enum(['harmlos', 'achtung', 'gefährlich', 'sehr_gefährlich']),
+  triggeredAt: z.string(), // ISO date string
+  message: z.string(),
+  note: z.string(),
+  requiresApproval: z.boolean(),
+  repetitionsCompleted: z.number().optional(),
+  repetitionsTotal: z.number().optional(),
+  autoDismissAt: z.string().optional(), // ISO date string
+  lastNotifiedAt: z.string().optional(), // ISO date string
+  sequenceMs: z.number().optional(),
+  channels: z.object({
+    push: z.boolean(),
+    email: z.boolean(),
+    sms: z.boolean(),
+    webPush: z.boolean(),
+    nativePush: z.boolean(),
+  }).optional(),
+});
+
+export const insertActiveAlarmSchema = activeAlarmSchema.omit({ id: true }).extend({
+  id: z.string().optional(),
+});
+
+export type ActiveAlarm = z.infer<typeof activeAlarmSchema>;
+export type InsertActiveAlarm = z.infer<typeof insertActiveAlarmSchema>;

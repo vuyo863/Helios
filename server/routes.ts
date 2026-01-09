@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, insertGraphSettingsSchema, botTypes, graphSettings } from "@shared/schema";
+import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, insertGraphSettingsSchema, insertActiveAlarmSchema, botTypes, graphSettings } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
 import { db } from "./db";
@@ -1755,6 +1755,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       res.status(500).json({ error: "Failed to set default graph settings" });
+    }
+  });
+
+  // ============================================================================
+  // ACTIVE ALARMS ENDPOINTS (Cross-Device Sync)
+  // These endpoints enable alarm synchronization across all devices
+  // ============================================================================
+
+  // GET all active alarms
+  app.get("/api/active-alarms", async (req, res) => {
+    try {
+      const alarms = await storage.getAllActiveAlarms();
+      console.log(`[API] GET /api/active-alarms - returning ${alarms.length} alarms`);
+      res.json(alarms);
+    } catch (error) {
+      console.error("[API] GET /api/active-alarms error:", error);
+      res.status(500).json({ error: "Failed to fetch active alarms" });
+    }
+  });
+
+  // GET single active alarm by ID
+  app.get("/api/active-alarms/:id", async (req, res) => {
+    try {
+      const alarm = await storage.getActiveAlarm(req.params.id);
+      if (!alarm) {
+        return res.status(404).json({ error: "Alarm not found" });
+      }
+      res.json(alarm);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch alarm" });
+    }
+  });
+
+  // POST create new active alarm
+  app.post("/api/active-alarms", async (req, res) => {
+    try {
+      const validatedData = insertActiveAlarmSchema.parse(req.body);
+      const alarm = await storage.createActiveAlarm(validatedData);
+      console.log(`[API] POST /api/active-alarms - created alarm: ${alarm.id} for ${alarm.trendPriceName}`);
+      res.status(201).json(alarm);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("[API] POST /api/active-alarms validation error:", error.errors);
+        return res.status(400).json({ error: "Invalid alarm data", details: error.errors });
+      }
+      console.error("[API] POST /api/active-alarms error:", error);
+      res.status(500).json({ error: "Failed to create alarm" });
+    }
+  });
+
+  // PATCH update active alarm (e.g., repetition count)
+  app.patch("/api/active-alarms/:id", async (req, res) => {
+    try {
+      const validatedData = insertActiveAlarmSchema.partial().parse(req.body);
+      const alarm = await storage.updateActiveAlarm(req.params.id, validatedData);
+      if (!alarm) {
+        return res.status(404).json({ error: "Alarm not found" });
+      }
+      console.log(`[API] PATCH /api/active-alarms/${req.params.id} - updated`);
+      res.json(alarm);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("[API] PATCH /api/active-alarms validation error:", error.errors);
+        return res.status(400).json({ error: "Invalid update data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update alarm" });
+    }
+  });
+
+  // DELETE single alarm (APPROVE)
+  app.delete("/api/active-alarms/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteActiveAlarm(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Alarm not found" });
+      }
+      console.log(`[API] DELETE /api/active-alarms/${req.params.id} - APPROVED and removed`);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete alarm" });
+    }
+  });
+
+  // DELETE all active alarms
+  app.delete("/api/active-alarms", async (req, res) => {
+    try {
+      await storage.deleteAllActiveAlarms();
+      console.log("[API] DELETE /api/active-alarms - all alarms cleared");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete all alarms" });
     }
   });
 

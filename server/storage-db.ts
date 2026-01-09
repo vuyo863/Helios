@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { 
   users, 
   botTypes, 
@@ -15,11 +16,16 @@ import {
   type BotTypeUpdate,
   type InsertBotTypeUpdate,
   type GraphSettings,
-  type InsertGraphSettings
+  type InsertGraphSettings,
+  type ActiveAlarm,
+  type InsertActiveAlarm
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
+  // In-memory storage for active alarms (cross-device sync)
+  private activeAlarms: Map<string, ActiveAlarm> = new Map();
+  
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
@@ -223,6 +229,60 @@ export class DbStorage implements IStorage {
       .where(eq(graphSettings.id, id))
       .returning();
     return result[0];
+  }
+  
+  // Active Alarms Methods (in-memory for cross-device sync)
+  async getAllActiveAlarms(): Promise<ActiveAlarm[]> {
+    console.log(`[ACTIVE-ALARMS] getAllActiveAlarms called, count: ${this.activeAlarms.size}`);
+    return Array.from(this.activeAlarms.values()).sort((a, b) => 
+      new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime()
+    );
+  }
+  
+  async getActiveAlarm(id: string): Promise<ActiveAlarm | undefined> {
+    console.log(`[ACTIVE-ALARMS] getActiveAlarm called for id: ${id}`);
+    return this.activeAlarms.get(id);
+  }
+  
+  async createActiveAlarm(insertAlarm: InsertActiveAlarm): Promise<ActiveAlarm> {
+    const id = insertAlarm.id || randomUUID();
+    const alarm: ActiveAlarm = {
+      ...insertAlarm,
+      id,
+    };
+    this.activeAlarms.set(id, alarm);
+    console.log(`[ACTIVE-ALARMS] Created alarm: ${id} for ${alarm.trendPriceName}`);
+    return alarm;
+  }
+  
+  async updateActiveAlarm(id: string, updateData: Partial<InsertActiveAlarm>): Promise<ActiveAlarm | undefined> {
+    const existing = this.activeAlarms.get(id);
+    if (!existing) {
+      console.log(`[ACTIVE-ALARMS] Update failed - alarm not found: ${id}`);
+      return undefined;
+    }
+    
+    const updated: ActiveAlarm = {
+      ...existing,
+      ...updateData,
+      id,
+    };
+    this.activeAlarms.set(id, updated);
+    console.log(`[ACTIVE-ALARMS] Updated alarm: ${id}`);
+    return updated;
+  }
+  
+  async deleteActiveAlarm(id: string): Promise<boolean> {
+    const deleted = this.activeAlarms.delete(id);
+    console.log(`[ACTIVE-ALARMS] Delete alarm ${id}: ${deleted ? 'success (APPROVED)' : 'not found'}`);
+    return deleted;
+  }
+  
+  async deleteAllActiveAlarms(): Promise<boolean> {
+    const count = this.activeAlarms.size;
+    this.activeAlarms.clear();
+    console.log(`[ACTIVE-ALARMS] Deleted all ${count} alarms`);
+    return true;
   }
 }
 

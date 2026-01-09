@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate, type GraphSettings, type InsertGraphSettings } from "@shared/schema";
+import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate, type GraphSettings, type InsertGraphSettings, type ActiveAlarm, type InsertActiveAlarm } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -37,17 +37,27 @@ export interface IStorage {
   updateGraphSettings(id: string, settings: Partial<InsertGraphSettings>): Promise<GraphSettings | undefined>;
   deleteGraphSettings(id: string): Promise<boolean>;
   setDefaultGraphSettings(id: string): Promise<GraphSettings | undefined>;
+  
+  // Active Alarms (cross-device sync)
+  getAllActiveAlarms(): Promise<ActiveAlarm[]>;
+  getActiveAlarm(id: string): Promise<ActiveAlarm | undefined>;
+  createActiveAlarm(alarm: InsertActiveAlarm): Promise<ActiveAlarm>;
+  updateActiveAlarm(id: string, alarm: Partial<InsertActiveAlarm>): Promise<ActiveAlarm | undefined>;
+  deleteActiveAlarm(id: string): Promise<boolean>;
+  deleteAllActiveAlarms(): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private botTypes: Map<string, BotType>;
   private botEntries: Map<string, BotEntry>;
+  private activeAlarms: Map<string, ActiveAlarm>;
 
   constructor() {
     this.users = new Map();
     this.botTypes = new Map();
     this.botEntries = new Map();
+    this.activeAlarms = new Map();
     this.seedMockData();
   }
 
@@ -504,6 +514,60 @@ export class MemStorage implements IStorage {
   
   async setDefaultGraphSettings(id: string): Promise<GraphSettings | undefined> {
     return undefined;
+  }
+  
+  // Active Alarms Methods (cross-device sync)
+  async getAllActiveAlarms(): Promise<ActiveAlarm[]> {
+    console.log(`[ACTIVE-ALARMS] getAllActiveAlarms called, count: ${this.activeAlarms.size}`);
+    return Array.from(this.activeAlarms.values()).sort((a, b) => 
+      new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime()
+    );
+  }
+  
+  async getActiveAlarm(id: string): Promise<ActiveAlarm | undefined> {
+    console.log(`[ACTIVE-ALARMS] getActiveAlarm called for id: ${id}`);
+    return this.activeAlarms.get(id);
+  }
+  
+  async createActiveAlarm(insertAlarm: InsertActiveAlarm): Promise<ActiveAlarm> {
+    const id = insertAlarm.id || randomUUID();
+    const alarm: ActiveAlarm = {
+      ...insertAlarm,
+      id,
+    };
+    this.activeAlarms.set(id, alarm);
+    console.log(`[ACTIVE-ALARMS] Created alarm: ${id} for ${alarm.trendPriceName}`);
+    return alarm;
+  }
+  
+  async updateActiveAlarm(id: string, updateData: Partial<InsertActiveAlarm>): Promise<ActiveAlarm | undefined> {
+    const existing = this.activeAlarms.get(id);
+    if (!existing) {
+      console.log(`[ACTIVE-ALARMS] Update failed - alarm not found: ${id}`);
+      return undefined;
+    }
+    
+    const updated: ActiveAlarm = {
+      ...existing,
+      ...updateData,
+      id, // Keep original ID
+    };
+    this.activeAlarms.set(id, updated);
+    console.log(`[ACTIVE-ALARMS] Updated alarm: ${id}`);
+    return updated;
+  }
+  
+  async deleteActiveAlarm(id: string): Promise<boolean> {
+    const deleted = this.activeAlarms.delete(id);
+    console.log(`[ACTIVE-ALARMS] Delete alarm ${id}: ${deleted ? 'success' : 'not found'}`);
+    return deleted;
+  }
+  
+  async deleteAllActiveAlarms(): Promise<boolean> {
+    const count = this.activeAlarms.size;
+    this.activeAlarms.clear();
+    console.log(`[ACTIVE-ALARMS] Deleted all ${count} alarms`);
+    return true;
   }
 }
 

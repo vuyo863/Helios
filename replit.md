@@ -51,6 +51,18 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **Auto-Dismiss (Restwartezeit)**: When approval is OFF and repeatCount is finite, alarms auto-dismiss after (repeatCount-1)*sequence + restwartezeit; countdown timer displays remaining time in active alarms.
 - **Active Repetition System**: Alarms now send actual repeated notifications (email, SMS, push) based on sequence timing. useEffect checks every second and sends notifications when timeSinceLastNotify >= sequenceMs. ActiveAlarm tracks lastNotifiedAt, sequenceMs, and channels for repetition.
 - **Infinite Approval Safety**: When repeatCount='infinite' is selected, requiresApproval is automatically forced to true to prevent endless notification spam.
+- **Cross-Device Alarm Synchronization**: Active alarms are stored in centralized backend (in-memory) and synchronized across all devices via polling. When a user approves an alarm on one device (DELETE request), all other devices see it disappear on their next poll.
+
+### Cross-Device Sync API
+Backend REST API endpoints for active alarm synchronization:
+- `GET /api/active-alarms` - Retrieve all active alarms
+- `GET /api/active-alarms/:id` - Retrieve single alarm by ID
+- `POST /api/active-alarms` - Create new active alarm
+- `PATCH /api/active-alarms/:id` - Update alarm (repetition count, lastNotifiedAt)
+- `DELETE /api/active-alarms/:id` - Delete/Approve single alarm
+- `DELETE /api/active-alarms` - Delete all active alarms
+
+Console log prefixes for debugging: `[ACTIVE-ALARMS]`, `[API]`
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
