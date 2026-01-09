@@ -59,6 +59,7 @@ The application supports both Replit and external server deployments using a uni
 - **Environment Variable**: `RUNTIME_ENV` determines which adapter to use:
   - `RUNTIME_ENV=replit` → Uses `@neondatabase/serverless` + `drizzle-orm/neon-http`
   - `RUNTIME_ENV=server` → Uses `pg` (node-postgres) + `drizzle-orm/node-postgres`
+- **Server Setup**: On external server, set `RUNTIME_ENV=server` in `ecosystem.config.cjs` (NOT in ~/.bashrc - PM2 doesn't inherit shell env reliably)
 - **git pull Safety**: No manual code changes needed after pulling - the same code works on both environments
 - **Logging**: Console output shows `[DB] Using Neon serverless (replit mode)` or `[DB] Using node-postgres (server mode)`
 
