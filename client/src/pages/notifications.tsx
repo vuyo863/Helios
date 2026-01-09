@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, EyeOff, ArrowUp, ArrowDown, ArrowUpDown, Timer } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Search, X, Pencil, Save, Activity, Plus, Trash2, Check, Eye, EyeOff, ArrowUp, ArrowDown, ArrowUpDown, Timer, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -67,6 +67,7 @@ interface ActiveAlarm {
   message: string;
   note: string;
   // Auto-dismiss tracking
+  requiresApproval: boolean;
   repetitionsCompleted?: number;
   repetitionsTotal?: number;
   restwartezeitEndsAt?: Date;
@@ -777,6 +778,7 @@ export default function Notifications() {
             triggeredAt: new Date(),
             message: `Preis über ${thresholdValue} USDT gestiegen`,
             note: threshold.note,
+            requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
             autoDismissAt: autoDismissAt
@@ -881,6 +883,7 @@ export default function Notifications() {
             triggeredAt: new Date(),
             message: `Preis unter ${thresholdValue} USDT gefallen`,
             note: threshold.note,
+            requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
             autoDismissAt: autoDismissAtDecrease
@@ -1803,36 +1806,51 @@ export default function Notifications() {
                             📝 {alarm.note}
                           </p>
                         )}
-                        {/* Auto-dismiss countdown - uses countdownTick to force re-render */}
-                        {alarm.autoDismissAt && (
-                          <p className="text-xs text-orange-500 dark:text-orange-400 mt-1 flex items-center gap-1" data-tick={countdownTick}>
-                            <Timer className="w-3 h-3" />
-                            Auto-Dismiss in: {(() => {
-                              const now = new Date();
-                              const dismissTime = new Date(alarm.autoDismissAt);
-                              const diffMs = dismissTime.getTime() - now.getTime();
-                              if (diffMs <= 0) return "Gleich...";
-                              const diffSec = Math.floor(diffMs / 1000);
-                              const hours = Math.floor(diffSec / 3600);
-                              const minutes = Math.floor((diffSec % 3600) / 60);
-                              const seconds = diffSec % 60;
-                              if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-                              if (minutes > 0) return `${minutes}m ${seconds}s`;
-                              return `${seconds}s`;
-                            })()}
-                          </p>
+                        {/* Show repetition count + auto-dismiss countdown when approval NOT required */}
+                        {!alarm.requiresApproval && (
+                          <div className="text-xs text-orange-500 dark:text-orange-400 mt-1 flex items-center gap-2 flex-wrap" data-tick={countdownTick}>
+                            {/* Wiederholungsanzeige */}
+                            {alarm.repetitionsTotal && (
+                              <span className="flex items-center gap-1">
+                                <RefreshCw className="w-3 h-3" />
+                                {alarm.repetitionsCompleted} von {alarm.repetitionsTotal} Wiederholungen
+                              </span>
+                            )}
+                            {/* Auto-dismiss countdown */}
+                            {alarm.autoDismissAt && (
+                              <span className="flex items-center gap-1">
+                                <Timer className="w-3 h-3" />
+                                Restzeit: {(() => {
+                                  const now = new Date();
+                                  const dismissTime = new Date(alarm.autoDismissAt);
+                                  const diffMs = dismissTime.getTime() - now.getTime();
+                                  if (diffMs <= 0) return "Gleich...";
+                                  const diffSec = Math.floor(diffMs / 1000);
+                                  const hours = Math.floor(diffSec / 3600);
+                                  const minutes = Math.floor((diffSec % 3600) / 60);
+                                  const seconds = diffSec % 60;
+                                  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+                                  if (minutes > 0) return `${minutes}m ${seconds}s`;
+                                  return `${seconds}s`;
+                                })()}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => approveAlarm(alarm.id)}
-                        className="flex-shrink-0 h-8"
-                        style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
-                      >
-                        <Check className="w-3.5 h-3.5 mr-1" />
-                        Approve
-                      </Button>
+                      {/* Approve button only when approval is required */}
+                      {alarm.requiresApproval && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => approveAlarm(alarm.id)}
+                          className="flex-shrink-0 h-8"
+                          style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1" />
+                          Approve
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
