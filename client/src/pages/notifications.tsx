@@ -66,6 +66,11 @@ interface ActiveAlarm {
   triggeredAt: Date;
   message: string;
   note: string;
+  // Auto-dismiss tracking
+  repetitionsCompleted?: number;
+  repetitionsTotal?: number;
+  restwartezeitEndsAt?: Date;
+  autoDismissAt?: Date;
 }
 
 interface TrendPriceSettings {
@@ -751,6 +756,17 @@ export default function Notifications() {
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
+          // Calculate auto-dismiss time if approval not required
+          let autoDismissAt: Date | undefined;
+          if (!alarmConfig.requiresApproval && alarmConfig.repeatCount !== 'infinite') {
+            const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
+            const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+            const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
+            // Total time = (repetitions - 1) * sequence + restwartezeit (first notification is immediate)
+            const totalMs = Math.max(0, repeatCount - 1) * sequenceMs + restwartezeitMs;
+            autoDismissAt = new Date(Date.now() + totalMs);
+          }
+
           // Create active alarm
           const newAlarm: ActiveAlarm = {
             id: crypto.randomUUID(),
@@ -759,7 +775,10 @@ export default function Notifications() {
             alarmLevel: threshold.alarmLevel,
             triggeredAt: new Date(),
             message: `Preis über ${thresholdValue} USDT gestiegen`,
-            note: threshold.note
+            note: threshold.note,
+            repetitionsCompleted: 1,
+            repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
+            autoDismissAt: autoDismissAt
           };
 
           setActiveAlarms(prev => [...prev, newAlarm]);
@@ -840,6 +859,16 @@ export default function Notifications() {
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
+          // Calculate auto-dismiss time if approval not required
+          let autoDismissAtDecrease: Date | undefined;
+          if (!alarmConfig.requiresApproval && alarmConfig.repeatCount !== 'infinite') {
+            const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
+            const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+            const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
+            const totalMs = Math.max(0, repeatCount - 1) * sequenceMs + restwartezeitMs;
+            autoDismissAtDecrease = new Date(Date.now() + totalMs);
+          }
+
           // Create active alarm
           const newAlarm: ActiveAlarm = {
             id: crypto.randomUUID(),
@@ -848,7 +877,10 @@ export default function Notifications() {
             alarmLevel: threshold.alarmLevel,
             triggeredAt: new Date(),
             message: `Preis unter ${thresholdValue} USDT gefallen`,
-            note: threshold.note
+            note: threshold.note,
+            repetitionsCompleted: 1,
+            repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
+            autoDismissAt: autoDismissAtDecrease
           };
 
           setActiveAlarms(prev => [...prev, newAlarm]);
@@ -990,6 +1022,33 @@ export default function Notifications() {
   // Sync activeAlarms to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
+  }, [activeAlarms]);
+
+  // Auto-dismiss alarms when their autoDismissAt time is reached
+  useEffect(() => {
+    const checkAutoDismiss = () => {
+      const now = new Date();
+      const alarmsToRemove: string[] = [];
+      
+      activeAlarms.forEach(alarm => {
+        if (alarm.autoDismissAt) {
+          const dismissTime = new Date(alarm.autoDismissAt);
+          if (now >= dismissTime) {
+            alarmsToRemove.push(alarm.id);
+          }
+        }
+      });
+
+      if (alarmsToRemove.length > 0) {
+        setActiveAlarms(prev => prev.filter(a => !alarmsToRemove.includes(a.id)));
+      }
+    };
+
+    // Check every second for auto-dismiss
+    const interval = setInterval(checkAutoDismiss, 1000);
+    checkAutoDismiss(); // Check immediately
+
+    return () => clearInterval(interval);
   }, [activeAlarms]);
 
   // Sortierung für aktive Alarmierungen
@@ -1315,14 +1374,14 @@ export default function Notifications() {
     return getTrendPrice(id)?.name || id;
   };
 
-  const updateAlarmLevelConfig = (level: AlarmLevel, field: keyof AlarmLevelConfig['channels'] | 'requiresApproval' | 'repeatCount' | 'sequenceHours' | 'sequenceMinutes' | 'sequenceSeconds', value: boolean | number | 'infinite') => {
+  const updateAlarmLevelConfig = (level: AlarmLevel, field: keyof AlarmLevelConfig['channels'] | 'requiresApproval' | 'repeatCount' | 'sequenceHours' | 'sequenceMinutes' | 'sequenceSeconds' | 'restwartezeitHours' | 'restwartezeitMinutes' | 'restwartezeitSeconds', value: boolean | number | 'infinite') => {
     setAlarmLevelConfigs(prev => ({
       ...prev,
       [level]: {
         ...prev[level],
         ...(field === 'requiresApproval' 
           ? { requiresApproval: value as boolean }
-          : field === 'repeatCount' || field === 'sequenceHours' || field === 'sequenceMinutes' || field === 'sequenceSeconds'
+          : field === 'repeatCount' || field === 'sequenceHours' || field === 'sequenceMinutes' || field === 'sequenceSeconds' || field === 'restwartezeitHours' || field === 'restwartezeitMinutes' || field === 'restwartezeitSeconds'
           ? { [field]: value }
           : { channels: { ...prev[level].channels, [field]: value as boolean } }
         )
@@ -3127,6 +3186,66 @@ export default function Notifications() {
                                     </div>
                                   </div>
                                 </div>
+
+                                {/* Restwartezeit - nur wenn Approval AUS und nicht unendlich */}
+                                {!config.requiresApproval && config.repeatCount !== 'infinite' && (
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium">Restwartezeit (Auto-Dismiss nach Wiederholungen)</Label>
+                                    <p className="text-xs text-muted-foreground">Nach Ablauf aller Wiederholungen läuft dieser Countdown, dann verschwindet der Alarm automatisch.</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div>
+                                        <Label htmlFor={`${level}-restwartezeit-hours`} className="text-xs text-muted-foreground">Stunden</Label>
+                                        <Input
+                                          id={`${level}-restwartezeit-hours`}
+                                          type="number"
+                                          min="0"
+                                          value={config.restwartezeitHours}
+                                          onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            if (!isNaN(val) && val >= 0) {
+                                              updateAlarmLevelConfig(level, 'restwartezeitHours', val);
+                                            }
+                                          }}
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor={`${level}-restwartezeit-minutes`} className="text-xs text-muted-foreground">Minuten</Label>
+                                        <Input
+                                          id={`${level}-restwartezeit-minutes`}
+                                          type="number"
+                                          min="0"
+                                          max="59"
+                                          value={config.restwartezeitMinutes}
+                                          onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            if (!isNaN(val) && val >= 0 && val <= 59) {
+                                              updateAlarmLevelConfig(level, 'restwartezeitMinutes', val);
+                                            }
+                                          }}
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor={`${level}-restwartezeit-seconds`} className="text-xs text-muted-foreground">Sekunden</Label>
+                                        <Input
+                                          id={`${level}-restwartezeit-seconds`}
+                                          type="number"
+                                          min="0"
+                                          max="59"
+                                          value={config.restwartezeitSeconds}
+                                          onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            if (!isNaN(val) && val >= 0 && val <= 59) {
+                                              updateAlarmLevelConfig(level, 'restwartezeitSeconds', val);
+                                            }
+                                          }}
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="flex justify-end gap-2">
