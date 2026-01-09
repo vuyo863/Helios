@@ -1,5 +1,4 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { db } from "./db";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { 
   users, 
@@ -19,9 +18,6 @@ import {
   type InsertGraphSettings
 } from "@shared/schema";
 import type { IStorage } from "./storage";
-
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql);
 
 export class DbStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {

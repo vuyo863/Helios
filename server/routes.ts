@@ -4,13 +4,9 @@ import { storage } from "./storage";
 import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, insertGraphSettingsSchema, botTypes, graphSettings } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { db } from "./db";
 import { eq } from "drizzle-orm";
 import nodemailer from "nodemailer";
-
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle(sql);
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
