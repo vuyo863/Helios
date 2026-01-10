@@ -3310,13 +3310,16 @@ export default function Notifications() {
                                   <Label className="text-sm font-medium">Wiederholung</Label>
                                   <div className="flex items-center gap-2">
                                     <Input
-                                      type="number"
-                                      min="1"
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
                                       value={config.repeatCount === 'infinite' ? '' : config.repeatCount}
                                       onChange={(e) => {
                                         const val = parseInt(e.target.value);
                                         if (!isNaN(val) && val > 0) {
                                           updateAlarmLevelConfig(level, 'repeatCount', val);
+                                        } else if (e.target.value === '') {
+                                          updateAlarmLevelConfig(level, 'repeatCount', 1);
                                         }
                                       }}
                                       placeholder="Anzahl"
