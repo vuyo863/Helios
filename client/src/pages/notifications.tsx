@@ -3218,14 +3218,14 @@ export default function Notifications() {
                               <Pencil className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+                          <DialogContent className="max-w-md">
                             <DialogHeader>
                               <DialogTitle className="flex items-center gap-2">
                                 <div className="w-4 h-4 rounded" style={{ backgroundColor: color }}></div>
                                 {getAlarmLevelLabel(level)} bearbeiten
                               </DialogTitle>
                             </DialogHeader>
-                            <ScrollArea className="flex-1 min-h-0 pr-4">
+                            <div className="max-h-[60vh] overflow-y-auto pr-2">
                               <div className="space-y-4 py-4">
                               <div>
                                 <Label className="text-sm font-medium mb-2 block">Benachrichtigungskanäle</Label>
@@ -3467,7 +3467,7 @@ export default function Notifications() {
                                 )}
                               </div>
                             </div>
-                            </ScrollArea>
+                            </div>
                             <div className="flex justify-end gap-2 pt-4 border-t mt-2">
                               <Button 
                                 variant="outline" 
