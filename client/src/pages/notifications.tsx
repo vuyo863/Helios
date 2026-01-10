@@ -802,6 +802,15 @@ export default function Notifications() {
           };
 
           setActiveAlarms(prev => [...prev, newAlarm]);
+          
+          // POST to backend for cross-device sync
+          fetch('/api/active-alarms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newAlarm)
+          }).then(res => {
+            if (res.ok) console.log(`[ACTIVE-ALARMS] Created alarm ${newAlarm.id} in backend`);
+          }).catch(err => console.error('[ACTIVE-ALARMS] Backend POST error:', err));
 
           // Show in-app notification (Push)
           if (alarmConfig.channels.push) {
@@ -914,6 +923,15 @@ export default function Notifications() {
           };
 
           setActiveAlarms(prev => [...prev, newAlarm]);
+          
+          // POST to backend for cross-device sync
+          fetch('/api/active-alarms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newAlarm)
+          }).then(res => {
+            if (res.ok) console.log(`[ACTIVE-ALARMS] Created alarm ${newAlarm.id} in backend`);
+          }).catch(err => console.error('[ACTIVE-ALARMS] Backend POST error:', err));
 
           // Show in-app notification (Push)
           if (alarmConfig.channels.push) {
@@ -1053,6 +1071,34 @@ export default function Notifications() {
   useEffect(() => {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
   }, [activeAlarms]);
+  
+  // Load active alarms from backend on mount (for cross-device sync)
+  useEffect(() => {
+    const fetchBackendAlarms = async () => {
+      try {
+        const response = await fetch('/api/active-alarms');
+        if (response.ok) {
+          const backendAlarms: ActiveAlarm[] = await response.json();
+          console.log(`[ACTIVE-ALARMS] Fetched ${backendAlarms.length} alarms from backend`);
+          
+          if (backendAlarms.length > 0) {
+            // Merge backend alarms with local (backend takes priority for IDs that exist in both)
+            setActiveAlarms(prev => {
+              const backendIds = new Set(backendAlarms.map(a => a.id));
+              const localOnlyAlarms = prev.filter(a => !backendIds.has(a.id));
+              const merged = [...backendAlarms, ...localOnlyAlarms];
+              console.log(`[ACTIVE-ALARMS] Merged: ${backendAlarms.length} from backend + ${localOnlyAlarms.length} local-only = ${merged.length} total`);
+              return merged;
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[ACTIVE-ALARMS] Failed to fetch from backend:', err);
+      }
+    };
+    
+    fetchBackendAlarms();
+  }, []);
 
   // Countdown tick - forces re-render every second for countdown display
   const [countdownTick, setCountdownTick] = useState(0);
@@ -1576,10 +1622,24 @@ export default function Notifications() {
     }));
   };
 
-  const approveAlarm = (alarmId: string) => {
+  const approveAlarm = async (alarmId: string) => {
+    // Delete from backend first for cross-device sync
+    try {
+      const response = await fetch(`/api/active-alarms/${alarmId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        console.log(`[ACTIVE-ALARMS] Deleted alarm ${alarmId} from backend`);
+      } else {
+        console.warn(`[ACTIVE-ALARMS] Backend delete failed for ${alarmId}:`, response.status);
+      }
+    } catch (err) {
+      console.error('[ACTIVE-ALARMS] Backend delete error:', err);
+    }
+    
+    // Also remove from local state and localStorage
     setActiveAlarms(prev => {
       const updated = prev.filter(alarm => alarm.id !== alarmId);
-      // Update localStorage to reflect approved alarms
       localStorage.setItem('active-alarms', JSON.stringify(updated));
       return updated;
     });
