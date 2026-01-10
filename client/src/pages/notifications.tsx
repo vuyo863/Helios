@@ -2009,19 +2009,18 @@ export default function Notifications() {
                           </div>
                         )}
                       </div>
-                      {/* Approve button only when approval is required */}
-                      {alarm.requiresApproval && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => approveAlarm(alarm.id)}
-                          className="flex-shrink-0 h-8"
-                          style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
-                        >
-                          <Check className="w-3.5 h-3.5 mr-1" />
-                          Approve
-                        </Button>
-                      )}
+                      {/* Approve/Stop button - always visible to allow manual dismissal */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => approveAlarm(alarm.id)}
+                        className="flex-shrink-0 h-8"
+                        style={{ borderColor: getAlarmLevelColor(alarm.alarmLevel) }}
+                        data-testid={`button-approve-alarm-${alarm.id}`}
+                      >
+                        <Check className="w-3.5 h-3.5 mr-1" />
+                        {alarm.requiresApproval ? 'Approve' : 'Stoppen'}
+                      </Button>
                     </div>
                   ))}
                 </div>
