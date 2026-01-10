@@ -3225,7 +3225,7 @@ export default function Notifications() {
                                 {getAlarmLevelLabel(level)} bearbeiten
                               </DialogTitle>
                             </DialogHeader>
-                            <ScrollArea className="max-h-[60vh] pr-4">
+                            <ScrollArea className="flex-1 min-h-0 pr-4">
                               <div className="space-y-4 py-4">
                               <div>
                                 <Label className="text-sm font-medium mb-2 block">Benachrichtigungskanäle</Label>
