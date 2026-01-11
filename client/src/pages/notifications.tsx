@@ -769,6 +769,20 @@ export default function Notifications() {
         // Get alarm level config
         const alarmConfig = alarmLevelConfigs[threshold.alarmLevel];
 
+        // WIEDERHOLEND RE-TRIGGER PREVENTION:
+        // For wiederholend with requiresApproval=false, don't trigger if an active alarm 
+        // for this exact threshold already exists (wait for previous alarm cycle to complete)
+        // For wiederholend with requiresApproval=true, allow re-triggering (user must approve anyway)
+        if (threshold.increaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+          const existingAlarmForThreshold = activeAlarms.find(
+            alarm => alarm.thresholdId === threshold.id && alarm.pairId === pair.id
+          );
+          if (existingAlarmForThreshold) {
+            // Already has active alarm, skip re-triggering until it auto-dismisses
+            return;
+          }
+        }
+
         // Check for price increase above threshold
         if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
@@ -823,6 +837,9 @@ export default function Notifications() {
             triggeredAt: new Date(),
             message: `Preis über ${thresholdValue} USDT gestiegen`,
             note: threshold.note,
+            // Track threshold for wiederholend re-trigger prevention
+            thresholdId: threshold.id,
+            pairId: pair.id,
             requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
@@ -913,6 +930,17 @@ export default function Notifications() {
 
         // Check for price decrease below threshold
         if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
+          // WIEDERHOLEND RE-TRIGGER PREVENTION for decrease:
+          // Same logic as for increase - prevent re-triggering if active alarm exists
+          if (threshold.decreaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+            const existingAlarmForThresholdDecrease = activeAlarms.find(
+              alarm => alarm.thresholdId === threshold.id && alarm.pairId === pair.id
+            );
+            if (existingAlarmForThresholdDecrease) {
+              // Already has active alarm for this threshold, skip re-triggering
+              return;
+            }
+          }
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
           
           // IMPORTANT: Single state update to prevent race conditions
@@ -965,6 +993,9 @@ export default function Notifications() {
             triggeredAt: new Date(),
             message: `Preis unter ${thresholdValue} USDT gefallen`,
             note: threshold.note,
+            // Track threshold for wiederholend re-trigger prevention
+            thresholdId: threshold.id,
+            pairId: pair.id,
             requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
