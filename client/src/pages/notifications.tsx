@@ -727,6 +727,9 @@ export default function Notifications() {
 
   // Track which threshold is currently being edited (for excluding from alerts)
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
+  // Track if we're creating a NEW threshold (vs editing existing)
+  // This is used to exclude incomplete new thresholds from hasAnyThresholds check
+  const [isCreatingNewThreshold, setIsCreatingNewThreshold] = useState(false);
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
@@ -2319,16 +2322,19 @@ export default function Notifications() {
             <>
 
             {/* Check if there are any saved thresholds across all watchlist items */}
-            {/* WICHTIG: Exclude currently editing threshold from this check to prevent dialog from closing */}
+            {/* WICHTIG: Only exclude threshold if we're CREATING a new one (not editing existing) */}
             {(() => {
               const hasAnyThresholds = watchlist.some(trendPriceId => {
                 const settings = trendPriceSettings[trendPriceId];
-                const savedThresholds = settings?.thresholds.filter(t => 
-                  t.id !== editingThresholdId && // Exclude threshold being edited
-                  t.threshold && 
-                  t.threshold.trim() !== '' && 
-                  (t.notifyOnIncrease || t.notifyOnDecrease)
-                ) || [];
+                const savedThresholds = settings?.thresholds.filter(t => {
+                  // Only exclude if we're creating a NEW threshold AND this is that threshold
+                  if (isCreatingNewThreshold && t.id === editingThresholdId) {
+                    return false;
+                  }
+                  return t.threshold && 
+                    t.threshold.trim() !== '' && 
+                    (t.notifyOnIncrease || t.notifyOnDecrease);
+                }) || [];
                 return savedThresholds.length > 0;
               });
 
@@ -2382,6 +2388,7 @@ export default function Notifications() {
                                           }
                                           isSavingThresholdRef.current = false;
                                           setEditingThresholdId(null);
+                                          setIsCreatingNewThreshold(false);
                                         }
                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: open }));
                                       }}
@@ -2427,6 +2434,7 @@ export default function Notifications() {
 
                                             // Set editing threshold and open dialog
                                             setEditingThresholdId(newThreshold.id);
+                                            setIsCreatingNewThreshold(true);
                                             setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: true, [newThreshold.id]: true }));
                                           }}
                                         >
@@ -2622,6 +2630,7 @@ export default function Notifications() {
                                                         saveSettingsToStorage();
                                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
                                                         setEditingThresholdId(null);
+                                                        setIsCreatingNewThreshold(false);
                                                         toast({
                                                           title: "Gespeichert",
                                                           description: "Schwellenwert wurde erfolgreich gespeichert.",
@@ -2723,6 +2732,7 @@ export default function Notifications() {
                                       }
                                       isSavingThresholdRef.current = false;
                                       setEditingThresholdId(null);
+                                      setIsCreatingNewThreshold(false);
                                     }
                                     setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: open }));
                                   }}
@@ -2768,6 +2778,7 @@ export default function Notifications() {
 
                                         // Set editing threshold and open dialog
                                         setEditingThresholdId(newThreshold.id);
+                                        setIsCreatingNewThreshold(true);
                                         setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: true, [newThreshold.id]: true }));
                                       }}
                                     >
@@ -2919,6 +2930,7 @@ export default function Notifications() {
                                                   saveSettingsToStorage();
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
+                                                  setIsCreatingNewThreshold(false);
                                                   toast({
                                                     title: "Gespeichert",
                                                     description: "Schwellenwert wurde erfolgreich hinzugefügt.",
@@ -3011,7 +3023,8 @@ export default function Notifications() {
                             // This prevents the edit dialog from auto-opening
                             if (open) {
                               setEditingThresholdId(null);
-                              setEditDialogOpen({});
+                              setIsCreatingNewThreshold(false);
+                              // Note: Don't clear editDialogOpen entirely - just reset editing state
                             }
                             setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }));
                           }}
