@@ -239,8 +239,28 @@ export type InsertGraphSettings = z.infer<typeof insertGraphSettingsSchema>;
 export type GraphSettings = typeof graphSettings.$inferSelect;
 
 // ===== ACTIVE ALARMS (for cross-device synchronization) =====
-// Stores active alarms in memory/server for sync across all devices
+// Stored in PostgreSQL for persistence across server restarts
 
+export const activeAlarms = pgTable("active_alarms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trendPriceName: text("trend_price_name").notNull(),
+  threshold: text("threshold").notNull(),
+  alarmLevel: text("alarm_level").notNull(), // 'harmlos', 'achtung', 'gefährlich', 'sehr_gefährlich'
+  triggeredAt: text("triggered_at").notNull(), // ISO date string
+  message: text("message").notNull(),
+  note: text("note").notNull(),
+  requiresApproval: boolean("requires_approval").notNull(),
+  repetitionsCompleted: integer("repetitions_completed"),
+  repetitionsTotal: integer("repetitions_total"),
+  autoDismissAt: text("auto_dismiss_at"), // ISO date string
+  lastNotifiedAt: text("last_notified_at"), // ISO date string
+  sequenceMs: integer("sequence_ms"),
+  channels: text("channels"), // JSON string for channels object
+  pairId: text("pair_id"), // For threshold reference
+  thresholdId: text("threshold_id"), // For threshold reference
+});
+
+// Zod schema for validation (keeps existing API compatibility)
 export const activeAlarmSchema = z.object({
   id: z.string(),
   trendPriceName: z.string(),
@@ -262,6 +282,8 @@ export const activeAlarmSchema = z.object({
     webPush: z.boolean(),
     nativePush: z.boolean(),
   }).optional(),
+  pairId: z.string().optional(),
+  thresholdId: z.string().optional(),
 });
 
 export const insertActiveAlarmSchema = activeAlarmSchema.omit({ id: true }).extend({

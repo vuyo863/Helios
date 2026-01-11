@@ -7,6 +7,7 @@ import {
   botEntries, 
   botTypeUpdates,
   graphSettings,
+  activeAlarms,
   type User, 
   type InsertUser, 
   type BotEntry, 
@@ -23,8 +24,6 @@ import {
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
-  // In-memory storage for active alarms (cross-device sync)
-  private activeAlarms: Map<string, ActiveAlarm> = new Map();
   
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
@@ -231,58 +230,119 @@ export class DbStorage implements IStorage {
     return result[0];
   }
   
-  // Active Alarms Methods (in-memory for cross-device sync)
+  // Active Alarms Methods (PostgreSQL for persistence across server restarts)
   async getAllActiveAlarms(): Promise<ActiveAlarm[]> {
-    console.log(`[ACTIVE-ALARMS] getAllActiveAlarms called, count: ${this.activeAlarms.size}`);
-    return Array.from(this.activeAlarms.values()).sort((a, b) => 
-      new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime()
-    );
+    const result = await db.select().from(activeAlarms).orderBy(desc(activeAlarms.triggeredAt));
+    console.log(`[ACTIVE-ALARMS] getAllActiveAlarms called, count: ${result.length}`);
+    
+    // Convert DB rows to ActiveAlarm objects (parse JSON channels)
+    return result.map(row => this.dbRowToActiveAlarm(row));
   }
   
   async getActiveAlarm(id: string): Promise<ActiveAlarm | undefined> {
     console.log(`[ACTIVE-ALARMS] getActiveAlarm called for id: ${id}`);
-    return this.activeAlarms.get(id);
+    const result = await db.select().from(activeAlarms).where(eq(activeAlarms.id, id));
+    if (result.length === 0) return undefined;
+    return this.dbRowToActiveAlarm(result[0]);
   }
   
   async createActiveAlarm(insertAlarm: InsertActiveAlarm): Promise<ActiveAlarm> {
     const id = insertAlarm.id || randomUUID();
-    const alarm: ActiveAlarm = {
-      ...insertAlarm,
+    
+    // Prepare data for DB (serialize channels to JSON)
+    const dbData = {
       id,
+      trendPriceName: insertAlarm.trendPriceName,
+      threshold: insertAlarm.threshold,
+      alarmLevel: insertAlarm.alarmLevel,
+      triggeredAt: insertAlarm.triggeredAt,
+      message: insertAlarm.message,
+      note: insertAlarm.note,
+      requiresApproval: insertAlarm.requiresApproval,
+      repetitionsCompleted: insertAlarm.repetitionsCompleted ?? null,
+      repetitionsTotal: insertAlarm.repetitionsTotal ?? null,
+      autoDismissAt: insertAlarm.autoDismissAt ?? null,
+      lastNotifiedAt: insertAlarm.lastNotifiedAt ?? null,
+      sequenceMs: insertAlarm.sequenceMs ?? null,
+      channels: insertAlarm.channels ? JSON.stringify(insertAlarm.channels) : null,
+      pairId: insertAlarm.pairId ?? null,
+      thresholdId: insertAlarm.thresholdId ?? null,
     };
-    this.activeAlarms.set(id, alarm);
-    console.log(`[ACTIVE-ALARMS] Created alarm: ${id} for ${alarm.trendPriceName}`);
-    return alarm;
+    
+    const result = await db.insert(activeAlarms).values(dbData).returning();
+    console.log(`[ACTIVE-ALARMS] Created alarm: ${id} for ${insertAlarm.trendPriceName}`);
+    return this.dbRowToActiveAlarm(result[0]);
   }
   
   async updateActiveAlarm(id: string, updateData: Partial<InsertActiveAlarm>): Promise<ActiveAlarm | undefined> {
-    const existing = this.activeAlarms.get(id);
-    if (!existing) {
+    // Prepare update data (serialize channels if present)
+    const dbUpdateData: Record<string, unknown> = {};
+    
+    if (updateData.trendPriceName !== undefined) dbUpdateData.trendPriceName = updateData.trendPriceName;
+    if (updateData.threshold !== undefined) dbUpdateData.threshold = updateData.threshold;
+    if (updateData.alarmLevel !== undefined) dbUpdateData.alarmLevel = updateData.alarmLevel;
+    if (updateData.triggeredAt !== undefined) dbUpdateData.triggeredAt = updateData.triggeredAt;
+    if (updateData.message !== undefined) dbUpdateData.message = updateData.message;
+    if (updateData.note !== undefined) dbUpdateData.note = updateData.note;
+    if (updateData.requiresApproval !== undefined) dbUpdateData.requiresApproval = updateData.requiresApproval;
+    if (updateData.repetitionsCompleted !== undefined) dbUpdateData.repetitionsCompleted = updateData.repetitionsCompleted;
+    if (updateData.repetitionsTotal !== undefined) dbUpdateData.repetitionsTotal = updateData.repetitionsTotal;
+    if (updateData.autoDismissAt !== undefined) dbUpdateData.autoDismissAt = updateData.autoDismissAt;
+    if (updateData.lastNotifiedAt !== undefined) dbUpdateData.lastNotifiedAt = updateData.lastNotifiedAt;
+    if (updateData.sequenceMs !== undefined) dbUpdateData.sequenceMs = updateData.sequenceMs;
+    if (updateData.channels !== undefined) dbUpdateData.channels = JSON.stringify(updateData.channels);
+    if (updateData.pairId !== undefined) dbUpdateData.pairId = updateData.pairId;
+    if (updateData.thresholdId !== undefined) dbUpdateData.thresholdId = updateData.thresholdId;
+    
+    const result = await db
+      .update(activeAlarms)
+      .set(dbUpdateData)
+      .where(eq(activeAlarms.id, id))
+      .returning();
+    
+    if (result.length === 0) {
       console.log(`[ACTIVE-ALARMS] Update failed - alarm not found: ${id}`);
       return undefined;
     }
     
-    const updated: ActiveAlarm = {
-      ...existing,
-      ...updateData,
-      id,
-    };
-    this.activeAlarms.set(id, updated);
     console.log(`[ACTIVE-ALARMS] Updated alarm: ${id}`);
-    return updated;
+    return this.dbRowToActiveAlarm(result[0]);
   }
   
   async deleteActiveAlarm(id: string): Promise<boolean> {
-    const deleted = this.activeAlarms.delete(id);
+    const result = await db.delete(activeAlarms).where(eq(activeAlarms.id, id)).returning();
+    const deleted = result.length > 0;
     console.log(`[ACTIVE-ALARMS] Delete alarm ${id}: ${deleted ? 'success (APPROVED)' : 'not found'}`);
     return deleted;
   }
   
   async deleteAllActiveAlarms(): Promise<boolean> {
-    const count = this.activeAlarms.size;
-    this.activeAlarms.clear();
-    console.log(`[ACTIVE-ALARMS] Deleted all ${count} alarms`);
+    const countBefore = await db.select().from(activeAlarms);
+    await db.delete(activeAlarms);
+    console.log(`[ACTIVE-ALARMS] Deleted all ${countBefore.length} alarms`);
     return true;
+  }
+  
+  // Helper: Convert DB row to ActiveAlarm object
+  private dbRowToActiveAlarm(row: typeof activeAlarms.$inferSelect): ActiveAlarm {
+    return {
+      id: row.id,
+      trendPriceName: row.trendPriceName,
+      threshold: row.threshold,
+      alarmLevel: row.alarmLevel as 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich',
+      triggeredAt: row.triggeredAt,
+      message: row.message,
+      note: row.note,
+      requiresApproval: row.requiresApproval,
+      repetitionsCompleted: row.repetitionsCompleted ?? undefined,
+      repetitionsTotal: row.repetitionsTotal ?? undefined,
+      autoDismissAt: row.autoDismissAt ?? undefined,
+      lastNotifiedAt: row.lastNotifiedAt ?? undefined,
+      sequenceMs: row.sequenceMs ?? undefined,
+      channels: row.channels ? JSON.parse(row.channels) : undefined,
+      pairId: row.pairId ?? undefined,
+      thresholdId: row.thresholdId ?? undefined,
+    };
   }
 }
 
