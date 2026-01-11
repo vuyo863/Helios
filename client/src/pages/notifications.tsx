@@ -3765,7 +3765,7 @@ export default function Notifications() {
                                 {/* Wiederholung */}
                                 <div className="space-y-2 mb-3">
                                   <Label className="text-sm font-medium">Wiederholung</Label>
-                                  <div className="flex items-center gap-2 py-0.5">
+                                  <div className="flex items-center gap-2 py-0.5 ml-[10px] mr-[10px]">
                                     <Input
                                       type="text"
                                       inputMode="numeric"
@@ -3966,7 +3966,6 @@ export default function Notifications() {
                         </Dialog>
                       </div>
                     </div>
-
                     {/* Zusammenfassung - immer 4 Zeilen für konstante Höhe */}
                     <div className="space-y-2">
                       <div className="text-sm">
