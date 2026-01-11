@@ -3808,7 +3808,7 @@ export default function Notifications() {
                                 {/* Sequenz */}
                                 <div className="space-y-2">
                                   <Label className="text-sm font-medium">Sequenz (Pause zwischen Wiederholungen)</Label>
-                                  <div className="grid grid-cols-3 gap-2">
+                                  <div className="grid grid-cols-3 gap-2 ml-[5px] mr-[5px]">
                                     <div>
                                       <Label htmlFor={`${level}-hours`} className="text-xs text-muted-foreground">Stunden</Label>
                                       <Input
