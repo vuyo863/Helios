@@ -737,6 +737,9 @@ export default function Notifications() {
   // Track if initial alarms have been loaded from backend
   // This prevents duplicate alarms on page refresh (threshold check must wait for backend sync)
   const [initialAlarmsLoaded, setInitialAlarmsLoaded] = useState(false);
+  
+  // Ref to track current activeAlarms for threshold check (avoids stale closure issue)
+  const activeAlarmsRef = useRef<ActiveAlarm[]>([]);
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
@@ -746,6 +749,10 @@ export default function Notifications() {
       console.log('[THRESHOLD-CHECK] Skipping - waiting for initial alarms to load from backend');
       return;
     }
+    
+    // Use ref to get current activeAlarms (avoids stale closure)
+    const currentActiveAlarms = activeAlarmsRef.current;
+    console.log(`[THRESHOLD-CHECK] Running with ${currentActiveAlarms.length} active alarms`);
     
     // Check all trading pairs with thresholds
     availableTradingPairs.forEach((pair) => {
@@ -785,11 +792,12 @@ export default function Notifications() {
         // for this exact threshold already exists (wait for previous alarm cycle to complete)
         // For wiederholend with requiresApproval=true, allow re-triggering (user must approve anyway)
         if (threshold.increaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
-          const existingAlarmForThreshold = activeAlarms.find(
+          const existingAlarmForThreshold = currentActiveAlarms.find(
             alarm => alarm.thresholdId === threshold.id && alarm.pairId === pair.id
           );
           if (existingAlarmForThreshold) {
             // Already has active alarm, skip re-triggering until it auto-dismisses
+            console.log(`[WIEDERHOLEND] Blocking increase re-trigger for threshold ${threshold.id} - active alarm exists: ${existingAlarmForThreshold.id}`);
             return;
           }
         }
@@ -943,12 +951,12 @@ export default function Notifications() {
         // Same logic as for increase - prevent re-triggering if active alarm exists
         // Only block if an alarm ALREADY EXISTS (not on first trigger)
         if (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
-          const existingAlarmForThresholdDecrease = activeAlarms.find(
+          const existingAlarmForThresholdDecrease = currentActiveAlarms.find(
             alarm => alarm.thresholdId === threshold.id && alarm.pairId === pair.id
           );
           if (existingAlarmForThresholdDecrease) {
             // Already has active alarm for this threshold, skip re-triggering until it auto-dismisses
-            console.log(`[WIEDERHOLEND] Blocking decrease re-trigger for threshold ${threshold.id} - active alarm exists`);
+            console.log(`[WIEDERHOLEND] Blocking decrease re-trigger for threshold ${threshold.id} - active alarm exists: ${existingAlarmForThresholdDecrease.id}`);
             return;
           }
         }
@@ -1167,6 +1175,9 @@ export default function Notifications() {
   // Sync activeAlarms to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('active-alarms', JSON.stringify(activeAlarms));
+    // Also update the ref for threshold check (avoids stale closure in threshold useEffect)
+    activeAlarmsRef.current = activeAlarms;
+    console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${activeAlarms.length} alarms`);
   }, [activeAlarms]);
   
   // Load active alarms from backend on mount (for cross-device sync)
@@ -1185,8 +1196,21 @@ export default function Notifications() {
               const localOnlyAlarms = prev.filter(a => !backendIds.has(a.id));
               const merged = [...backendAlarms, ...localOnlyAlarms];
               console.log(`[ACTIVE-ALARMS] Merged: ${backendAlarms.length} from backend + ${localOnlyAlarms.length} local-only = ${merged.length} total`);
+              // CRITICAL: Update ref IMMEDIATELY before returning, so threshold check sees correct alarms
+              activeAlarmsRef.current = merged;
+              console.log(`[ACTIVE-ALARMS-REF] Immediately updated ref with ${merged.length} alarms from backend merge`);
               return merged;
             });
+          } else {
+            // No backend alarms, but still update ref with current localStorage alarms
+            const stored = localStorage.getItem('active-alarms');
+            if (stored) {
+              try {
+                const localAlarms = JSON.parse(stored);
+                activeAlarmsRef.current = localAlarms;
+                console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${localAlarms.length} alarms from localStorage`);
+              } catch {}
+            }
           }
           // Mark initial load as complete - threshold checks can now proceed
           setInitialAlarmsLoaded(true);
