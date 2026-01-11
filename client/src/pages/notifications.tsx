@@ -744,6 +744,9 @@ export default function Notifications() {
         // Skip if this threshold is currently being edited (not yet saved)
         if (threshold.id === editingThresholdId) return;
         
+        // Skip if threshold is inactive (paused or already triggered einmalig)
+        if (threshold.isActive === false) return;
+        
         // Skip if threshold value is empty
         if (!threshold.threshold || threshold.threshold.trim() === '') return;
 
@@ -762,6 +765,19 @@ export default function Notifications() {
         // Check for price increase above threshold
         if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
+          
+          // If einmalig, set isActive to false after triggering
+          if (threshold.increaseFrequency === 'einmalig') {
+            setTrendPriceSettings(prev => ({
+              ...prev,
+              [pair.id]: {
+                ...prev[pair.id],
+                thresholds: prev[pair.id].thresholds.map(t =>
+                  t.id === threshold.id ? { ...t, isActive: false } : t
+                )
+              }
+            }));
+          }
 
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
@@ -883,6 +899,19 @@ export default function Notifications() {
         // Check for price decrease below threshold
         if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
+          
+          // If einmalig, set isActive to false after triggering
+          if (threshold.decreaseFrequency === 'einmalig') {
+            setTrendPriceSettings(prev => ({
+              ...prev,
+              [pair.id]: {
+                ...prev[pair.id],
+                thresholds: prev[pair.id].thresholds.map(t =>
+                  t.id === threshold.id ? { ...t, isActive: false } : t
+                )
+              }
+            }));
+          }
 
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
@@ -2506,7 +2535,21 @@ export default function Notifications() {
                                                   <div className="flex items-center gap-2">
                                                     <Switch
                                                       checked={threshold.isActive !== false}
-                                                      onCheckedChange={(checked) => updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked)}
+                                                      onCheckedChange={(checked) => {
+                                                        updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked);
+                                                        // If re-activating, reset triggered status (0/1 instead of ✓)
+                                                        if (checked && editingThresholdId) {
+                                                          setTriggeredThresholds(prev => {
+                                                            const newSet = new Set(prev);
+                                                            Array.from(newSet).forEach(key => {
+                                                              if (key.includes(editingThresholdId)) {
+                                                                newSet.delete(key);
+                                                              }
+                                                            });
+                                                            return newSet;
+                                                          });
+                                                        }
+                                                      }}
                                                       className={cn(
                                                         "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
                                                       )}
@@ -2826,7 +2869,21 @@ export default function Notifications() {
                                               <div className="flex items-center gap-2">
                                                 <Switch
                                                   checked={threshold.isActive !== false}
-                                                  onCheckedChange={(checked) => updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked)}
+                                                  onCheckedChange={(checked) => {
+                                                    updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked);
+                                                    // If re-activating, reset triggered status (0/1 instead of ✓)
+                                                    if (checked && editingThresholdId) {
+                                                      setTriggeredThresholds(prev => {
+                                                        const newSet = new Set(prev);
+                                                        Array.from(newSet).forEach(key => {
+                                                          if (key.includes(editingThresholdId)) {
+                                                            newSet.delete(key);
+                                                          }
+                                                        });
+                                                        return newSet;
+                                                      });
+                                                    }
+                                                  }}
                                                   className={cn(
                                                     "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
                                                   )}
@@ -3117,7 +3174,21 @@ export default function Notifications() {
                                                 <div className="flex items-center gap-2">
                                                   <Switch
                                                     checked={threshold.isActive !== false}
-                                                    onCheckedChange={(checked) => updateThreshold(trendPriceId, threshold.id, 'isActive', checked)}
+                                                    onCheckedChange={(checked) => {
+                                                      updateThreshold(trendPriceId, threshold.id, 'isActive', checked);
+                                                      // If re-activating, reset triggered status (0/1 instead of ✓)
+                                                      if (checked) {
+                                                        setTriggeredThresholds(prev => {
+                                                          const newSet = new Set(prev);
+                                                          Array.from(newSet).forEach(key => {
+                                                            if (key.includes(threshold.id)) {
+                                                              newSet.delete(key);
+                                                            }
+                                                          });
+                                                          return newSet;
+                                                        });
+                                                      }
+                                                    }}
                                                     className={cn(
                                                       "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-400"
                                                     )}
