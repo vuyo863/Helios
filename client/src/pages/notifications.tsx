@@ -2628,7 +2628,13 @@ export default function Notifications() {
                                                         // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
                                                         isSavingThresholdRef.current = true;
                                                         saveSettingsToStorage();
-                                                        setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
+                                                        // Close BOTH the new-dialog AND the threshold's edit dialog state
+                                                        const thresholdIdToClose = editingThresholdId;
+                                                        setEditDialogOpen(prev => ({ 
+                                                          ...prev, 
+                                                          [`new-${trendPriceId}`]: false,
+                                                          ...(thresholdIdToClose ? { [thresholdIdToClose]: false } : {})
+                                                        }));
                                                         setEditingThresholdId(null);
                                                         setIsCreatingNewThreshold(false);
                                                         toast({
