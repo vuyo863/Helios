@@ -1224,12 +1224,44 @@ export default function Notifications() {
     sehr_gefährlich: false
   });
 
+  // Helper: Convert backend alarm (ISO strings) to frontend format (Date objects)
+  const normalizeBackendAlarm = (backendAlarm: Record<string, unknown>): ActiveAlarm => ({
+    id: backendAlarm.id as string,
+    trendPriceName: backendAlarm.trendPriceName as string,
+    threshold: backendAlarm.threshold as string,
+    alarmLevel: backendAlarm.alarmLevel as AlarmLevel,
+    triggeredAt: new Date(backendAlarm.triggeredAt as string),
+    message: backendAlarm.message as string,
+    note: backendAlarm.note as string,
+    thresholdId: backendAlarm.thresholdId as string | undefined,
+    pairId: backendAlarm.pairId as string | undefined,
+    requiresApproval: backendAlarm.requiresApproval as boolean,
+    repetitionsCompleted: backendAlarm.repetitionsCompleted as number | undefined,
+    repetitionsTotal: backendAlarm.repetitionsTotal as number | undefined,
+    autoDismissAt: backendAlarm.autoDismissAt ? new Date(backendAlarm.autoDismissAt as string) : undefined,
+    lastNotifiedAt: backendAlarm.lastNotifiedAt ? new Date(backendAlarm.lastNotifiedAt as string) : undefined,
+    sequenceMs: backendAlarm.sequenceMs as number | undefined,
+    channels: backendAlarm.channels as ActiveAlarm['channels'] | undefined,
+  });
+
+  // Helper: Parse localStorage alarms (which have string dates) to proper Date objects
+  const parseStoredAlarm = (storedAlarm: Record<string, unknown>): ActiveAlarm => {
+    const base = storedAlarm as unknown as ActiveAlarm;
+    return {
+      ...base,
+      triggeredAt: storedAlarm.triggeredAt ? new Date(storedAlarm.triggeredAt as string) : new Date(),
+      autoDismissAt: storedAlarm.autoDismissAt ? new Date(storedAlarm.autoDismissAt as string) : undefined,
+      lastNotifiedAt: storedAlarm.lastNotifiedAt ? new Date(storedAlarm.lastNotifiedAt as string) : undefined,
+    };
+  };
+
   // Aktive Alarmierungen - mit localStorage Synchronisation
   const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>(() => {
     const stored = localStorage.getItem('active-alarms');
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        return parsed.map(parseStoredAlarm);
       } catch {
         return [];
       }
@@ -1251,27 +1283,24 @@ export default function Notifications() {
       try {
         const response = await fetch('/api/active-alarms');
         if (response.ok) {
-          const backendAlarms: ActiveAlarm[] = await response.json();
+          const rawBackendAlarms = await response.json();
+          // Normalize: convert ISO strings to Date objects
+          const backendAlarms: ActiveAlarm[] = rawBackendAlarms.map(normalizeBackendAlarm);
           console.log(`[ACTIVE-ALARMS] Fetched ${backendAlarms.length} alarms from backend`);
           
           if (backendAlarms.length > 0) {
-            // Merge backend alarms with local (backend takes priority for IDs that exist in both)
-            setActiveAlarms(prev => {
-              const backendIds = new Set(backendAlarms.map(a => a.id));
-              const localOnlyAlarms = prev.filter(a => !backendIds.has(a.id));
-              const merged = [...backendAlarms, ...localOnlyAlarms];
-              console.log(`[ACTIVE-ALARMS] Merged: ${backendAlarms.length} from backend + ${localOnlyAlarms.length} local-only = ${merged.length} total`);
-              // CRITICAL: Update ref IMMEDIATELY before returning, so threshold check sees correct alarms
-              activeAlarmsRef.current = merged;
-              console.log(`[ACTIVE-ALARMS-REF] Immediately updated ref with ${merged.length} alarms from backend merge`);
-              return merged;
+            // Backend is source of truth - use backend alarms directly
+            setActiveAlarms(() => {
+              activeAlarmsRef.current = backendAlarms;
+              console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${backendAlarms.length} alarms from backend`);
+              return backendAlarms;
             });
           } else {
-            // No backend alarms, but still update ref with current localStorage alarms
+            // No backend alarms, update ref with current localStorage alarms
             const stored = localStorage.getItem('active-alarms');
             if (stored) {
               try {
-                const localAlarms = JSON.parse(stored);
+                const localAlarms = JSON.parse(stored).map(parseStoredAlarm);
                 activeAlarmsRef.current = localAlarms;
                 console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${localAlarms.length} alarms from localStorage`);
               } catch {}
@@ -1296,6 +1325,7 @@ export default function Notifications() {
   }, []);
   
   // POLLING: Sync active alarms from backend every 3.5 seconds when Live Updates is active
+  // Backend is the SINGLE SOURCE OF TRUTH - always use backend data
   useEffect(() => {
     if (!isLiveUpdating) {
       console.log('[ACTIVE-ALARMS-POLLING] Polling paused (Live Updates deactivated)');
@@ -1306,26 +1336,24 @@ export default function Notifications() {
       try {
         const response = await fetch('/api/active-alarms');
         if (response.ok) {
-          const backendAlarms: ActiveAlarm[] = await response.json();
+          const rawBackendAlarms = await response.json();
           
-          // Backend is the single source of truth - replace local state with backend data
+          // Normalize: convert ISO strings to Date objects
+          const backendAlarms: ActiveAlarm[] = rawBackendAlarms.map(normalizeBackendAlarm);
+          
+          // Always use backend data as source of truth
+          // Compare only IDs and length for logging, but ALWAYS update to ensure sync
           setActiveAlarms(prev => {
-            // Compare to avoid unnecessary re-renders
-            const prevIds = new Set(prev.map(a => a.id));
-            const backendIds = new Set(backendAlarms.map(a => a.id));
+            const hasIdChanges = prev.length !== backendAlarms.length ||
+              !prev.every(a => backendAlarms.some(b => b.id === a.id));
             
-            // Check if there are differences
-            const hasChanges = prev.length !== backendAlarms.length ||
-              backendAlarms.some(a => !prevIds.has(a.id)) ||
-              prev.some(a => !backendIds.has(a.id));
-            
-            if (hasChanges) {
-              console.log(`[ACTIVE-ALARMS-POLLING] Synced from backend: ${backendAlarms.length} alarms (was ${prev.length})`);
-              activeAlarmsRef.current = backendAlarms;
-              return backendAlarms;
+            if (hasIdChanges) {
+              console.log(`[ACTIVE-ALARMS-POLLING] Alarm list changed: ${backendAlarms.length} alarms (was ${prev.length})`);
             }
             
-            return prev; // No changes - avoid re-render
+            // Always update ref to ensure threshold checks have latest data
+            activeAlarmsRef.current = backendAlarms;
+            return backendAlarms;
           });
         }
       } catch (err) {
@@ -1947,16 +1975,19 @@ export default function Notifications() {
     
     // WIEDERHOLEND: Clear activeAlarmId from threshold to allow re-triggering
     if (alarmToRemove?.thresholdId && alarmToRemove?.pairId) {
+      const thresholdIdToClear = alarmToRemove.thresholdId;
+      const pairIdToClear = alarmToRemove.pairId;
+      
       setTrendPriceSettings(prev => {
-        const pairSettings = prev[alarmToRemove.pairId];
+        const pairSettings = prev[pairIdToClear];
         if (!pairSettings?.thresholds) return prev;
         
         return {
           ...prev,
-          [alarmToRemove.pairId]: {
+          [pairIdToClear]: {
             ...pairSettings,
-            thresholds: pairSettings.thresholds.map(t => 
-              t.id === alarmToRemove.thresholdId && t.activeAlarmId === alarmId
+            thresholds: pairSettings.thresholds.map((t: ThresholdConfig) => 
+              t.id === thresholdIdToClear && t.activeAlarmId === alarmId
                 ? { ...t, activeAlarmId: undefined }
                 : t
             )
@@ -1969,14 +2000,14 @@ export default function Notifications() {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            if (parsed[alarmToRemove.pairId]?.thresholds) {
-              parsed[alarmToRemove.pairId].thresholds = parsed[alarmToRemove.pairId].thresholds.map((t: ThresholdConfig) => 
-                t.id === alarmToRemove.thresholdId && t.activeAlarmId === alarmId
+            if (parsed[pairIdToClear]?.thresholds) {
+              parsed[pairIdToClear].thresholds = parsed[pairIdToClear].thresholds.map((t: ThresholdConfig) => 
+                t.id === thresholdIdToClear && t.activeAlarmId === alarmId
                   ? { ...t, activeAlarmId: undefined }
                   : t
               );
               localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
-              console.log(`[WIEDERHOLEND] Cleared activeAlarmId from threshold ${alarmToRemove.thresholdId} in localStorage`);
+              console.log(`[WIEDERHOLEND] Cleared activeAlarmId from threshold ${thresholdIdToClear} in localStorage`);
             }
           } catch {}
         }
