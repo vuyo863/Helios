@@ -767,31 +767,26 @@ export default function Notifications() {
         if (threshold.notifyOnIncrease && currentPrice >= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
           
-          // If einmalig, set isActive to false after triggering
-          if (threshold.increaseFrequency === 'einmalig') {
-            setTrendPriceSettings(prev => ({
-              ...prev,
-              [pair.id]: {
-                ...prev[pair.id],
-                thresholds: prev[pair.id].thresholds.map(t =>
-                  t.id === threshold.id ? { ...t, isActive: false } : t
-                )
-              }
-            }));
-          }
-          
-          // If wiederholend, increment trigger counter
-          if (threshold.increaseFrequency === 'wiederholend') {
-            setTrendPriceSettings(prev => ({
-              ...prev,
-              [pair.id]: {
-                ...prev[pair.id],
-                thresholds: prev[pair.id].thresholds.map(t =>
-                  t.id === threshold.id ? { ...t, triggerCount: (t.triggerCount || 0) + 1 } : t
-                )
-              }
-            }));
-          }
+          // IMPORTANT: Single state update to prevent race conditions
+          // Handle both einmalig (deactivate) and wiederholend (increment counter) in ONE update
+          setTrendPriceSettings(prev => ({
+            ...prev,
+            [pair.id]: {
+              ...prev[pair.id],
+              thresholds: prev[pair.id].thresholds.map(t => {
+                if (t.id !== threshold.id) return t;
+                // For einmalig: set isActive to false
+                if (threshold.increaseFrequency === 'einmalig') {
+                  return { ...t, isActive: false };
+                }
+                // For wiederholend: increment trigger counter
+                if (threshold.increaseFrequency === 'wiederholend') {
+                  return { ...t, triggerCount: (t.triggerCount || 0) + 1 };
+                }
+                return t;
+              })
+            }
+          }));
 
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
@@ -914,31 +909,26 @@ export default function Notifications() {
         if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
           
-          // If einmalig, set isActive to false after triggering
-          if (threshold.decreaseFrequency === 'einmalig') {
-            setTrendPriceSettings(prev => ({
-              ...prev,
-              [pair.id]: {
-                ...prev[pair.id],
-                thresholds: prev[pair.id].thresholds.map(t =>
-                  t.id === threshold.id ? { ...t, isActive: false } : t
-                )
-              }
-            }));
-          }
-          
-          // If wiederholend, increment trigger counter
-          if (threshold.decreaseFrequency === 'wiederholend') {
-            setTrendPriceSettings(prev => ({
-              ...prev,
-              [pair.id]: {
-                ...prev[pair.id],
-                thresholds: prev[pair.id].thresholds.map(t =>
-                  t.id === threshold.id ? { ...t, triggerCount: (t.triggerCount || 0) + 1 } : t
-                )
-              }
-            }));
-          }
+          // IMPORTANT: Single state update to prevent race conditions
+          // Handle both einmalig (deactivate) and wiederholend (increment counter) in ONE update
+          setTrendPriceSettings(prev => ({
+            ...prev,
+            [pair.id]: {
+              ...prev[pair.id],
+              thresholds: prev[pair.id].thresholds.map(t => {
+                if (t.id !== threshold.id) return t;
+                // For einmalig: set isActive to false
+                if (threshold.decreaseFrequency === 'einmalig') {
+                  return { ...t, isActive: false };
+                }
+                // For wiederholend: increment trigger counter
+                if (threshold.decreaseFrequency === 'wiederholend') {
+                  return { ...t, triggerCount: (t.triggerCount || 0) + 1 };
+                }
+                return t;
+              })
+            }
+          }));
 
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
