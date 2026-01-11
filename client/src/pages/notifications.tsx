@@ -1294,6 +1294,54 @@ export default function Notifications() {
     
     fetchBackendAlarms();
   }, []);
+  
+  // POLLING: Sync active alarms from backend every 3.5 seconds when Live Updates is active
+  useEffect(() => {
+    if (!isLiveUpdating) {
+      console.log('[ACTIVE-ALARMS-POLLING] Polling paused (Live Updates deactivated)');
+      return;
+    }
+    
+    const pollBackendAlarms = async () => {
+      try {
+        const response = await fetch('/api/active-alarms');
+        if (response.ok) {
+          const backendAlarms: ActiveAlarm[] = await response.json();
+          
+          // Backend is the single source of truth - replace local state with backend data
+          setActiveAlarms(prev => {
+            // Compare to avoid unnecessary re-renders
+            const prevIds = new Set(prev.map(a => a.id));
+            const backendIds = new Set(backendAlarms.map(a => a.id));
+            
+            // Check if there are differences
+            const hasChanges = prev.length !== backendAlarms.length ||
+              backendAlarms.some(a => !prevIds.has(a.id)) ||
+              prev.some(a => !backendIds.has(a.id));
+            
+            if (hasChanges) {
+              console.log(`[ACTIVE-ALARMS-POLLING] Synced from backend: ${backendAlarms.length} alarms (was ${prev.length})`);
+              activeAlarmsRef.current = backendAlarms;
+              return backendAlarms;
+            }
+            
+            return prev; // No changes - avoid re-render
+          });
+        }
+      } catch (err) {
+        console.error('[ACTIVE-ALARMS-POLLING] Poll error:', err);
+      }
+    };
+    
+    // Start polling every 3.5 seconds
+    const pollInterval = setInterval(pollBackendAlarms, 3500);
+    console.log('[ACTIVE-ALARMS-POLLING] Started polling (every 3.5s)');
+    
+    return () => {
+      clearInterval(pollInterval);
+      console.log('[ACTIVE-ALARMS-POLLING] Stopped polling');
+    };
+  }, [isLiveUpdating]);
 
   // Countdown tick - forces re-render every second for countdown display
   const [countdownTick, setCountdownTick] = useState(0);

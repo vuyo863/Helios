@@ -64,7 +64,7 @@ The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind 
 - **Backend**: Express.js with TypeScript.
 - **State Management**: TypeScript-typed state with `useMemo` hooks for optimization.
 - **Data Persistence**: Watchlist and pair market types are persisted in `localStorage`.
-- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API.
+- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
 - **Push Notification Integration**: OneSignal is used for web and native push notifications, with a unified frontend toggle. The backend `/api/notifications/push-enhanced` route handles enhanced delivery.
 - **PWA Support**: `manifest.json` and Apple Meta-Tags enable PWA functionality.
 
