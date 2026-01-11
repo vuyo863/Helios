@@ -1,0 +1,54 @@
+0|webapp  | 11:24:26 AM [express] GET /api/active-alarms 500 in 32ms :: {"error":"Failed to fetch active alarms"}
+0|webapp  | [API] GET /api/notification-settings error: error: password authentication failed for user "webapp_user"
+0|webapp  |     at /home/deinuser/webapp/node_modules/pg-pool/index.js:45:11
+0|webapp  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp  |     at async file:///home/deinuser/webapp/node_modules/drizzle-orm/node-postgres/session.js:83:22
+0|webapp  |     at async DbStorage.getAllWatchlistItems (file:///home/deinuser/webapp/dist/index.js:601:12)
+0|webapp  |     at async Promise.all (index 0)
+0|webapp  |     at async file:///home/deinuser/webapp/dist/index.js:2603:67 {
+0|webapp  |   length: 107,
+0|webapp  |   severity: 'FATAL',
+0|webapp  |   code: '28P01',
+0|webapp  |   detail: undefined,
+0|webapp  |   hint: undefined,
+0|webapp  |   position: undefined,
+0|webapp  |   internalPosition: undefined,
+0|webapp  |   internalQuery: undefined,
+0|webapp  |   where: undefined,
+0|webapp  |   schema: undefined,
+0|webapp  |   table: undefined,
+0|webapp  |   column: undefined,
+0|webapp  |   dataType: undefined,
+0|webapp  |   constraint: undefined,
+0|webapp  |   file: 'auth.c',
+0|webapp  |   line: '331',
+0|webapp  |   routine: 'auth_failed'
+0|webapp  | }
+0|webapp  | 11:24:30 AM [express] GET /api/notification-settings 500 in 16ms :: {"error":"Failed to fetch notific…
+0|webapp  | [API] GET /api/notification-settings error: error: password authentication failed for user "webapp_user"
+0|webapp  |     at /home/deinuser/webapp/node_modules/pg-pool/index.js:45:11
+0|webapp  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp  |     at async file:///home/deinuser/webapp/node_modules/drizzle-orm/node-postgres/session.js:83:22
+0|webapp  |     at async DbStorage.getAllWatchlistItems (file:///home/deinuser/webapp/dist/index.js:601:12)
+0|webapp  |     at async Promise.all (index 0)
+0|webapp  |     at async file:///home/deinuser/webapp/dist/index.js:2603:67 {
+0|webapp  |   length: 107,
+0|webapp  |   severity: 'FATAL',
+0|webapp  |   code: '28P01',
+0|webapp  |   detail: undefined,
+0|webapp  |   hint: undefined,
+0|webapp  |   position: undefined,
+0|webapp  |   internalPosition: undefined,
+0|webapp  |   internalQuery: undefined,
+0|webapp  |   where: undefined,
+0|webapp  |   schema: undefined,
+0|webapp  |   table: undefined,
+0|webapp  |   column: undefined,
+0|webapp  |   dataType: undefined,
+0|webapp  |   constraint: undefined,
+0|webapp  |   file: 'auth.c',
+0|webapp  |   line: '331',
+0|webapp  |   routine: 'auth_failed'
+0|webapp  | }
+0|webapp  | 11:24:33 AM [express] GET /api/notification-settings 500 in 15ms :: {"error":"Failed to fetch notific…
+0|webapp  | [API] GET
