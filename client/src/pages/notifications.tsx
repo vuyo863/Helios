@@ -733,9 +733,20 @@ export default function Notifications() {
   // Track if we're creating a NEW threshold (vs editing existing)
   // This is used to exclude incomplete new thresholds from hasAnyThresholds check
   const [isCreatingNewThreshold, setIsCreatingNewThreshold] = useState(false);
+  
+  // Track if initial alarms have been loaded from backend
+  // This prevents duplicate alarms on page refresh (threshold check must wait for backend sync)
+  const [initialAlarmsLoaded, setInitialAlarmsLoaded] = useState(false);
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
+    // IMPORTANT: Wait for initial alarms to be loaded from backend before checking thresholds
+    // This prevents duplicate alarms on page refresh
+    if (!initialAlarmsLoaded) {
+      console.log('[THRESHOLD-CHECK] Skipping - waiting for initial alarms to load from backend');
+      return;
+    }
+    
     // Check all trading pairs with thresholds
     availableTradingPairs.forEach((pair) => {
       const settings = trendPriceSettings[pair.id];
@@ -1088,7 +1099,7 @@ export default function Notifications() {
         }
       });
     });
-  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId]);
+  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId, initialAlarmsLoaded]);
 
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
@@ -1177,9 +1188,18 @@ export default function Notifications() {
               return merged;
             });
           }
+          // Mark initial load as complete - threshold checks can now proceed
+          setInitialAlarmsLoaded(true);
+          console.log('[ACTIVE-ALARMS] Initial load complete - threshold checks enabled');
+        } else {
+          // Even on error, mark as loaded to not block threshold checks indefinitely
+          setInitialAlarmsLoaded(true);
+          console.log('[ACTIVE-ALARMS] Backend fetch failed, enabling threshold checks anyway');
         }
       } catch (err) {
         console.error('[ACTIVE-ALARMS] Failed to fetch from backend:', err);
+        // Even on error, mark as loaded to not block threshold checks indefinitely
+        setInitialAlarmsLoaded(true);
       }
     };
     
