@@ -3864,7 +3864,7 @@ export default function Notifications() {
 
                                 {/* Restwartezeit - nur wenn Approval AUS und nicht unendlich */}
                                 {!config.requiresApproval && config.repeatCount !== 'infinite' && (
-                                  <div className="space-y-2">
+                                  <div className="space-y-2 ml-[5px] mr-[5px]">
                                     <Label className="text-sm font-medium">Restwartezeit (Auto-Dismiss nach Wiederholungen)</Label>
                                     <p className="text-xs text-muted-foreground">Nach Ablauf aller Wiederholungen läuft dieser Countdown, dann verschwindet der Alarm automatisch.</p>
                                     <div className="grid grid-cols-3 gap-2">
