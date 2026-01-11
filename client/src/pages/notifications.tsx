@@ -137,6 +137,17 @@ export default function Notifications() {
   });
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Changed to intervalRef for polling
   const priceUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null); // For polling
+  
+  // === 24/7 TRENDPREIS RÜCKVERSICHERUNGS-SYSTEM ===
+  // Backup #1: Retry counter for exponential backoff
+  const priceRetryCountRef = useRef<number>(0);
+  const maxRetries = 5;
+  
+  // Backup #2: Last successful price update timestamp
+  const lastPriceUpdateRef = useRef<Date>(new Date());
+  
+  // Backup #3: Watchdog interval ref
+  const priceWatchdogRef = useRef<NodeJS.Timeout | null>(null);
 
   // State for Futures pairs
   const [allBinanceFuturesPairs, setAllBinanceFuturesPairs] = useState<TrendPrice[]>([]);
@@ -402,22 +413,45 @@ export default function Notifications() {
       setAvailableTradingPairs(prev => {
         const existingIds = new Set(prev.map(p => p.id));
         const uniqueNewPairs = newPairs.filter(p => !existingIds.has(p.id));
+        
+        // SOFORTIGER PREIS-FETCH für neue Pairs (nicht auf 2s Interval warten)
+        if (uniqueNewPairs.length > 0) {
+          const spotSymbols = uniqueNewPairs.filter(p => p.marketType === 'spot' || p.marketType === undefined).map(p => p.symbol);
+          const futuresSymbols = uniqueNewPairs.filter(p => p.marketType === 'futures').map(p => p.symbol);
+          
+          console.log(`[TRENDPREIS-24/7] Neue Pairs hinzugefügt - sofortiger Preis-Fetch: Spot=${spotSymbols.length}, Futures=${futuresSymbols.length}`);
+          
+          // Trigger immediate price fetch for new pairs (async, don't block state update)
+          setTimeout(() => {
+            if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
+            if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+          }, 100);
+        }
+        
         return [...prev, ...uniqueNewPairs];
       });
     }
   }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes]);
 
   // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
-  const fetchSpotPrices = async (symbols: string[]) => {
-    if (symbols.length === 0) return;
+  // MIT RETRY-LOGIK für 24/7 Zuverlässigkeit
+  const fetchSpotPrices = async (symbols: string[], retryCount = 0): Promise<boolean> => {
+    if (symbols.length === 0) return true;
 
     try {
       const symbolsParam = symbols.map(s => `"${s}"`).join(',');
       const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`);
 
       if (!response.ok) {
-        console.error('Failed to fetch prices from Binance API');
-        return;
+        console.error('[TRENDPREIS-24/7] Spot API Fehler:', response.status);
+        // BACKUP #1: Retry mit exponential backoff
+        if (retryCount < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10s
+          console.log(`[TRENDPREIS-24/7] Retry ${retryCount + 1}/${maxRetries} in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchSpotPrices(symbols, retryCount + 1);
+        }
+        return false;
       }
 
       const data = await response.json();
@@ -446,17 +480,31 @@ export default function Notifications() {
         });
         return updated;
       });
+      
+      // SUCCESS: Reset retry counter and update timestamp
+      priceRetryCountRef.current = 0;
+      lastPriceUpdateRef.current = new Date();
+      return true;
     } catch (error) {
-      console.error('Error fetching prices:', error);
+      console.error('[TRENDPREIS-24/7] Spot Fetch Error:', error);
+      // BACKUP #1: Retry bei Netzwerkfehlern
+      if (retryCount < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+        console.log(`[TRENDPREIS-24/7] Retry ${retryCount + 1}/${maxRetries} in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchSpotPrices(symbols, retryCount + 1);
+      }
+      return false;
     }
   };
 
   // Funktion zum Abrufen der aktuellen Preise von Binance Futures API
-  const fetchFuturesPrices = async (symbols: string[]) => {
-    if (symbols.length === 0) return;
+  // MIT RETRY-LOGIK für 24/7 Zuverlässigkeit
+  const fetchFuturesPrices = async (symbols: string[], retryCount = 0): Promise<boolean> => {
+    if (symbols.length === 0) return true;
     
     // Skip if Futures API is geo-blocked
-    if (isFuturesBlocked) return;
+    if (isFuturesBlocked) return true;
 
     try {
       const symbolsParam = symbols.map(s => `"${s}"`).join(',');
@@ -464,14 +512,21 @@ export default function Notifications() {
 
       if (response.status === 418 || response.status === 451) {
         // Geo-blocked - stop polling to prevent console spam
-        console.warn('Binance Futures API geo-blocked (418/451). Stopping futures price polling.');
+        console.warn('[TRENDPREIS-24/7] Binance Futures API geo-blocked (418/451). Stopping futures price polling.');
         setIsFuturesBlocked(true);
-        return;
+        return true; // Not a retry-able error
       }
 
       if (!response.ok) {
-        console.error('Failed to fetch futures prices from Binance API');
-        return;
+        console.error('[TRENDPREIS-24/7] Futures API Fehler:', response.status);
+        // BACKUP #1: Retry mit exponential backoff
+        if (retryCount < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.log(`[TRENDPREIS-24/7] Futures Retry ${retryCount + 1}/${maxRetries} in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchFuturesPrices(symbols, retryCount + 1);
+        }
+        return false;
       }
 
       const data = await response.json();
@@ -501,8 +556,20 @@ export default function Notifications() {
         });
         return updated;
       });
+      
+      // SUCCESS: Update timestamp
+      lastPriceUpdateRef.current = new Date();
+      return true;
     } catch (error) {
-      console.error('Error fetching futures prices:', error);
+      console.error('[TRENDPREIS-24/7] Futures Fetch Error:', error);
+      // BACKUP #1: Retry bei Netzwerkfehlern
+      if (retryCount < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+        console.log(`[TRENDPREIS-24/7] Futures Retry ${retryCount + 1}/${maxRetries} in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchFuturesPrices(symbols, retryCount + 1);
+      }
+      return false;
     }
   };
 
@@ -636,6 +703,93 @@ export default function Notifications() {
     return () => {
       if (priceUpdateIntervalRef.current) {
         clearInterval(priceUpdateIntervalRef.current);
+      }
+    };
+  }, [watchlist, availableTradingPairs, pairMarketTypes]);
+
+  // === BACKUP #2: Page Visibility API ===
+  // Wenn Tab wieder aktiv wird, sofort Preise aktualisieren
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && watchlist.length > 0) {
+        console.log('[TRENDPREIS-24/7] Tab reaktiviert - Preise werden sofort aktualisiert');
+        
+        // Collect symbols from available trading pairs
+        const spotSymbols: string[] = [];
+        const futuresSymbols: string[] = [];
+        
+        availableTradingPairs.forEach(pair => {
+          if (!watchlist.includes(pair.id)) return;
+          const storedMarketType = pairMarketTypes[pair.id]?.marketType || 'spot';
+          if (storedMarketType === 'futures') {
+            futuresSymbols.push(pair.symbol);
+          } else {
+            spotSymbols.push(pair.symbol);
+          }
+        });
+        
+        // Immediate fetch on tab reactivation
+        if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
+        if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [watchlist, availableTradingPairs, pairMarketTypes]);
+
+  // === BACKUP #3: Watchdog - Prüft alle 30s ob Preise aktuell sind ===
+  useEffect(() => {
+    if (watchlist.length === 0) return;
+    
+    // Watchdog prüft alle 30 Sekunden ob lastPriceUpdate älter als 30s ist
+    const watchdogCheck = () => {
+      const now = new Date();
+      const lastUpdate = lastPriceUpdateRef.current;
+      const diffSeconds = (now.getTime() - lastUpdate.getTime()) / 1000;
+      
+      if (diffSeconds > 30) {
+        console.warn(`[TRENDPREIS-24/7] WATCHDOG: Preise seit ${Math.round(diffSeconds)}s nicht aktualisiert - Neustart!`);
+        
+        // Collect symbols and force refetch
+        const spotSymbols: string[] = [];
+        const futuresSymbols: string[] = [];
+        
+        availableTradingPairs.forEach(pair => {
+          if (!watchlist.includes(pair.id)) return;
+          const storedMarketType = pairMarketTypes[pair.id]?.marketType || 'spot';
+          if (storedMarketType === 'futures') {
+            futuresSymbols.push(pair.symbol);
+          } else {
+            spotSymbols.push(pair.symbol);
+          }
+        });
+        
+        // Force refetch
+        if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
+        if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+        
+        // Also try to restart the main interval if it died
+        if (!priceUpdateIntervalRef.current) {
+          console.warn('[TRENDPREIS-24/7] WATCHDOG: Interval war tot - wird neu gestartet');
+          const performFetch = () => {
+            if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
+            if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+          };
+          priceUpdateIntervalRef.current = setInterval(performFetch, 2000);
+        }
+      }
+    };
+    
+    // Start watchdog
+    priceWatchdogRef.current = setInterval(watchdogCheck, 30000);
+    
+    return () => {
+      if (priceWatchdogRef.current) {
+        clearInterval(priceWatchdogRef.current);
       }
     };
   }, [watchlist, availableTradingPairs, pairMarketTypes]);
