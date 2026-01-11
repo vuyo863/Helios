@@ -35,6 +35,7 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Implementierung:** `activeAlarmId` Feld im ThresholdConfig, localStorage-persistiert
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_wiederholend_threshold_logic.md` für vollständigen Code-Snapshot
   - **Unit Tests:** 20 Tests in `server/threshold-wiederholend.test.ts` (alle bestanden)
+  - **WICHTIG (2026-01-11 Update):** `activeAlarmId` wird jetzt für ALLE wiederholend Schwellenwerte gesetzt (sowohl `requiresApproval=true` als auch `false`), um Duplikate nach Page Refresh zu verhindern
 - **Golden State - Push Benachrichtigungen**: Der folgende Toggle und seine Funktion sind Golden State und dürfen NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Toggle:** "Push Benachrichtigungen (iOS, Android, Browser)" in den Alarm-Level Einstellungen
   - **Funktion:** Sendet Push-Nachrichten an ALLE registrierten Geräte (iPhone, iPad, Windows Chrome) via OneSignal
@@ -85,7 +86,7 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
     - Überlebt Page Refresh (localStorage-persistiert)
   - Jeder Schwellenwert wird einzeln getrackt via `threshold.id`
   - Verschiedene Schwellenwerte für das gleiche Trading-Pair sind unabhängig voneinander
-  - Bei `requiresApproval=true` darf jederzeit neu triggern (User muss sowieso approven)
+  - Bei `requiresApproval=true` blockiert `activeAlarmId` ebenfalls Duplikate nach Refresh (User muss erst genehmigen)
 
 ### Cross-Device Sync API
 Backend REST API endpoints for active alarm synchronization:

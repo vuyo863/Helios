@@ -13,22 +13,21 @@ This document captures the perfected "wiederholend" (repeating) threshold logic 
 1. **Initial State:** New wiederholend threshold shows "0 ∞" status, Toggle = "Aktiv"
 2. **When Triggered:** 
    - `triggerCount` is incremented (persisted in localStorage)
-   - `activeAlarmId` is set to the alarm ID (for re-trigger prevention)
+   - `activeAlarmId` is set to the alarm ID (for re-trigger prevention) - **FOR ALL wiederholend thresholds**
    - Status changes to "X ∞" (X = number of triggers)
    - Toggle remains "Aktiv"
    - Alarm is created and notifications are sent
-3. **Re-Trigger Prevention (requiresApproval=false):**
+3. **Re-Trigger Prevention (ALL wiederholend thresholds):**
+   - **UPDATED 2026-01-11:** Now applies to BOTH requiresApproval=true AND requiresApproval=false
    - While `activeAlarmId` exists → no new alarm can be created
-   - This prevents duplicate alarms during active alarm cycle
+   - This prevents duplicate alarms during active alarm cycle AND after page refresh
 4. **After Page Refresh:**
    - `activeAlarmId` survives (from localStorage)
    - Re-trigger is still blocked if alarm is still active
-5. **After Auto-Dismiss or "Stoppen":**
+   - **This prevents duplicate alarms after refresh for ALL wiederholend thresholds**
+5. **After Auto-Dismiss (requiresApproval=false) or "Genehmigen" (requiresApproval=true):**
    - `activeAlarmId` is cleared
    - Threshold can trigger again
-6. **When requiresApproval=true:**
-   - No re-trigger blocking (user must approve anyway)
-   - Can always create new alarms
 
 ## ThresholdConfig Interface
 
@@ -54,13 +53,13 @@ interface ThresholdConfig {
 
 ```typescript
 // WIEDERHOLEND RE-TRIGGER PREVENTION:
-// For wiederholend with requiresApproval=false, don't trigger if an active alarm 
-// for this exact threshold already exists (wait for previous alarm cycle to complete)
-// For wiederholend with requiresApproval=true, allow re-triggering (user must approve anyway)
+// For ALL wiederholend thresholds (both requiresApproval=true and false), 
+// don't trigger if an active alarm for this exact threshold already exists.
+// This prevents duplicate alarms after page refresh regardless of approval setting.
 // Uses activeAlarmId stored in threshold (survives page refresh, localStorage-based)
-if (threshold.increaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+if (threshold.increaseFrequency === 'wiederholend') {
   if (threshold.activeAlarmId) {
-    // Already has active alarm, skip re-triggering until it's dismissed
+    // Already has active alarm, skip re-triggering until it's dismissed/approved
     console.log(`[WIEDERHOLEND] Blocking increase re-trigger for threshold ${threshold.id} - activeAlarmId: ${threshold.activeAlarmId}`);
     return;
   }
@@ -71,11 +70,12 @@ if (threshold.increaseFrequency === 'wiederholend' && !alarmConfig.requiresAppro
 
 ```typescript
 // WIEDERHOLEND RE-TRIGGER PREVENTION for decrease:
-// Same logic as for increase - prevent re-triggering if active alarm exists
+// For ALL wiederholend thresholds (both requiresApproval=true and false),
+// prevent re-triggering if active alarm exists (prevents duplicates after page refresh)
 // Uses activeAlarmId stored in threshold (survives page refresh, localStorage-based)
-if (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+if (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend') {
   if (threshold.activeAlarmId) {
-    // Already has active alarm for this threshold, skip re-triggering until it's dismissed
+    // Already has active alarm for this threshold, skip re-triggering until it's dismissed/approved
     console.log(`[WIEDERHOLEND] Blocking decrease re-trigger for threshold ${threshold.id} - activeAlarmId: ${threshold.activeAlarmId}`);
     return;
   }
@@ -97,7 +97,9 @@ const newAlarm: ActiveAlarm = {
 setActiveAlarms(prev => [...prev, newAlarm]);
 
 // WIEDERHOLEND: Store activeAlarmId in threshold to prevent re-triggering on refresh
-if (threshold.increaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+// Note: Set for ALL wiederholend thresholds (both requiresApproval=true and false)
+// This prevents duplicate alarms after page refresh in both cases
+if (threshold.increaseFrequency === 'wiederholend') {
   setTrendPriceSettings(prev => ({
     ...prev,
     [pair.id]: {

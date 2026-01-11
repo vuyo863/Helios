@@ -67,7 +67,9 @@ function shouldBlockReTrigger(
 ): boolean {
   const frequency = direction === 'increase' ? threshold.increaseFrequency : threshold.decreaseFrequency;
   
-  if (frequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+  // UPDATED: Block re-trigger for ALL wiederholend thresholds (both requiresApproval=true and false)
+  // This prevents duplicate alarms after page refresh regardless of approval setting
+  if (frequency === 'wiederholend') {
     if (threshold.activeAlarmId) {
       return true;
     }
@@ -96,7 +98,9 @@ function createAlarmAndSetActiveId(
   
   let updatedThreshold = { ...threshold };
   
-  if (frequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+  // UPDATED: Set activeAlarmId for ALL wiederholend thresholds (both requiresApproval=true and false)
+  // This prevents duplicate alarms after page refresh regardless of approval setting
+  if (frequency === 'wiederholend') {
     updatedThreshold.activeAlarmId = newAlarmId;
   }
   
@@ -159,7 +163,9 @@ describe('Wiederholend Re-Trigger Prevention - activeAlarmId based', () => {
       console.log('✓ Test 2 PASSED: Re-trigger blocked with activeAlarmId');
     });
     
-    it('Test 3: Should NOT block when requiresApproval is true (even with activeAlarmId)', () => {
+    it('Test 3: Should BLOCK re-trigger when requiresApproval is true AND activeAlarmId is set', () => {
+      // UPDATED: Now blocks for ALL wiederholend thresholds (including requiresApproval=true)
+      // This prevents duplicate alarms after page refresh
       const threshold: ThresholdConfig = {
         id: 'th-003',
         threshold: '3200',
@@ -175,8 +181,8 @@ describe('Wiederholend Re-Trigger Prevention - activeAlarmId based', () => {
       };
       
       const blocked = shouldBlockReTrigger(threshold, achtungConfig, 'increase');
-      expect(blocked).toBe(false);
-      console.log('✓ Test 3 PASSED: Not blocked when requiresApproval=true');
+      expect(blocked).toBe(true);
+      console.log('✓ Test 3 PASSED: Blocked when requiresApproval=true AND activeAlarmId set');
     });
     
     it('Test 4: Should NOT block einmalig thresholds', () => {
@@ -242,7 +248,9 @@ describe('Wiederholend Re-Trigger Prevention - activeAlarmId based', () => {
       console.log('✓ Test 6 PASSED: No activeAlarmId for einmalig');
     });
     
-    it('Test 7: Should NOT set activeAlarmId when requiresApproval is true', () => {
+    it('Test 7: Should SET activeAlarmId when requiresApproval is true (prevents duplicates after refresh)', () => {
+      // UPDATED: Now sets activeAlarmId for ALL wiederholend thresholds (including requiresApproval=true)
+      // This prevents duplicate alarms after page refresh
       const threshold: ThresholdConfig = {
         id: 'th-007',
         threshold: '3200',
@@ -258,8 +266,8 @@ describe('Wiederholend Re-Trigger Prevention - activeAlarmId based', () => {
       
       const { updatedThreshold } = createAlarmAndSetActiveId(threshold, achtungConfig, 'pair-001', 'increase');
       
-      expect(updatedThreshold.activeAlarmId).toBeUndefined();
-      console.log('✓ Test 7 PASSED: No activeAlarmId when requiresApproval=true');
+      expect(updatedThreshold.activeAlarmId).toBeDefined();
+      console.log('✓ Test 7 PASSED: activeAlarmId SET for requiresApproval=true (prevents duplicates)');
     });
   });
   
