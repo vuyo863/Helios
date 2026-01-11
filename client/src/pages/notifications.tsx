@@ -370,30 +370,52 @@ export default function Notifications() {
 
       // Get the stored marketType and symbol for this pair
       const storedData = pairMarketTypes[id];
-      const storedMarketType = storedData?.marketType || 'spot';
-      const storedSymbol = storedData?.symbol || '';
-
-      // Try to find in the correct market based on stored type
-      let pair;
-      if (storedMarketType === 'futures') {
-        // First try by ID
-        pair = allBinanceFuturesPairs.find(p => p.id === id);
-        // FALLBACK: Find by stored symbol (stable across page reloads)
-        if (!pair && storedSymbol) {
-          pair = allBinanceFuturesPairs.find(p => p.symbol === storedSymbol);
-        }
-      } else {
-        // First try by ID
-        pair = allBinancePairs.find(p => p.id === id);
-        // FALLBACK: Find by stored symbol (stable across page reloads)
-        if (!pair && storedSymbol) {
-          pair = allBinancePairs.find(p => p.symbol === storedSymbol);
+      let derivedMarketType = storedData?.marketType || 'spot';
+      let derivedSymbol = storedData?.symbol || '';
+      
+      // WICHTIG: Wenn Symbol oder MarketType nicht gesetzt, versuche aus der Watchlist-ID zu extrahieren
+      // Die Watchlist-ID kann selbst ein Symbol sein (z.B. "ETHUSDT" oder "ETHUSDT-PERP")
+      if (!derivedSymbol || !storedData) {
+        const isFuturesId = id.endsWith('-PERP');
+        const cleanId = isFuturesId ? id.replace('-PERP', '') : id;
+        
+        // Check if ID matches a symbol pattern (ends with USDT/USDC)
+        if (cleanId.endsWith('USDT') || cleanId.endsWith('USDC')) {
+          derivedSymbol = cleanId;
+          // WICHTIG: MarketType aus ID ableiten wenn -PERP suffix vorhanden
+          if (isFuturesId) {
+            derivedMarketType = 'futures';
+          }
+          console.log(`[TRENDPREIS-24/7] Symbol aus ID extrahiert: ${id} -> ${derivedSymbol} (${derivedMarketType})`);
         }
       }
 
-      // Final fallback: try the other market if not found
-      if (!pair) {
-        pair = allBinancePairs.find(p => p.id === id) || allBinanceFuturesPairs.find(p => p.id === id);
+      // WICHTIG: Primär nach SYMBOL suchen im korrekten Markt
+      let pair;
+      if (derivedMarketType === 'futures') {
+        // PRIMÄR: Find by symbol in Futures (exakt passend zum abgeleiteten MarketType)
+        if (derivedSymbol) {
+          pair = allBinanceFuturesPairs.find(p => p.symbol === derivedSymbol);
+        }
+        // FALLBACK: Try by ID (für legacy binance-*-Einträge)
+        if (!pair) {
+          pair = allBinanceFuturesPairs.find(p => p.id === id);
+        }
+      } else {
+        // PRIMÄR: Find by symbol in Spot (exakt passend zum abgeleiteten MarketType)
+        if (derivedSymbol) {
+          pair = allBinancePairs.find(p => p.symbol === derivedSymbol);
+        }
+        // FALLBACK: Try by ID (für legacy binance-*-Einträge)
+        if (!pair) {
+          pair = allBinancePairs.find(p => p.id === id);
+        }
+      }
+
+      // Final fallback ONLY für legacy Einträge mit binance-* IDs (keine Symbol-Cross-Suche um Markt-Verwechslungen zu vermeiden)
+      if (!pair && id.startsWith('binance-')) {
+        pair = allBinancePairs.find(p => p.id === id) || 
+               allBinanceFuturesPairs.find(p => p.id === id);
       }
       
       if (pair) {
@@ -402,7 +424,7 @@ export default function Notifications() {
           ...pair,
           id: id, // Keep original watchlist ID for consistency
           price: 'Loading...',
-          marketType: storedMarketType as 'spot' | 'futures'
+          marketType: derivedMarketType as 'spot' | 'futures'
         };
         newPairs.push(correctedPair);
       }
