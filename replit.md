@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. The project provides detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytical features. It also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots. It offers detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytics. The application also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -11,13 +11,13 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   1. **Trendpreise & Watchlist**: Search, Spot/Futures toggle, watchlist display with prices
   2. **Benachrichtigungen konfigurieren**: Threshold dialog system, dialog behavior (no auto-close, no auto-save on X/ESC), explicit "Speichern" requirement, cleanup of unsaved thresholds, draft exclusion from alerts
   3. **Aktive Alarmierungen**: Dynamic border color based on highest danger level, red blinking animation for "Sehr Gefährlich", sorting dropdown (Dringlichkeit default), scroll container with fixed height
-- **Golden State - Benachrichtigungen Konfigurieren V1.4 (2026-01-11)**: Die komplette "Benachrichtigungen konfigurieren" Section ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+- **Golden State - Benachrichtigungen Konfigurieren V1.4**: Die komplette "Benachrichtigungen konfigurieren" Section ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **UI-Elemente:** Kontenkarte mit Glocken-Symbol, "Keine Benachrichtigungen konfiguriert" Leertext, "+ Benachrichtigung hinzufügen" Button
   - **Schwellenwert-Karten:** Alarm-Level Farben, Toggle (Aktiv/Pause), Status-Anzeige (0/1, X ∞, ✓), Bearbeiten/Löschen Icons
   - **Dialog-System:** Schwellenwert-Dialog, Alarm-Level-Dialog, Speichern-Pflicht, kein Auto-Save bei X/ESC
   - **Häufigkeits-Optionen:** Einmalig und Wiederholend mit korrektem Verhalten
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_einmalig_threshold_logic.md` und `docs/GOLDEN_STATE_wiederholend_threshold_logic.md`
-- **Golden State - Einmalig Threshold Logic (2026-01-11)**: Die komplette Logik für "Häufigkeit: Einmalig" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+- **Golden State - Einmalig Threshold Logic**: Die komplette Logik für "Häufigkeit: Einmalig" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Verhalten:** Neuer Schwellenwert zeigt "0/1", Toggle = "Aktiv"
   - **Nach Trigger:** `isActive = false`, Status wechselt zu "✓" (grüner Haken), Toggle = "Pause"
   - **Nach Page Refresh:** Toggle bleibt "Pause", Status zeigt korrekt "✓" (basierend auf `isActive === false` in localStorage)
@@ -26,7 +26,7 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Status-Anzeige Logik:** Prüft `isActive === false` (persistiert) ODER `triggeredThresholds` (Session)
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_einmalig_threshold_logic.md` für vollständigen Code-Snapshot
   - **Unit Tests:** 10 Tests in `server/threshold-einmalig.test.ts` (alle bestanden)
-- **Golden State - Wiederholend Threshold Logic (2026-01-11)**: Die komplette Logik für "Häufigkeit: Wiederholend" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+- **Golden State - Wiederholend Threshold Logic**: Die komplette Logik für "Häufigkeit: Wiederholend" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Verhalten:** Neuer Schwellenwert zeigt "0 ∞", Toggle = "Aktiv"
   - **Nach Trigger:** Counter wird erhöht, Status zeigt "X ∞" (X = Anzahl Trigger), Toggle bleibt "Aktiv"
   - **Re-Trigger Prevention:** Bei `requiresApproval=false` kann erst wieder triggern nach Auto-Dismiss des vorherigen Alarms
@@ -35,101 +35,66 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Implementierung:** `activeAlarmId` Feld im ThresholdConfig, localStorage-persistiert
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_wiederholend_threshold_logic.md` für vollständigen Code-Snapshot
   - **Unit Tests:** 20 Tests in `server/threshold-wiederholend.test.ts` (alle bestanden)
-  - **WICHTIG (2026-01-11 Update):** `activeAlarmId` wird jetzt für ALLE wiederholend Schwellenwerte gesetzt (sowohl `requiresApproval=true` als auch `false`), um Duplikate nach Page Refresh zu verhindern
+  - **WICHTIG:** `activeAlarmId` wird jetzt für ALLE wiederholend Schwellenwerte gesetzt (sowohl `requiresApproval=true` als auch `false`), um Duplikate nach Page Refresh zu verhindern
 - **Golden State - Push Benachrichtigungen**: Der folgende Toggle und seine Funktion sind Golden State und dürfen NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Toggle:** "Push Benachrichtigungen (iOS, Android, Browser)" in den Alarm-Level Einstellungen
   - **Funktion:** Sendet Push-Nachrichten an ALLE registrierten Geräte (iPhone, iPad, Windows Chrome) via OneSignal
   - **Backend-Routen:** `/api/notifications/web-push`, `/api/test-native-push`, `/api/notifications/push-enhanced`
   - **Unified Logic:** Ein Toggle kontrolliert beide internen Werte (webPush + nativePush), da OneSignal keine Geräte-Trennung unterstützt
   - **Push Test Button:** Versteckt hinter Auge-Symbol (Eye/EyeOff Toggle) in der Header-Zeile der Notifications-Seite
+- **DIAMOND STATE - Alarmierungsstufen konfigurieren**: Die komplette "Alarmierungsstufen konfigurieren" Section ist DIAMOND STATE (höchster Schutz) und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+  - **4 Alarm-Level-Karten:** Harmlos (blau), Achtung (gelb), Gefährlich (orange), Sehr Gefährlich (rot) im 2x2 Grid
+  - **Karten-Anzeige:** Aktive Kanäle, Approval-Status, Wiederholung (Xx oder ∞), Sequenz, Restwartezeit
+  - **Benachrichtigungskanäle:** E-Mail, SMS (mit Telefonnummer), Push (unified für iOS/Android/Browser)
+  - **Approval erforderlich Toggle:** Mit automatischem Force-On bei infinite Wiederholungen
+  - **Wiederholung:** Numerisches Input + "∞ Unendlich" Button, mit `py-0.5` für Border-Fix
+  - **Sequenz:** 3-Spalten Grid (Stunden, Minuten, Sekunden)
+  - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
+  - **Dialog-System:** Bearbeiten-Dialog mit "Abbrechen" und "Speichern" Buttons
+  - **Dokumentation:** Siehe `docs/GOLDEN_STATE_alarmierungsstufen_konfigurieren.md` für vollständigen Code-Snapshot
 - **Workflow**: For the Notifications page, adding or editing a threshold, or changing its alarm level, requires an explicit "Speichern" (Save) button click; there is no auto-save for these actions. Dialog cleanup is automatic: when a "new threshold" dialog is closed (via X, ESC, or outside click) without saving, any incomplete threshold (missing value or notification type) is automatically removed from state. The `hasAnyThresholds` check excludes the currently editing threshold to prevent dialog auto-close during editing.
 
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for a responsive interface. Recharts is utilized for dynamic data visualization, and Wouter for client-side routing. The dashboard features MainChart, Compare Mode, and Added Mode (with Analysis and Overlay). Interactive elements include a marker system, zoom/pan, and Info-Tooltips. The Notifications page incorporates a watchlist with live Binance price updates, a configurable threshold system with four alarm levels, and an active alerts display. Web Push Notifications are integrated via OneSignal.
+The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard includes MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display.
 
 ### Technical Implementations
-- **State Management**: TypeScript-typed state for various application components.
-- **Data Handling**: Optimized with `useMemo` hooks.
-- **Bot Type Management**: Supports CRUD operations, CSV/Excel upload, and update history.
-- **Notifications Data Persistence**: Watchlist and pair market types are persisted in `localStorage`. Futures pair identification uses a robust symbol-based fallback.
-- **OneSignal Integration**: Configured for web push notifications, initialized on the production URL, with player ID storage for targeted delivery.
-- **Backend Service Worker Route**: Express.js serves `OneSignalSDKWorker.js`.
-- **Backend Notification Route**: Handles web push requests for specific players or all subscribed users.
-- **Unified Push Logic**: A single frontend toggle controls both `webPush` and `nativePush` states due to OneSignal limitations, sending one notification to all subscribers (desktop and PWA).
-- **Enhanced Push Route**: `/api/notifications/push-enhanced` includes retry logic, iOS optimizations, and a 24-hour TTL for improved delivery.
+- **Frontend**: React, TypeScript.
+- **Backend**: Express.js with TypeScript.
+- **State Management**: TypeScript-typed state with `useMemo` hooks for optimization.
+- **Data Persistence**: Watchlist and pair market types are persisted in `localStorage`.
+- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API.
+- **Push Notification Integration**: OneSignal is used for web and native push notifications, with a unified frontend toggle. The backend `/api/notifications/push-enhanced` route handles enhanced delivery.
+- **PWA Support**: `manifest.json` and Apple Meta-Tags enable PWA functionality.
 
 ### Feature Specifications
-- **Marker System**: Interactive points on charts.
-- **Zoom & Pan**: Chart navigation.
-- **AI-Analysis**: Integration with OpenAI for insights.
-- **Info-Tooltips**: Explanations for metrics.
-- **Notifications Watchlist**: Real-time price tracking.
-- **Threshold System**: Configurable price alerts.
-- **German Formatting**: Prices and thresholds displayed in German number format.
-- **Web Push Notifications**: Real-time alerts via OneSignal.
-- **Native Push Notifications (PWA)**: Supported on iOS (16.4+) and Android via PWA, leveraging OneSignal.
-- **Push Test Button**: Hidden by default, accessible via an eye icon to prevent accidental triggers.
-- **SMS Notifications**: Twilio-integrated SMS alerts when price thresholds are triggered.
-- **Alarm Approval System**: "Approval erforderlich" toggle per alarm level; when active, alarms require manual dismissal.
-- **Auto-Dismiss (Restwartezeit)**: When approval is OFF and repeatCount is finite, alarms auto-dismiss after (repeatCount-1)*sequence + restwartezeit; countdown timer displays remaining time in active alarms.
-- **Active Repetition System**: Alarms now send actual repeated notifications (email, SMS, push) based on sequence timing. useEffect checks every second and sends notifications when timeSinceLastNotify >= sequenceMs. ActiveAlarm tracks lastNotifiedAt, sequenceMs, and channels for repetition.
-- **Infinite Approval Safety**: When repeatCount='infinite' is selected, requiresApproval is automatically forced to true to prevent endless notification spam.
-- **Cross-Device Alarm Synchronization**: Active alarms are stored in centralized backend (in-memory) and synchronized across all devices via polling. When a user approves an alarm on one device (DELETE request), all other devices see it disappear on their next poll.
-- **Wiederholend Re-Trigger Prevention (2026-01-11)**: Bei "Häufigkeit: Wiederholend" mit `requiresApproval=false`:
-  - Ein Schwellenwert kann erst WIEDER triggern, wenn der vorherige Alarmierungsdurchgang KOMPLETT abgeschlossen ist (alle Wiederholungen + Restwartezeit + Auto-Dismiss)
-  - **Implementierung via `activeAlarmId` in ThresholdConfig (localStorage-basiert):**
-    - Bei Alarm-Erstellung: `activeAlarmId` wird im Threshold gespeichert
-    - Vor Trigger-Prüfung: Wenn `threshold.activeAlarmId` existiert → kein Re-Trigger
-    - Bei Auto-Dismiss oder manuellem "Stoppen": `activeAlarmId` wird gelöscht
-    - Überlebt Page Refresh (localStorage-persistiert)
-  - Jeder Schwellenwert wird einzeln getrackt via `threshold.id`
-  - Verschiedene Schwellenwerte für das gleiche Trading-Pair sind unabhängig voneinander
-  - Bei `requiresApproval=true` blockiert `activeAlarmId` ebenfalls Duplikate nach Refresh (User muss erst genehmigen)
-
-### Cross-Device Sync API
-Backend REST API endpoints for active alarm synchronization:
-- `GET /api/active-alarms` - Retrieve all active alarms
-- `GET /api/active-alarms/:id` - Retrieve single alarm by ID
-- `POST /api/active-alarms` - Create new active alarm
-- `PATCH /api/active-alarms/:id` - Update alarm (repetition count, lastNotifiedAt)
-- `DELETE /api/active-alarms/:id` - Delete/Approve single alarm
-
-**Note:** There is NO "delete all" endpoint or button - alarms are only removed via:
-1. Manual approval (DELETE single alarm) for `requiresApproval=true` alarms
-2. Auto-dismiss after repetitions complete + Restwartezeit expires for `requiresApproval=false` alarms
-
-Console log prefixes for debugging: `[ACTIVE-ALARMS]`, `[API]`
+- **Charts**: Interactive marker system, zoom & pan.
+- **AI-Analysis**: Integration with OpenAI.
+- **Info-Tooltips**: Contextual explanations.
+- **Notifications**:
+  - Real-time price tracking watchlist.
+  - Configurable price alerts with German number formatting.
+  - Web Push Notifications via OneSignal.
+  - Native Push Notifications (PWA) for iOS and Android.
+  - SMS Notifications via Twilio.
+  - Alarm Approval System with auto-dismiss and repetition logic.
+  - Cross-Device Alarm Synchronization through a backend API.
+  - Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
 - **Stable ID Handling**: Symbol-based lookup for futures pairs.
-- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key for secure and targeted notifications using `include_player_ids`.
-- **PWA Infrastructure**: `manifest.json` and Apple Meta-Tags for PWA support on mobile devices.
-
-### Multi-Environment Database Architecture
-The application supports both Replit and external server deployments using a unified codebase:
-- **Central DB Configuration**: `server/db.ts` handles environment-based database selection
-- **Environment Variable**: `RUNTIME_ENV` determines which adapter to use:
-  - `RUNTIME_ENV=replit` → Uses `@neondatabase/serverless` + `drizzle-orm/neon-http`
-  - `RUNTIME_ENV=server` → Uses `pg` (node-postgres) + `drizzle-orm/node-postgres`
-- **Server Setup**: On external server, set `RUNTIME_ENV=server` in `ecosystem.config.cjs` (NOT in ~/.bashrc - PM2 doesn't inherit shell env reliably)
-- **git pull Safety**: No manual code changes needed after pulling - the same code works on both environments
-- **Logging**: Console output shows `[DB] Using Neon serverless (replit mode)` or `[DB] Using node-postgres (server mode)`
-
-### OneSignal Domain Configuration
-Push notifications are configured for multiple production domains:
-- `helios-ai.replit.app` - Replit production domain
-- `helios-ai.app` - External server domain
-- Dev domains are automatically skipped to prevent OneSignal errors
+- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key.
+- **Multi-Environment Database**: `server/db.ts` uses `RUNTIME_ENV` to switch between Neon Serverless (Replit) and PostgreSQL (server) with Drizzle ORM.
+- **OneSignal Domain Configuration**: Supports multiple production domains (`helios-ai.replit.app`, `helios-ai.app`).
 
 ## External Dependencies
-- **Database**: Environment-based - Neon Serverless (Replit) or local PostgreSQL (server) with Drizzle ORM.
-- **Backend Framework**: Express.js with TypeScript.
+- **Database**: Neon Serverless (Replit) or PostgreSQL (server) with Drizzle ORM.
+- **Backend Framework**: Express.js.
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
-- **Storage**: In-memory `MemStorage` for server-side data handling.
-- **Crypto Data**: Binance API (Spot and Futures market data).
+- **Crypto Data**: Binance API (Spot and Futures).
 - **Web Push Notifications**: OneSignal Web Push SDK v16.
+- **SMS Notifications**: Twilio.
