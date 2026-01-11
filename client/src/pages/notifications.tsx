@@ -1213,8 +1213,52 @@ export default function Notifications() {
 
   // REMOVED: Automatic save on every change - now only saves on explicit "Speichern" click
   // Save function to be called explicitly when user clicks "Speichern"
+  // Also syncs to backend for cross-device sync
   const saveSettingsToStorage = () => {
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
+    
+    // Sync all thresholds to backend with ALL fields
+    const allThresholds: Array<{
+      pairId: string;
+      thresholdId: string;
+      threshold: string;
+      notifyOnIncrease: boolean;
+      notifyOnDecrease: boolean;
+      increaseFrequency: 'einmalig' | 'wiederholend';
+      decreaseFrequency: 'einmalig' | 'wiederholend';
+      alarmLevel: string;
+      note: string;
+      isActive: boolean;
+      triggerCount: number;
+      activeAlarmId?: string;
+    }> = [];
+    
+    Object.entries(trendPriceSettings).forEach(([pairId, settings]) => {
+      settings.thresholds.forEach((t: ThresholdConfig) => {
+        allThresholds.push({
+          pairId,
+          thresholdId: t.id,
+          threshold: t.threshold || '',
+          notifyOnIncrease: t.notifyOnIncrease || false,
+          notifyOnDecrease: t.notifyOnDecrease || false,
+          increaseFrequency: t.increaseFrequency || 'einmalig',
+          decreaseFrequency: t.decreaseFrequency || 'einmalig',
+          alarmLevel: t.alarmLevel || 'harmlos',
+          note: t.note || '',
+          isActive: t.isActive !== false,
+          triggerCount: t.triggerCount || 0,
+          activeAlarmId: t.activeAlarmId
+        });
+      });
+    });
+    
+    fetch('/api/notification-thresholds/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(allThresholds)
+    }).then(res => {
+      if (res.ok) console.log(`[THRESHOLDS-SYNC] Synced ${allThresholds.length} thresholds to backend`);
+    }).catch(err => console.error('[THRESHOLDS-SYNC] Sync error:', err));
   };
 
   const [alarmLevelEditMode, setAlarmLevelEditMode] = useState<Record<AlarmLevel, boolean>>({
@@ -1324,50 +1368,181 @@ export default function Notifications() {
     fetchBackendAlarms();
   }, []);
   
-  // POLLING: Sync active alarms from backend every 3.5 seconds when Live Updates is active
-  // Backend is the SINGLE SOURCE OF TRUTH - always use backend data
+  // POLLING: Sync ALL notification settings from backend every 3.5 seconds when Live Updates is active
+  // Backend is the SINGLE SOURCE OF TRUTH - always use backend data for cross-device sync
   useEffect(() => {
     if (!isLiveUpdating) {
-      console.log('[ACTIVE-ALARMS-POLLING] Polling paused (Live Updates deactivated)');
+      console.log('[NOTIFICATION-POLLING] Polling paused (Live Updates deactivated)');
       return;
     }
     
-    const pollBackendAlarms = async () => {
+    const pollNotificationSettings = async () => {
       try {
-        const response = await fetch('/api/active-alarms');
+        const response = await fetch('/api/notification-settings');
         if (response.ok) {
-          const rawBackendAlarms = await response.json();
+          const { watchlist: backendWatchlist, thresholds: backendThresholds, alarmLevels: backendAlarmLevels, activeAlarms: rawBackendAlarms } = await response.json();
           
-          // Normalize: convert ISO strings to Date objects
+          // === SYNC ACTIVE ALARMS ===
           const backendAlarms: ActiveAlarm[] = rawBackendAlarms.map(normalizeBackendAlarm);
-          
-          // Always use backend data as source of truth
-          // Compare only IDs and length for logging, but ALWAYS update to ensure sync
           setActiveAlarms(prev => {
             const hasIdChanges = prev.length !== backendAlarms.length ||
               !prev.every(a => backendAlarms.some(b => b.id === a.id));
-            
             if (hasIdChanges) {
-              console.log(`[ACTIVE-ALARMS-POLLING] Alarm list changed: ${backendAlarms.length} alarms (was ${prev.length})`);
+              console.log(`[NOTIFICATION-POLLING] Active alarms changed: ${backendAlarms.length} (was ${prev.length})`);
             }
-            
-            // Always update ref to ensure threshold checks have latest data
             activeAlarmsRef.current = backendAlarms;
             return backendAlarms;
           });
+          
+          // === SYNC WATCHLIST ===
+          // Watchlist state is string[] of pair IDs, with marketType stored separately in pairMarketTypes
+          if (backendWatchlist && Array.isArray(backendWatchlist)) {
+            const backendIds = backendWatchlist.map((item: { symbol: string; marketType: string; id?: number }) => {
+              // Generate consistent ID from symbol+marketType (matching frontend pattern)
+              const marketSuffix = item.marketType === 'futures' ? '-PERP' : '';
+              return item.symbol + marketSuffix;
+            });
+            const backendMarketTypes: Record<string, { marketType: 'spot' | 'futures', symbol: string }> = {};
+            backendWatchlist.forEach((item: { symbol: string; marketType: string }) => {
+              const marketSuffix = item.marketType === 'futures' ? '-PERP' : '';
+              const id = item.symbol + marketSuffix;
+              backendMarketTypes[id] = { 
+                marketType: item.marketType as 'spot' | 'futures', 
+                symbol: item.symbol 
+              };
+            });
+            
+            setWatchlist(prev => {
+              const hasChanges = prev.length !== backendIds.length ||
+                !prev.every((id: string) => backendIds.includes(id));
+              if (hasChanges) {
+                console.log(`[NOTIFICATION-POLLING] Watchlist synced: ${backendIds.length} items (was ${prev.length})`);
+                localStorage.setItem('notifications-watchlist', JSON.stringify(backendIds));
+                return backendIds;
+              }
+              return prev;
+            });
+            
+            setPairMarketTypes(prev => {
+              const hasChanges = Object.keys(backendMarketTypes).length !== Object.keys(prev).length ||
+                !Object.keys(backendMarketTypes).every(id => prev[id]?.symbol === backendMarketTypes[id].symbol);
+              if (hasChanges) {
+                localStorage.setItem('notifications-pair-market-types', JSON.stringify(backendMarketTypes));
+                return backendMarketTypes;
+              }
+              return prev;
+            });
+          }
+          
+          // === SYNC THRESHOLDS (trendPriceSettings) ===
+          if (backendThresholds && Array.isArray(backendThresholds)) {
+            setTrendPriceSettings(prev => {
+              const newSettings: Record<string, TrendPriceSettings> = {};
+              backendThresholds.forEach((t: { 
+                pairId: string; 
+                thresholdId: string; 
+                threshold: string | null;
+                notifyOnIncrease: boolean;
+                notifyOnDecrease: boolean;
+                increaseFrequency: string;
+                decreaseFrequency: string;
+                alarmLevel: string;
+                note: string;
+                isActive: boolean;
+                triggerCount: number;
+                activeAlarmId: string | null;
+              }) => {
+                if (!newSettings[t.pairId]) {
+                  newSettings[t.pairId] = { thresholds: [] };
+                }
+                newSettings[t.pairId].thresholds.push({
+                  id: t.thresholdId,
+                  threshold: t.threshold || '',
+                  notifyOnIncrease: t.notifyOnIncrease,
+                  notifyOnDecrease: t.notifyOnDecrease,
+                  increaseFrequency: t.increaseFrequency as 'einmalig' | 'wiederholend',
+                  decreaseFrequency: t.decreaseFrequency as 'einmalig' | 'wiederholend',
+                  alarmLevel: t.alarmLevel as AlarmLevel,
+                  note: t.note || '',
+                  isActive: t.isActive,
+                  triggerCount: t.triggerCount,
+                  activeAlarmId: t.activeAlarmId || undefined
+                });
+              });
+              const prevStr = JSON.stringify(prev);
+              const newStr = JSON.stringify(newSettings);
+              if (prevStr !== newStr) {
+                console.log(`[NOTIFICATION-POLLING] Thresholds synced from backend`);
+                localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
+                return newSettings;
+              }
+              return prev;
+            });
+          }
+          
+          // === SYNC ALARM LEVEL CONFIGS ===
+          if (backendAlarmLevels && Array.isArray(backendAlarmLevels) && backendAlarmLevels.length > 0) {
+            setAlarmLevelConfigs(prev => {
+              const newConfigs = { ...prev };
+              let hasChanges = false;
+              backendAlarmLevels.forEach((config: {
+                level: string;
+                emailEnabled: boolean;
+                smsEnabled: boolean;
+                smsPhoneNumber: string | null;
+                webPushEnabled: boolean;
+                nativePushEnabled: boolean;
+                requiresApproval: boolean;
+                repeatCount: number | null;
+                sequenceHours: number;
+                sequenceMinutes: number;
+                sequenceSeconds: number;
+              }) => {
+                const level = config.level as AlarmLevel;
+                if (level in newConfigs) {
+                  const updated: AlarmLevelConfig = {
+                    channels: {
+                      email: config.emailEnabled,
+                      sms: config.smsEnabled,
+                      webPush: config.webPushEnabled,
+                      nativePush: config.nativePushEnabled
+                    },
+                    smsPhoneNumber: config.smsPhoneNumber || '',
+                    requiresApproval: config.requiresApproval,
+                    repeatCount: config.repeatCount,
+                    sequence: {
+                      hours: config.sequenceHours,
+                      minutes: config.sequenceMinutes,
+                      seconds: config.sequenceSeconds
+                    }
+                  };
+                  if (JSON.stringify(newConfigs[level]) !== JSON.stringify(updated)) {
+                    newConfigs[level] = updated;
+                    hasChanges = true;
+                  }
+                }
+              });
+              if (hasChanges) {
+                console.log(`[NOTIFICATION-POLLING] Alarm level configs synced from backend`);
+                localStorage.setItem('alarm-level-configs', JSON.stringify(newConfigs));
+                return newConfigs;
+              }
+              return prev;
+            });
+          }
         }
       } catch (err) {
-        console.error('[ACTIVE-ALARMS-POLLING] Poll error:', err);
+        console.error('[NOTIFICATION-POLLING] Poll error:', err);
       }
     };
     
     // Start polling every 3.5 seconds
-    const pollInterval = setInterval(pollBackendAlarms, 3500);
-    console.log('[ACTIVE-ALARMS-POLLING] Started polling (every 3.5s)');
+    const pollInterval = setInterval(pollNotificationSettings, 3500);
+    console.log('[NOTIFICATION-POLLING] Started polling (every 3.5s)');
     
     return () => {
       clearInterval(pollInterval);
-      console.log('[ACTIVE-ALARMS-POLLING] Stopped polling');
+      console.log('[NOTIFICATION-POLLING] Stopped polling');
     };
   }, [isLiveUpdating]);
 
@@ -1673,6 +1848,16 @@ export default function Notifications() {
         [id]: { marketType: selectedMarketType, symbol: pair?.symbol || '' }
       }));
       
+      // Sync to backend for cross-device sync
+      const symbol = pair?.symbol || id.replace('-PERP', '');
+      fetch('/api/notification-watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, marketType: selectedMarketType })
+      }).then(res => {
+        if (res.ok) console.log(`[WATCHLIST-SYNC] Added ${symbol} (${selectedMarketType}) to backend`);
+      }).catch(err => console.error('[WATCHLIST-SYNC] Add error:', err));
+      
       // Initialize settings only if not already existing
       setTrendPriceSettings(prev => {
         if (prev[id]) {
@@ -1691,6 +1876,11 @@ export default function Notifications() {
   };
 
   const removeFromWatchlist = (id: string) => {
+    // Get symbol and marketType before removing from state
+    const pairInfo = pairMarketTypes[id];
+    const symbol = pairInfo?.symbol || id.replace('-PERP', '');
+    const pairMarket = pairInfo?.marketType || (id.includes('-PERP') ? 'futures' : 'spot');
+    
     setWatchlist(prev => prev.filter(tpId => tpId !== id));
     setExpandedDropdowns(prev => prev.filter(tpId => tpId !== id));
     setTrendPriceSettings(prev => {
@@ -1698,6 +1888,13 @@ export default function Notifications() {
       delete updated[id];
       return updated;
     });
+    
+    // Sync to backend for cross-device sync
+    fetch(`/api/notification-watchlist/${encodeURIComponent(symbol)}/${pairMarket}`, {
+      method: 'DELETE'
+    }).then(res => {
+      if (res.ok) console.log(`[WATCHLIST-SYNC] Removed ${symbol} (${pairMarket}) from backend`);
+    }).catch(err => console.error('[WATCHLIST-SYNC] Remove error:', err));
   };
 
   const toggleDropdown = (id: string) => {
@@ -1753,6 +1950,13 @@ export default function Notifications() {
 
     setTrendPriceSettings(newSettings);
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
+    
+    // Sync to backend for cross-device sync
+    fetch(`/api/notification-thresholds/${encodeURIComponent(trendPriceId)}/${encodeURIComponent(thresholdId)}`, {
+      method: 'DELETE'
+    }).then(res => {
+      if (res.ok) console.log(`[THRESHOLDS-SYNC] Deleted threshold ${thresholdId} from backend`);
+    }).catch(err => console.error('[THRESHOLDS-SYNC] Delete error:', err));
 
     toast({
       title: "Schwellenwert gelöscht",
@@ -1781,6 +1985,13 @@ export default function Notifications() {
 
     setTrendPriceSettings(newSettings);
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
+    
+    // Sync to backend for cross-device sync
+    fetch(`/api/notification-thresholds/pair/${encodeURIComponent(trendPriceId)}`, {
+      method: 'DELETE'
+    }).then(res => {
+      if (res.ok) console.log(`[THRESHOLDS-SYNC] Deleted all thresholds for ${trendPriceId} from backend`);
+    }).catch(err => console.error('[THRESHOLDS-SYNC] Delete all error:', err));
 
     toast({
       title: "Alle Schwellenwerte gelöscht",
@@ -4030,6 +4241,32 @@ export default function Notifications() {
                                 onClick={() => {
                                   // Save to localStorage
                                   localStorage.setItem('alarm-level-configs', JSON.stringify(alarmLevelConfigs));
+                                  
+                                  // Sync to backend for cross-device sync
+                                  const levelConfig = alarmLevelConfigs[level];
+                                  fetch('/api/notification-alarm-levels', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      level,
+                                      pushEnabled: levelConfig.channels.push || false,
+                                      emailEnabled: levelConfig.channels.email,
+                                      smsEnabled: levelConfig.channels.sms,
+                                      webPushEnabled: levelConfig.channels.webPush,
+                                      nativePushEnabled: levelConfig.channels.nativePush,
+                                      requiresApproval: levelConfig.requiresApproval,
+                                      repeatCount: levelConfig.repeatCount === 'infinite' ? 'infinite' : String(levelConfig.repeatCount || 1),
+                                      sequenceHours: levelConfig.sequence?.hours || 0,
+                                      sequenceMinutes: levelConfig.sequence?.minutes || 1,
+                                      sequenceSeconds: levelConfig.sequence?.seconds || 0,
+                                      restwartezeitHours: 0,
+                                      restwartezeitMinutes: 0,
+                                      restwartezeitSeconds: 0
+                                    })
+                                  }).then(res => {
+                                    if (res.ok) console.log(`[ALARM-LEVEL-SYNC] Saved ${level} to backend`);
+                                  }).catch(err => console.error('[ALARM-LEVEL-SYNC] Save error:', err));
+                                  
                                   setAlarmLevelEditMode(prev => ({ ...prev, [level]: false }));
                                   toast({
                                     title: "Gespeichert",
