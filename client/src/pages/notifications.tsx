@@ -514,7 +514,9 @@ export default function Notifications() {
         // Geo-blocked - stop polling to prevent console spam
         console.warn('[TRENDPREIS-24/7] Binance Futures API geo-blocked (418/451). Stopping futures price polling.');
         setIsFuturesBlocked(true);
-        return true; // Not a retry-able error
+        // WICHTIG: Auch bei Geo-Block lastPriceUpdateRef aktualisieren um Watchdog-Endlosschleife zu vermeiden
+        lastPriceUpdateRef.current = new Date();
+        return true; // Not a retry-able error, but handled
       }
 
       if (!response.ok) {
@@ -747,6 +749,25 @@ export default function Notifications() {
     
     // Watchdog prüft alle 30 Sekunden ob lastPriceUpdate älter als 30s ist
     const watchdogCheck = () => {
+      // Collect symbols first to check if there's anything to fetch
+      const spotSymbols: string[] = [];
+      const futuresSymbols: string[] = [];
+      
+      availableTradingPairs.forEach(pair => {
+        if (!watchlist.includes(pair.id)) return;
+        const storedMarketType = pairMarketTypes[pair.id]?.marketType || 'spot';
+        if (storedMarketType === 'futures') {
+          futuresSymbols.push(pair.symbol);
+        } else {
+          spotSymbols.push(pair.symbol);
+        }
+      });
+      
+      // Skip if only futures and geo-blocked - nichts mehr zu tun
+      if (spotSymbols.length === 0 && futuresSymbols.length > 0 && isFuturesBlocked) {
+        return; // Verhindert Log-Spam bei geo-blocked Futures-only Watchlist
+      }
+      
       const now = new Date();
       const lastUpdate = lastPriceUpdateRef.current;
       const diffSeconds = (now.getTime() - lastUpdate.getTime()) / 1000;
@@ -754,30 +775,16 @@ export default function Notifications() {
       if (diffSeconds > 30) {
         console.warn(`[TRENDPREIS-24/7] WATCHDOG: Preise seit ${Math.round(diffSeconds)}s nicht aktualisiert - Neustart!`);
         
-        // Collect symbols and force refetch
-        const spotSymbols: string[] = [];
-        const futuresSymbols: string[] = [];
-        
-        availableTradingPairs.forEach(pair => {
-          if (!watchlist.includes(pair.id)) return;
-          const storedMarketType = pairMarketTypes[pair.id]?.marketType || 'spot';
-          if (storedMarketType === 'futures') {
-            futuresSymbols.push(pair.symbol);
-          } else {
-            spotSymbols.push(pair.symbol);
-          }
-        });
-        
         // Force refetch
         if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-        if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+        if (futuresSymbols.length > 0 && !isFuturesBlocked) fetchFuturesPrices(futuresSymbols);
         
         // Also try to restart the main interval if it died
         if (!priceUpdateIntervalRef.current) {
           console.warn('[TRENDPREIS-24/7] WATCHDOG: Interval war tot - wird neu gestartet');
           const performFetch = () => {
             if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-            if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+            if (futuresSymbols.length > 0 && !isFuturesBlocked) fetchFuturesPrices(futuresSymbols);
           };
           priceUpdateIntervalRef.current = setInterval(performFetch, 2000);
         }
@@ -792,7 +799,7 @@ export default function Notifications() {
         clearInterval(priceWatchdogRef.current);
       }
     };
-  }, [watchlist, availableTradingPairs, pairMarketTypes]);
+  }, [watchlist, availableTradingPairs, pairMarketTypes, isFuturesBlocked]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
     // Load saved thresholds from localStorage on mount
