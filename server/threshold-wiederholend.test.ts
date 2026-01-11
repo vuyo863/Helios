@@ -7,291 +7,585 @@ interface ThresholdConfig {
   notifyOnDecrease: boolean;
   increaseFrequency: 'einmalig' | 'wiederholend';
   decreaseFrequency: 'einmalig' | 'wiederholend';
-  alarmLevel: string;
+  alarmLevel: 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich';
   note: string;
-  isActive?: boolean;
+  isActive: boolean;
   triggerCount?: number;
+  activeAlarmId?: string;
 }
 
-interface TrendPriceSettings {
-  [key: string]: {
-    thresholds: ThresholdConfig[];
+interface AlarmLevelConfig {
+  requiresApproval: boolean;
+  repeatCount: number | 'infinite';
+  channels: {
+    push: boolean;
+    email: boolean;
+    sms: boolean;
+    webPush: boolean;
+    nativePush: boolean;
   };
 }
 
-function simulateTrigger(threshold: ThresholdConfig, direction: 'increase' | 'decrease'): void {
-  const frequency = direction === 'increase' ? threshold.increaseFrequency : threshold.decreaseFrequency;
-  
-  if (frequency === 'wiederholend') {
-    threshold.triggerCount = (threshold.triggerCount || 0) + 1;
-  } else if (frequency === 'einmalig') {
-    threshold.isActive = false;
-  }
+interface ActiveAlarm {
+  id: string;
+  thresholdId?: string;
+  pairId?: string;
+  trendPriceName: string;
+  threshold: string;
+  alarmLevel: string;
+  requiresApproval: boolean;
 }
 
-describe('Wiederholend Threshold Logic with triggerCount', () => {
-  let trendPriceSettings: TrendPriceSettings;
+const harmlosConfig: AlarmLevelConfig = {
+  requiresApproval: false,
+  repeatCount: 3,
+  channels: {
+    push: true,
+    email: true,
+    sms: false,
+    webPush: false,
+    nativePush: false
+  }
+};
+
+const achtungConfig: AlarmLevelConfig = {
+  requiresApproval: true,
+  repeatCount: 5,
+  channels: {
+    push: true,
+    email: true,
+    sms: true,
+    webPush: true,
+    nativePush: true
+  }
+};
+
+function shouldBlockReTrigger(
+  threshold: ThresholdConfig,
+  alarmConfig: AlarmLevelConfig,
+  direction: 'increase' | 'decrease'
+): boolean {
+  const frequency = direction === 'increase' ? threshold.increaseFrequency : threshold.decreaseFrequency;
   
-  beforeEach(() => {
-    trendPriceSettings = {
-      'ETH-USDT': {
-        thresholds: [{
-          id: 'threshold-1',
-          threshold: '3500',
-          notifyOnIncrease: true,
-          notifyOnDecrease: false,
-          increaseFrequency: 'wiederholend',
-          decreaseFrequency: 'wiederholend',
-          alarmLevel: 'harmlos',
-          note: '',
-          isActive: true,
-          triggerCount: 0
-        }]
-      }
-    };
-  });
-
-  it('Test 1: New wiederholend threshold starts with triggerCount=0 and shows "0 ∞"', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    expect(threshold.increaseFrequency).toBe('wiederholend');
-    expect(threshold.triggerCount).toBe(0);
-    expect(threshold.isActive).toBe(true);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('0 ∞');
-    
-    console.log('✓ Test 1 PASSED: New wiederholend shows "0 ∞"');
-  });
-
-  it('Test 2: First trigger increments count to 1, shows "1 ∞"', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    simulateTrigger(threshold, 'increase');
-    
-    expect(threshold.triggerCount).toBe(1);
-    expect(threshold.isActive).toBe(true);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('1 ∞');
-    
-    console.log('✓ Test 2 PASSED: After 1 trigger shows "1 ∞"');
-  });
-
-  it('Test 3: Second trigger increments count to 2, shows "2 ∞"', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    simulateTrigger(threshold, 'increase');
-    simulateTrigger(threshold, 'increase');
-    
-    expect(threshold.triggerCount).toBe(2);
-    expect(threshold.isActive).toBe(true);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('2 ∞');
-    
-    console.log('✓ Test 3 PASSED: After 2 triggers shows "2 ∞"');
-  });
-
-  it('Test 4: Multiple triggers (5x) shows "5 ∞"', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    for (let i = 0; i < 5; i++) {
-      simulateTrigger(threshold, 'increase');
+  if (frequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+    if (threshold.activeAlarmId) {
+      return true;
     }
-    
-    expect(threshold.triggerCount).toBe(5);
-    expect(threshold.isActive).toBe(true);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('5 ∞');
-    
-    console.log('✓ Test 4 PASSED: After 5 triggers shows "5 ∞"');
-  });
+  }
+  return false;
+}
 
-  it('Test 5: Toggle stays active after many triggers (10x)', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    for (let i = 0; i < 10; i++) {
-      simulateTrigger(threshold, 'increase');
-      expect(threshold.isActive).toBe(true);
-    }
-    
-    expect(threshold.triggerCount).toBe(10);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('10 ∞');
-    
-    console.log('✓ Test 5 PASSED: Toggle stays active after 10 triggers, shows "10 ∞"');
-  });
+function createAlarmAndSetActiveId(
+  threshold: ThresholdConfig,
+  alarmConfig: AlarmLevelConfig,
+  pairId: string,
+  direction: 'increase' | 'decrease'
+): { alarm: ActiveAlarm; updatedThreshold: ThresholdConfig } {
+  const frequency = direction === 'increase' ? threshold.increaseFrequency : threshold.decreaseFrequency;
+  const newAlarmId = `alarm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  const alarm: ActiveAlarm = {
+    id: newAlarmId,
+    thresholdId: threshold.id,
+    pairId: pairId,
+    trendPriceName: 'ETH/USDT',
+    threshold: threshold.threshold,
+    alarmLevel: threshold.alarmLevel,
+    requiresApproval: alarmConfig.requiresApproval
+  };
+  
+  let updatedThreshold = { ...threshold };
+  
+  if (frequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+    updatedThreshold.activeAlarmId = newAlarmId;
+  }
+  
+  updatedThreshold.triggerCount = (updatedThreshold.triggerCount || 0) + 1;
+  
+  return { alarm, updatedThreshold };
+}
 
-  it('Test 6: Decrease trigger also increments count', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    threshold.notifyOnIncrease = false;
-    threshold.notifyOnDecrease = true;
-    
-    simulateTrigger(threshold, 'decrease');
-    simulateTrigger(threshold, 'decrease');
-    simulateTrigger(threshold, 'decrease');
-    
-    expect(threshold.triggerCount).toBe(3);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('3 ∞');
-    
-    console.log('✓ Test 6 PASSED: Decrease triggers also count, shows "3 ∞"');
-  });
+function clearActiveAlarmId(threshold: ThresholdConfig, alarmId: string): ThresholdConfig {
+  if (threshold.activeAlarmId === alarmId) {
+    return { ...threshold, activeAlarmId: undefined };
+  }
+  return threshold;
+}
 
-  it('Test 7: Each threshold has its own counter (not shared)', () => {
-    trendPriceSettings['ETH-USDT'].thresholds.push({
-      id: 'threshold-2',
-      threshold: '4000',
-      notifyOnIncrease: true,
-      notifyOnDecrease: false,
-      increaseFrequency: 'wiederholend',
-      decreaseFrequency: 'wiederholend',
-      alarmLevel: 'achtung',
-      note: '',
-      isActive: true,
-      triggerCount: 0
-    });
-    
-    const threshold1 = trendPriceSettings['ETH-USDT'].thresholds[0];
-    const threshold2 = trendPriceSettings['ETH-USDT'].thresholds[1];
-    
-    simulateTrigger(threshold1, 'increase');
-    simulateTrigger(threshold1, 'increase');
-    simulateTrigger(threshold1, 'increase');
-    simulateTrigger(threshold2, 'increase');
-    
-    expect(threshold1.triggerCount).toBe(3);
-    expect(threshold2.triggerCount).toBe(1);
-    
-    const display1 = `${threshold1.triggerCount} ∞`;
-    const display2 = `${threshold2.triggerCount} ∞`;
-    expect(display1).toBe('3 ∞');
-    expect(display2).toBe('1 ∞');
-    
-    console.log('✓ Test 7 PASSED: Each threshold has own counter (3 ∞ vs 1 ∞)');
-  });
+function simulatePageRefresh(threshold: ThresholdConfig): ThresholdConfig {
+  return JSON.parse(JSON.stringify(threshold));
+}
 
-  it('Test 8: Mixed einmalig and wiederholend thresholds work independently', () => {
-    trendPriceSettings['ETH-USDT'].thresholds.push({
-      id: 'threshold-einmalig',
-      threshold: '3800',
-      notifyOnIncrease: true,
-      notifyOnDecrease: false,
-      increaseFrequency: 'einmalig',
-      decreaseFrequency: 'einmalig',
-      alarmLevel: 'gefährlich',
-      note: '',
-      isActive: true,
-      triggerCount: 0
-    });
+describe('Wiederholend Re-Trigger Prevention - activeAlarmId based', () => {
+  
+  describe('Basic Blocking Logic', () => {
     
-    const wiederholendThreshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    const einmaligThreshold = trendPriceSettings['ETH-USDT'].thresholds[1];
-    
-    simulateTrigger(wiederholendThreshold, 'increase');
-    simulateTrigger(wiederholendThreshold, 'increase');
-    simulateTrigger(einmaligThreshold, 'increase');
-    
-    expect(wiederholendThreshold.triggerCount).toBe(2);
-    expect(wiederholendThreshold.isActive).toBe(true);
-    expect(einmaligThreshold.isActive).toBe(false);
-    
-    const wiederholendDisplay = `${wiederholendThreshold.triggerCount} ∞`;
-    expect(wiederholendDisplay).toBe('2 ∞');
-    
-    console.log('✓ Test 8 PASSED: Mixed thresholds work independently (2 ∞ vs deactivated)');
-  });
-
-  it('Test 9: Counter persists across simulated page refresh (localStorage simulation)', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    simulateTrigger(threshold, 'increase');
-    simulateTrigger(threshold, 'increase');
-    simulateTrigger(threshold, 'increase');
-    
-    expect(threshold.triggerCount).toBe(3);
-    
-    const savedSettings = JSON.stringify(trendPriceSettings);
-    const restoredSettings: TrendPriceSettings = JSON.parse(savedSettings);
-    const restoredThreshold = restoredSettings['ETH-USDT'].thresholds[0];
-    
-    expect(restoredThreshold.triggerCount).toBe(3);
-    
-    const displayText = `${restoredThreshold.triggerCount} ∞`;
-    expect(displayText).toBe('3 ∞');
-    
-    console.log('✓ Test 9 PASSED: Counter persists after localStorage save/restore (3 ∞)');
-  });
-
-  it('Test 10: High trigger count (100x) displays correctly', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    
-    for (let i = 0; i < 100; i++) {
-      simulateTrigger(threshold, 'increase');
-    }
-    
-    expect(threshold.triggerCount).toBe(100);
-    expect(threshold.isActive).toBe(true);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('100 ∞');
-    
-    console.log('✓ Test 10 PASSED: High count (100x) displays correctly "100 ∞"');
-  });
-
-  it('Test 11: Counter continues from existing value', () => {
-    const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    threshold.triggerCount = 50;
-    
-    simulateTrigger(threshold, 'increase');
-    simulateTrigger(threshold, 'increase');
-    
-    expect(threshold.triggerCount).toBe(52);
-    
-    const displayText = `${threshold.triggerCount} ∞`;
-    expect(displayText).toBe('52 ∞');
-    
-    console.log('✓ Test 11 PASSED: Counter continues from 50 → 52');
-  });
-
-  it('Test 12: Multiple TrendPrices with wiederholend thresholds', () => {
-    trendPriceSettings['BTC-USDT'] = {
-      thresholds: [{
-        id: 'btc-threshold-1',
-        threshold: '50000',
+    it('Test 1: Should NOT block first trigger for wiederholend threshold', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-001',
+        threshold: '3200',
         notifyOnIncrease: true,
         notifyOnDecrease: false,
         increaseFrequency: 'wiederholend',
-        decreaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
         alarmLevel: 'harmlos',
-        note: '',
+        note: 'Test threshold',
         isActive: true,
         triggerCount: 0
-      }]
-    };
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, harmlosConfig, 'increase');
+      expect(blocked).toBe(false);
+      console.log('✓ Test 1 PASSED: First trigger NOT blocked');
+    });
     
-    const ethThreshold = trendPriceSettings['ETH-USDT'].thresholds[0];
-    const btcThreshold = trendPriceSettings['BTC-USDT'].thresholds[0];
+    it('Test 2: Should block re-trigger when activeAlarmId is set', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-002',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test threshold',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-existing-123'
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, harmlosConfig, 'increase');
+      expect(blocked).toBe(true);
+      console.log('✓ Test 2 PASSED: Re-trigger blocked with activeAlarmId');
+    });
     
-    simulateTrigger(ethThreshold, 'increase');
-    simulateTrigger(ethThreshold, 'increase');
-    simulateTrigger(btcThreshold, 'increase');
-    simulateTrigger(btcThreshold, 'increase');
-    simulateTrigger(btcThreshold, 'increase');
-    simulateTrigger(btcThreshold, 'increase');
+    it('Test 3: Should NOT block when requiresApproval is true (even with activeAlarmId)', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-003',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'achtung',
+        note: 'Test threshold',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-existing-456'
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, achtungConfig, 'increase');
+      expect(blocked).toBe(false);
+      console.log('✓ Test 3 PASSED: Not blocked when requiresApproval=true');
+    });
     
-    expect(ethThreshold.triggerCount).toBe(2);
-    expect(btcThreshold.triggerCount).toBe(4);
+    it('Test 4: Should NOT block einmalig thresholds', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-004',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'einmalig',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test threshold',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, harmlosConfig, 'increase');
+      expect(blocked).toBe(false);
+      console.log('✓ Test 4 PASSED: Einmalig thresholds NOT blocked');
+    });
+  });
+  
+  describe('Alarm Creation and activeAlarmId Setting', () => {
     
-    const ethDisplay = `${ethThreshold.triggerCount} ∞`;
-    const btcDisplay = `${btcThreshold.triggerCount} ∞`;
-    expect(ethDisplay).toBe('2 ∞');
-    expect(btcDisplay).toBe('4 ∞');
+    it('Test 5: Should set activeAlarmId when creating alarm for wiederholend + no approval', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-005',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const { alarm, updatedThreshold } = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-001', 'increase');
+      
+      expect(updatedThreshold.activeAlarmId).toBe(alarm.id);
+      expect(updatedThreshold.triggerCount).toBe(1);
+      console.log('✓ Test 5 PASSED: activeAlarmId set correctly');
+    });
     
-    console.log('✓ Test 12 PASSED: Different TrendPrices have independent counters (ETH: 2 ∞, BTC: 4 ∞)');
+    it('Test 6: Should NOT set activeAlarmId for einmalig thresholds', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-006',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'einmalig',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const { updatedThreshold } = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-001', 'increase');
+      
+      expect(updatedThreshold.activeAlarmId).toBeUndefined();
+      console.log('✓ Test 6 PASSED: No activeAlarmId for einmalig');
+    });
+    
+    it('Test 7: Should NOT set activeAlarmId when requiresApproval is true', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-007',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'achtung',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const { updatedThreshold } = createAlarmAndSetActiveId(threshold, achtungConfig, 'pair-001', 'increase');
+      
+      expect(updatedThreshold.activeAlarmId).toBeUndefined();
+      console.log('✓ Test 7 PASSED: No activeAlarmId when requiresApproval=true');
+    });
+  });
+  
+  describe('Page Refresh Persistence', () => {
+    
+    it('Test 8: activeAlarmId should survive page refresh (JSON serialization)', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-008',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-persist-789'
+      };
+      
+      const afterRefresh = simulatePageRefresh(threshold);
+      
+      expect(afterRefresh.activeAlarmId).toBe('alarm-persist-789');
+      expect(shouldBlockReTrigger(afterRefresh, harmlosConfig, 'increase')).toBe(true);
+      console.log('✓ Test 8 PASSED: activeAlarmId survives page refresh');
+    });
+    
+    it('Test 9: Should block re-trigger after page refresh when alarm still active', () => {
+      let threshold: ThresholdConfig = {
+        id: 'th-009',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(false);
+      
+      const result = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-009', 'increase');
+      threshold = result.updatedThreshold;
+      
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(true);
+      
+      const afterRefresh = simulatePageRefresh(threshold);
+      
+      expect(shouldBlockReTrigger(afterRefresh, harmlosConfig, 'increase')).toBe(true);
+      console.log('✓ Test 9 PASSED: Block persists after page refresh');
+    });
+  });
+  
+  describe('Alarm Dismissal and Re-Triggering', () => {
+    
+    it('Test 10: Should allow re-trigger after activeAlarmId is cleared', () => {
+      let threshold: ThresholdConfig = {
+        id: 'th-010',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const { alarm, updatedThreshold } = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-010', 'increase');
+      threshold = updatedThreshold;
+      
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(true);
+      
+      threshold = clearActiveAlarmId(threshold, alarm.id);
+      
+      expect(threshold.activeAlarmId).toBeUndefined();
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(false);
+      console.log('✓ Test 10 PASSED: Re-trigger allowed after clear');
+    });
+    
+    it('Test 11: Should NOT clear activeAlarmId if alarm ID does not match', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-011',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-original-111'
+      };
+      
+      const result = clearActiveAlarmId(threshold, 'alarm-different-222');
+      
+      expect(result.activeAlarmId).toBe('alarm-original-111');
+      console.log('✓ Test 11 PASSED: Wrong ID does not clear activeAlarmId');
+    });
+    
+    it('Test 12: Full lifecycle - trigger, refresh, dismiss, re-trigger allowed', () => {
+      let threshold: ThresholdConfig = {
+        id: 'th-012',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Lifecycle test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(false);
+      
+      const { alarm, updatedThreshold } = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-012', 'increase');
+      threshold = updatedThreshold;
+      expect(threshold.activeAlarmId).toBe(alarm.id);
+      expect(threshold.triggerCount).toBe(1);
+      
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(true);
+      
+      threshold = simulatePageRefresh(threshold);
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(true);
+      
+      threshold = clearActiveAlarmId(threshold, alarm.id);
+      expect(threshold.activeAlarmId).toBeUndefined();
+      
+      expect(shouldBlockReTrigger(threshold, harmlosConfig, 'increase')).toBe(false);
+      
+      const { alarm: alarm2, updatedThreshold: threshold2 } = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-012', 'increase');
+      threshold = threshold2;
+      expect(threshold.activeAlarmId).toBe(alarm2.id);
+      expect(threshold.triggerCount).toBe(2);
+      console.log('✓ Test 12 PASSED: Full lifecycle works correctly');
+    });
+  });
+  
+  describe('Decrease Direction Tests', () => {
+    
+    it('Test 13: Should block decrease re-trigger when activeAlarmId is set', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-013',
+        threshold: '3000',
+        notifyOnIncrease: false,
+        notifyOnDecrease: true,
+        increaseFrequency: 'einmalig',
+        decreaseFrequency: 'wiederholend',
+        alarmLevel: 'harmlos',
+        note: 'Decrease test',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-decrease-123'
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, harmlosConfig, 'decrease');
+      expect(blocked).toBe(true);
+      console.log('✓ Test 13 PASSED: Decrease re-trigger blocked');
+    });
+    
+    it('Test 14: Should set activeAlarmId for decrease wiederholend', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-014',
+        threshold: '3000',
+        notifyOnIncrease: false,
+        notifyOnDecrease: true,
+        increaseFrequency: 'einmalig',
+        decreaseFrequency: 'wiederholend',
+        alarmLevel: 'harmlos',
+        note: 'Decrease test',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const { alarm, updatedThreshold } = createAlarmAndSetActiveId(threshold, harmlosConfig, 'pair-014', 'decrease');
+      
+      expect(updatedThreshold.activeAlarmId).toBe(alarm.id);
+      console.log('✓ Test 14 PASSED: activeAlarmId set for decrease');
+    });
+  });
+  
+  describe('Channel Configuration Tests', () => {
+    
+    it('Test 15: Harmlos config should have correct channels (push+email only)', () => {
+      expect(harmlosConfig.channels.push).toBe(true);
+      expect(harmlosConfig.channels.email).toBe(true);
+      expect(harmlosConfig.channels.sms).toBe(false);
+      expect(harmlosConfig.channels.webPush).toBe(false);
+      expect(harmlosConfig.channels.nativePush).toBe(false);
+      expect(harmlosConfig.requiresApproval).toBe(false);
+      expect(harmlosConfig.repeatCount).toBe(3);
+      console.log('✓ Test 15 PASSED: Harmlos channels: push=true, email=true, sms=false, webPush=false, nativePush=false');
+    });
+    
+    it('Test 16: Achtung config should have all channels enabled', () => {
+      expect(achtungConfig.channels.push).toBe(true);
+      expect(achtungConfig.channels.email).toBe(true);
+      expect(achtungConfig.channels.sms).toBe(true);
+      expect(achtungConfig.channels.webPush).toBe(true);
+      expect(achtungConfig.channels.nativePush).toBe(true);
+      expect(achtungConfig.requiresApproval).toBe(true);
+      console.log('✓ Test 16 PASSED: Achtung channels: all enabled');
+    });
+  });
+  
+  describe('Multiple Thresholds Independence', () => {
+    
+    it('Test 17: Different thresholds for same pair are independent', () => {
+      const threshold1: ThresholdConfig = {
+        id: 'th-017a',
+        threshold: '3000',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'First threshold',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const threshold2: ThresholdConfig = {
+        id: 'th-017b',
+        threshold: '3500',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Second threshold',
+        isActive: true,
+        triggerCount: 0
+      };
+      
+      const { updatedThreshold: updated1 } = createAlarmAndSetActiveId(threshold1, harmlosConfig, 'pair-017', 'increase');
+      
+      expect(updated1.activeAlarmId).toBeDefined();
+      expect(threshold2.activeAlarmId).toBeUndefined();
+      
+      expect(shouldBlockReTrigger(updated1, harmlosConfig, 'increase')).toBe(true);
+      expect(shouldBlockReTrigger(threshold2, harmlosConfig, 'increase')).toBe(false);
+      console.log('✓ Test 17 PASSED: Thresholds are independent');
+    });
+    
+    it('Test 18: Clearing one threshold does not affect another', () => {
+      let threshold1: ThresholdConfig = {
+        id: 'th-018a',
+        threshold: '3000',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'First',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-018a'
+      };
+      
+      const threshold2: ThresholdConfig = {
+        id: 'th-018b',
+        threshold: '3500',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Second',
+        isActive: true,
+        triggerCount: 1,
+        activeAlarmId: 'alarm-018b'
+      };
+      
+      threshold1 = clearActiveAlarmId(threshold1, 'alarm-018a');
+      
+      expect(threshold1.activeAlarmId).toBeUndefined();
+      expect(threshold2.activeAlarmId).toBe('alarm-018b');
+      console.log('✓ Test 18 PASSED: Clearing one does not affect other');
+    });
+  });
+  
+  describe('Edge Cases', () => {
+    
+    it('Test 19: Undefined activeAlarmId should not block', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-019',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 5,
+        activeAlarmId: undefined
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, harmlosConfig, 'increase');
+      expect(blocked).toBe(false);
+      console.log('✓ Test 19 PASSED: Undefined activeAlarmId does not block');
+    });
+    
+    it('Test 20: Empty string activeAlarmId should not block (falsy)', () => {
+      const threshold: ThresholdConfig = {
+        id: 'th-020',
+        threshold: '3200',
+        notifyOnIncrease: true,
+        notifyOnDecrease: false,
+        increaseFrequency: 'wiederholend',
+        decreaseFrequency: 'einmalig',
+        alarmLevel: 'harmlos',
+        note: 'Test',
+        isActive: true,
+        triggerCount: 5,
+        activeAlarmId: '' as any
+      };
+      
+      const blocked = shouldBlockReTrigger(threshold, harmlosConfig, 'increase');
+      expect(blocked).toBe(false);
+      console.log('✓ Test 20 PASSED: Empty string activeAlarmId does not block');
+    });
   });
 });
