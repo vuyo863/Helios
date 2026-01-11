@@ -61,6 +61,11 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **Active Repetition System**: Alarms now send actual repeated notifications (email, SMS, push) based on sequence timing. useEffect checks every second and sends notifications when timeSinceLastNotify >= sequenceMs. ActiveAlarm tracks lastNotifiedAt, sequenceMs, and channels for repetition.
 - **Infinite Approval Safety**: When repeatCount='infinite' is selected, requiresApproval is automatically forced to true to prevent endless notification spam.
 - **Cross-Device Alarm Synchronization**: Active alarms are stored in centralized backend (in-memory) and synchronized across all devices via polling. When a user approves an alarm on one device (DELETE request), all other devices see it disappear on their next poll.
+- **Wiederholend Re-Trigger Prevention (2026-01-11)**: Bei "Häufigkeit: Wiederholend" mit `requiresApproval=false`:
+  - Ein Schwellenwert kann erst WIEDER triggern, wenn der vorherige Alarmierungsdurchgang KOMPLETT abgeschlossen ist (alle Wiederholungen + Restwartezeit + Auto-Dismiss)
+  - Jeder Schwellenwert wird einzeln getrackt via `thresholdId` + `pairId` im ActiveAlarm
+  - Verschiedene Schwellenwerte für das gleiche Trading-Pair sind unabhängig voneinander
+  - Bei `requiresApproval=true` darf jederzeit neu triggern (User muss sowieso approven)
 
 ### Cross-Device Sync API
 Backend REST API endpoints for active alarm synchronization:

@@ -928,19 +928,22 @@ export default function Notifications() {
           }
         }
 
+        // WIEDERHOLEND RE-TRIGGER PREVENTION for decrease:
+        // Same logic as for increase - prevent re-triggering if active alarm exists
+        // Only block if an alarm ALREADY EXISTS (not on first trigger)
+        if (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
+          const existingAlarmForThresholdDecrease = activeAlarms.find(
+            alarm => alarm.thresholdId === threshold.id && alarm.pairId === pair.id
+          );
+          if (existingAlarmForThresholdDecrease) {
+            // Already has active alarm for this threshold, skip re-triggering until it auto-dismisses
+            console.log(`[WIEDERHOLEND] Blocking decrease re-trigger for threshold ${threshold.id} - active alarm exists`);
+            return;
+          }
+        }
+
         // Check for price decrease below threshold
         if (threshold.notifyOnDecrease && currentPrice <= thresholdValue) {
-          // WIEDERHOLEND RE-TRIGGER PREVENTION for decrease:
-          // Same logic as for increase - prevent re-triggering if active alarm exists
-          if (threshold.decreaseFrequency === 'wiederholend' && !alarmConfig.requiresApproval) {
-            const existingAlarmForThresholdDecrease = activeAlarms.find(
-              alarm => alarm.thresholdId === threshold.id && alarm.pairId === pair.id
-            );
-            if (existingAlarmForThresholdDecrease) {
-              // Already has active alarm for this threshold, skip re-triggering
-              return;
-            }
-          }
           setTriggeredThresholds(prev => new Set(prev).add(triggerKey));
           
           // IMPORTANT: Single state update to prevent race conditions
