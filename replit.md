@@ -63,7 +63,12 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **Cross-Device Alarm Synchronization**: Active alarms are stored in centralized backend (in-memory) and synchronized across all devices via polling. When a user approves an alarm on one device (DELETE request), all other devices see it disappear on their next poll.
 - **Wiederholend Re-Trigger Prevention (2026-01-11)**: Bei "Häufigkeit: Wiederholend" mit `requiresApproval=false`:
   - Ein Schwellenwert kann erst WIEDER triggern, wenn der vorherige Alarmierungsdurchgang KOMPLETT abgeschlossen ist (alle Wiederholungen + Restwartezeit + Auto-Dismiss)
-  - Jeder Schwellenwert wird einzeln getrackt via `thresholdId` + `pairId` im ActiveAlarm
+  - **Implementierung via `activeAlarmId` in ThresholdConfig (localStorage-basiert):**
+    - Bei Alarm-Erstellung: `activeAlarmId` wird im Threshold gespeichert
+    - Vor Trigger-Prüfung: Wenn `threshold.activeAlarmId` existiert → kein Re-Trigger
+    - Bei Auto-Dismiss oder manuellem "Stoppen": `activeAlarmId` wird gelöscht
+    - Überlebt Page Refresh (localStorage-persistiert)
+  - Jeder Schwellenwert wird einzeln getrackt via `threshold.id`
   - Verschiedene Schwellenwerte für das gleiche Trading-Pair sind unabhängig voneinander
   - Bei `requiresApproval=true` darf jederzeit neu triggern (User muss sowieso approven)
 
