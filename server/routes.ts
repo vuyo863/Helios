@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, insertGraphSettingsSchema, insertActiveAlarmSchema, botTypes, graphSettings } from "@shared/schema";
+import { insertBotEntrySchema, insertBotTypeSchema, insertBotTypeUpdateSchema, insertGraphSettingsSchema, insertActiveAlarmSchema, insertWatchlistSchema, insertThresholdSchema, insertAlarmLevelSchema, botTypes, graphSettings } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
 import { db } from "./db";
@@ -1835,6 +1835,245 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete alarm" });
+    }
+  });
+
+  // ============================================================================
+  // NOTIFICATION SETTINGS - Cross-Device Synchronization
+  // ============================================================================
+
+  // ===== WATCHLIST =====
+  
+  // GET all watchlist items
+  app.get("/api/notification-watchlist", async (req, res) => {
+    try {
+      const items = await storage.getAllWatchlistItems();
+      console.log(`[API] GET /api/notification-watchlist - returning ${items.length} items`);
+      res.json(items);
+    } catch (error) {
+      console.error("[API] GET /api/notification-watchlist error:", error);
+      res.status(500).json({ error: "Failed to fetch watchlist" });
+    }
+  });
+
+  // POST create watchlist item
+  app.post("/api/notification-watchlist", async (req, res) => {
+    try {
+      const validatedData = insertWatchlistSchema.parse(req.body);
+      const item = await storage.createWatchlistItem(validatedData);
+      console.log(`[API] POST /api/notification-watchlist - created: ${item.symbol}`);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid watchlist data", details: error.errors });
+      }
+      console.error("[API] POST /api/notification-watchlist error:", error);
+      res.status(500).json({ error: "Failed to create watchlist item" });
+    }
+  });
+
+  // DELETE watchlist item
+  app.delete("/api/notification-watchlist/:symbol/:marketType", async (req, res) => {
+    try {
+      const deleted = await storage.deleteWatchlistItem(req.params.symbol, req.params.marketType);
+      if (!deleted) {
+        return res.status(404).json({ error: "Watchlist item not found" });
+      }
+      console.log(`[API] DELETE /api/notification-watchlist/${req.params.symbol}/${req.params.marketType}`);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete watchlist item" });
+    }
+  });
+
+  // POST sync entire watchlist (replace all)
+  app.post("/api/notification-watchlist/sync", async (req, res) => {
+    try {
+      const items = z.array(insertWatchlistSchema).parse(req.body);
+      const result = await storage.syncWatchlist(items);
+      console.log(`[API] POST /api/notification-watchlist/sync - synced ${result.length} items`);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid watchlist data", details: error.errors });
+      }
+      console.error("[API] POST /api/notification-watchlist/sync error:", error);
+      res.status(500).json({ error: "Failed to sync watchlist" });
+    }
+  });
+
+  // ===== THRESHOLDS =====
+  
+  // GET all thresholds
+  app.get("/api/notification-thresholds", async (req, res) => {
+    try {
+      const thresholds = await storage.getAllThresholds();
+      console.log(`[API] GET /api/notification-thresholds - returning ${thresholds.length} thresholds`);
+      res.json(thresholds);
+    } catch (error) {
+      console.error("[API] GET /api/notification-thresholds error:", error);
+      res.status(500).json({ error: "Failed to fetch thresholds" });
+    }
+  });
+
+  // GET thresholds by pair ID
+  app.get("/api/notification-thresholds/pair/:pairId", async (req, res) => {
+    try {
+      const thresholds = await storage.getThresholdsByPairId(req.params.pairId);
+      res.json(thresholds);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch thresholds" });
+    }
+  });
+
+  // POST create threshold
+  app.post("/api/notification-thresholds", async (req, res) => {
+    try {
+      const validatedData = insertThresholdSchema.parse(req.body);
+      const threshold = await storage.createThreshold(validatedData);
+      console.log(`[API] POST /api/notification-thresholds - created: ${threshold.pairId}`);
+      res.status(201).json(threshold);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid threshold data", details: error.errors });
+      }
+      console.error("[API] POST /api/notification-thresholds error:", error);
+      res.status(500).json({ error: "Failed to create threshold" });
+    }
+  });
+
+  // PATCH update threshold
+  app.patch("/api/notification-thresholds/:pairId/:thresholdId", async (req, res) => {
+    try {
+      const validatedData = insertThresholdSchema.partial().parse(req.body);
+      const threshold = await storage.updateThreshold(req.params.pairId, req.params.thresholdId, validatedData);
+      if (!threshold) {
+        return res.status(404).json({ error: "Threshold not found" });
+      }
+      console.log(`[API] PATCH /api/notification-thresholds/${req.params.pairId}/${req.params.thresholdId}`);
+      res.json(threshold);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid threshold data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update threshold" });
+    }
+  });
+
+  // DELETE threshold
+  app.delete("/api/notification-thresholds/:pairId/:thresholdId", async (req, res) => {
+    try {
+      const deleted = await storage.deleteThreshold(req.params.pairId, req.params.thresholdId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Threshold not found" });
+      }
+      console.log(`[API] DELETE /api/notification-thresholds/${req.params.pairId}/${req.params.thresholdId}`);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete threshold" });
+    }
+  });
+
+  // DELETE all thresholds for a pair
+  app.delete("/api/notification-thresholds/pair/:pairId", async (req, res) => {
+    try {
+      await storage.deleteAllThresholdsByPairId(req.params.pairId);
+      console.log(`[API] DELETE /api/notification-thresholds/pair/${req.params.pairId}`);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete thresholds" });
+    }
+  });
+
+  // POST sync all thresholds (replace all)
+  app.post("/api/notification-thresholds/sync", async (req, res) => {
+    try {
+      const thresholds = z.array(insertThresholdSchema).parse(req.body);
+      const result = await storage.syncThresholds(thresholds);
+      console.log(`[API] POST /api/notification-thresholds/sync - synced ${result.length} thresholds`);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid threshold data", details: error.errors });
+      }
+      console.error("[API] POST /api/notification-thresholds/sync error:", error);
+      res.status(500).json({ error: "Failed to sync thresholds" });
+    }
+  });
+
+  // ===== ALARM LEVELS =====
+  
+  // GET all alarm level configs
+  app.get("/api/notification-alarm-levels", async (req, res) => {
+    try {
+      const levels = await storage.getAllAlarmLevels();
+      console.log(`[API] GET /api/notification-alarm-levels - returning ${levels.length} levels`);
+      res.json(levels);
+    } catch (error) {
+      console.error("[API] GET /api/notification-alarm-levels error:", error);
+      res.status(500).json({ error: "Failed to fetch alarm levels" });
+    }
+  });
+
+  // GET single alarm level config
+  app.get("/api/notification-alarm-levels/:level", async (req, res) => {
+    try {
+      const config = await storage.getAlarmLevel(req.params.level);
+      if (!config) {
+        return res.status(404).json({ error: "Alarm level not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch alarm level" });
+    }
+  });
+
+  // POST/PUT upsert alarm level config
+  app.post("/api/notification-alarm-levels", async (req, res) => {
+    try {
+      const validatedData = insertAlarmLevelSchema.parse(req.body);
+      const config = await storage.upsertAlarmLevel(validatedData);
+      console.log(`[API] POST /api/notification-alarm-levels - upserted: ${config.level}`);
+      res.json(config);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid alarm level data", details: error.errors });
+      }
+      console.error("[API] POST /api/notification-alarm-levels error:", error);
+      res.status(500).json({ error: "Failed to upsert alarm level" });
+    }
+  });
+
+  // POST sync all alarm levels
+  app.post("/api/notification-alarm-levels/sync", async (req, res) => {
+    try {
+      const configs = z.array(insertAlarmLevelSchema).parse(req.body);
+      const result = await storage.syncAlarmLevels(configs);
+      console.log(`[API] POST /api/notification-alarm-levels/sync - synced ${result.length} levels`);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid alarm level data", details: error.errors });
+      }
+      console.error("[API] POST /api/notification-alarm-levels/sync error:", error);
+      res.status(500).json({ error: "Failed to sync alarm levels" });
+    }
+  });
+
+  // GET all notification settings (combined endpoint for polling)
+  app.get("/api/notification-settings", async (req, res) => {
+    try {
+      const [watchlist, thresholds, alarmLevels, activeAlarms] = await Promise.all([
+        storage.getAllWatchlistItems(),
+        storage.getAllThresholds(),
+        storage.getAllAlarmLevels(),
+        storage.getAllActiveAlarms()
+      ]);
+      console.log(`[API] GET /api/notification-settings - watchlist: ${watchlist.length}, thresholds: ${thresholds.length}, levels: ${alarmLevels.length}, alarms: ${activeAlarms.length}`);
+      res.json({ watchlist, thresholds, alarmLevels, activeAlarms });
+    } catch (error) {
+      console.error("[API] GET /api/notification-settings error:", error);
+      res.status(500).json({ error: "Failed to fetch notification settings" });
     }
   });
 

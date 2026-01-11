@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate, type GraphSettings, type InsertGraphSettings, type ActiveAlarm, type InsertActiveAlarm } from "@shared/schema";
+import { type User, type InsertUser, type BotEntry, type InsertBotEntry, type BotType, type InsertBotType, type BotTypeUpdate, type InsertBotTypeUpdate, type GraphSettings, type InsertGraphSettings, type ActiveAlarm, type InsertActiveAlarm, type WatchlistItem, type InsertWatchlistItem, type Threshold, type InsertThreshold, type AlarmLevel as AlarmLevelRow, type InsertAlarmLevel } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -45,6 +45,27 @@ export interface IStorage {
   updateActiveAlarm(id: string, alarm: Partial<InsertActiveAlarm>): Promise<ActiveAlarm | undefined>;
   deleteActiveAlarm(id: string): Promise<boolean>;
   deleteAllActiveAlarms(): Promise<boolean>;
+  
+  // Notification Watchlist (cross-device sync)
+  getAllWatchlistItems(): Promise<WatchlistItem[]>;
+  createWatchlistItem(item: InsertWatchlistItem): Promise<WatchlistItem>;
+  deleteWatchlistItem(symbol: string, marketType: string): Promise<boolean>;
+  syncWatchlist(items: InsertWatchlistItem[]): Promise<WatchlistItem[]>;
+  
+  // Notification Thresholds (cross-device sync)
+  getAllThresholds(): Promise<Threshold[]>;
+  getThresholdsByPairId(pairId: string): Promise<Threshold[]>;
+  createThreshold(threshold: InsertThreshold): Promise<Threshold>;
+  updateThreshold(pairId: string, thresholdId: string, updateData: Partial<InsertThreshold>): Promise<Threshold | undefined>;
+  deleteThreshold(pairId: string, thresholdId: string): Promise<boolean>;
+  deleteAllThresholdsByPairId(pairId: string): Promise<boolean>;
+  syncThresholds(thresholds: InsertThreshold[]): Promise<Threshold[]>;
+  
+  // Notification Alarm Levels (cross-device sync)
+  getAllAlarmLevels(): Promise<AlarmLevelRow[]>;
+  getAlarmLevel(level: string): Promise<AlarmLevelRow | undefined>;
+  upsertAlarmLevel(config: InsertAlarmLevel): Promise<AlarmLevelRow>;
+  syncAlarmLevels(configs: InsertAlarmLevel[]): Promise<AlarmLevelRow[]>;
 }
 
 export class MemStorage implements IStorage {
