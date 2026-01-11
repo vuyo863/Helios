@@ -11,6 +11,12 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   1. **Trendpreise & Watchlist**: Search, Spot/Futures toggle, watchlist display with prices
   2. **Benachrichtigungen konfigurieren**: Threshold dialog system, dialog behavior (no auto-close, no auto-save on X/ESC), explicit "Speichern" requirement, cleanup of unsaved thresholds, draft exclusion from alerts
   3. **Aktive Alarmierungen**: Dynamic border color based on highest danger level, red blinking animation for "Sehr Gefährlich", sorting dropdown (Dringlichkeit default), scroll container with fixed height
+- **Golden State - Benachrichtigungen Konfigurieren V1.4 (2026-01-11)**: Die komplette "Benachrichtigungen konfigurieren" Section ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+  - **UI-Elemente:** Kontenkarte mit Glocken-Symbol, "Keine Benachrichtigungen konfiguriert" Leertext, "+ Benachrichtigung hinzufügen" Button
+  - **Schwellenwert-Karten:** Alarm-Level Farben, Toggle (Aktiv/Pause), Status-Anzeige (0/1, X ∞, ✓), Bearbeiten/Löschen Icons
+  - **Dialog-System:** Schwellenwert-Dialog, Alarm-Level-Dialog, Speichern-Pflicht, kein Auto-Save bei X/ESC
+  - **Häufigkeits-Optionen:** Einmalig und Wiederholend mit korrektem Verhalten
+  - **Dokumentation:** Siehe `docs/GOLDEN_STATE_einmalig_threshold_logic.md` und `docs/GOLDEN_STATE_wiederholend_threshold_logic.md`
 - **Golden State - Einmalig Threshold Logic (2026-01-11)**: Die komplette Logik für "Häufigkeit: Einmalig" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Verhalten:** Neuer Schwellenwert zeigt "0/1", Toggle = "Aktiv"
   - **Nach Trigger:** `isActive = false`, Status wechselt zu "✓" (grüner Haken), Toggle = "Pause"
@@ -20,6 +26,15 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Status-Anzeige Logik:** Prüft `isActive === false` (persistiert) ODER `triggeredThresholds` (Session)
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_einmalig_threshold_logic.md` für vollständigen Code-Snapshot
   - **Unit Tests:** 10 Tests in `server/threshold-einmalig.test.ts` (alle bestanden)
+- **Golden State - Wiederholend Threshold Logic (2026-01-11)**: Die komplette Logik für "Häufigkeit: Wiederholend" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+  - **Verhalten:** Neuer Schwellenwert zeigt "0 ∞", Toggle = "Aktiv"
+  - **Nach Trigger:** Counter wird erhöht, Status zeigt "X ∞" (X = Anzahl Trigger), Toggle bleibt "Aktiv"
+  - **Re-Trigger Prevention:** Bei `requiresApproval=false` kann erst wieder triggern nach Auto-Dismiss des vorherigen Alarms
+  - **Nach Page Refresh:** `activeAlarmId` bleibt im localStorage → verhindert Duplikat-Alarme
+  - **Nach Auto-Dismiss/Stoppen:** `activeAlarmId` wird gelöscht → Re-Trigger wieder erlaubt
+  - **Implementierung:** `activeAlarmId` Feld im ThresholdConfig, localStorage-persistiert
+  - **Dokumentation:** Siehe `docs/GOLDEN_STATE_wiederholend_threshold_logic.md` für vollständigen Code-Snapshot
+  - **Unit Tests:** 20 Tests in `server/threshold-wiederholend.test.ts` (alle bestanden)
 - **Golden State - Push Benachrichtigungen**: Der folgende Toggle und seine Funktion sind Golden State und dürfen NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Toggle:** "Push Benachrichtigungen (iOS, Android, Browser)" in den Alarm-Level Einstellungen
   - **Funktion:** Sendet Push-Nachrichten an ALLE registrierten Geräte (iPhone, iPad, Windows Chrome) via OneSignal
