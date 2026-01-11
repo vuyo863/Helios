@@ -2953,6 +2953,40 @@ export default function Notifications() {
                                     <div className="flex items-start justify-between mb-3">
                                       <h4 className="font-semibold">Schwellenwert {index + 1}</h4>
                                       <div className="flex items-center gap-2">
+                                        {/* Frequency Status Indicator */}
+                                        {(() => {
+                                          // Check if any frequency is 'wiederholend'
+                                          const isRepeating = 
+                                            (threshold.notifyOnIncrease && threshold.increaseFrequency === 'wiederholend') ||
+                                            (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend');
+                                          
+                                          if (isRepeating) {
+                                            // Wiederholend: Show infinity symbol
+                                            return (
+                                              <span className="text-sm font-medium text-muted-foreground" title="Wiederholend">
+                                                ∞
+                                              </span>
+                                            );
+                                          } else {
+                                            // Einmalig: Check if triggered
+                                            const isTriggered = Array.from(triggeredThresholds).some(key => key.includes(threshold.id));
+                                            if (isTriggered) {
+                                              // Already triggered: Green checkmark
+                                              return (
+                                                <span className="text-sm font-medium text-green-500" title="Einmalig - Ausgelöst">
+                                                  ✓
+                                                </span>
+                                              );
+                                            } else {
+                                              // Not yet triggered: 0/1
+                                              return (
+                                                <span className="text-sm font-medium text-muted-foreground" title="Einmalig - Noch nicht ausgelöst">
+                                                  0/1
+                                                </span>
+                                              );
+                                            }
+                                          }
+                                        })()}
                                         <Dialog
                                           open={editDialogOpen[threshold.id]}
                                           onOpenChange={(open) => {
