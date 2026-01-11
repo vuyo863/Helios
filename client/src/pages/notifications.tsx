@@ -67,6 +67,9 @@ interface ActiveAlarm {
   triggeredAt: Date;
   message: string;
   note: string;
+  // Threshold tracking for wiederholend re-trigger prevention
+  thresholdId?: string;
+  pairId?: string;
   // Auto-dismiss tracking
   requiresApproval: boolean;
   repetitionsCompleted?: number;
