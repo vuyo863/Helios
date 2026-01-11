@@ -3006,7 +3006,15 @@ export default function Notifications() {
                         {/* View Dialog - Eye Icon */}
                         <Dialog 
                           open={viewDialogOpen[trendPriceId]} 
-                          onOpenChange={(open) => setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }))}
+                          onOpenChange={(open) => {
+                            // IMPORTANT: When opening view dialog, clear any stale edit states
+                            // This prevents the edit dialog from auto-opening
+                            if (open) {
+                              setEditingThresholdId(null);
+                              setEditDialogOpen({});
+                            }
+                            setViewDialogOpen(prev => ({ ...prev, [trendPriceId]: open }));
+                          }}
                         >
                           <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7" data-testid={`button-view-thresholds-${trendPriceId}`}>
