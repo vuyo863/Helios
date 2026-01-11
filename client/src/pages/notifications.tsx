@@ -3765,7 +3765,7 @@ export default function Notifications() {
                                 {/* Wiederholung */}
                                 <div className="space-y-2 mb-3">
                                   <Label className="text-sm font-medium">Wiederholung</Label>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 py-0.5">
                                     <Input
                                       type="text"
                                       inputMode="numeric"
