@@ -81,6 +81,12 @@ The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind 
   - Alarm Approval System with auto-dismiss and repetition logic.
   - Cross-Device Alarm Synchronization through a backend API.
   - Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
+  - **24/7 Trendpreis-Zuverlässigkeit (3-Layer Backup System)**:
+    - **Primary**: 2-Sekunden-Intervall für Preis-Updates
+    - **Backup #1**: Exponential Backoff Retry bei API-Fehlern (max 5 Retries, bis 10s Delay)
+    - **Backup #2**: Page Visibility API triggert sofortigen Refetch wenn Tab reaktiviert wird
+    - **Backup #3**: Watchdog prüft alle 30s ob `lastPriceUpdateRef` veraltet ist und erzwingt Neustart
+    - **Sofortiger Preis-Fetch**: Neue Watchlist-Pairs triggern sofortigen Preis-Fetch statt auf Intervall zu warten
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
