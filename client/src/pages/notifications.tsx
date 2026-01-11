@@ -37,6 +37,7 @@ interface ThresholdConfig {
   alarmLevel: AlarmLevel;
   note: string;
   isActive: boolean;
+  triggerCount?: number; // Counter for wiederholend - how many times this threshold was triggered
 }
 
 interface AlarmLevelConfig {
@@ -778,6 +779,19 @@ export default function Notifications() {
               }
             }));
           }
+          
+          // If wiederholend, increment trigger counter
+          if (threshold.increaseFrequency === 'wiederholend') {
+            setTrendPriceSettings(prev => ({
+              ...prev,
+              [pair.id]: {
+                ...prev[pair.id],
+                thresholds: prev[pair.id].thresholds.map(t =>
+                  t.id === threshold.id ? { ...t, triggerCount: (t.triggerCount || 0) + 1 } : t
+                )
+              }
+            }));
+          }
 
           const message = threshold.note 
             ? `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT). Notiz: ${threshold.note}`
@@ -908,6 +922,19 @@ export default function Notifications() {
                 ...prev[pair.id],
                 thresholds: prev[pair.id].thresholds.map(t =>
                   t.id === threshold.id ? { ...t, isActive: false } : t
+                )
+              }
+            }));
+          }
+          
+          // If wiederholend, increment trigger counter
+          if (threshold.decreaseFrequency === 'wiederholend') {
+            setTrendPriceSettings(prev => ({
+              ...prev,
+              [pair.id]: {
+                ...prev[pair.id],
+                thresholds: prev[pair.id].thresholds.map(t =>
+                  t.id === threshold.id ? { ...t, triggerCount: (t.triggerCount || 0) + 1 } : t
                 )
               }
             }));
@@ -3018,10 +3045,11 @@ export default function Notifications() {
                                             (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend');
                                           
                                           if (isRepeating) {
-                                            // Wiederholend: Show infinity symbol
+                                            // Wiederholend: Show count + infinity symbol
+                                            const count = threshold.triggerCount || 0;
                                             return (
-                                              <span className="text-sm font-medium text-muted-foreground" title="Wiederholend">
-                                                ∞
+                                              <span className="text-sm font-medium text-muted-foreground" title={`Wiederholend - ${count}x ausgelöst`}>
+                                                {count} ∞
                                               </span>
                                             );
                                           } else {

@@ -10,6 +10,7 @@ interface ThresholdConfig {
   alarmLevel: string;
   note: string;
   isActive?: boolean;
+  triggerCount?: number; // Counter for wiederholend - how many times this threshold was triggered
 }
 
 interface TrendPriceSettings {
@@ -129,9 +130,10 @@ describe('Einmalig Threshold Logic', () => {
     console.log('✓ Test 5 PASSED: Full cycle complete');
   });
 
-  it('Test 6: Wiederholend threshold does NOT deactivate after trigger', () => {
+  it('Test 6: Wiederholend threshold does NOT deactivate after trigger and increments count', () => {
     const threshold = trendPriceSettings['ETH-USDT'].thresholds[0];
     threshold.increaseFrequency = 'wiederholend';
+    threshold.triggerCount = 0;
     const triggerKey = 'ETH-USDT-threshold-1-3500';
     
     triggeredThresholds.add(triggerKey);
@@ -140,9 +142,15 @@ describe('Einmalig Threshold Logic', () => {
       threshold.isActive = false;
     }
     
-    expect(threshold.isActive).toBe(true);
+    // Wiederholend increments counter instead
+    if (threshold.increaseFrequency === 'wiederholend') {
+      threshold.triggerCount = (threshold.triggerCount || 0) + 1;
+    }
     
-    console.log('✓ Test 6 PASSED: Wiederholend stays active after trigger');
+    expect(threshold.isActive).toBe(true);
+    expect(threshold.triggerCount).toBe(1);
+    
+    console.log('✓ Test 6 PASSED: Wiederholend stays active, count=1');
   });
 
   it('Test 7: Multiple thresholds - only triggered one deactivates', () => {
