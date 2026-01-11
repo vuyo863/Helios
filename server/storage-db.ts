@@ -8,6 +8,9 @@ import {
   botTypeUpdates,
   graphSettings,
   activeAlarms,
+  notificationWatchlist,
+  notificationThresholds,
+  notificationAlarmLevels,
   type User, 
   type InsertUser, 
   type BotEntry, 
@@ -19,7 +22,13 @@ import {
   type GraphSettings,
   type InsertGraphSettings,
   type ActiveAlarm,
-  type InsertActiveAlarm
+  type InsertActiveAlarm,
+  type WatchlistItem,
+  type InsertWatchlistItem,
+  type Threshold,
+  type InsertThreshold,
+  type AlarmLevel as AlarmLevelRow,
+  type InsertAlarmLevel
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -343,6 +352,226 @@ export class DbStorage implements IStorage {
       pairId: row.pairId ?? undefined,
       thresholdId: row.thresholdId ?? undefined,
     };
+  }
+
+  // ===== NOTIFICATION WATCHLIST =====
+  
+  async getAllWatchlistItems(): Promise<WatchlistItem[]> {
+    return await db.select().from(notificationWatchlist).orderBy(desc(notificationWatchlist.createdAt));
+  }
+  
+  async createWatchlistItem(item: InsertWatchlistItem): Promise<WatchlistItem> {
+    const result = await db.insert(notificationWatchlist).values({
+      symbol: item.symbol,
+      marketType: item.marketType,
+      displayName: item.displayName ?? null,
+    }).returning();
+    console.log(`[WATCHLIST] Created: ${item.symbol} (${item.marketType})`);
+    return result[0];
+  }
+  
+  async deleteWatchlistItem(symbol: string, marketType: string): Promise<boolean> {
+    const result = await db.delete(notificationWatchlist)
+      .where(and(
+        eq(notificationWatchlist.symbol, symbol),
+        eq(notificationWatchlist.marketType, marketType)
+      ))
+      .returning();
+    console.log(`[WATCHLIST] Deleted: ${symbol} (${marketType}) - ${result.length > 0 ? 'success' : 'not found'}`);
+    return result.length > 0;
+  }
+  
+  async syncWatchlist(items: InsertWatchlistItem[]): Promise<WatchlistItem[]> {
+    // Clear all and re-insert (full sync from frontend)
+    await db.delete(notificationWatchlist);
+    if (items.length === 0) return [];
+    
+    const result = await db.insert(notificationWatchlist)
+      .values(items.map(item => ({
+        symbol: item.symbol,
+        marketType: item.marketType,
+        displayName: item.displayName ?? null,
+      })))
+      .returning();
+    console.log(`[WATCHLIST] Synced ${result.length} items`);
+    return result;
+  }
+
+  // ===== NOTIFICATION THRESHOLDS =====
+  
+  async getAllThresholds(): Promise<Threshold[]> {
+    return await db.select().from(notificationThresholds).orderBy(desc(notificationThresholds.createdAt));
+  }
+  
+  async getThresholdsByPairId(pairId: string): Promise<Threshold[]> {
+    return await db.select().from(notificationThresholds)
+      .where(eq(notificationThresholds.pairId, pairId))
+      .orderBy(desc(notificationThresholds.createdAt));
+  }
+  
+  async createThreshold(threshold: InsertThreshold): Promise<Threshold> {
+    const result = await db.insert(notificationThresholds).values({
+      pairId: threshold.pairId,
+      thresholdId: threshold.thresholdId,
+      threshold: threshold.threshold,
+      notifyOnIncrease: threshold.notifyOnIncrease,
+      notifyOnDecrease: threshold.notifyOnDecrease,
+      increaseFrequency: threshold.increaseFrequency,
+      decreaseFrequency: threshold.decreaseFrequency,
+      alarmLevel: threshold.alarmLevel,
+      note: threshold.note,
+      isActive: threshold.isActive ?? true,
+      triggerCount: threshold.triggerCount ?? 0,
+      activeAlarmId: threshold.activeAlarmId ?? null,
+    }).returning();
+    console.log(`[THRESHOLDS] Created: ${threshold.pairId} - ${threshold.threshold}`);
+    return result[0];
+  }
+  
+  async updateThreshold(pairId: string, thresholdId: string, updateData: Partial<InsertThreshold>): Promise<Threshold | undefined> {
+    const dbUpdateData: Record<string, unknown> = { updatedAt: new Date() };
+    
+    if (updateData.threshold !== undefined) dbUpdateData.threshold = updateData.threshold;
+    if (updateData.notifyOnIncrease !== undefined) dbUpdateData.notifyOnIncrease = updateData.notifyOnIncrease;
+    if (updateData.notifyOnDecrease !== undefined) dbUpdateData.notifyOnDecrease = updateData.notifyOnDecrease;
+    if (updateData.increaseFrequency !== undefined) dbUpdateData.increaseFrequency = updateData.increaseFrequency;
+    if (updateData.decreaseFrequency !== undefined) dbUpdateData.decreaseFrequency = updateData.decreaseFrequency;
+    if (updateData.alarmLevel !== undefined) dbUpdateData.alarmLevel = updateData.alarmLevel;
+    if (updateData.note !== undefined) dbUpdateData.note = updateData.note;
+    if (updateData.isActive !== undefined) dbUpdateData.isActive = updateData.isActive;
+    if (updateData.triggerCount !== undefined) dbUpdateData.triggerCount = updateData.triggerCount;
+    if (updateData.activeAlarmId !== undefined) dbUpdateData.activeAlarmId = updateData.activeAlarmId;
+    
+    const result = await db.update(notificationThresholds)
+      .set(dbUpdateData)
+      .where(and(
+        eq(notificationThresholds.pairId, pairId),
+        eq(notificationThresholds.thresholdId, thresholdId)
+      ))
+      .returning();
+    
+    if (result.length > 0) {
+      console.log(`[THRESHOLDS] Updated: ${pairId} - ${thresholdId}`);
+    }
+    return result[0];
+  }
+  
+  async deleteThreshold(pairId: string, thresholdId: string): Promise<boolean> {
+    const result = await db.delete(notificationThresholds)
+      .where(and(
+        eq(notificationThresholds.pairId, pairId),
+        eq(notificationThresholds.thresholdId, thresholdId)
+      ))
+      .returning();
+    console.log(`[THRESHOLDS] Deleted: ${pairId} - ${thresholdId} - ${result.length > 0 ? 'success' : 'not found'}`);
+    return result.length > 0;
+  }
+  
+  async deleteAllThresholdsByPairId(pairId: string): Promise<boolean> {
+    const result = await db.delete(notificationThresholds)
+      .where(eq(notificationThresholds.pairId, pairId))
+      .returning();
+    console.log(`[THRESHOLDS] Deleted all for ${pairId}: ${result.length} items`);
+    return result.length > 0;
+  }
+  
+  async syncThresholds(thresholds: InsertThreshold[]): Promise<Threshold[]> {
+    // Clear all and re-insert (full sync from frontend)
+    await db.delete(notificationThresholds);
+    if (thresholds.length === 0) return [];
+    
+    const result = await db.insert(notificationThresholds)
+      .values(thresholds.map(t => ({
+        pairId: t.pairId,
+        thresholdId: t.thresholdId,
+        threshold: t.threshold,
+        notifyOnIncrease: t.notifyOnIncrease,
+        notifyOnDecrease: t.notifyOnDecrease,
+        increaseFrequency: t.increaseFrequency,
+        decreaseFrequency: t.decreaseFrequency,
+        alarmLevel: t.alarmLevel,
+        note: t.note,
+        isActive: t.isActive ?? true,
+        triggerCount: t.triggerCount ?? 0,
+        activeAlarmId: t.activeAlarmId ?? null,
+      })))
+      .returning();
+    console.log(`[THRESHOLDS] Synced ${result.length} items`);
+    return result;
+  }
+
+  // ===== NOTIFICATION ALARM LEVELS =====
+  
+  async getAllAlarmLevels(): Promise<AlarmLevelRow[]> {
+    return await db.select().from(notificationAlarmLevels);
+  }
+  
+  async getAlarmLevel(level: string): Promise<AlarmLevelRow | undefined> {
+    const result = await db.select().from(notificationAlarmLevels)
+      .where(eq(notificationAlarmLevels.level, level));
+    return result[0];
+  }
+  
+  async upsertAlarmLevel(config: InsertAlarmLevel): Promise<AlarmLevelRow> {
+    // Check if exists
+    const existing = await this.getAlarmLevel(config.level);
+    
+    if (existing) {
+      // Update
+      const result = await db.update(notificationAlarmLevels)
+        .set({
+          pushEnabled: config.pushEnabled ?? false,
+          emailEnabled: config.emailEnabled ?? false,
+          smsEnabled: config.smsEnabled ?? false,
+          webPushEnabled: config.webPushEnabled ?? false,
+          nativePushEnabled: config.nativePushEnabled ?? false,
+          requiresApproval: config.requiresApproval ?? false,
+          repeatCount: config.repeatCount ?? '1',
+          sequenceHours: config.sequenceHours ?? 0,
+          sequenceMinutes: config.sequenceMinutes ?? 0,
+          sequenceSeconds: config.sequenceSeconds ?? 0,
+          restwartezeitHours: config.restwartezeitHours ?? 0,
+          restwartezeitMinutes: config.restwartezeitMinutes ?? 0,
+          restwartezeitSeconds: config.restwartezeitSeconds ?? 0,
+          updatedAt: new Date(),
+        })
+        .where(eq(notificationAlarmLevels.level, config.level))
+        .returning();
+      console.log(`[ALARM-LEVELS] Updated: ${config.level}`);
+      return result[0];
+    } else {
+      // Insert
+      const result = await db.insert(notificationAlarmLevels)
+        .values({
+          level: config.level,
+          pushEnabled: config.pushEnabled ?? false,
+          emailEnabled: config.emailEnabled ?? false,
+          smsEnabled: config.smsEnabled ?? false,
+          webPushEnabled: config.webPushEnabled ?? false,
+          nativePushEnabled: config.nativePushEnabled ?? false,
+          requiresApproval: config.requiresApproval ?? false,
+          repeatCount: config.repeatCount ?? '1',
+          sequenceHours: config.sequenceHours ?? 0,
+          sequenceMinutes: config.sequenceMinutes ?? 0,
+          sequenceSeconds: config.sequenceSeconds ?? 0,
+          restwartezeitHours: config.restwartezeitHours ?? 0,
+          restwartezeitMinutes: config.restwartezeitMinutes ?? 0,
+          restwartezeitSeconds: config.restwartezeitSeconds ?? 0,
+        })
+        .returning();
+      console.log(`[ALARM-LEVELS] Created: ${config.level}`);
+      return result[0];
+    }
+  }
+  
+  async syncAlarmLevels(configs: InsertAlarmLevel[]): Promise<AlarmLevelRow[]> {
+    const results: AlarmLevelRow[] = [];
+    for (const config of configs) {
+      const result = await this.upsertAlarmLevel(config);
+      results.push(result);
+    }
+    console.log(`[ALARM-LEVELS] Synced ${results.length} levels`);
+    return results;
   }
 }
 

@@ -292,3 +292,100 @@ export const insertActiveAlarmSchema = activeAlarmSchema.omit({ id: true }).exte
 
 export type ActiveAlarm = z.infer<typeof activeAlarmSchema>;
 export type InsertActiveAlarm = z.infer<typeof insertActiveAlarmSchema>;
+
+// ===== NOTIFICATION SETTINGS (for cross-device synchronization) =====
+
+// Watchlist - which trading pairs are being watched
+export const notificationWatchlist = pgTable("notification_watchlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  symbol: text("symbol").notNull(), // e.g. "BTCUSDT"
+  marketType: text("market_type").notNull(), // "spot" or "futures"
+  displayName: text("display_name"), // e.g. "BTC/USDT"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWatchlistSchema = z.object({
+  symbol: z.string(),
+  marketType: z.enum(['spot', 'futures']),
+  displayName: z.string().optional(),
+});
+
+export type InsertWatchlistItem = z.infer<typeof insertWatchlistSchema>;
+export type WatchlistItem = typeof notificationWatchlist.$inferSelect;
+
+// Threshold Settings - per trading pair thresholds
+export const notificationThresholds = pgTable("notification_thresholds", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pairId: text("pair_id").notNull(), // e.g. "BTCUSDT_spot"
+  thresholdId: text("threshold_id").notNull(), // unique ID within the pair
+  threshold: text("threshold").notNull(), // the price value
+  notifyOnIncrease: boolean("notify_on_increase").notNull(),
+  notifyOnDecrease: boolean("notify_on_decrease").notNull(),
+  increaseFrequency: text("increase_frequency").notNull(), // 'einmalig' | 'wiederholend'
+  decreaseFrequency: text("decrease_frequency").notNull(), // 'einmalig' | 'wiederholend'
+  alarmLevel: text("alarm_level").notNull(), // 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich'
+  note: text("note").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  triggerCount: integer("trigger_count").default(0),
+  activeAlarmId: text("active_alarm_id"), // for wiederholend re-trigger prevention
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertThresholdSchema = z.object({
+  pairId: z.string(),
+  thresholdId: z.string(),
+  threshold: z.string(),
+  notifyOnIncrease: z.boolean(),
+  notifyOnDecrease: z.boolean(),
+  increaseFrequency: z.enum(['einmalig', 'wiederholend']),
+  decreaseFrequency: z.enum(['einmalig', 'wiederholend']),
+  alarmLevel: z.enum(['harmlos', 'achtung', 'gefährlich', 'sehr_gefährlich']),
+  note: z.string(),
+  isActive: z.boolean().default(true),
+  triggerCount: z.number().default(0),
+  activeAlarmId: z.string().optional(),
+});
+
+export type InsertThreshold = z.infer<typeof insertThresholdSchema>;
+export type Threshold = typeof notificationThresholds.$inferSelect;
+
+// Alarm Level Configs - settings for each alarm level
+export const notificationAlarmLevels = pgTable("notification_alarm_levels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  level: text("level").notNull().unique(), // 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich'
+  pushEnabled: boolean("push_enabled").notNull().default(false),
+  emailEnabled: boolean("email_enabled").notNull().default(false),
+  smsEnabled: boolean("sms_enabled").notNull().default(false),
+  webPushEnabled: boolean("web_push_enabled").notNull().default(false),
+  nativePushEnabled: boolean("native_push_enabled").notNull().default(false),
+  requiresApproval: boolean("requires_approval").notNull().default(false),
+  repeatCount: text("repeat_count").notNull().default('1'), // number or 'infinite'
+  sequenceHours: integer("sequence_hours").notNull().default(0),
+  sequenceMinutes: integer("sequence_minutes").notNull().default(0),
+  sequenceSeconds: integer("sequence_seconds").notNull().default(0),
+  restwartezeitHours: integer("restwartezeit_hours").notNull().default(0),
+  restwartezeitMinutes: integer("restwartezeit_minutes").notNull().default(0),
+  restwartezeitSeconds: integer("restwartezeit_seconds").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAlarmLevelSchema = z.object({
+  level: z.enum(['harmlos', 'achtung', 'gefährlich', 'sehr_gefährlich']),
+  pushEnabled: z.boolean().default(false),
+  emailEnabled: z.boolean().default(false),
+  smsEnabled: z.boolean().default(false),
+  webPushEnabled: z.boolean().default(false),
+  nativePushEnabled: z.boolean().default(false),
+  requiresApproval: z.boolean().default(false),
+  repeatCount: z.string().default('1'),
+  sequenceHours: z.number().default(0),
+  sequenceMinutes: z.number().default(0),
+  sequenceSeconds: z.number().default(0),
+  restwartezeitHours: z.number().default(0),
+  restwartezeitMinutes: z.number().default(0),
+  restwartezeitSeconds: z.number().default(0),
+});
+
+export type InsertAlarmLevel = z.infer<typeof insertAlarmLevelSchema>;
+export type AlarmLevel = typeof notificationAlarmLevels.$inferSelect;
