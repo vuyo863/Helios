@@ -3071,8 +3071,12 @@ export default function Notifications() {
                                             );
                                           } else {
                                             // Einmalig: Check if triggered
-                                            const isTriggered = Array.from(triggeredThresholds).some(key => key.includes(threshold.id));
-                                            if (isTriggered) {
+                                            // IMPORTANT: Use isActive===false as primary indicator (persists in localStorage)
+                                            // triggeredThresholds is only for current session (not persisted)
+                                            const wasTriggeredAndDeactivated = threshold.isActive === false;
+                                            const isTriggeredInSession = Array.from(triggeredThresholds).some(key => key.includes(threshold.id));
+                                            
+                                            if (wasTriggeredAndDeactivated || isTriggeredInSession) {
                                               // Already triggered: Green checkmark
                                               return (
                                                 <span className="text-sm font-medium text-green-500" title="Einmalig - Ausgelöst">
