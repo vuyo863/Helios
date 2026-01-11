@@ -731,6 +731,8 @@ export default function Notifications() {
 
   // Track which threshold is currently being edited (for excluding from alerts)
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
+  // Ref to track editing state for use in polling (avoids stale closure)
+  const editingThresholdRef = useRef<{ pairId: string | null; thresholdId: string | null }>({ pairId: null, thresholdId: null });
   // Track if we're creating a NEW threshold (vs editing existing)
   // This is used to exclude incomplete new thresholds from hasAnyThresholds check
   const [isCreatingNewThreshold, setIsCreatingNewThreshold] = useState(false);
@@ -1438,6 +1440,8 @@ export default function Notifications() {
           if (backendThresholds && Array.isArray(backendThresholds)) {
             setTrendPriceSettings(prev => {
               const newSettings: Record<string, TrendPriceSettings> = {};
+              const editingRef = editingThresholdRef.current;
+              
               backendThresholds.forEach((t: { 
                 pairId: string; 
                 thresholdId: string; 
@@ -1469,6 +1473,26 @@ export default function Notifications() {
                   activeAlarmId: t.activeAlarmId || undefined
                 });
               });
+              
+              // IMPORTANT: Preserve local thresholds that are currently being edited (not yet saved to backend)
+              // This prevents the polling from deleting a new threshold while user is in the dialog
+              if (editingRef.pairId && editingRef.thresholdId) {
+                const localPairSettings = prev[editingRef.pairId];
+                const localEditingThreshold = localPairSettings?.thresholds.find(t => t.id === editingRef.thresholdId);
+                
+                // Check if this threshold exists in backend data
+                const existsInBackend = newSettings[editingRef.pairId]?.thresholds.some(t => t.id === editingRef.thresholdId);
+                
+                // If threshold is being edited locally but not in backend, preserve it
+                if (localEditingThreshold && !existsInBackend) {
+                  if (!newSettings[editingRef.pairId]) {
+                    newSettings[editingRef.pairId] = { thresholds: [] };
+                  }
+                  newSettings[editingRef.pairId].thresholds.push(localEditingThreshold);
+                  console.log(`[NOTIFICATION-POLLING] Preserved locally editing threshold: ${editingRef.thresholdId}`);
+                }
+              }
+              
               const prevStr = JSON.stringify(prev);
               const newStr = JSON.stringify(newSettings);
               if (prevStr !== newStr) {
@@ -1936,6 +1960,12 @@ export default function Notifications() {
 
     if (!currentSettings) return;
 
+    // Clear editing ref if we're deleting the currently edited threshold
+    if (editingThresholdRef.current.thresholdId === thresholdId) {
+      editingThresholdRef.current = { pairId: null, thresholdId: null };
+      setEditingThresholdId(null);
+    }
+
     // Lösche den Schwellenwert
     const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
 
@@ -1967,6 +1997,12 @@ export default function Notifications() {
   const deleteAllThresholdsForPair = (trendPriceId: string) => {
     const currentSettings = trendPriceSettings[trendPriceId];
     if (!currentSettings) return;
+
+    // Clear editing ref if we're deleting thresholds from the currently edited pair
+    if (editingThresholdRef.current.pairId === trendPriceId) {
+      editingThresholdRef.current = { pairId: null, thresholdId: null };
+      setEditingThresholdId(null);
+    }
 
     const thresholdCount = currentSettings.thresholds.filter(t => 
       t.threshold && 
@@ -2920,6 +2956,7 @@ export default function Notifications() {
                                           }
                                           isSavingThresholdRef.current = false;
                                           setEditingThresholdId(null);
+                                          editingThresholdRef.current = { pairId: null, thresholdId: null };
                                           setIsCreatingNewThreshold(false);
                                         }
                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: open }));
@@ -2966,6 +3003,7 @@ export default function Notifications() {
 
                                             // Set editing threshold and open dialog
                                             setEditingThresholdId(newThreshold.id);
+                                            editingThresholdRef.current = { pairId: trendPriceId, thresholdId: newThreshold.id };
                                             setIsCreatingNewThreshold(true);
                                             setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: true, [newThreshold.id]: true }));
                                           }}
@@ -3132,6 +3170,7 @@ export default function Notifications() {
                                                         }));
                                                         setEditDialogOpen(prev => ({ ...prev, [`new-${trendPriceId}`]: false }));
                                                         setEditingThresholdId(null);
+                                                        editingThresholdRef.current = { pairId: null, thresholdId: null };
                                                       }}
                                                     >
                                                       Abbrechen
@@ -3168,6 +3207,7 @@ export default function Notifications() {
                                                           ...(thresholdIdToClose ? { [thresholdIdToClose]: false } : {})
                                                         }));
                                                         setEditingThresholdId(null);
+                                                        editingThresholdRef.current = { pairId: null, thresholdId: null };
                                                         setIsCreatingNewThreshold(false);
                                                         toast({
                                                           title: "Gespeichert",
@@ -3270,6 +3310,7 @@ export default function Notifications() {
                                       }
                                       isSavingThresholdRef.current = false;
                                       setEditingThresholdId(null);
+                                      editingThresholdRef.current = { pairId: null, thresholdId: null };
                                       setIsCreatingNewThreshold(false);
                                     }
                                     setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: open }));
@@ -3316,6 +3357,7 @@ export default function Notifications() {
 
                                         // Set editing threshold and open dialog
                                         setEditingThresholdId(newThreshold.id);
+                                        editingThresholdRef.current = { pairId: trendPriceId, thresholdId: newThreshold.id };
                                         setIsCreatingNewThreshold(true);
                                         setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: true, [newThreshold.id]: true }));
                                       }}
@@ -3468,6 +3510,7 @@ export default function Notifications() {
                                                   saveSettingsToStorage();
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
+                                                  editingThresholdRef.current = { pairId: null, thresholdId: null };
                                                   setIsCreatingNewThreshold(false);
                                                   toast({
                                                     title: "Gespeichert",
@@ -3561,6 +3604,7 @@ export default function Notifications() {
                             // This prevents the edit dialog from auto-opening
                             if (open) {
                               setEditingThresholdId(null);
+                              editingThresholdRef.current = { pairId: null, thresholdId: null };
                               setIsCreatingNewThreshold(false);
                               // Note: Don't clear editDialogOpen entirely - just reset editing state
                             }
@@ -3631,8 +3675,10 @@ export default function Notifications() {
                                             setEditDialogOpen(prev => ({ ...prev, [threshold.id]: open }));
                                             if (open) {
                                               setEditingThresholdId(threshold.id);
+                                              editingThresholdRef.current = { pairId: trendPriceId, thresholdId: threshold.id };
                                             } else {
                                               setEditingThresholdId(null);
+                                              editingThresholdRef.current = { pairId: null, thresholdId: null };
                                             }
                                           }}
                                         >
