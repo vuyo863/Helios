@@ -621,25 +621,47 @@ export default function Notifications() {
       const data = await response.json();
 
       // CoinGecko liefert alle Derivatives - wir filtern auf unsere Symbole
+      // Bevorzuge Binance (Futures) als Datenquelle für beste Qualität
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         
         symbols.forEach(symbol => {
-          // Finde passenden Ticker in CoinGecko Daten (Symbol ohne USDT suffix suchen)
-          const baseSymbol = symbol.replace('USDT', '');
-          const ticker = data.find((t: any) => 
-            t.symbol?.toUpperCase().includes(baseSymbol) && 
-            t.symbol?.toUpperCase().includes('USDT') &&
+          // Zuerst exaktes Symbol-Match bei Binance (Futures) suchen
+          let ticker = data.find((t: any) => 
+            t.symbol?.toUpperCase() === symbol.toUpperCase() &&
+            t.market?.includes('Binance') &&
             t.contract_type === 'perpetual'
           );
+          
+          // Fallback: Exaktes Symbol-Match bei jeder Börse
+          if (!ticker) {
+            ticker = data.find((t: any) => 
+              t.symbol?.toUpperCase() === symbol.toUpperCase() &&
+              t.contract_type === 'perpetual'
+            );
+          }
+          
+          // Fallback 2: Symbol mit Slash (ETH/USDT) bei Binance
+          if (!ticker) {
+            const slashSymbol = symbol.replace('USDT', '/USDT');
+            ticker = data.find((t: any) => 
+              t.symbol?.toUpperCase() === slashSymbol.toUpperCase() &&
+              t.contract_type === 'perpetual'
+            );
+          }
 
           if (ticker) {
-            const index = updated.findIndex(p => 
-              p.symbol === symbol && p.marketType === 'futures'
-            );
+            // Suche in availableTradingPairs nach dem Futures-Pair
+            const index = updated.findIndex(p => {
+              // Match by symbol OR by ID containing the symbol
+              const symbolMatch = p.symbol === symbol;
+              const idMatch = p.id.includes(symbol) || p.id.includes(symbol + '-PERP');
+              return (symbolMatch || idMatch) && p.marketType === 'futures';
+            });
 
             if (index !== -1) {
               const price = parseFloat(ticker.price);
+              console.log(`[TRENDPREIS-24/7] CoinGecko matched ${symbol} -> ${ticker.market}: $${price}`);
               updated[index] = {
                 ...updated[index],
                 price: price.toLocaleString('de-DE', {
@@ -650,7 +672,11 @@ export default function Notifications() {
                 lastUpdate: new Date(),
                 marketType: 'futures' as const
               };
+            } else {
+              console.log(`[TRENDPREIS-24/7] CoinGecko: No index found for ${symbol} (futures)`);
             }
+          } else {
+            console.log(`[TRENDPREIS-24/7] CoinGecko: No ticker found for ${symbol}`);
           }
         });
         

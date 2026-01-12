@@ -1,0 +1,43 @@
+notifications.tsx:614 
+ 
+ GET https://api.coingecko.com/api/v3/derivatives net::ERR_CONNECTION_CLOSED
+notifications.tsx:665 
+ [TRENDPREIS-24/7] CoinGecko Fallback Error: TypeError: Failed to fetch
+    at fetchFuturesPricesFromCoinGecko (notifications.tsx:614:30)
+    at performFetch (notifications.tsx:792:11)
+    at notifications.tsx:799:5
+notifications.tsx:614 
+ 
+ GET https://api.coingecko.com/api/v3/derivatives net::ERR_CONNECTION_CLOSED
+notifications.tsx:665 
+ [TRENDPREIS-24/7] CoinGecko Fallback Error: TypeError: Failed to fetch
+    at fetchFuturesPricesFromCoinGecko (notifications.tsx:614:30)
+    at performFetch (notifications.tsx:792:11)
+notifications.tsx:614 
+ 
+ GET https://api.coingecko.com/api/v3/derivatives net::ERR_CONNECTION_CLOSED
+notifications.tsx:665 
+ [TRENDPREIS-24/7] CoinGecko Fallback Error: TypeError: Failed to fetch
+    at fetchFuturesPricesFromCoinGecko (notifications.tsx:614:30)
+    at performFetch (notifications.tsx:792:11)
+notifications.tsx:614 
+ 
+ GET https://api.coingecko.com/api/v3/derivatives net::ERR_CONNECTION_CLOSED
+notifications.tsx:665 
+ [TRENDPREIS-24/7] CoinGecko Fallback Error: TypeError: Failed to fetch
+    at fetchFuturesPricesFromCoinGecko (notifications.tsx:614:30)
+    at performFetch (notifications.tsx:792:11)
+notifications.tsx:614 
+ 
+ GET https://api.coingecko.com/api/v3/derivatives net::ERR_CONNECTION_CLOSED
+notifications.tsx:665 
+ [TRENDPREIS-24/7] CoinGecko Fallback Error: TypeError: Failed to fetch
+    at fetchFuturesPricesFromCoinGecko (notifications.tsx:614:30)
+    at performFetch (notifications.tsx:792:11)
+notifications.tsx:1599 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:877 
+ [TRENDPREIS-24/7] WATCHDOG: Preise seit 30s nicht aktualisiert - Neustart!
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+6
+notifications.tsx:662 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
