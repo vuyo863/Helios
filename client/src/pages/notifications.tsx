@@ -446,7 +446,14 @@ export default function Notifications() {
           // Trigger immediate price fetch for new pairs (async, don't block state update)
           setTimeout(() => {
             if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-            if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+            // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+            if (futuresSymbols.length > 0) {
+              if (isFuturesBlocked) {
+                fetchFuturesPricesFromCoinGecko(futuresSymbols);
+              } else {
+                fetchFuturesPrices(futuresSymbols);
+              }
+            }
           }, 100);
         }
         
@@ -597,6 +604,69 @@ export default function Notifications() {
     }
   };
 
+  // CoinGecko Fallback für Futures-Preise (wenn Binance Futures geo-blocked ist)
+  // CoinGecko ist ein Datenaggregator ohne Geo-Beschränkungen
+  const fetchFuturesPricesFromCoinGecko = async (symbols: string[]): Promise<boolean> => {
+    if (symbols.length === 0) return true;
+
+    try {
+      console.log('[TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...');
+      const response = await fetch('https://api.coingecko.com/api/v3/derivatives');
+
+      if (!response.ok) {
+        console.error('[TRENDPREIS-24/7] CoinGecko API Fehler:', response.status);
+        return false;
+      }
+
+      const data = await response.json();
+
+      // CoinGecko liefert alle Derivatives - wir filtern auf unsere Symbole
+      setAvailableTradingPairs(prev => {
+        const updated = [...prev];
+        
+        symbols.forEach(symbol => {
+          // Finde passenden Ticker in CoinGecko Daten (Symbol ohne USDT suffix suchen)
+          const baseSymbol = symbol.replace('USDT', '');
+          const ticker = data.find((t: any) => 
+            t.symbol?.toUpperCase().includes(baseSymbol) && 
+            t.symbol?.toUpperCase().includes('USDT') &&
+            t.contract_type === 'perpetual'
+          );
+
+          if (ticker) {
+            const index = updated.findIndex(p => 
+              p.symbol === symbol && p.marketType === 'futures'
+            );
+
+            if (index !== -1) {
+              const price = parseFloat(ticker.price);
+              updated[index] = {
+                ...updated[index],
+                price: price.toLocaleString('de-DE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 8,
+                }),
+                priceChangePercent24h: ticker.price_percentage_change_24h?.toFixed(2) || '0.00',
+                lastUpdate: new Date(),
+                marketType: 'futures' as const
+              };
+            }
+          }
+        });
+        
+        return updated;
+      });
+
+      // SUCCESS: Update timestamp
+      lastPriceUpdateRef.current = new Date();
+      console.log('[TRENDPREIS-24/7] CoinGecko Futures prices updated successfully');
+      return true;
+    } catch (error) {
+      console.error('[TRENDPREIS-24/7] CoinGecko Fallback Error:', error);
+      return false;
+    }
+  };
+
   // Funktion zum Abrufen der Preise für Spot-Vorschläge (Suchergebnisse)
   const fetchSuggestionSpotPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
@@ -716,7 +786,14 @@ export default function Notifications() {
     // Initial fetch IMMEDIATELY
     const performFetch = () => {
       if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-      if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+      // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+      if (futuresSymbols.length > 0) {
+        if (isFuturesBlocked) {
+          fetchFuturesPricesFromCoinGecko(futuresSymbols);
+        } else {
+          fetchFuturesPrices(futuresSymbols);
+        }
+      }
     };
 
     performFetch(); // First immediate fetch
@@ -754,7 +831,14 @@ export default function Notifications() {
         
         // Immediate fetch on tab reactivation
         if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-        if (futuresSymbols.length > 0) fetchFuturesPrices(futuresSymbols);
+        // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+        if (futuresSymbols.length > 0) {
+          if (isFuturesBlocked) {
+            fetchFuturesPricesFromCoinGecko(futuresSymbols);
+          } else {
+            fetchFuturesPrices(futuresSymbols);
+          }
+        }
       }
     };
 
@@ -785,11 +869,6 @@ export default function Notifications() {
         }
       });
       
-      // Skip if only futures and geo-blocked - nichts mehr zu tun
-      if (spotSymbols.length === 0 && futuresSymbols.length > 0 && isFuturesBlocked) {
-        return; // Verhindert Log-Spam bei geo-blocked Futures-only Watchlist
-      }
-      
       const now = new Date();
       const lastUpdate = lastPriceUpdateRef.current;
       const diffSeconds = (now.getTime() - lastUpdate.getTime()) / 1000;
@@ -799,14 +878,28 @@ export default function Notifications() {
         
         // Force refetch
         if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-        if (futuresSymbols.length > 0 && !isFuturesBlocked) fetchFuturesPrices(futuresSymbols);
+        // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+        if (futuresSymbols.length > 0) {
+          if (isFuturesBlocked) {
+            fetchFuturesPricesFromCoinGecko(futuresSymbols);
+          } else {
+            fetchFuturesPrices(futuresSymbols);
+          }
+        }
         
         // Also try to restart the main interval if it died
         if (!priceUpdateIntervalRef.current) {
           console.warn('[TRENDPREIS-24/7] WATCHDOG: Interval war tot - wird neu gestartet');
           const performFetch = () => {
             if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-            if (futuresSymbols.length > 0 && !isFuturesBlocked) fetchFuturesPrices(futuresSymbols);
+            // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+            if (futuresSymbols.length > 0) {
+              if (isFuturesBlocked) {
+                fetchFuturesPricesFromCoinGecko(futuresSymbols);
+              } else {
+                fetchFuturesPrices(futuresSymbols);
+              }
+            }
           };
           priceUpdateIntervalRef.current = setInterval(performFetch, 2000);
         }
