@@ -446,10 +446,10 @@ export default function Notifications() {
           // Trigger immediate price fetch for new pairs (async, don't block state update)
           setTimeout(() => {
             if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-            // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+            // Futures: Use OKX Fallback if Binance is geo-blocked
             if (futuresSymbols.length > 0) {
               if (isFuturesBlocked) {
-                fetchFuturesPricesFromCoinGecko(futuresSymbols);
+                fetchFuturesPricesFromOKX(futuresSymbols);
               } else {
                 fetchFuturesPrices(futuresSymbols);
               }
@@ -604,92 +604,58 @@ export default function Notifications() {
     }
   };
 
-  // CoinGecko Fallback für Futures-Preise (wenn Binance Futures geo-blocked ist)
-  // CoinGecko ist ein Datenaggregator ohne Geo-Beschränkungen
-  const fetchFuturesPricesFromCoinGecko = async (symbols: string[]): Promise<boolean> => {
+  // OKX Futures API für genaue Preise (ersetzt CoinGecko)
+  // OKX Preise sind sehr nah an Binance (~$3 Unterschied statt $10 bei CoinGecko)
+  const fetchFuturesPricesFromOKX = async (symbols: string[]): Promise<boolean> => {
     if (symbols.length === 0) return true;
 
     try {
-      console.log('[TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...');
-      // Nutze Backend-Proxy statt direkt CoinGecko (vermeidet CORS und Rate Limits)
-      const response = await fetch('/api/coingecko/derivatives');
+      console.log('[TRENDPREIS-24/7] Using OKX Futures API for accurate prices...');
+      const symbolsParam = symbols.join(',');
+      const response = await fetch(`/api/okx/futures?symbols=${symbolsParam}`);
 
       if (!response.ok) {
-        console.error('[TRENDPREIS-24/7] CoinGecko API Fehler:', response.status);
+        console.error('[TRENDPREIS-24/7] OKX API Fehler:', response.status);
         return false;
       }
 
       const data = await response.json();
 
-      // CoinGecko liefert alle Derivatives - wir filtern auf unsere Symbole
-      // Bevorzuge Binance (Futures) als Datenquelle für beste Qualität
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         
-        symbols.forEach(symbol => {
-          // Zuerst exaktes Symbol-Match bei Binance (Futures) suchen
-          let ticker = data.find((t: any) => 
-            t.symbol?.toUpperCase() === symbol.toUpperCase() &&
-            t.market?.includes('Binance') &&
-            t.contract_type === 'perpetual'
-          );
-          
-          // Fallback: Exaktes Symbol-Match bei jeder Börse
-          if (!ticker) {
-            ticker = data.find((t: any) => 
-              t.symbol?.toUpperCase() === symbol.toUpperCase() &&
-              t.contract_type === 'perpetual'
-            );
-          }
-          
-          // Fallback 2: Symbol mit Slash (ETH/USDT) bei Binance
-          if (!ticker) {
-            const slashSymbol = symbol.replace('USDT', '/USDT');
-            ticker = data.find((t: any) => 
-              t.symbol?.toUpperCase() === slashSymbol.toUpperCase() &&
-              t.contract_type === 'perpetual'
-            );
-          }
+        data.forEach((ticker: any) => {
+          const symbol = ticker.symbol;
+          const index = updated.findIndex(p => {
+            const symbolMatch = p.symbol === symbol;
+            const idMatch = p.id.includes(symbol) || p.id.includes(symbol + '-PERP');
+            return (symbolMatch || idMatch) && p.marketType === 'futures';
+          });
 
-          if (ticker) {
-            // Suche in availableTradingPairs nach dem Futures-Pair
-            const index = updated.findIndex(p => {
-              // Match by symbol OR by ID containing the symbol
-              const symbolMatch = p.symbol === symbol;
-              const idMatch = p.id.includes(symbol) || p.id.includes(symbol + '-PERP');
-              return (symbolMatch || idMatch) && p.marketType === 'futures';
-            });
-
-            if (index !== -1) {
-              const price = parseFloat(ticker.price);
-              console.log(`[TRENDPREIS-24/7] CoinGecko matched ${symbol} -> ${ticker.market}: $${price}`);
-              updated[index] = {
-                ...updated[index],
-                price: price.toLocaleString('de-DE', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 8,
-                }),
-                priceChangePercent24h: ticker.price_percentage_change_24h?.toFixed(2) || '0.00',
-                lastUpdate: new Date(),
-                marketType: 'futures' as const
-              };
-            } else {
-              console.log(`[TRENDPREIS-24/7] CoinGecko: No index found for ${symbol} (futures)`);
-            }
-          } else {
-            console.log(`[TRENDPREIS-24/7] CoinGecko: No ticker found for ${symbol}`);
+          if (index !== -1) {
+            const price = parseFloat(ticker.lastPrice);
+            console.log(`[TRENDPREIS-24/7] OKX ${symbol}: $${price} (${ticker.priceChangePercent}%)`);
+            updated[index] = {
+              ...updated[index],
+              price: price.toLocaleString('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8,
+              }),
+              priceChangePercent24h: ticker.priceChangePercent || '0.00',
+              lastUpdate: new Date(),
+              marketType: 'futures' as const
+            };
           }
         });
         
         return updated;
       });
 
-      // SUCCESS: Update timestamp
       lastPriceUpdateRef.current = new Date();
-      console.log('[TRENDPREIS-24/7] CoinGecko Futures prices updated successfully');
+      console.log('[TRENDPREIS-24/7] OKX Futures prices updated successfully');
       return true;
     } catch (error) {
-      console.error('[TRENDPREIS-24/7] CoinGecko Fallback Error:', error);
+      console.error('[TRENDPREIS-24/7] OKX Futures Error:', error);
       return false;
     }
   };
@@ -813,10 +779,10 @@ export default function Notifications() {
     // Initial fetch IMMEDIATELY
     const performFetch = () => {
       if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-      // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+      // Futures: Use OKX Fallback if Binance is geo-blocked
       if (futuresSymbols.length > 0) {
         if (isFuturesBlocked) {
-          fetchFuturesPricesFromCoinGecko(futuresSymbols);
+          fetchFuturesPricesFromOKX(futuresSymbols);
         } else {
           fetchFuturesPrices(futuresSymbols);
         }
@@ -858,10 +824,10 @@ export default function Notifications() {
         
         // Immediate fetch on tab reactivation
         if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-        // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+        // Futures: Use OKX Fallback if Binance is geo-blocked
         if (futuresSymbols.length > 0) {
           if (isFuturesBlocked) {
-            fetchFuturesPricesFromCoinGecko(futuresSymbols);
+            fetchFuturesPricesFromOKX(futuresSymbols);
           } else {
             fetchFuturesPrices(futuresSymbols);
           }
@@ -905,10 +871,10 @@ export default function Notifications() {
         
         // Force refetch
         if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-        // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+        // Futures: Use OKX Fallback if Binance is geo-blocked
         if (futuresSymbols.length > 0) {
           if (isFuturesBlocked) {
-            fetchFuturesPricesFromCoinGecko(futuresSymbols);
+            fetchFuturesPricesFromOKX(futuresSymbols);
           } else {
             fetchFuturesPrices(futuresSymbols);
           }
@@ -919,10 +885,10 @@ export default function Notifications() {
           console.warn('[TRENDPREIS-24/7] WATCHDOG: Interval war tot - wird neu gestartet');
           const performFetch = () => {
             if (spotSymbols.length > 0) fetchSpotPrices(spotSymbols);
-            // Futures: Use CoinGecko Fallback if Binance is geo-blocked
+            // Futures: Use OKX Fallback if Binance is geo-blocked
             if (futuresSymbols.length > 0) {
               if (isFuturesBlocked) {
-                fetchFuturesPricesFromCoinGecko(futuresSymbols);
+                fetchFuturesPricesFromOKX(futuresSymbols);
               } else {
                 fetchFuturesPrices(futuresSymbols);
               }
@@ -2428,7 +2394,7 @@ export default function Notifications() {
   };
 
   // Get ONLY live price from availableTradingPairs (updated every 2 seconds)
-  // Note: CoinGecko Fallback now provides Futures prices even when Binance is geo-blocked
+  // Note: OKX Fallback now provides accurate Futures prices when Binance is geo-blocked
   const getLivePrice = (id: string): string => {
     const pair = availableTradingPairs.find(tp => tp.id === id);
     return pair?.price || 'Loading...';
