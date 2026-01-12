@@ -611,7 +611,8 @@ export default function Notifications() {
 
     try {
       console.log('[TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...');
-      const response = await fetch('https://api.coingecko.com/api/v3/derivatives');
+      // Nutze Backend-Proxy statt direkt CoinGecko (vermeidet CORS und Rate Limits)
+      const response = await fetch('/api/coingecko/derivatives');
 
       if (!response.ok) {
         console.error('[TRENDPREIS-24/7] CoinGecko API Fehler:', response.status);

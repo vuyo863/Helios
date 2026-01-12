@@ -1339,6 +1339,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CoinGecko Proxy für Futures-Preise (vermeidet CORS und Rate Limit Probleme)
+  // Backend cached die Daten für 30 Sekunden (CoinGecko aktualisiert nur alle 30s)
+  let coinGeckoCacheData: any = null;
+  let coinGeckoCacheTime: number = 0;
+  const COINGECKO_CACHE_TTL = 30000; // 30 Sekunden Cache
+
+  app.get("/api/coingecko/derivatives", async (req, res) => {
+    try {
+      const now = Date.now();
+      
+      // Return cached data if still valid
+      if (coinGeckoCacheData && (now - coinGeckoCacheTime) < COINGECKO_CACHE_TTL) {
+        console.log('[API] CoinGecko derivatives: returning cached data');
+        return res.json(coinGeckoCacheData);
+      }
+
+      // Fetch fresh data from CoinGecko
+      console.log('[API] CoinGecko derivatives: fetching fresh data');
+      const response = await fetch('https://api.coingecko.com/api/v3/derivatives');
+      
+      if (!response.ok) {
+        console.error('[API] CoinGecko API error:', response.status);
+        // If we have cached data, return it even if stale
+        if (coinGeckoCacheData) {
+          console.log('[API] CoinGecko: returning stale cache due to API error');
+          return res.json(coinGeckoCacheData);
+        }
+        return res.status(response.status).json({ error: 'CoinGecko API error' });
+      }
+
+      const data = await response.json();
+      
+      // Update cache
+      coinGeckoCacheData = data;
+      coinGeckoCacheTime = now;
+      
+      res.json(data);
+    } catch (error) {
+      console.error('[API] CoinGecko proxy error:', error);
+      // If we have cached data, return it even if stale
+      if (coinGeckoCacheData) {
+        console.log('[API] CoinGecko: returning stale cache due to error');
+        return res.json(coinGeckoCacheData);
+      }
+      res.status(500).json({ error: 'Failed to fetch CoinGecko data' });
+    }
+  });
+
   app.get("/api/bot-types", async (req, res) => {
     try {
       const botTypes = await storage.getAllBotTypes();

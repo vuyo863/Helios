@@ -1,0 +1,372 @@
+ [vite] connecting...
+ [vite] connected.
+ Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+ [THRESHOLD-CHECK] Skipping - waiting for initial alarms to load from backend
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [NOTIFICATION-POLLING] Started polling (every 3.5s)
+ OneSignal: Skipping initialization (only works on helios-ai.replit.app or helios-ai.app): 9318949e-a5e9-4b35-9e71-09724f6c1506-00-2exiw1hhay1ts.janeway.replit.dev
+ [ACTIVE-ALARMS] Fetched 0 alarms from backend
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms from localStorage
+ [ACTIVE-ALARMS] Initial load complete - threshold checks enabled
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [THRESHOLD-CHECK] Running with 0 active alarms
+notifications:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+notifications:1  Error while trying to use the following icon from the Manifest: https://9318949e-a5e9-4b35-9e71-09724f6c1506-00-2exiw1hhay1ts.janeway.replit.dev/icon-192.png (Resource size is not correct - typo in the Manifest?)
+ [NOTIFICATION-POLLING] Alarm level configs synced from backend
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22]:1   Failed to load resource: the server responded with a status of 418 ()
+  Binance Futures API geo-blocked (418/451). Stopping suggestion price polling.
+fetchSuggestionFuturesPrices @ notifications.tsx:666
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [WATCHLIST-SYNC] Added ETHUSDT (futures) to backend
+ [NOTIFICATION-POLLING] Watchlist synced: 1 items (was 1)
+ [NOTIFICATION-POLLING] Thresholds synced from backend
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [TRENDPREIS-24/7] Neue Pairs hinzugefügt - sofortiger Preis-Fetch: Spot=0, Futures=1
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+ [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+ [THRESHOLD-CHECK] Running with 0 active alarms
+ [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+ [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:1625 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:1625 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:1625 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:1625 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:664 [TRENDPREIS-24/7] CoinGecko matched ETHUSDT -> Binance (Futures): $3092.9
+notifications.tsx:688 [TRENDPREIS-24/7] CoinGecko Futures prices updated successfully
+notifications.tsx:613 [TRENDPREIS-24/7] Using CoinGecko Fallback for Futures prices...
+notifications.tsx:1060 [THRESHOLD-CHECK] Running with 0 active alarms
