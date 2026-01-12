@@ -1,0 +1,54 @@
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 1/5 in 1000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 1/5 in 1000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 2/5 in 2000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 2/5 in 2000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 1/5 in 1000ms...
+notifications.tsx:1626 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 2/5 in 2000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 3/5 in 4000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
+notifications.tsx:556 [TRENDPREIS-24/7] Futures Retry 3/5 in 4000ms...
+notifications.tsx:540 
+ 
+ GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[%22ETHUSDT%22] 429 (Too Many Requests)
+notifications.tsx:552 
+ [TRENDPREIS-24/7] Futures API Fehler: 429
