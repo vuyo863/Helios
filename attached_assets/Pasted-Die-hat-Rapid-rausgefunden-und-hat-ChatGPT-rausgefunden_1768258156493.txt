@@ -1,0 +1,34 @@
+Die hat Rapid rausgefunden und hat ChatGPT rausgefunden, bitte überprüft gegenseitig, welches am besten ist tatsächlich, am zuverlässigsten und am besten funktioniert, wie der heißt. Und dann werde ich am zuverlässigsten einen abrufen lässt, ja. Weil die die Trendpreise müssen komplett sicher da sein, OK. Genau, das wird prüfen tatsächlich miteinander, ja. Ich gebe Rapid die Informationen von ChatGPT und ChatGPT gibt mir die Informationen von Rapid, OK: 🔎 1) CoinGecko API – Aggregierter Preis-Feed (Futures-Daten inkl.)
+
+✔️ Futures-Daten verfügbar: CoinGecko bietet einen Derivatives-/Derivatives Exchanges Endpoint, der Preise und Daten zu Futures-Märkten liefert (Marktdaten, Funding-Rates, Open Interest, Perpetuals, etc.).
+✔️ Kein Geo-Block: CoinGecko ist ein Datenaggregator, der interne Daten von >1.000 Börsen sammelt — unabhängig von deiner Server-IP oder Wohnort.
+✔️ Einfach per REST-API nutzbar (kein Geo-Block, keine Auth-Keys notwendig für öffentliche Endpunkte).
+✔️ Community, Enterprise, umfangreiche Dokumentation.
+
+👉 Core Vorteile
+
+Echtzeit- und historische Daten
+
+Keine Binance-Restriktionen
+
+Per REST/Web-API einfach abrufbar
+
+💡 Nutzen: futures-Preise, Funding Rates, Open Interest, Volumen, Markt-Trends — ohne Konto, ohne Handel, ohne Blockade.
+
+🔎 2) CoinAPI.io – Profi-Feed für Futures
+
+✔️ Futures-Marktdaten aus Top-Exchanges: CoinAPI sammelt Preise von Binance, OKX, Bybit, Deribit und mehr.
+✔️ REST & WebSocket verfügbar für Echtzeit- und historische Daten.
+✔️ Geo-unabhängig: API-Provider aggregiert Daten von Börsen — du rufst nur CoinAPI an.
+✔️ Funding Rates & Perpetuals inkl. durch Metriken-Endpoints.
+
+⚠️ Beachte: CoinAPI ist kommerziell/bezahlt bei hohem Durchsatz, aber bekannt als eine der zuverlässigsten Datenquellen für Futures-Info.
+
+🔎 3) OKX API – Futures-Marktdaten direkt
+
+✔️ OKX bietet public REST-API-Endpunkte für Marktdaten (Spot & Futures).
+✔️ Public Endpoints funktionieren normalerweise ohne Auth & nur für Daten (z. B. Preis, OHLC, Orderbuch).
+✔️ Da es über OKX selbst läuft und nicht Binance-Block, ist die API geo-unabhängig zugänglich, aber regionale Terms können je nach Account gelten.
+
+⚠️ Aber:
+OKX kann je nach deinem EU-Accountrouting noch Einschränkungen haben. Daher CoinGecko/CoinAPI sicherer.
