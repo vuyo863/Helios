@@ -237,12 +237,12 @@ export default function Notifications() {
           'STXUSDT', 'KAVAUSDT', 'ONEUSDT', 'HOTUSDT', 'RVNUSDT',
           'ZENUSDT', 'BCHUSDT', 'XMRUSDT', 'STORJUSDT', 'ANKRUSDT'
         ];
-        // Use isGeoBlocked directly (sync) instead of state (async)
+        // Use fallback pairs - CoinGecko will provide prices
         const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
           id: `binance-futures-${index}`,
           name: symbol.replace('USDT', '/USDT'),
           symbol: symbol,
-          price: isGeoBlocked ? 'N/A (Geo-Blocked)' : 'Loading...',
+          price: 'Loading...',
           marketType: 'futures' as const
         }));
         setAllBinanceFuturesPairs(fallbackPairs);
@@ -2428,13 +2428,9 @@ export default function Notifications() {
   };
 
   // Get ONLY live price from availableTradingPairs (updated every 2 seconds)
+  // Note: CoinGecko Fallback now provides Futures prices even when Binance is geo-blocked
   const getLivePrice = (id: string): string => {
     const pair = availableTradingPairs.find(tp => tp.id === id);
-    const storedData = pairMarketTypes[id];
-    // If Futures are geo-blocked and this is a futures pair, show N/A
-    if (isFuturesBlocked && storedData?.marketType === 'futures') {
-      return 'N/A (Geo-Blocked)';
-    }
     return pair?.price || 'Loading...';
   };
 
@@ -3142,9 +3138,9 @@ export default function Notifications() {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
                                   <span className="text-muted-foreground">
-                                    ${isFuturesBlocked && storedMarketType === 'futures' ? 'N/A (Geo-Blocked)' : (pair?.price || 'Loading...')}
+                                    ${pair?.price || 'Loading...'}
                                   </span>
-                                  {pair?.priceChangePercent24h && !(isFuturesBlocked && storedMarketType === 'futures') && (
+                                  {pair?.priceChangePercent24h && (
                                     <span className={cn(
                                       "text-xs font-medium",
                                       parseFloat(pair.priceChangePercent24h) >= 0 ? "text-green-500" : "text-red-500"
