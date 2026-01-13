@@ -1,0 +1,66 @@
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[TAILING] Tailing last 50 lines for [webapp] process (change the value with --lines option)
+/home/deinuser/.pm2/logs/webapp-error.log last 50 lines:
+0|webapp   |   severity: 'ERROR',
+0|webapp   |   code: '42P01',
+0|webapp   |   detail: undefined,
+0|webapp   |   hint: undefined,
+0|webapp   |   position: '246',
+0|webapp   |   internalPosition: undefined,
+0|webapp   |   internalQuery: undefined,
+0|webapp   |   where: undefined,
+0|webapp   |   schema: undefined,
+0|webapp   |   table: undefined,
+0|webapp   |   column: undefined,
+0|webapp   |   dataType: undefined,
+0|webapp   |   constraint: undefined,
+0|webapp   |   file: 'parse_relation.c',
+0|webapp   |   line: '1449',
+0|webapp   |   routine: 'parserOpenTable'
+0|webapp   | }
+0|webapp   | [API] GET /api/notification-settings error: error: relation "notification_watchlist" does not exist
+0|webapp   |     at /home/deinuser/webapp/node_modules/pg-pool/index.js:45:11
+0|webapp   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp   |     at async file:///home/deinuser/webapp/node_modules/drizzle-orm/node-postgres/session.js:83:22
+0|webapp   |     at async DbStorage.getAllWatchlistItems (file:///home/deinuser/webapp/dist/index.js:601:12)
+0|webapp   |     at async Promise.all (index 0)
+0|webapp   |     at async file:///home/deinuser/webapp/dist/index.js:3000:67 {
+0|webapp   |   length: 121,
+0|webapp   |   severity: 'ERROR',
+0|webapp   |   code: '42P01',
+0|webapp   |   detail: undefined,
+0|webapp   |   hint: undefined,
+0|webapp   |   position: '73',
+0|webapp   |   internalPosition: undefined,
+0|webapp   |   internalQuery: undefined,
+0|webapp   |   where: undefined,
+0|webapp   |   schema: undefined,
+0|webapp   |   table: undefined,
+0|webapp   |   column: undefined,
+0|webapp   |   dataType: undefined,
+0|webapp   |   constraint: undefined,
+0|webapp   |   file: 'parse_relation.c',
+0|webapp   |   line: '1449',
+0|webapp   |   routine: 'parserOpenTable'
+0|webapp   | }
+0|webapp   | (node:105833) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+0|webapp   | (Use `node --trace-warnings ...` to show where the warning was created)
+0|webapp   | (node:108456) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+0|webapp   | (Use `node --trace-warnings ...` to show where the warning was created)
+0|webapp   | (node:108513) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+0|webapp   | (Use `node --trace-warnings ...` to show where the warning was created)
+0|webapp   | (node:108578) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+0|webapp   | (Use `node --trace-warnings ...` to show where the warning was created)
+
+/home/deinuser/.pm2/logs/webapp-out.log last 50 lines:
+0|webapp   | 3:08:53 AM [express] GET /api/okx/spot 304 in 1ms :: [{"symbol":"ETHUSDT","lastPrice":"3102.24","pri…
+0|webapp   | [API] OKX Spot: returning cached data
+0|webapp   | 3:08:53 AM [express] GET /api/okx/spot 304 in 1ms :: [{"symbol":"ETHUSDT","lastPrice":"3102.24","pri…
+0|webapp   | [API] OKX Spot: returning cached data
+0|webapp   | 3:08:54 AM [express] GET /api/okx/spot 304 in 1ms :: [{"symbol":"ETHUSDT","lastPrice":"3102.24","pri…
+0|webapp   | [API] OKX Spot: returning cached data
+0|webapp   | 3:08:54 AM [express] GET /api/okx/spot 304 in 0ms :: [{"symbol":"ETHUSDT","lastPrice":"3102.24","pri…
+0|webapp   | [API] OKX Spot: fetching fresh data for ETHUSDT
+0|webapp   | 3:08:54 AM [express] GET /api/okx/spot 304 in 242ms :: [{"symbol":"ETHUSDT","lastPrice":"3102.24","p…
+0|webapp   | [API] OKX Spot: returning cached data
+0|webapp   | 3:08:54 AM [express] 
