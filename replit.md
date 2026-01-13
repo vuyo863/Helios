@@ -42,6 +42,15 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Backend-Routen:** `/api/notifications/web-push`, `/api/test-native-push`, `/api/notifications/push-enhanced`
   - **Unified Logic:** Ein Toggle kontrolliert beide internen Werte (webPush + nativePush), da OneSignal keine Geräte-Trennung unterstützt
   - **Push Test Button:** Versteckt hinter Auge-Symbol (Eye/EyeOff Toggle) in der Header-Zeile der Notifications-Seite
+- **DIAMOND STATE - Trendpreise & Watchlist V1**: Die komplette "Trendpreise & Watchlist" Section inkl. 5-Tier Fallback Preissystem ist DIAMOND STATE (höchster Schutz) und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+  - **Dokumentation:** Siehe `docs/DIAMOND_STATE_trendpreise_watchlist_v1.md` für vollständigen Code-Snapshot und Implementierungsdetails
+  - **UI-Elemente:** Suchfeld, Spot/Futures Toggle, Watchlist-Anzeige mit Live-Preisen
+  - **API-Endpunkte:** `/api/okx/spot`, `/api/okx/futures`, `/api/test-fallback-tiers`
+  - **5-Tier Fallback System:** OKX → LKG → CoinGecko → Stale → Emergency
+  - **Per-Symbol Garantie:** JEDES angefragte Symbol erhält garantiert einen Preis
+  - **Background-Updater:** Server-seitig 30s Intervall für 8 populäre Symbole
+  - **Cache-Strategie:** 2s TTL für Echtzeit, 24h LKG Persistenz
+  - **Tests:** 23+ erfolgreiche Tests über alle 5 Tier-Stufen
 - **DIAMOND STATE - Alarmierungsstufen konfigurieren**: Die komplette "Alarmierungsstufen konfigurieren" Section ist DIAMOND STATE (höchster Schutz) und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **4 Alarm-Level-Karten:** Harmlos (blau), Achtung (gelb), Gefährlich (orange), Sehr Gefährlich (rot) im 2x2 Grid
   - **Karten-Anzeige:** Aktive Kanäle, Approval-Status, Wiederholung (Xx oder ∞), Sequenz, Restwartezeit
