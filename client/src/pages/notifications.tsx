@@ -158,11 +158,39 @@ export default function Notifications() {
   const [isFuturesBlocked, setIsFuturesBlocked] = useState(false);
 
   // Funktion zum Laden aller verfügbaren Binance Spot Trading Pairs
+  // MIT FALLBACK: Wenn Binance geo-blocked ist, werden beliebte Paare als Fallback verwendet
   const fetchAllBinancePairs = async () => {
     setIsSpotLoading(true);
+    
+    // Fallback Pairs für geo-blocked Regions
+    const fallbackSymbols = [
+      'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+      'DOGEUSDT', 'MATICUSDT', 'ICPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
+      'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
+      'ARBUSDT', 'OPUSDT', 'PEPEUSDT', 'WIFUSDT', 'ORDIUSDT',
+      'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
+      'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT'
+    ];
+    
+    const createFallbackPairs = () => {
+      return fallbackSymbols.map((symbol, index) => ({
+        id: `binance-spot-${index}`,
+        name: symbol.replace('USDT', '/USDT'),
+        symbol: symbol,
+        price: 'Loading...',
+        marketType: 'spot' as const
+      }));
+    };
+    
     try {
       const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-      if (!response.ok) {
+      
+      // Check for geo-block (418 or 451) or other errors
+      if (!response.ok || response.status === 418 || response.status === 451) {
+        console.warn('[SPOT] Binance API geo-blocked or error. Using fallback pairs with OKX prices.');
+        const fallbackPairs = createFallbackPairs();
+        setAllBinancePairs(fallbackPairs);
+        setAvailableTradingPairs(fallbackPairs);
         setIsSpotLoading(false);
         return;
       }
@@ -196,7 +224,11 @@ export default function Notifications() {
       setAvailableTradingPairs(popularPairs);
 
     } catch (error) {
-      console.error('Error fetching Binance pairs:', error);
+      console.error('[SPOT] Error fetching Binance pairs, using fallback:', error);
+      // FALLBACK: Bei Netzwerkfehlern beliebte Paare verwenden
+      const fallbackPairs = createFallbackPairs();
+      setAllBinancePairs(fallbackPairs);
+      setAvailableTradingPairs(fallbackPairs);
     } finally {
       setIsSpotLoading(false);
     }
