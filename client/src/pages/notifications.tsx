@@ -515,25 +515,25 @@ export default function Notifications() {
         const updated = [...prev];
         data.forEach((ticker: any) => {
           const symbol = ticker.symbol;
-          const index = updated.findIndex(p => {
-            if (p.symbol !== symbol) return false;
-            return p.marketType === 'spot' || p.marketType === undefined;
+          const price = parseFloat(ticker.lastPrice);
+          
+          // WICHTIG: Update ALL pairs with this symbol (not just first one!)
+          // Es kann mehrere Pairs mit gleichem Symbol geben (Fallback + Watchlist)
+          updated.forEach((p, index) => {
+            if (p.symbol === symbol && (p.marketType === 'spot' || p.marketType === undefined)) {
+              console.log(`[TRENDPREIS-24/7] OKX Spot ${symbol} (id: ${p.id}): $${price} (${ticker.priceChangePercent}%)`);
+              updated[index] = {
+                ...updated[index],
+                price: price.toLocaleString('de-DE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 8,
+                }),
+                priceChangePercent24h: ticker.priceChangePercent || '0.00',
+                lastUpdate: new Date(),
+                marketType: 'spot' as const
+              };
+            }
           });
-
-          if (index !== -1) {
-            const price = parseFloat(ticker.lastPrice);
-            console.log(`[TRENDPREIS-24/7] OKX Spot ${symbol}: $${price} (${ticker.priceChangePercent}%)`);
-            updated[index] = {
-              ...updated[index],
-              price: price.toLocaleString('de-DE', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 8,
-              }),
-              priceChangePercent24h: ticker.priceChangePercent || '0.00',
-              lastUpdate: new Date(),
-              marketType: 'spot' as const
-            };
-          }
         });
         return updated;
       });

@@ -1,0 +1,29 @@
+[THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:525 [TRENDPREIS-24/7] OKX Spot ETHUSDT: $3100.21 (-0.59%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ICPUSDT: $3.11 (-0.86%)
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ETHUSDT: $3098.71 (-0.58%)
+notifications.tsx:677 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ICPUSDT: $3.11 (-0.86%)
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ETHUSDT: $3098.71 (-0.58%)
+notifications.tsx:677 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:525 [TRENDPREIS-24/7] OKX Spot ETHUSDT: $3100.21 (-0.59%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ICPUSDT: $3.11 (-0.86%)
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ETHUSDT: $3098.04 (-0.60%)
+2notifications.tsx:677 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ICPUSDT: $3.11 (-0.86%)
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ETHUSDT: $3098.71 (-0.58%)
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
