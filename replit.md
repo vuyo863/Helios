@@ -81,7 +81,15 @@ The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind 
   - Alarm Approval System with auto-dismiss and repetition logic.
   - Cross-Device Alarm Synchronization through a backend API.
   - Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
-  - **24/7 Trendpreis-Zuverlässigkeit (3-Layer Backup System)**:
+  - **5-Tier Fallback Preissystem (99%+ Zuverlässigkeit)**:
+    - **Tier 1 (Primary)**: OKX API mit 2s Cache (Spot: `/api/okx/spot`, Futures: `/api/okx/futures`)
+    - **Tier 2 (LKG)**: Last-Known-Good Cache mit 24h Persistenz im Server-Memory
+    - **Tier 3 (CoinGecko)**: Automatischer Fallback zu CoinGecko für Spot-Preise
+    - **Tier 4 (Stale)**: Stale Cache Rückgabe bei partiellen API-Ausfällen
+    - **Tier 5 (Emergency)**: Statische Emergency-Werte (source: `Emergency-NoData`)
+    - **Background-Updater**: Server-seitiges 30s Intervall aktualisiert 8 populäre Symbole (BTC, ETH, SOL, BNB, XRP, ICP, DOGE, ADA) unabhängig von Client-Aktivität
+    - **Per-Symbol Guarantee**: Jedes angefragte Symbol erhält garantiert einen Preis (keine partiellen Antworten)
+  - **Frontend Backup System**:
     - **Primary**: 2-Sekunden-Intervall für Preis-Updates
     - **Backup #1**: Exponential Backoff Retry bei API-Fehlern (max 5 Retries, bis 10s Delay)
     - **Backup #2**: Page Visibility API triggert sofortigen Refetch wenn Tab reaktiviert wird
@@ -101,6 +109,6 @@ The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind 
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
-- **Crypto Data**: Binance API (Spot and Futures).
+- **Crypto Data**: OKX API (Spot and Futures), CoinGecko Fallback.
 - **Web Push Notifications**: OneSignal Web Push SDK v16.
 - **SMS Notifications**: Twilio.
