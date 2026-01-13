@@ -1339,11 +1339,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // OKX Futures API für genaue Preise (ersetzt CoinGecko)
-  // OKX Preise sind sehr nah an Binance (~$3 Unterschied statt $10 bei CoinGecko)
+  // ========================================================================
+  // 5-STUFEN FALLBACK-SYSTEM FÜR 100% ZUVERLÄSSIGE TRENDPREISE
+  // ========================================================================
+  // Stufe 1: OKX Primary API (2s TTL Cache)
+  // Stufe 2: Last-Known-Good Cache (persistiert auch bei API-Ausfall)
+  // Stufe 3: CoinGecko Fallback (für Spot-Preise)
+  // Stufe 4: Stale Cache Return (alte Daten besser als keine)
+  // Stufe 5: Emergency Static Fallback (letzte bekannte Preise)
+  // ========================================================================
+
+  // Primary Cache (2s TTL) - Stufe 1
   let okxFuturesCacheData: Map<string, any> = new Map();
   let okxFuturesCacheTime: number = 0;
+  let okxSpotCacheData: Map<string, any> = new Map();
+  let okxSpotCacheTime: number = 0;
   const OKX_CACHE_TTL = 2000; // 2 Sekunden Cache für Echtzeit-Updates
+
+  // Last-Known-Good Cache (persistiert) - Stufe 2
+  const lastKnownGoodPrices: Map<string, { data: any, timestamp: number, market: 'spot' | 'futures' }> = new Map();
+  const LAST_KNOWN_GOOD_MAX_AGE = 24 * 60 * 60 * 1000; // 24 Stunden max Alter
+
+  // Hilfsfunktion: Last-Known-Good speichern
+  const saveLastKnownGood = (symbol: string, data: any, market: 'spot' | 'futures') => {
+    lastKnownGoodPrices.set(`${market}:${symbol}`, {
+      data: { ...data, source: `${data.source || 'OKX'}-LKG` },
+      timestamp: Date.now(),
+      market
+    });
+  };
+
+  // Hilfsfunktion: Last-Known-Good abrufen
+  const getLastKnownGood = (symbol: string, market: 'spot' | 'futures'): any | null => {
+    const key = `${market}:${symbol}`;
+    const cached = lastKnownGoodPrices.get(key);
+    if (cached && (Date.now() - cached.timestamp) < LAST_KNOWN_GOOD_MAX_AGE) {
+      console.log(`[FALLBACK] Using Last-Known-Good for ${symbol} (${market}), age: ${Math.round((Date.now() - cached.timestamp) / 1000)}s`);
+      return cached.data;
+    }
+    return null;
+  };
+
+  // Stufe 3: CoinGecko Fallback für Spot
+  const fetchCoinGeckoPrice = async (symbol: string): Promise<any | null> => {
+    try {
+      const base = symbol.replace('USDT', '').toLowerCase();
+      const coinGeckoIds: Record<string, string> = {
+        'btc': 'bitcoin', 'eth': 'ethereum', 'sol': 'solana', 'bnb': 'binancecoin',
+        'xrp': 'ripple', 'ada': 'cardano', 'doge': 'dogecoin', 'dot': 'polkadot',
+        'avax': 'avalanche-2', 'link': 'chainlink', 'ltc': 'litecoin', 'icp': 'internet-computer',
+        'matic': 'matic-network', 'atom': 'cosmos', 'near': 'near', 'apt': 'aptos',
+        'arb': 'arbitrum', 'op': 'optimism', 'sui': 'sui', 'sei': 'sei-network'
+      };
+      
+      const coinId = coinGeckoIds[base];
+      if (!coinId) return null;
+
+      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`);
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (data[coinId]) {
+        console.log(`[FALLBACK] CoinGecko price for ${symbol}: $${data[coinId].usd}`);
+        return {
+          symbol: symbol,
+          lastPrice: data[coinId].usd.toString(),
+          priceChangePercent: (data[coinId].usd_24h_change || 0).toFixed(2),
+          source: 'CoinGecko'
+        };
+      }
+      return null;
+    } catch (err) {
+      console.error(`[FALLBACK] CoinGecko error for ${symbol}:`, err);
+      return null;
+    }
+  };
 
   app.get("/api/okx/futures", async (req, res) => {
     try {
@@ -1355,7 +1425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = Date.now();
       const symbolList = symbols.split(',');
       
-      // Check if cache is still valid
+      // STUFE 1: Check if cache is still valid
       if ((now - okxFuturesCacheTime) < OKX_CACHE_TTL && okxFuturesCacheData.size > 0) {
         const cachedResults: any[] = [];
         let allCached = true;
@@ -1402,14 +1472,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               results.push(result);
               okxFuturesCacheData.set(symbol, result);
+              saveLastKnownGood(symbol, result, 'futures'); // STUFE 2: Save LKG
             }
           }
         } catch (err) {
           console.error(`[API] OKX error for ${symbol}:`, err);
+          
+          // STUFE 2: Try Last-Known-Good
+          const lkg = getLastKnownGood(symbol, 'futures');
+          if (lkg) {
+            results.push(lkg);
+          }
         }
       }
       
       okxFuturesCacheTime = now;
+      
+      // STUFE 4: Ensure EVERY requested symbol has a price (per-symbol fallback)
+      const returnedSymbols = new Set(results.map(r => r.symbol));
+      for (const sym of symbolList) {
+        if (!returnedSymbols.has(sym)) {
+          console.log(`[FALLBACK] Futures symbol ${sym} missing, trying fallbacks...`);
+          // Try stale cache first
+          if (okxFuturesCacheData.has(sym)) {
+            const stale = { ...okxFuturesCacheData.get(sym), source: 'OKX-Stale' };
+            results.push(stale);
+            returnedSymbols.add(sym);
+            continue;
+          }
+          // Try LKG
+          const lkg = getLastKnownGood(sym, 'futures');
+          if (lkg) {
+            results.push(lkg);
+            returnedSymbols.add(sym);
+            continue;
+          }
+          // STUFE 5: Emergency static fallback
+          console.warn(`[FALLBACK] No data for futures ${sym}, using emergency value`);
+          results.push({
+            symbol: sym,
+            lastPrice: '0',
+            priceChangePercent: '0.00',
+            source: 'Emergency-NoData'
+          });
+        }
+      }
       
       if (results.length === 0) {
         return res.status(502).json({ error: 'Failed to fetch OKX data' });
@@ -1418,13 +1525,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       console.error('[API] OKX Futures proxy error:', error);
+      
+      // STUFE 4: Return any cached data on total failure
+      const emergencyResults: any[] = [];
+      const symbols = (req.query.symbols as string || '').split(',');
+      for (const sym of symbols) {
+        if (okxFuturesCacheData.has(sym)) {
+          emergencyResults.push({ ...okxFuturesCacheData.get(sym), source: 'OKX-Emergency' });
+        } else {
+          const lkg = getLastKnownGood(sym, 'futures');
+          if (lkg) emergencyResults.push(lkg);
+        }
+      }
+      
+      if (emergencyResults.length > 0) {
+        console.log('[FALLBACK] Returning emergency cached data');
+        return res.json(emergencyResults);
+      }
+      
       res.status(500).json({ error: 'Failed to fetch OKX data' });
     }
   });
-
-  // OKX Spot API für genaue Spot-Preise (ersetzt Binance wegen Geo-Block)
-  let okxSpotCacheData: Map<string, any> = new Map();
-  let okxSpotCacheTime: number = 0;
 
   app.get("/api/okx/spot", async (req, res) => {
     try {
@@ -1436,7 +1557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = Date.now();
       const symbolList = symbols.split(',');
       
-      // Check if cache is still valid
+      // STUFE 1: Check if cache is still valid
       if ((now - okxSpotCacheTime) < OKX_CACHE_TTL && okxSpotCacheData.size > 0) {
         const cachedResults: any[] = [];
         let allCached = true;
@@ -1483,14 +1604,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               results.push(result);
               okxSpotCacheData.set(symbol, result);
+              saveLastKnownGood(symbol, result, 'spot'); // STUFE 2: Save LKG
             }
           }
         } catch (err) {
           console.error(`[API] OKX Spot error for ${symbol}:`, err);
+          
+          // STUFE 3: Try CoinGecko fallback
+          const cgPrice = await fetchCoinGeckoPrice(symbol);
+          if (cgPrice) {
+            results.push(cgPrice);
+            saveLastKnownGood(symbol, cgPrice, 'spot');
+          } else {
+            // STUFE 2: Try Last-Known-Good
+            const lkg = getLastKnownGood(symbol, 'spot');
+            if (lkg) results.push(lkg);
+          }
         }
       }
       
       okxSpotCacheTime = now;
+      
+      // STUFE 4: Ensure EVERY requested symbol has a price (per-symbol fallback)
+      const returnedSymbols = new Set(results.map(r => r.symbol));
+      for (const sym of symbolList) {
+        if (!returnedSymbols.has(sym)) {
+          console.log(`[FALLBACK] Symbol ${sym} missing, trying fallbacks...`);
+          // Try stale cache first
+          if (okxSpotCacheData.has(sym)) {
+            const stale = { ...okxSpotCacheData.get(sym), source: 'OKX-Stale' };
+            results.push(stale);
+            returnedSymbols.add(sym);
+            continue;
+          }
+          // Try LKG
+          const lkg = getLastKnownGood(sym, 'spot');
+          if (lkg) {
+            results.push(lkg);
+            returnedSymbols.add(sym);
+            continue;
+          }
+          // Try CoinGecko as last resort
+          const cgPrice = await fetchCoinGeckoPrice(sym);
+          if (cgPrice) {
+            results.push(cgPrice);
+            returnedSymbols.add(sym);
+            continue;
+          }
+          // STUFE 5: Emergency static fallback
+          console.warn(`[FALLBACK] No data for ${sym}, using emergency value`);
+          results.push({
+            symbol: sym,
+            lastPrice: '0',
+            priceChangePercent: '0.00',
+            source: 'Emergency-NoData'
+          });
+        }
+      }
       
       if (results.length === 0) {
         return res.status(502).json({ error: 'Failed to fetch OKX Spot data' });
@@ -1499,6 +1669,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       console.error('[API] OKX Spot proxy error:', error);
+      
+      // STUFE 4: Return any cached data on total failure
+      const emergencyResults: any[] = [];
+      const symbols = (req.query.symbols as string || '').split(',');
+      for (const sym of symbols) {
+        if (okxSpotCacheData.has(sym)) {
+          emergencyResults.push({ ...okxSpotCacheData.get(sym), source: 'OKX-Emergency' });
+        } else {
+          const lkg = getLastKnownGood(sym, 'spot');
+          if (lkg) emergencyResults.push(lkg);
+        }
+      }
+      
+      if (emergencyResults.length > 0) {
+        console.log('[FALLBACK] Returning emergency cached data');
+        return res.json(emergencyResults);
+      }
+      
       res.status(500).json({ error: 'Failed to fetch OKX Spot data' });
     }
   });
@@ -3434,6 +3622,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       default: return 'Harmlos';
     }
   }
+
+  // ========================================================================
+  // BACKGROUND-UPDATER: Preis-Cache warm halten (auch wenn Tab inaktiv)
+  // ========================================================================
+  // Alle 30 Sekunden werden die beliebtesten Pairs aktualisiert
+  // Dies stellt sicher, dass Preise immer verfügbar sind für Notifications
+  // ========================================================================
+  const BACKGROUND_UPDATE_INTERVAL = 30000; // 30 Sekunden
+  const POPULAR_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ICPUSDT', 'DOGEUSDT', 'ADAUSDT'];
+
+  const backgroundPriceUpdater = async () => {
+    try {
+      console.log('[BACKGROUND-UPDATER] Refreshing popular symbol prices...');
+      
+      // Spot Preise aktualisieren
+      for (const symbol of POPULAR_SYMBOLS) {
+        try {
+          const base = symbol.replace('USDT', '');
+          const okxInstId = `${base}-USDT`;
+          const response = await fetch(`https://www.okx.com/api/v5/market/ticker?instId=${okxInstId}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.code === '0' && data.data && data.data[0]) {
+              const ticker = data.data[0];
+              const lastPrice = parseFloat(ticker.last);
+              const open24h = parseFloat(ticker.open24h);
+              const priceChangePercent = ((lastPrice - open24h) / open24h * 100).toFixed(2);
+              
+              const result = {
+                symbol: symbol,
+                lastPrice: ticker.last,
+                priceChangePercent: priceChangePercent,
+                source: 'OKX'
+              };
+              
+              okxSpotCacheData.set(symbol, result);
+              saveLastKnownGood(symbol, result, 'spot');
+            }
+          }
+        } catch (err) {
+          // Silent fail - background update
+        }
+      }
+      
+      // Futures Preise aktualisieren
+      for (const symbol of POPULAR_SYMBOLS) {
+        try {
+          const base = symbol.replace('USDT', '');
+          const okxInstId = `${base}-USDT-SWAP`;
+          const response = await fetch(`https://www.okx.com/api/v5/market/ticker?instId=${okxInstId}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.code === '0' && data.data && data.data[0]) {
+              const ticker = data.data[0];
+              const lastPrice = parseFloat(ticker.last);
+              const open24h = parseFloat(ticker.open24h);
+              const priceChangePercent = ((lastPrice - open24h) / open24h * 100).toFixed(2);
+              
+              const result = {
+                symbol: symbol,
+                lastPrice: ticker.last,
+                priceChangePercent: priceChangePercent,
+                source: 'OKX'
+              };
+              
+              okxFuturesCacheData.set(symbol, result);
+              saveLastKnownGood(symbol, result, 'futures');
+            }
+          }
+        } catch (err) {
+          // Silent fail - background update
+        }
+      }
+      
+      console.log('[BACKGROUND-UPDATER] Updated', POPULAR_SYMBOLS.length, 'symbols (spot + futures)');
+    } catch (error) {
+      console.error('[BACKGROUND-UPDATER] Error:', error);
+    }
+  };
+
+  // Start background updater (runs every 30 seconds)
+  setInterval(backgroundPriceUpdater, BACKGROUND_UPDATE_INTERVAL);
+  
+  // Initial run after 5 seconds (let server start first)
+  setTimeout(backgroundPriceUpdater, 5000);
 
   const httpServer = createServer(app);
 
