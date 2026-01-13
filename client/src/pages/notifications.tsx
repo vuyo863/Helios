@@ -462,24 +462,18 @@ export default function Notifications() {
     }
   }, [allBinancePairs, allBinanceFuturesPairs, watchlist, pairMarketTypes]);
 
-  // Funktion zum Abrufen der aktuellen Preise von Binance Spot API
-  // MIT RETRY-LOGIK für 24/7 Zuverlässigkeit
-  const fetchSpotPrices = async (symbols: string[], retryCount = 0): Promise<boolean> => {
+  // Funktion zum Abrufen der aktuellen Spot-Preise von OKX API
+  // OKX wird verwendet weil Binance API geo-blocked ist
+  const fetchSpotPrices = async (symbols: string[]): Promise<boolean> => {
     if (symbols.length === 0) return true;
 
     try {
-      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
-      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`);
+      console.log('[TRENDPREIS-24/7] Using OKX Spot API for accurate prices...');
+      const symbolsParam = symbols.join(',');
+      const response = await fetch(`/api/okx/spot?symbols=${symbolsParam}`);
 
       if (!response.ok) {
-        console.error('[TRENDPREIS-24/7] Spot API Fehler:', response.status);
-        // BACKUP #1: Retry mit exponential backoff
-        if (retryCount < maxRetries) {
-          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10s
-          console.log(`[TRENDPREIS-24/7] Retry ${retryCount + 1}/${maxRetries} in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return fetchSpotPrices(symbols, retryCount + 1);
-        }
+        console.error('[TRENDPREIS-24/7] OKX Spot API Fehler:', response.status);
         return false;
       }
 
@@ -488,20 +482,22 @@ export default function Notifications() {
       setAvailableTradingPairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          // WICHTIG: Find by symbol AND check pair.marketType is spot (or undefined for backwards compatibility)
+          const symbol = ticker.symbol;
           const index = updated.findIndex(p => {
-            if (p.symbol !== ticker.symbol) return false;
+            if (p.symbol !== symbol) return false;
             return p.marketType === 'spot' || p.marketType === undefined;
           });
+
           if (index !== -1) {
+            const price = parseFloat(ticker.lastPrice);
+            console.log(`[TRENDPREIS-24/7] OKX Spot ${symbol}: $${price} (${ticker.priceChangePercent}%)`);
             updated[index] = {
               ...updated[index],
-              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
+              price: price.toLocaleString('de-DE', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 8,
               }),
-              priceChange24h: parseFloat(ticker.priceChange).toFixed(2),
-              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
+              priceChangePercent24h: ticker.priceChangePercent || '0.00',
               lastUpdate: new Date(),
               marketType: 'spot' as const
             };
@@ -510,19 +506,13 @@ export default function Notifications() {
         return updated;
       });
       
-      // SUCCESS: Reset retry counter and update timestamp
+      // SUCCESS: Update timestamp
       priceRetryCountRef.current = 0;
       lastPriceUpdateRef.current = new Date();
+      console.log('[TRENDPREIS-24/7] OKX Spot prices updated successfully');
       return true;
     } catch (error) {
-      console.error('[TRENDPREIS-24/7] Spot Fetch Error:', error);
-      // BACKUP #1: Retry bei Netzwerkfehlern
-      if (retryCount < maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
-        console.log(`[TRENDPREIS-24/7] Retry ${retryCount + 1}/${maxRetries} in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return fetchSpotPrices(symbols, retryCount + 1);
-      }
+      console.error('[TRENDPREIS-24/7] OKX Spot Fetch Error:', error);
       return false;
     }
   };

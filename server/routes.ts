@@ -1422,6 +1422,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OKX Spot API für genaue Spot-Preise (ersetzt Binance wegen Geo-Block)
+  let okxSpotCacheData: Map<string, any> = new Map();
+  let okxSpotCacheTime: number = 0;
+
+  app.get("/api/okx/spot", async (req, res) => {
+    try {
+      const symbols = req.query.symbols as string;
+      if (!symbols) {
+        return res.status(400).json({ error: 'symbols parameter required' });
+      }
+
+      const now = Date.now();
+      const symbolList = symbols.split(',');
+      
+      // Check if cache is still valid
+      if ((now - okxSpotCacheTime) < OKX_CACHE_TTL && okxSpotCacheData.size > 0) {
+        const cachedResults: any[] = [];
+        let allCached = true;
+        for (const sym of symbolList) {
+          if (okxSpotCacheData.has(sym)) {
+            cachedResults.push(okxSpotCacheData.get(sym));
+          } else {
+            allCached = false;
+            break;
+          }
+        }
+        if (allCached && cachedResults.length > 0) {
+          console.log('[API] OKX Spot: returning cached data');
+          return res.json(cachedResults);
+        }
+      }
+
+      // Fetch fresh data from OKX
+      console.log('[API] OKX Spot: fetching fresh data for', symbolList.join(', '));
+      
+      const results: any[] = [];
+      for (const symbol of symbolList) {
+        // Convert ETHUSDT -> ETH-USDT format for OKX Spot
+        const base = symbol.replace('USDT', '');
+        const okxInstId = `${base}-USDT`;
+        
+        try {
+          const response = await fetch(`https://www.okx.com/api/v5/market/ticker?instId=${okxInstId}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.code === '0' && data.data && data.data[0]) {
+              const ticker = data.data[0];
+              const lastPrice = parseFloat(ticker.last);
+              const open24h = parseFloat(ticker.open24h);
+              const priceChangePercent = ((lastPrice - open24h) / open24h * 100).toFixed(2);
+              
+              const result = {
+                symbol: symbol,
+                lastPrice: ticker.last,
+                priceChangePercent: priceChangePercent,
+                source: 'OKX'
+              };
+              
+              results.push(result);
+              okxSpotCacheData.set(symbol, result);
+            }
+          }
+        } catch (err) {
+          console.error(`[API] OKX Spot error for ${symbol}:`, err);
+        }
+      }
+      
+      okxSpotCacheTime = now;
+      
+      if (results.length === 0) {
+        return res.status(502).json({ error: 'Failed to fetch OKX Spot data' });
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error('[API] OKX Spot proxy error:', error);
+      res.status(500).json({ error: 'Failed to fetch OKX Spot data' });
+    }
+  });
+
   // CoinGecko Proxy - kept as fallback but not primary source anymore
   let coinGeckoCacheData: any = null;
   let coinGeckoCacheTime: number = 0;
