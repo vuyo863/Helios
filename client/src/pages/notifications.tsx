@@ -38,9 +38,7 @@ interface ThresholdConfig {
   note: string;
   isActive: boolean;
   triggerCount?: number; // Counter for wiederholend - how many times this threshold was triggered
-  activeAlarmId?: string; // DEPRECATED: Legacy field, use direction-specific fields below
-  activeAlarmIdIncrease?: string; // ID of currently running INCREASE alarm (for re-trigger prevention)
-  activeAlarmIdDecrease?: string; // ID of currently running DECREASE alarm (for re-trigger prevention)
+  activeAlarmId?: string; // ID of currently running alarm (for wiederholend re-trigger prevention)
 }
 
 interface AlarmLevelConfig {
@@ -73,7 +71,6 @@ interface ActiveAlarm {
   // Threshold tracking for wiederholend re-trigger prevention
   thresholdId?: string;
   pairId?: string;
-  triggerDirection?: 'increase' | 'decrease'; // Direction of the price trigger (for clearing correct activeAlarmId)
   // Auto-dismiss tracking
   requiresApproval: boolean;
   repetitionsCompleted?: number;
@@ -953,14 +950,17 @@ export default function Notifications() {
         // Get alarm level config
         const alarmConfig = alarmLevelConfigs[threshold.alarmLevel];
 
-        // RE-TRIGGER PREVENTION for INCREASE (for both EINMALIG and WIEDERHOLEND):
-        // Don't trigger if an active INCREASE alarm for this exact threshold already exists.
-        // This prevents duplicate alarms after page refresh.
-        // Uses activeAlarmIdIncrease stored in threshold (survives page refresh, localStorage-based)
-        if (threshold.activeAlarmIdIncrease) {
-          // Already has active increase alarm, skip re-triggering until it's dismissed/approved
-          console.log(`[${threshold.increaseFrequency?.toUpperCase()}] Blocking increase re-trigger for threshold ${threshold.id} - activeAlarmIdIncrease: ${threshold.activeAlarmIdIncrease}`);
-          return;
+        // WIEDERHOLEND RE-TRIGGER PREVENTION:
+        // For ALL wiederholend thresholds (both requiresApproval=true and false), 
+        // don't trigger if an active alarm for this exact threshold already exists.
+        // This prevents duplicate alarms after page refresh regardless of approval setting.
+        // Uses activeAlarmId stored in threshold (survives page refresh, localStorage-based)
+        if (threshold.increaseFrequency === 'wiederholend') {
+          if (threshold.activeAlarmId) {
+            // Already has active alarm, skip re-triggering until it's dismissed/approved
+            console.log(`[WIEDERHOLEND] Blocking increase re-trigger for threshold ${threshold.id} - activeAlarmId: ${threshold.activeAlarmId}`);
+            return;
+          }
         }
 
         // Check for price increase above threshold
@@ -993,21 +993,19 @@ export default function Notifications() {
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
           // Calculate sequence in ms for repetitions (minimum 1 second if 0)
-          const rawSequenceMs = ((alarmConfig.sequenceHours || 0) * 3600 + (alarmConfig.sequenceMinutes || 0) * 60 + (alarmConfig.sequenceSeconds || 0)) * 1000;
+          const rawSequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
           const alarmSequenceMs = rawSequenceMs > 0 ? rawSequenceMs : 1000; // Minimum 1 second between repetitions
           
           // Calculate auto-dismiss time if approval not required
           let autoDismissAt: Date | undefined;
           if (!alarmConfig.requiresApproval && alarmConfig.repeatCount !== 'infinite') {
             const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
-            const restwartezeitMs = ((alarmConfig.restwartezeitHours || 0) * 3600 + (alarmConfig.restwartezeitMinutes || 0) * 60 + (alarmConfig.restwartezeitSeconds || 0)) * 1000;
+            const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
             // Total time = (repeatCount-1) * sequence + restwartezeit
             // First notification is immediate, then (repeatCount-1) more with sequence delay, then restwartezeit
             const totalMs = Math.max(0, repeatCount - 1) * alarmSequenceMs + restwartezeitMs;
-            if (!isNaN(totalMs)) {
-              autoDismissAt = new Date(Date.now() + totalMs);
-              console.log(`[AUTO-DISMISS] Calculated: ${repeatCount} reps x ${alarmSequenceMs}ms seq + ${restwartezeitMs}ms rest = ${totalMs}ms total, dismiss at ${autoDismissAt.toISOString()}`);
-            }
+            autoDismissAt = new Date(Date.now() + totalMs);
+            console.log(`[AUTO-DISMISS] Calculated: ${repeatCount} reps x ${alarmSequenceMs}ms seq + ${restwartezeitMs}ms rest = ${totalMs}ms total, dismiss at ${autoDismissAt.toISOString()}`);
           }
 
           // Generate alarm ID first so we can store it in the threshold
@@ -1025,7 +1023,6 @@ export default function Notifications() {
             // Track threshold for wiederholend re-trigger prevention
             thresholdId: threshold.id,
             pairId: pair.id,
-            triggerDirection: 'increase', // For clearing correct activeAlarmId on dismiss
             requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
@@ -1037,35 +1034,36 @@ export default function Notifications() {
 
           setActiveAlarms(prev => [...prev, newAlarm]);
           
-          // Store activeAlarmIdIncrease in threshold to prevent INCREASE re-triggering on refresh
-          // Works for BOTH einmalig and wiederholend thresholds
-          // This prevents duplicate INCREASE alarms after page refresh
-          // Note: Uses direction-specific field so decrease alarms are not affected
-          setTrendPriceSettings(prev => ({
-            ...prev,
-            [pair.id]: {
-              ...prev[pair.id],
-              thresholds: prev[pair.id].thresholds.map(t => 
-                t.id === threshold.id ? { ...t, activeAlarmIdIncrease: newAlarmId } : t
-              )
-            }
-          }));
-          // Save immediately to localStorage
-          setTimeout(() => {
-            const stored = localStorage.getItem('notifications-threshold-settings');
-            if (stored) {
-              try {
-                const parsed = JSON.parse(stored);
-                if (parsed[pair.id]?.thresholds) {
-                  parsed[pair.id].thresholds = parsed[pair.id].thresholds.map((t: ThresholdConfig) => 
-                    t.id === threshold.id ? { ...t, activeAlarmIdIncrease: newAlarmId } : t
-                  );
-                  localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
-                  console.log(`[INCREASE-${threshold.increaseFrequency?.toUpperCase()}] Saved activeAlarmIdIncrease ${newAlarmId} to localStorage for threshold ${threshold.id}`);
-                }
-              } catch {}
-            }
-          }, 100);
+          // WIEDERHOLEND: Store activeAlarmId in threshold to prevent re-triggering on refresh
+          // Note: Set for ALL wiederholend thresholds (both requiresApproval=true and false)
+          // This prevents duplicate alarms after page refresh in both cases
+          if (threshold.increaseFrequency === 'wiederholend') {
+            setTrendPriceSettings(prev => ({
+              ...prev,
+              [pair.id]: {
+                ...prev[pair.id],
+                thresholds: prev[pair.id].thresholds.map(t => 
+                  t.id === threshold.id ? { ...t, activeAlarmId: newAlarmId } : t
+                )
+              }
+            }));
+            // Save immediately to localStorage
+            setTimeout(() => {
+              const stored = localStorage.getItem('notifications-threshold-settings');
+              if (stored) {
+                try {
+                  const parsed = JSON.parse(stored);
+                  if (parsed[pair.id]?.thresholds) {
+                    parsed[pair.id].thresholds = parsed[pair.id].thresholds.map((t: ThresholdConfig) => 
+                      t.id === threshold.id ? { ...t, activeAlarmId: newAlarmId } : t
+                    );
+                    localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
+                    console.log(`[WIEDERHOLEND] Saved activeAlarmId ${newAlarmId} to localStorage for threshold ${threshold.id}`);
+                  }
+                } catch {}
+              }
+            }, 100);
+          }
           
           // POST to backend for cross-device sync
           fetch('/api/active-alarms', {
@@ -1144,14 +1142,16 @@ export default function Notifications() {
           }
         }
 
-        // RE-TRIGGER PREVENTION for DECREASE (for both EINMALIG and WIEDERHOLEND):
-        // Prevent re-triggering if active DECREASE alarm exists (prevents duplicates after page refresh)
-        // Uses activeAlarmIdDecrease stored in threshold (survives page refresh, localStorage-based)
-        // Note: Uses direction-specific field so increase alarms are not affected
-        if (threshold.notifyOnDecrease && threshold.activeAlarmIdDecrease) {
-          // Already has active decrease alarm for this threshold, skip re-triggering until it's dismissed/approved
-          console.log(`[DECREASE-${threshold.decreaseFrequency?.toUpperCase()}] Blocking decrease re-trigger for threshold ${threshold.id} - activeAlarmIdDecrease: ${threshold.activeAlarmIdDecrease}`);
-          return;
+        // WIEDERHOLEND RE-TRIGGER PREVENTION for decrease:
+        // For ALL wiederholend thresholds (both requiresApproval=true and false),
+        // prevent re-triggering if active alarm exists (prevents duplicates after page refresh)
+        // Uses activeAlarmId stored in threshold (survives page refresh, localStorage-based)
+        if (threshold.notifyOnDecrease && threshold.decreaseFrequency === 'wiederholend') {
+          if (threshold.activeAlarmId) {
+            // Already has active alarm for this threshold, skip re-triggering until it's dismissed/approved
+            console.log(`[WIEDERHOLEND] Blocking decrease re-trigger for threshold ${threshold.id} - activeAlarmId: ${threshold.activeAlarmId}`);
+            return;
+          }
         }
 
         // Check for price decrease below threshold
@@ -1184,21 +1184,19 @@ export default function Notifications() {
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
           // Calculate sequence in ms for repetitions (minimum 1 second if 0)
-          const rawSequenceMsDecrease = ((alarmConfig.sequenceHours || 0) * 3600 + (alarmConfig.sequenceMinutes || 0) * 60 + (alarmConfig.sequenceSeconds || 0)) * 1000;
+          const rawSequenceMsDecrease = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
           const alarmSequenceMsDecrease = rawSequenceMsDecrease > 0 ? rawSequenceMsDecrease : 1000; // Minimum 1 second
           
           // Calculate auto-dismiss time if approval not required
           let autoDismissAtDecrease: Date | undefined;
           if (!alarmConfig.requiresApproval && alarmConfig.repeatCount !== 'infinite') {
             const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
-            const restwartezeitMs = ((alarmConfig.restwartezeitHours || 0) * 3600 + (alarmConfig.restwartezeitMinutes || 0) * 60 + (alarmConfig.restwartezeitSeconds || 0)) * 1000;
+            const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
             // Total time = (repeatCount-1) * sequence + restwartezeit
             // First notification immediate, then remaining with sequence delay, then restwartezeit countdown
             const totalMs = Math.max(0, repeatCount - 1) * alarmSequenceMsDecrease + restwartezeitMs;
-            if (!isNaN(totalMs)) {
-              autoDismissAtDecrease = new Date(Date.now() + totalMs);
-              console.log(`[AUTO-DISMISS] Decrease: ${repeatCount} reps x ${alarmSequenceMsDecrease}ms seq + ${restwartezeitMs}ms rest = ${totalMs}ms total`);
-            }
+            autoDismissAtDecrease = new Date(Date.now() + totalMs);
+            console.log(`[AUTO-DISMISS] Decrease: ${repeatCount} reps x ${alarmSequenceMsDecrease}ms seq + ${restwartezeitMs}ms rest = ${totalMs}ms total`);
           }
 
           // Generate alarm ID first so we can store it in the threshold
@@ -1216,7 +1214,6 @@ export default function Notifications() {
             // Track threshold for wiederholend re-trigger prevention
             thresholdId: threshold.id,
             pairId: pair.id,
-            triggerDirection: 'decrease', // For clearing correct activeAlarmId on dismiss
             requiresApproval: alarmConfig.requiresApproval,
             repetitionsCompleted: 1,
             repetitionsTotal: alarmConfig.repeatCount === 'infinite' ? undefined : alarmConfig.repeatCount,
@@ -1228,35 +1225,36 @@ export default function Notifications() {
 
           setActiveAlarms(prev => [...prev, newAlarm]);
           
-          // Store activeAlarmIdDecrease in threshold to prevent DECREASE re-triggering on refresh
-          // Works for BOTH einmalig and wiederholend thresholds
-          // This prevents duplicate DECREASE alarms after page refresh
-          // Note: Uses direction-specific field so increase alarms are not affected
-          setTrendPriceSettings(prev => ({
-            ...prev,
-            [pair.id]: {
-              ...prev[pair.id],
-              thresholds: prev[pair.id].thresholds.map(t => 
-                t.id === threshold.id ? { ...t, activeAlarmIdDecrease: newAlarmIdDecrease } : t
-              )
-            }
-          }));
-          // Save immediately to localStorage
-          setTimeout(() => {
-            const stored = localStorage.getItem('notifications-threshold-settings');
-            if (stored) {
-              try {
-                const parsed = JSON.parse(stored);
-                if (parsed[pair.id]?.thresholds) {
-                  parsed[pair.id].thresholds = parsed[pair.id].thresholds.map((t: ThresholdConfig) => 
-                    t.id === threshold.id ? { ...t, activeAlarmIdDecrease: newAlarmIdDecrease } : t
-                  );
-                  localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
-                  console.log(`[DECREASE-${threshold.decreaseFrequency?.toUpperCase()}] Saved activeAlarmIdDecrease ${newAlarmIdDecrease} to localStorage for threshold ${threshold.id}`);
-                }
-              } catch {}
-            }
-          }, 100);
+          // WIEDERHOLEND: Store activeAlarmId in threshold to prevent re-triggering on refresh
+          // Note: Set for ALL wiederholend thresholds (both requiresApproval=true and false)
+          // This prevents duplicate alarms after page refresh in both cases
+          if (threshold.decreaseFrequency === 'wiederholend') {
+            setTrendPriceSettings(prev => ({
+              ...prev,
+              [pair.id]: {
+                ...prev[pair.id],
+                thresholds: prev[pair.id].thresholds.map(t => 
+                  t.id === threshold.id ? { ...t, activeAlarmId: newAlarmIdDecrease } : t
+                )
+              }
+            }));
+            // Save immediately to localStorage
+            setTimeout(() => {
+              const stored = localStorage.getItem('notifications-threshold-settings');
+              if (stored) {
+                try {
+                  const parsed = JSON.parse(stored);
+                  if (parsed[pair.id]?.thresholds) {
+                    parsed[pair.id].thresholds = parsed[pair.id].thresholds.map((t: ThresholdConfig) => 
+                      t.id === threshold.id ? { ...t, activeAlarmId: newAlarmIdDecrease } : t
+                    );
+                    localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
+                    console.log(`[WIEDERHOLEND] Saved activeAlarmId ${newAlarmIdDecrease} to localStorage for threshold ${threshold.id}`);
+                  }
+                } catch {}
+              }
+            }, 100);
+          }
           
           // POST to backend for cross-device sync
           fetch('/api/active-alarms', {
@@ -1773,12 +1771,9 @@ export default function Notifications() {
         return remaining.length !== prev.length ? remaining : prev;
       });
       
-      // Clear direction-specific activeAlarmId from thresholds to allow re-triggering
-      // Uses triggerDirection to clear the correct field (activeAlarmIdIncrease or activeAlarmIdDecrease)
+      // WIEDERHOLEND: Clear activeAlarmId from thresholds to allow re-triggering
       alarmsToRemove.forEach(alarm => {
         if (alarm.thresholdId && alarm.pairId) {
-          const fieldToClear = alarm.triggerDirection === 'decrease' ? 'activeAlarmIdDecrease' : 'activeAlarmIdIncrease';
-          
           setTrendPriceSettings(prev => {
             const pairSettings = prev[alarm.pairId!];
             if (!pairSettings?.thresholds) return prev;
@@ -1787,16 +1782,11 @@ export default function Notifications() {
               ...prev,
               [alarm.pairId!]: {
                 ...pairSettings,
-                thresholds: pairSettings.thresholds.map(t => {
-                  if (t.id !== alarm.thresholdId) return t;
-                  // Check if this alarm's ID matches the stored activeAlarmId for its direction
-                  const storedAlarmId = alarm.triggerDirection === 'decrease' ? t.activeAlarmIdDecrease : t.activeAlarmIdIncrease;
-                  if (storedAlarmId !== alarm.id) return t;
-                  // Clear the correct direction-specific field
-                  return alarm.triggerDirection === 'decrease'
-                    ? { ...t, activeAlarmIdDecrease: undefined }
-                    : { ...t, activeAlarmIdIncrease: undefined };
-                })
+                thresholds: pairSettings.thresholds.map(t => 
+                  t.id === alarm.thresholdId && t.activeAlarmId === alarm.id
+                    ? { ...t, activeAlarmId: undefined }
+                    : t
+                )
               }
             };
           });
@@ -1806,16 +1796,13 @@ export default function Notifications() {
             try {
               const parsed = JSON.parse(stored);
               if (parsed[alarm.pairId!]?.thresholds) {
-                parsed[alarm.pairId!].thresholds = parsed[alarm.pairId!].thresholds.map((t: ThresholdConfig) => {
-                  if (t.id !== alarm.thresholdId) return t;
-                  const storedAlarmId = alarm.triggerDirection === 'decrease' ? t.activeAlarmIdDecrease : t.activeAlarmIdIncrease;
-                  if (storedAlarmId !== alarm.id) return t;
-                  return alarm.triggerDirection === 'decrease'
-                    ? { ...t, activeAlarmIdDecrease: undefined }
-                    : { ...t, activeAlarmIdIncrease: undefined };
-                });
+                parsed[alarm.pairId!].thresholds = parsed[alarm.pairId!].thresholds.map((t: ThresholdConfig) => 
+                  t.id === alarm.thresholdId && t.activeAlarmId === alarm.id
+                    ? { ...t, activeAlarmId: undefined }
+                    : t
+                );
                 localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
-                console.log(`[AUTO-DISMISS] Cleared ${fieldToClear} for threshold ${alarm.thresholdId}`);
+                console.log(`[AUTO-DISMISS] Cleared activeAlarmId for threshold ${alarm.thresholdId}`);
               }
             } catch {}
           }
@@ -1868,25 +1855,21 @@ export default function Notifications() {
                 const alarmConfigs = JSON.parse(localStorage.getItem('alarm-level-configs') || '{}');
                 const config = alarmConfigs[alarm.alarmLevel];
                 const restwartezeitMs = config ? 
-                  ((config.restwartezeitHours || 0) * 3600 + (config.restwartezeitMinutes || 0) * 60 + (config.restwartezeitSeconds || 0)) * 1000 
+                  (config.restwartezeitHours * 3600 + config.restwartezeitMinutes * 60 + config.restwartezeitSeconds) * 1000 
                   : 10000;
                 // Extend dismiss time: remaining reps * sequence + restwartezeit
                 const newTotalMs = remainingReps * effectiveSequenceMs + restwartezeitMs;
-                if (!isNaN(newTotalMs) && newTotalMs > 0) {
-                  newAutoDismissAt = new Date(now.getTime() + newTotalMs);
-                  console.log(`[AUTO-DISMISS] Extended: ${remainingReps} reps left x ${effectiveSequenceMs}ms + ${restwartezeitMs}ms rest = ${newTotalMs}ms, new dismiss at ${newAutoDismissAt.toISOString()}`);
-                }
+                newAutoDismissAt = new Date(now.getTime() + newTotalMs);
+                console.log(`[AUTO-DISMISS] Extended: ${remainingReps} reps left x ${effectiveSequenceMs}ms + ${restwartezeitMs}ms rest = ${newTotalMs}ms, new dismiss at ${newAutoDismissAt.toISOString()}`);
               } else {
                 // Last repetition completed - set dismiss to now + restwartezeit
                 const alarmConfigs = JSON.parse(localStorage.getItem('alarm-level-configs') || '{}');
                 const config = alarmConfigs[alarm.alarmLevel];
                 const restwartezeitMs = config ? 
-                  ((config.restwartezeitHours || 0) * 3600 + (config.restwartezeitMinutes || 0) * 60 + (config.restwartezeitSeconds || 0)) * 1000 
+                  (config.restwartezeitHours * 3600 + config.restwartezeitMinutes * 60 + config.restwartezeitSeconds) * 1000 
                   : 10000;
-                if (!isNaN(restwartezeitMs) && restwartezeitMs >= 0) {
-                  newAutoDismissAt = new Date(now.getTime() + restwartezeitMs);
-                  console.log(`[AUTO-DISMISS] Final rep done, dismiss in ${restwartezeitMs}ms at ${newAutoDismissAt.toISOString()}`);
-                }
+                newAutoDismissAt = new Date(now.getTime() + restwartezeitMs);
+                console.log(`[AUTO-DISMISS] Final rep done, dismiss in ${restwartezeitMs}ms at ${newAutoDismissAt.toISOString()}`);
               }
             }
             
@@ -2393,12 +2376,10 @@ export default function Notifications() {
       return updated;
     });
     
-    // Clear direction-specific activeAlarmId from threshold to allow re-triggering
+    // WIEDERHOLEND: Clear activeAlarmId from threshold to allow re-triggering
     if (alarmToRemove?.thresholdId && alarmToRemove?.pairId) {
       const thresholdIdToClear = alarmToRemove.thresholdId;
       const pairIdToClear = alarmToRemove.pairId;
-      const direction = alarmToRemove.triggerDirection;
-      const fieldToClear = direction === 'decrease' ? 'activeAlarmIdDecrease' : 'activeAlarmIdIncrease';
       
       setTrendPriceSettings(prev => {
         const pairSettings = prev[pairIdToClear];
@@ -2408,16 +2389,11 @@ export default function Notifications() {
           ...prev,
           [pairIdToClear]: {
             ...pairSettings,
-            thresholds: pairSettings.thresholds.map((t: ThresholdConfig) => {
-              if (t.id !== thresholdIdToClear) return t;
-              // Check if this alarm's ID matches the stored activeAlarmId for its direction
-              const storedAlarmId = direction === 'decrease' ? t.activeAlarmIdDecrease : t.activeAlarmIdIncrease;
-              if (storedAlarmId !== alarmId) return t;
-              // Clear the correct direction-specific field
-              return direction === 'decrease'
-                ? { ...t, activeAlarmIdDecrease: undefined }
-                : { ...t, activeAlarmIdIncrease: undefined };
-            })
+            thresholds: pairSettings.thresholds.map((t: ThresholdConfig) => 
+              t.id === thresholdIdToClear && t.activeAlarmId === alarmId
+                ? { ...t, activeAlarmId: undefined }
+                : t
+            )
           }
         };
       });
@@ -2428,16 +2404,13 @@ export default function Notifications() {
           try {
             const parsed = JSON.parse(stored);
             if (parsed[pairIdToClear]?.thresholds) {
-              parsed[pairIdToClear].thresholds = parsed[pairIdToClear].thresholds.map((t: ThresholdConfig) => {
-                if (t.id !== thresholdIdToClear) return t;
-                const storedAlarmId = direction === 'decrease' ? t.activeAlarmIdDecrease : t.activeAlarmIdIncrease;
-                if (storedAlarmId !== alarmId) return t;
-                return direction === 'decrease'
-                  ? { ...t, activeAlarmIdDecrease: undefined }
-                  : { ...t, activeAlarmIdIncrease: undefined };
-              });
+              parsed[pairIdToClear].thresholds = parsed[pairIdToClear].thresholds.map((t: ThresholdConfig) => 
+                t.id === thresholdIdToClear && t.activeAlarmId === alarmId
+                  ? { ...t, activeAlarmId: undefined }
+                  : t
+              );
               localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
-              console.log(`[DISMISS] Cleared ${fieldToClear} from threshold ${thresholdIdToClear} in localStorage`);
+              console.log(`[WIEDERHOLEND] Cleared activeAlarmId from threshold ${thresholdIdToClear} in localStorage`);
             }
           } catch {}
         }
