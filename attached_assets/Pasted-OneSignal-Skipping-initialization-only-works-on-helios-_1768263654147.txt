@@ -1,0 +1,136 @@
+OneSignal: Skipping initialization (only works on helios-ai.replit.app or helios-ai.app): 9318949e-a5e9-4b35-9e71-09724f6c1506-00-2exiw1hhay1ts.janeway.replit.dev
+notifications.tsx:242   GET https://fapi.binance.com/fapi/v1/exchangeInfo 418 (I'm a teapot)
+fetchAllBinanceFuturesPairs @ notifications.tsx:242
+(anonymous) @ notifications.tsx:357
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+schedulePerformWorkUntilDeadline @ scheduler.development.js:564
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+ReactDOMHydrationRoot.render.ReactDOMRoot.render @ react-dom.development.js:29353
+(anonymous) @ main.tsx:5
+notifications.tsx:247  Binance Futures API is geo-blocked (418/451). Using fallback pairs with no live prices.
+fetchAllBinanceFuturesPairs @ notifications.tsx:247
+await in fetchAllBinanceFuturesPairs
+(anonymous) @ notifications.tsx:357
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+schedulePerformWorkUntilDeadline @ scheduler.development.js:564
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+ReactDOMHydrationRoot.render.ReactDOMRoot.render @ react-dom.development.js:29353
+(anonymous) @ main.tsx:5
+notifications.tsx:252  Binance Futures API returned non-OK status, trying fallback...
+fetchAllBinanceFuturesPairs @ notifications.tsx:252
+await in fetchAllBinanceFuturesPairs
+(anonymous) @ notifications.tsx:357
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+_ @ inpage.js:166
+w @ inpage.js:166
+Y @ inpage.js:166
+postMessage
+h @ inpage.js:166
+v @ inpage.js:166
+schedulePerformWorkUntilDeadline @ scheduler.development.js:564
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+ReactDOMHydrationRoot.render.ReactDOMRoot.render @ react-dom.development.js:29353
+(anonymous) @ main.tsx:5
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+notifications.tsx:476 [TRENDPREIS-24/7] Neue Pairs hinzugefügt - sofortiger Preis-Fetch: Spot=0, Futures=2
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1043 [THRESHOLD-CHECK] Skipping - waiting for initial alarms to load from backend
+notifications.tsx:1626 [ACTIVE-ALARMS] Fetched 0 alarms from backend
+notifications.tsx:1642 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms from localStorage
+notifications.tsx:1648 [ACTIVE-ALARMS] Initial load complete - threshold checks enabled
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:677 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:476 [TRENDPREIS-24/7] Neue Pairs hinzugefügt - sofortiger Preis-Fetch: Spot=1, Futures=2
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ICPUSDT: $3.111 (-1.33%)
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ETHUSDT: $3098.85 (-0.78%)
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ICPUSDT: $3.111 (-1.33%)
+notifications.tsx:659 [TRENDPREIS-24/7] OKX ETHUSDT: $3098.85 (-0.78%)
+notifications.tsx:677 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:1049 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:503 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+notifications.tsx:635 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications:1  Error while trying to use the following icon from the Manifest: https://9318949e-a5e9-4b35-9e71-09724f6c1506-00-2exiw1hhay1ts.janeway.replit.dev/icon-192.png (Resource size is not correct - typo in the Manifest?)

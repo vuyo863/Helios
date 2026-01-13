@@ -157,13 +157,13 @@ export default function Notifications() {
   // Track if Futures API is geo-blocked (418 error) to prevent constant polling
   const [isFuturesBlocked, setIsFuturesBlocked] = useState(false);
 
-  // Funktion zum Laden aller verfügbaren Binance Spot Trading Pairs
-  // MIT FALLBACK: Wenn Binance geo-blocked ist, werden beliebte Paare als Fallback verwendet
+  // Funktion zum Laden aller verfügbaren Spot Trading Pairs
+  // DIREKT Fallback-Pairs verwenden (Binance ist geo-blocked in USA)
   const fetchAllBinancePairs = async () => {
     setIsSpotLoading(true);
     
-    // Fallback Pairs für geo-blocked Regions
-    const fallbackSymbols = [
+    // Beliebte Spot Pairs - werden mit OKX-Preisen gefüllt
+    const spotSymbols = [
       'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
       'DOGEUSDT', 'MATICUSDT', 'ICPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
       'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
@@ -172,183 +172,50 @@ export default function Notifications() {
       'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT'
     ];
     
-    const createFallbackPairs = () => {
-      return fallbackSymbols.map((symbol, index) => ({
-        id: `binance-spot-${index}`,
-        name: symbol.replace('USDT', '/USDT'),
-        symbol: symbol,
-        price: 'Loading...',
-        marketType: 'spot' as const
-      }));
-    };
+    const spotPairs: TrendPrice[] = spotSymbols.map((symbol, index) => ({
+      id: `binance-spot-${index}`,
+      name: symbol.replace('USDT', '/USDT'),
+      symbol: symbol,
+      price: 'Loading...',
+      marketType: 'spot' as const
+    }));
     
-    try {
-      const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-      
-      // Check for geo-block (418 or 451) or other errors
-      if (!response.ok || response.status === 418 || response.status === 451) {
-        console.warn('[SPOT] Binance API geo-blocked or error. Using fallback pairs with OKX prices.');
-        const fallbackPairs = createFallbackPairs();
-        setAllBinancePairs(fallbackPairs);
-        setAvailableTradingPairs(fallbackPairs);
-        setIsSpotLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-
-      // Filter für USDT und USDC Pairs
-      const pairs: TrendPrice[] = data.symbols
-        .filter((s: any) => 
-          s.status === 'TRADING' && 
-          (s.symbol.endsWith('USDT') || s.symbol.endsWith('USDC'))
-        )
-        .map((s: any, index: number) => ({
-          id: `binance-spot-${index}`,
-          name: s.symbol.replace('USDT', '/USDT').replace('USDC', '/USDC'),
-          symbol: s.symbol,
-          price: 'Loading...',
-          marketType: 'spot' as const
-        }));
-
-      setAllBinancePairs(pairs);
-
-      // Initialize availableTradingPairs with popular pairs
-      const popularSymbols = [
-        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
-        'DOGEUSDT', 'MATICUSDT', 'ICPUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
-        'BTCUSDC', 'ETHUSDC', 'SOLUSDC', 'BNBUSDC' // USDC pairs
-      ];
-
-      const popularPairs = pairs.filter(p => popularSymbols.includes(p.symbol));
-      setAvailableTradingPairs(popularPairs);
-
-    } catch (error) {
-      console.error('[SPOT] Error fetching Binance pairs, using fallback:', error);
-      // FALLBACK: Bei Netzwerkfehlern beliebte Paare verwenden
-      const fallbackPairs = createFallbackPairs();
-      setAllBinancePairs(fallbackPairs);
-      setAvailableTradingPairs(fallbackPairs);
-    } finally {
-      setIsSpotLoading(false);
-    }
+    console.log('[SPOT] Using OKX for Spot prices (Binance geo-blocked)');
+    setAllBinancePairs(spotPairs);
+    setAvailableTradingPairs(spotPairs);
+    setIsSpotLoading(false);
   };
 
-  // Funktion zum Laden aller verfügbaren Binance Futures Trading Pairs
+  // Funktion zum Laden aller verfügbaren Futures Trading Pairs
+  // DIREKT Fallback-Pairs verwenden (Binance ist geo-blocked in USA)
   const fetchAllBinanceFuturesPairs = async () => {
     setIsFuturesLoading(true);
-    try {
-      // Try Binance Futures API (may be geo-blocked in some regions)
-      const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
-      
-      // Check for geo-block (418 "I'm a teapot" or 451 "Unavailable for Legal Reasons")
-      const isGeoBlocked = response.status === 418 || response.status === 451;
-      if (isGeoBlocked) {
-        console.warn('Binance Futures API is geo-blocked (418/451). Using fallback pairs with no live prices.');
-        setIsFuturesBlocked(true);
-      }
-      
-      if (!response.ok) {
-        console.warn('Binance Futures API returned non-OK status, trying fallback...');
-        // Try to use popular pairs as fallback
-        const fallbackSymbols = [
-          'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
-          'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
-          'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
-          'ARBUSDT', 'OPUSDT', 'PEPEUSDT', 'WIFUSDT', 'ORDIUSDT',
-          'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
-          'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
-          'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
-          'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT',
-          'ICPUSDT', 'VETUSDT', 'XLMUSDT', 'ALGOUSDT', 'EOSUSDT',
-          'XTZUSDT', 'THETAUSDT', 'HBARUSDT', 'EGLDUSDT', 'FLOWUSDT',
-          'CHZUSDT', 'ENJUSDT', 'ZILUSDT', 'BATUSDT', 'ZRXUSDT',
-          'SNXUSDT', 'CRVUSDT', 'YFIUSDT', 'LRCUSDT', 'KSMUSDT',
-          'WAVESUSDT', 'DASHUSDT', 'ZECUSDT', 'ETCUSDT', 'NEOUSDT',
-          'IOSTUSDT', 'ONTUSDT', 'QTUMUSDT', 'IOTAUSDT', 'CELOUSDT',
-          'STXUSDT', 'KAVAUSDT', 'ONEUSDT', 'HOTUSDT', 'RVNUSDT',
-          'ZENUSDT', 'BCHUSDT', 'XMRUSDT', 'STORJUSDT', 'ANKRUSDT'
-        ];
-        // Use fallback pairs - CoinGecko will provide prices
-        const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
-          id: `binance-futures-${index}`,
-          name: symbol.replace('USDT', '/USDT'),
-          symbol: symbol,
-          price: 'Loading...',
-          marketType: 'futures' as const
-        }));
-        setAllBinanceFuturesPairs(fallbackPairs);
-        setIsFuturesLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-
-      // Filter für USDT Perpetual Futures
-      const futuresPairs: TrendPrice[] = data.symbols
-        .filter((s: any) => 
-          s.status === 'TRADING' && 
-          s.contractType === 'PERPETUAL' &&
-          s.symbol.endsWith('USDT')
-        )
-        .map((s: any, index: number) => ({
-          id: `binance-futures-${index}`,
-          name: s.symbol.replace('USDT', '/USDT'),
-          symbol: s.symbol,
-          price: 'Loading...',
-          marketType: 'futures' as const
-        }));
-
-      setAllBinanceFuturesPairs(futuresPairs);
-
-      // Initialize availableTradingPairs with popular futures pairs
-      const popularFuturesSymbols = [
-        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
-        'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT'
-      ];
-
-      const popularFuturesPairs = futuresPairs.filter(p => popularFuturesSymbols.includes(p.symbol));
-      
-      // Add popular futures pairs to availableTradingPairs
-      setAvailableTradingPairs(prev => {
-        // Avoid duplicates
-        const existingIds = new Set(prev.map(p => p.id));
-        const newPairs = popularFuturesPairs.filter(p => !existingIds.has(p.id));
-        return [...prev, ...newPairs];
-      });
-
-    } catch (error) {
-      console.error('Error fetching Binance Futures pairs:', error);
-      // Network error (likely geo-blocking) - use fallback
-      const fallbackSymbols = [
-        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
-        'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
-        'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
-        'ARBUSDT', 'OPUSDT', 'PEPEUSDT', 'WIFUSDT', 'ORDIUSDT',
-        'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
-        'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
-        'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
-        'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT',
-        'ICPUSDT', 'VETUSDT', 'XLMUSDT', 'ALGOUSDT', 'EOSUSDT',
-        'XTZUSDT', 'THETAUSDT', 'HBARUSDT', 'EGLDUSDT', 'FLOWUSDT',
-        'CHZUSDT', 'ENJUSDT', 'ZILUSDT', 'BATUSDT', 'ZRXUSDT',
-        'SNXUSDT', 'CRVUSDT', 'YFIUSDT', 'LRCUSDT', 'KSMUSDT',
-        'WAVESUSDT', 'DASHUSDT', 'ZECUSDT', 'ETCUSDT', 'NEOUSDT',
-        'IOSTUSDT', 'ONTUSDT', 'QTUMUSDT', 'IOTAUSDT', 'CELOUSDT',
-        'STXUSDT', 'KAVAUSDT', 'ONEUSDT', 'HOTUSDT', 'RVNUSDT',
-        'ZENUSDT', 'BCHUSDT', 'XMRUSDT', 'STORJUSDT', 'ANKRUSDT'
-      ];
-      const fallbackPairs: TrendPrice[] = fallbackSymbols.map((symbol, index) => ({
-        id: `binance-futures-${index}`,
-        name: symbol.replace('USDT', '/USDT'),
-        symbol: symbol,
-        price: 'Loading...',
-        marketType: 'futures' as const
-      }));
-      setAllBinanceFuturesPairs(fallbackPairs);
-    } finally {
-      setIsFuturesLoading(false);
-    }
+    
+    // Beliebte Futures Pairs - werden mit OKX-Preisen gefüllt
+    const futuresSymbols = [
+      'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+      'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT', 'LINKUSDT',
+      'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
+      'ARBUSDT', 'OPUSDT', 'PEPEUSDT', 'WIFUSDT', 'ORDIUSDT',
+      'SUIUSDT', 'SEIUSDT', 'TIAUSDT', 'INJUSDT', 'FETUSDT',
+      'AAVEUSDT', 'UNIUSDT', 'MKRUSDT', 'SUSHIUSDT', 'COMPUSDT',
+      'RNDRUSDT', 'GRTUSDT', 'FILUSDT', 'RUNEUSDT', 'SANDUSDT',
+      'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'APEUSDT', 'IMXUSDT',
+      'ICPUSDT', 'VETUSDT', 'XLMUSDT', 'ALGOUSDT', 'EOSUSDT'
+    ];
+    
+    const futuresPairs: TrendPrice[] = futuresSymbols.map((symbol, index) => ({
+      id: `binance-futures-${index}`,
+      name: symbol.replace('USDT', '/USDT'),
+      symbol: symbol,
+      price: 'Loading...',
+      marketType: 'futures' as const
+    }));
+    
+    console.log('[FUTURES] Using OKX for Futures prices (Binance geo-blocked)');
+    setIsFuturesBlocked(true); // Signal dass wir OKX verwenden
+    setAllBinanceFuturesPairs(futuresPairs);
+    setIsFuturesLoading(false);
   };
 
   // Load all Binance pairs on mount
