@@ -549,87 +549,89 @@ export default function Notifications() {
     }
   };
 
-  // Funktion zum Abrufen der Preise für Spot-Vorschläge (Suchergebnisse)
+  // Funktion zum Abrufen der Preise für Spot-Vorschläge (Suchergebnisse) - OKX
   const fetchSuggestionSpotPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
 
     try {
-      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
-      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`);
+      const symbolsParam = symbols.join(',');
+      const response = await fetch(`/api/okx/spot?symbols=${symbolsParam}`);
 
       if (!response.ok) {
-        console.error('Failed to fetch suggestion prices from Binance Spot API');
+        console.error('[SEARCH] Failed to fetch suggestion prices from OKX Spot API');
         return;
       }
 
       const data = await response.json();
+      console.log(`[SEARCH] OKX Spot prices for ${symbols.length} symbols`);
 
       setAllBinancePairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          const index = updated.findIndex(p => p.symbol === ticker.symbol);
-          if (index !== -1) {
-            updated[index] = {
-              ...updated[index],
-              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 8,
-              }),
-              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
-            };
-          }
+          const symbol = ticker.symbol;
+          const price = parseFloat(ticker.lastPrice);
+          
+          // Update ALL matching pairs
+          updated.forEach((p, index) => {
+            if (p.symbol === symbol) {
+              updated[index] = {
+                ...updated[index],
+                price: price.toLocaleString('de-DE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 8,
+                }),
+                priceChangePercent24h: ticker.priceChangePercent || '0.00',
+              };
+            }
+          });
         });
         return updated;
       });
     } catch (error) {
-      console.error('Error fetching suggestion spot prices:', error);
+      console.error('[SEARCH] Error fetching suggestion spot prices:', error);
     }
   };
 
-  // Funktion zum Abrufen der Preise für Futures-Vorschläge (Suchergebnisse)
+  // Funktion zum Abrufen der Preise für Futures-Vorschläge (Suchergebnisse) - OKX
   const fetchSuggestionFuturesPrices = async (symbols: string[]) => {
     if (symbols.length === 0) return;
-    
-    // Skip if Futures API is geo-blocked
-    if (isFuturesBlocked) return;
 
     try {
-      const symbolsParam = symbols.map(s => `"${s}"`).join(',');
-      const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbols=[${symbolsParam}]`);
-
-      if (response.status === 418 || response.status === 451) {
-        // Geo-blocked - stop polling to prevent console spam
-        console.warn('Binance Futures API geo-blocked (418/451). Stopping suggestion price polling.');
-        setIsFuturesBlocked(true);
-        return;
-      }
+      const symbolsParam = symbols.join(',');
+      const response = await fetch(`/api/okx/futures?symbols=${symbolsParam}`);
 
       if (!response.ok) {
-        console.error('Failed to fetch suggestion prices from Binance Futures API');
+        console.error('[SEARCH] Failed to fetch suggestion prices from OKX Futures API');
         return;
       }
 
       const data = await response.json();
+      console.log(`[SEARCH] OKX Futures prices for ${symbols.length} symbols`);
 
       setAllBinanceFuturesPairs(prev => {
         const updated = [...prev];
         data.forEach((ticker: any) => {
-          const index = updated.findIndex(p => p.symbol === ticker.symbol);
-          if (index !== -1) {
-            updated[index] = {
-              ...updated[index],
-              price: parseFloat(ticker.lastPrice).toLocaleString('de-DE', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 8,
-              }),
-              priceChangePercent24h: parseFloat(ticker.priceChangePercent).toFixed(2),
-            };
-          }
+          const symbol = ticker.symbol;
+          const price = parseFloat(ticker.lastPrice);
+          
+          // Update ALL matching pairs
+          updated.forEach((p, index) => {
+            if (p.symbol === symbol) {
+              updated[index] = {
+                ...updated[index],
+                price: price.toLocaleString('de-DE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 8,
+                }),
+                priceChangePercent24h: ticker.priceChangePercent || '0.00',
+              };
+            }
+          });
         });
         return updated;
       });
     } catch (error) {
-      console.error('Error fetching suggestion futures prices:', error);
+      console.error('[SEARCH] Error fetching suggestion futures prices:', error);
     }
   };
 
