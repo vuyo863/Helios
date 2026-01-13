@@ -993,17 +993,17 @@ export default function Notifications() {
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT erreicht (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
           // Calculate sequence in ms for repetitions (minimum 1 second if 0)
-          const rawSequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+          const rawSequenceMs = ((Number(alarmConfig.sequenceHours) || 0) * 3600 + (Number(alarmConfig.sequenceMinutes) || 0) * 60 + (Number(alarmConfig.sequenceSeconds) || 0)) * 1000;
           const alarmSequenceMs = rawSequenceMs > 0 ? rawSequenceMs : 1000; // Minimum 1 second between repetitions
           
           // Calculate auto-dismiss time if approval not required
           let autoDismissAt: Date | undefined;
           if (!alarmConfig.requiresApproval && alarmConfig.repeatCount !== 'infinite') {
-            const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
-            const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
+            const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : (parseInt(String(alarmConfig.repeatCount), 10) || 1);
+            const restwartezeitMs = ((Number(alarmConfig.restwartezeitHours) || 0) * 3600 + (Number(alarmConfig.restwartezeitMinutes) || 0) * 60 + (Number(alarmConfig.restwartezeitSeconds) || 0)) * 1000;
             // Total time = (repeatCount-1) * sequence + restwartezeit
             // First notification is immediate, then (repeatCount-1) more with sequence delay, then restwartezeit
-            const totalMs = Math.max(0, repeatCount - 1) * alarmSequenceMs + restwartezeitMs;
+            const totalMs = Math.max(0, repeatCount - 1) * alarmSequenceMs + (Number.isNaN(restwartezeitMs) ? 10000 : restwartezeitMs);
             autoDismissAt = new Date(Date.now() + totalMs);
             console.log(`[AUTO-DISMISS] Calculated: ${repeatCount} reps x ${alarmSequenceMs}ms seq + ${restwartezeitMs}ms rest = ${totalMs}ms total, dismiss at ${autoDismissAt.toISOString()}`);
           }
@@ -1129,7 +1129,7 @@ export default function Notifications() {
 
           // Handle repeating notifications
           if (threshold.increaseFrequency === 'wiederholend') {
-            const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+            const sequenceMs = ((Number(alarmConfig.sequenceHours) || 0) * 3600 + (Number(alarmConfig.sequenceMinutes) || 0) * 60 + (Number(alarmConfig.sequenceSeconds) || 0)) * 1000;
             const cooldown = sequenceMs > 0 ? sequenceMs : 60000; // Default 1 minute
 
             setTimeout(() => {
@@ -1184,17 +1184,17 @@ export default function Notifications() {
             : `${pair.name}: Schwellenwert ${thresholdValue} USDT unterschritten (aktuell: ${currentPrice.toFixed(2)} USDT)`;
 
           // Calculate sequence in ms for repetitions (minimum 1 second if 0)
-          const rawSequenceMsDecrease = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+          const rawSequenceMsDecrease = ((Number(alarmConfig.sequenceHours) || 0) * 3600 + (Number(alarmConfig.sequenceMinutes) || 0) * 60 + (Number(alarmConfig.sequenceSeconds) || 0)) * 1000;
           const alarmSequenceMsDecrease = rawSequenceMsDecrease > 0 ? rawSequenceMsDecrease : 1000; // Minimum 1 second
           
           // Calculate auto-dismiss time if approval not required
           let autoDismissAtDecrease: Date | undefined;
           if (!alarmConfig.requiresApproval && alarmConfig.repeatCount !== 'infinite') {
-            const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : 1;
-            const restwartezeitMs = (alarmConfig.restwartezeitHours * 3600 + alarmConfig.restwartezeitMinutes * 60 + alarmConfig.restwartezeitSeconds) * 1000;
+            const repeatCount = typeof alarmConfig.repeatCount === 'number' ? alarmConfig.repeatCount : (parseInt(String(alarmConfig.repeatCount), 10) || 1);
+            const restwartezeitMs = ((Number(alarmConfig.restwartezeitHours) || 0) * 3600 + (Number(alarmConfig.restwartezeitMinutes) || 0) * 60 + (Number(alarmConfig.restwartezeitSeconds) || 0)) * 1000;
             // Total time = (repeatCount-1) * sequence + restwartezeit
             // First notification immediate, then remaining with sequence delay, then restwartezeit countdown
-            const totalMs = Math.max(0, repeatCount - 1) * alarmSequenceMsDecrease + restwartezeitMs;
+            const totalMs = Math.max(0, repeatCount - 1) * alarmSequenceMsDecrease + (Number.isNaN(restwartezeitMs) ? 10000 : restwartezeitMs);
             autoDismissAtDecrease = new Date(Date.now() + totalMs);
             console.log(`[AUTO-DISMISS] Decrease: ${repeatCount} reps x ${alarmSequenceMsDecrease}ms seq + ${restwartezeitMs}ms rest = ${totalMs}ms total`);
           }
@@ -1320,7 +1320,7 @@ export default function Notifications() {
 
           // Handle repeating notifications
           if (threshold.decreaseFrequency === 'wiederholend') {
-            const sequenceMs = (alarmConfig.sequenceHours * 3600 + alarmConfig.sequenceMinutes * 60 + alarmConfig.sequenceSeconds) * 1000;
+            const sequenceMs = ((Number(alarmConfig.sequenceHours) || 0) * 3600 + (Number(alarmConfig.sequenceMinutes) || 0) * 60 + (Number(alarmConfig.sequenceSeconds) || 0)) * 1000;
             const cooldown = sequenceMs > 0 ? sequenceMs : 60000; // Default 1 minute
 
             setTimeout(() => {
