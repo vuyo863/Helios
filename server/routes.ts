@@ -1691,6 +1691,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEST ENDPOINT: Simulate fallback tiers for testing
+  app.get("/api/test-fallback-tiers", async (req, res) => {
+    const tier = parseInt(req.query.tier as string) || 1;
+    const symbol = (req.query.symbol as string) || 'BTCUSDT';
+    
+    console.log(`[TEST-FALLBACK] Testing Tier ${tier} for ${symbol}`);
+    
+    let result: any = null;
+    let tierUsed = '';
+    
+    switch (tier) {
+      case 1:
+        // TIER 1: Normal OKX fetch
+        const base = symbol.replace('USDT', '');
+        const okxInstId = `${base}-USDT`;
+        try {
+          const response = await fetch(`https://www.okx.com/api/v5/market/ticker?instId=${okxInstId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.code === '0' && data.data?.[0]) {
+              const ticker = data.data[0];
+              result = { symbol, lastPrice: ticker.last, source: 'OKX' };
+              saveLastKnownGood(symbol, result, 'spot'); // Save for tier 2 tests
+              tierUsed = 'Tier1-OKX';
+            }
+          }
+        } catch (e) {}
+        break;
+        
+      case 2:
+        // TIER 2: Last-Known-Good (simulate OKX failure)
+        console.log(`[TEST-FALLBACK] Simulating OKX failure, trying LKG...`);
+        const lkg = getLastKnownGood(symbol, 'spot');
+        if (lkg) {
+          result = { ...lkg, source: 'LKG-Test' };
+          tierUsed = 'Tier2-LKG';
+          console.log(`[TEST-FALLBACK] LKG found for ${symbol}: ${lkg.lastPrice}`);
+        } else {
+          console.log(`[TEST-FALLBACK] No LKG data for ${symbol}`);
+        }
+        break;
+        
+      case 3:
+        // TIER 3: CoinGecko fallback (simulate OKX + LKG failure)
+        console.log(`[TEST-FALLBACK] Simulating OKX+LKG failure, trying CoinGecko...`);
+        const cgPrice = await fetchCoinGeckoPrice(symbol);
+        if (cgPrice) {
+          result = { ...cgPrice, source: 'CoinGecko-Test' };
+          tierUsed = 'Tier3-CoinGecko';
+          console.log(`[TEST-FALLBACK] CoinGecko found for ${symbol}: ${cgPrice.lastPrice}`);
+        } else {
+          console.log(`[TEST-FALLBACK] No CoinGecko data for ${symbol}`);
+        }
+        break;
+        
+      case 4:
+        // TIER 4: Stale cache (simulate all external sources failed)
+        console.log(`[TEST-FALLBACK] Simulating all APIs failed, trying stale cache...`);
+        if (okxSpotCacheData.has(symbol)) {
+          const stale = okxSpotCacheData.get(symbol);
+          result = { ...stale, source: 'Stale-Cache-Test' };
+          tierUsed = 'Tier4-StaleCache';
+          console.log(`[TEST-FALLBACK] Stale cache found for ${symbol}: ${stale.lastPrice}`);
+        } else {
+          console.log(`[TEST-FALLBACK] No stale cache for ${symbol}`);
+        }
+        break;
+        
+      case 5:
+        // TIER 5: Emergency static fallback
+        console.log(`[TEST-FALLBACK] Simulating complete failure, using emergency...`);
+        result = { symbol, lastPrice: '0', source: 'Emergency-NoData-Test' };
+        tierUsed = 'Tier5-Emergency';
+        break;
+    }
+    
+    if (!result) {
+      result = { symbol, lastPrice: '0', source: 'Emergency-NoData-Test', tierUsed: 'Tier5-Fallback' };
+      tierUsed = 'Tier5-Fallback (no data at requested tier)';
+    }
+    
+    res.json({ 
+      requestedTier: tier, 
+      tierUsed, 
+      result,
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // CoinGecko Proxy - kept as fallback but not primary source anymore
   let coinGeckoCacheData: any = null;
   let coinGeckoCacheTime: number = 0;
