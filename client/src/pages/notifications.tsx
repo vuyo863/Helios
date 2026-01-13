@@ -1868,21 +1868,25 @@ export default function Notifications() {
                 const alarmConfigs = JSON.parse(localStorage.getItem('alarm-level-configs') || '{}');
                 const config = alarmConfigs[alarm.alarmLevel];
                 const restwartezeitMs = config ? 
-                  (config.restwartezeitHours * 3600 + config.restwartezeitMinutes * 60 + config.restwartezeitSeconds) * 1000 
+                  ((config.restwartezeitHours || 0) * 3600 + (config.restwartezeitMinutes || 0) * 60 + (config.restwartezeitSeconds || 0)) * 1000 
                   : 10000;
                 // Extend dismiss time: remaining reps * sequence + restwartezeit
                 const newTotalMs = remainingReps * effectiveSequenceMs + restwartezeitMs;
-                newAutoDismissAt = new Date(now.getTime() + newTotalMs);
-                console.log(`[AUTO-DISMISS] Extended: ${remainingReps} reps left x ${effectiveSequenceMs}ms + ${restwartezeitMs}ms rest = ${newTotalMs}ms, new dismiss at ${newAutoDismissAt.toISOString()}`);
+                if (!isNaN(newTotalMs) && newTotalMs > 0) {
+                  newAutoDismissAt = new Date(now.getTime() + newTotalMs);
+                  console.log(`[AUTO-DISMISS] Extended: ${remainingReps} reps left x ${effectiveSequenceMs}ms + ${restwartezeitMs}ms rest = ${newTotalMs}ms, new dismiss at ${newAutoDismissAt.toISOString()}`);
+                }
               } else {
                 // Last repetition completed - set dismiss to now + restwartezeit
                 const alarmConfigs = JSON.parse(localStorage.getItem('alarm-level-configs') || '{}');
                 const config = alarmConfigs[alarm.alarmLevel];
                 const restwartezeitMs = config ? 
-                  (config.restwartezeitHours * 3600 + config.restwartezeitMinutes * 60 + config.restwartezeitSeconds) * 1000 
+                  ((config.restwartezeitHours || 0) * 3600 + (config.restwartezeitMinutes || 0) * 60 + (config.restwartezeitSeconds || 0)) * 1000 
                   : 10000;
-                newAutoDismissAt = new Date(now.getTime() + restwartezeitMs);
-                console.log(`[AUTO-DISMISS] Final rep done, dismiss in ${restwartezeitMs}ms at ${newAutoDismissAt.toISOString()}`);
+                if (!isNaN(restwartezeitMs) && restwartezeitMs >= 0) {
+                  newAutoDismissAt = new Date(now.getTime() + restwartezeitMs);
+                  console.log(`[AUTO-DISMISS] Final rep done, dismiss in ${restwartezeitMs}ms at ${newAutoDismissAt.toISOString()}`);
+                }
               }
             }
             
