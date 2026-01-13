@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. It offers detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytics. The application also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities.
+A full-stack web application designed for tracking and analyzing profits from Pionex trading bots. It provides comprehensive insights into bot performance through profit trend visualization, bot type comparison, and advanced analytics. Additionally, the application includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The primary goal is to equip cryptocurrency traders with robust analytics and timely notifications, enabling them to make informed trading decisions and leverage market opportunities effectively.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -24,8 +24,9 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Reaktivierung:** User kann Toggle zurück auf "Aktiv" setzen → Status wird "0/1", kann erneut triggern
   - **Single State Update:** Beide Updates (isActive + triggerCount) erfolgen in EINEM `setTrendPriceSettings` Aufruf um Race Conditions zu vermeiden
   - **Status-Anzeige Logik:** Prüft `isActive === false` (persistiert) ODER `triggeredThresholds` (Session)
+  - **Duplikat-Prevention (V1.1):** `activeAlarmId` wird jetzt auch für Einmalig gesetzt um Duplikate nach Page Refresh zu verhindern
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_einmalig_threshold_logic.md` für vollständigen Code-Snapshot
-  - **Unit Tests:** 10 Tests in `server/threshold-einmalig.test.ts` (alle bestanden)
+  - **Unit Tests:** 20 Tests in `server/test-einmalig-wiederholend-duplicates.ts` (alle bestanden)
 - **Golden State - Wiederholend Threshold Logic**: Die komplette Logik für "Häufigkeit: Wiederholend" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Verhalten:** Neuer Schwellenwert zeigt "0 ∞", Toggle = "Aktiv"
   - **Nach Trigger:** Counter wird erhöht, Status zeigt "X ∞" (X = Anzahl Trigger), Toggle bleibt "Aktiv"
@@ -66,58 +67,31 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard includes MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display.
+The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is employed for dynamic data visualization, and Wouter manages client-side routing. The dashboard features MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page includes a watchlist with live Binance prices, a configurable threshold system across four alarm levels, and an active alerts display. PWA support is enabled via `manifest.json` and Apple Meta-Tags.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
 - **Backend**: Express.js with TypeScript.
 - **State Management**: TypeScript-typed state with `useMemo` hooks for optimization.
 - **Data Persistence**: Watchlist and pair market types are persisted in `localStorage`.
-- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
-- **Push Notification Integration**: OneSignal is used for web and native push notifications, with a unified frontend toggle. The backend `/api/notifications/push-enhanced` route handles enhanced delivery.
-- **PWA Support**: `manifest.json` and Apple Meta-Tags enable PWA functionality.
-
-### Feature Specifications
-- **Charts**: Interactive marker system, zoom & pan.
-- **AI-Analysis**: Integration with OpenAI.
-- **Info-Tooltips**: Contextual explanations.
-- **Notifications**:
-  - Real-time price tracking watchlist.
-  - Configurable price alerts with German number formatting.
-  - Web Push Notifications via OneSignal.
-  - Native Push Notifications (PWA) for iOS and Android.
-  - SMS Notifications via Twilio.
-  - Alarm Approval System with auto-dismiss and repetition logic.
-  - Cross-Device Alarm Synchronization through a backend API.
-  - Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
-  - **5-Tier Fallback Preissystem (99%+ Zuverlässigkeit)**:
-    - **Tier 1 (Primary)**: OKX API mit 2s Cache (Spot: `/api/okx/spot`, Futures: `/api/okx/futures`)
-    - **Tier 2 (LKG)**: Last-Known-Good Cache mit 24h Persistenz im Server-Memory
-    - **Tier 3 (CoinGecko)**: Automatischer Fallback zu CoinGecko für Spot-Preise
-    - **Tier 4 (Stale)**: Stale Cache Rückgabe bei partiellen API-Ausfällen
-    - **Tier 5 (Emergency)**: Statische Emergency-Werte (source: `Emergency-NoData`)
-    - **Background-Updater**: Server-seitiges 30s Intervall aktualisiert 8 populäre Symbole (BTC, ETH, SOL, BNB, XRP, ICP, DOGE, ADA) unabhängig von Client-Aktivität
-    - **Per-Symbol Guarantee**: Jedes angefragte Symbol erhält garantiert einen Preis (keine partiellen Antworten)
-  - **Frontend Backup System**:
-    - **Primary**: 2-Sekunden-Intervall für Preis-Updates
-    - **Backup #1**: Exponential Backoff Retry bei API-Fehlern (max 5 Retries, bis 10s Delay)
-    - **Backup #2**: Page Visibility API triggert sofortigen Refetch wenn Tab reaktiviert wird
-    - **Backup #3**: Watchdog prüft alle 30s ob `lastPriceUpdateRef` veraltet ist und erzwingt Neustart
-    - **Sofortiger Preis-Fetch**: Neue Watchlist-Pairs triggern sofortigen Preis-Fetch statt auf Intervall zu warten
+- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals. Re-trigger prevention for both "Einmalig" and "Wiederholend" thresholds is implemented using `activeAlarmId` to prevent duplicates after page refresh.
+- **Push Notification Integration**: OneSignal provides web and native push notifications, controlled by a unified frontend toggle. The backend `/api/notifications/push-enhanced` route handles enhanced delivery.
+- **5-Tier Fallback Price System**: Ensures 99%+ reliability for crypto prices using OKX, Last-Known-Good Cache, CoinGecko, Stale Cache, and Emergency static values. A server-side background updater fetches prices for 8 popular symbols every 30 seconds.
+- **Frontend Price Backup System**: Includes exponential backoff retries, immediate refetch on tab reactivation, and a watchdog mechanism to ensure fresh price data.
 
 ### System Design Choices
-- **Modular Architecture**: Clear separation of concerns.
-- **Stable ID Handling**: Symbol-based lookup for futures pairs.
-- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key.
-- **Multi-Environment Database**: `server/db.ts` uses `RUNTIME_ENV` to switch between Neon Serverless (Replit) and PostgreSQL (server) with Drizzle ORM.
-- **OneSignal Domain Configuration**: Supports multiple production domains (`helios-ai.replit.app`, `helios-ai.app`).
+- **Modular Architecture**: Emphasizes clear separation of concerns.
+- **Stable ID Handling**: Uses symbol-based lookup for futures pairs.
+- **OneSignal Configuration**: Utilizes a specific App ID, Site URL, and REST API Key, supporting multiple production domains (`helios-ai.replit.app`, `helios-ai.app`).
+- **Multi-Environment Database**: `server/db.ts` dynamically switches between Neon Serverless (Replit) and PostgreSQL (server) using Drizzle ORM based on `RUNTIME_ENV`.
+- **Direction-Specific Alarm Locking**: Implements `activeAlarmIdIncrease` and `activeAlarmIdDecrease` to allow independent operation of increase and decrease alarms.
 
 ## External Dependencies
-- **Database**: Neon Serverless (Replit) or PostgreSQL (server) with Drizzle ORM.
+- **Database**: Neon Serverless (Replit) or PostgreSQL with Drizzle ORM.
 - **Backend Framework**: Express.js.
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
-- **Crypto Data**: OKX API (Spot and Futures), CoinGecko Fallback.
-- **Web Push Notifications**: OneSignal Web Push SDK v16.
+- **Crypto Data**: OKX API (Spot and Futures), CoinGecko.
+- **Web Push Notifications**: OneSignal Web Push SDK.
 - **SMS Notifications**: Twilio.
