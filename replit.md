@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. It offers detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytics. The application also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities, with market potential to provide reliable, real-time cryptocurrency data and analytics.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots. It offers detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytics. The application also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -42,15 +42,6 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Backend-Routen:** `/api/notifications/web-push`, `/api/test-native-push`, `/api/notifications/push-enhanced`
   - **Unified Logic:** Ein Toggle kontrolliert beide internen Werte (webPush + nativePush), da OneSignal keine Geräte-Trennung unterstützt
   - **Push Test Button:** Versteckt hinter Auge-Symbol (Eye/EyeOff Toggle) in der Header-Zeile der Notifications-Seite
-- **DIAMOND STATE - Trendpreise & Watchlist V1**: Die komplette "Trendpreise & Watchlist" Section inkl. 5-Tier Fallback Preissystem ist DIAMOND STATE (höchster Schutz) und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
-  - **Dokumentation:** Siehe `docs/DIAMOND_STATE_trendpreise_watchlist_v1.md` für vollständigen Code-Snapshot und Implementierungsdetails
-  - **UI-Elemente:** Suchfeld, Spot/Futures Toggle, Watchlist-Anzeige mit Live-Preisen
-  - **API-Endpunkte:** `/api/okx/spot`, `/api/okx/futures`, `/api/test-fallback-tiers`
-  - **5-Tier Fallback System:** OKX → LKG → CoinGecko → Stale → Emergency
-  - **Per-Symbol Garantie:** JEDES angefragte Symbol erhält garantiert einen Preis
-  - **Background-Updater:** Server-seitig 30s Intervall für 8 populäre Symbole
-  - **Cache-Strategie:** 2s TTL für Echtzeit, 24h LKG Persistenz
-  - **Tests:** 23+ erfolgreiche Tests über alle 5 Tier-Stufen
 - **DIAMOND STATE - Alarmierungsstufen konfigurieren**: Die komplette "Alarmierungsstufen konfigurieren" Section ist DIAMOND STATE (höchster Schutz) und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **4 Alarm-Level-Karten:** Harmlos (blau), Achtung (gelb), Gefährlich (orange), Sehr Gefährlich (rot) im 2x2 Grid
   - **Karten-Anzeige:** Aktive Kanäle, Approval-Status, Wiederholung (Xx oder ∞), Sequenz, Restwartezeit
@@ -66,37 +57,58 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard includes MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display. PWA functionality is supported via `manifest.json` and Apple Meta-Tags.
+The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard includes MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
 - **Backend**: Express.js with TypeScript.
 - **State Management**: TypeScript-typed state with `useMemo` hooks for optimization.
 - **Data Persistence**: Watchlist and pair market types are persisted in `localStorage`.
-- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals. Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
-- **Price Data System**: A 5-Tier Fallback System ensures 99%+ reliability for cryptocurrency prices:
-    - **Tier 1 (Primary)**: OKX API with 2s cache.
-    - **Tier 2 (LKG)**: Last-Known-Good Cache with 24h persistence.
-    - **Tier 3 (CoinGecko)**: Automatic fallback for spot prices.
-    - **Tier 4 (Stale)**: Stale Cache return for partial API outages.
-    - **Tier 5 (Emergency)**: Static emergency values.
-    - **Background-Updater**: Server-side 30s interval for 8 popular symbols.
-    - **Frontend Backup System**: Exponential backoff retry, Page Visibility API re-fetch, and a watchdog for `lastPriceUpdateRef`.
-- **Push Notification Integration**: OneSignal for web and native push notifications, with a unified frontend toggle.
+- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
+- **Push Notification Integration**: OneSignal is used for web and native push notifications, with a unified frontend toggle. The backend `/api/notifications/push-enhanced` route handles enhanced delivery.
 - **PWA Support**: `manifest.json` and Apple Meta-Tags enable PWA functionality.
+
+### Feature Specifications
+- **Charts**: Interactive marker system, zoom & pan.
+- **AI-Analysis**: Integration with OpenAI.
+- **Info-Tooltips**: Contextual explanations.
+- **Notifications**:
+  - Real-time price tracking watchlist.
+  - Configurable price alerts with German number formatting.
+  - Web Push Notifications via OneSignal.
+  - Native Push Notifications (PWA) for iOS and Android.
+  - SMS Notifications via Twilio.
+  - Alarm Approval System with auto-dismiss and repetition logic.
+  - Cross-Device Alarm Synchronization through a backend API.
+  - Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
+  - **5-Tier Fallback Preissystem (99%+ Zuverlässigkeit)**:
+    - **Tier 1 (Primary)**: OKX API mit 2s Cache (Spot: `/api/okx/spot`, Futures: `/api/okx/futures`)
+    - **Tier 2 (LKG)**: Last-Known-Good Cache mit 24h Persistenz im Server-Memory
+    - **Tier 3 (CoinGecko)**: Automatischer Fallback zu CoinGecko für Spot-Preise
+    - **Tier 4 (Stale)**: Stale Cache Rückgabe bei partiellen API-Ausfällen
+    - **Tier 5 (Emergency)**: Statische Emergency-Werte (source: `Emergency-NoData`)
+    - **Background-Updater**: Server-seitiges 30s Intervall aktualisiert 8 populäre Symbole (BTC, ETH, SOL, BNB, XRP, ICP, DOGE, ADA) unabhängig von Client-Aktivität
+    - **Per-Symbol Guarantee**: Jedes angefragte Symbol erhält garantiert einen Preis (keine partiellen Antworten)
+  - **Frontend Backup System**:
+    - **Primary**: 2-Sekunden-Intervall für Preis-Updates
+    - **Backup #1**: Exponential Backoff Retry bei API-Fehlern (max 5 Retries, bis 10s Delay)
+    - **Backup #2**: Page Visibility API triggert sofortigen Refetch wenn Tab reaktiviert wird
+    - **Backup #3**: Watchdog prüft alle 30s ob `lastPriceUpdateRef` veraltet ist und erzwingt Neustart
+    - **Sofortiger Preis-Fetch**: Neue Watchlist-Pairs triggern sofortigen Preis-Fetch statt auf Intervall zu warten
 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
 - **Stable ID Handling**: Symbol-based lookup for futures pairs.
+- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key.
 - **Multi-Environment Database**: `server/db.ts` uses `RUNTIME_ENV` to switch between Neon Serverless (Replit) and PostgreSQL (server) with Drizzle ORM.
-- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key supporting multiple production domains (`helios-ai.replit.app`, `helios-ai.app`).
+- **OneSignal Domain Configuration**: Supports multiple production domains (`helios-ai.replit.app`, `helios-ai.app`).
 
 ## External Dependencies
-- **Database**: Neon Serverless (Replit), PostgreSQL with Drizzle ORM.
+- **Database**: Neon Serverless (Replit) or PostgreSQL (server) with Drizzle ORM.
 - **Backend Framework**: Express.js.
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
-- **Crypto Data**: OKX API (Spot and Futures), CoinGecko.
+- **Crypto Data**: OKX API (Spot and Futures), CoinGecko Fallback.
 - **Web Push Notifications**: OneSignal Web Push SDK v16.
 - **SMS Notifications**: Twilio.
