@@ -3075,21 +3075,39 @@ export default function Notifications() {
             <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
           </CardHeader>
           <CardContent>
-            {watchlist.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                  <Bell className="w-12 h-12 opacity-50" />
-                  <p>Keine Trendpreise in der Watchlist.</p>
-                  <p className="text-sm">Fügen Sie Trendpreise zur Watchlist hinzu, um Benachrichtigungen zu konfigurieren.</p>
-                </div>
-              </div>
-            ) : (
+            {/* Kombinierte Liste: Watchlist + Pairs mit Schwellenwerten die nicht in Watchlist sind */}
+            {(() => {
+              // Finde alle Pairs mit Schwellenwerten die nicht in der Watchlist sind
+              const pairsWithThresholdsNotInWatchlist = Object.keys(trendPriceSettings).filter(id => {
+                const settings = trendPriceSettings[id];
+                const hasThresholds = settings?.thresholds?.some(t => 
+                  t.threshold && t.threshold.trim() !== '' && (t.notifyOnIncrease || t.notifyOnDecrease)
+                );
+                return hasThresholds && !watchlist.includes(id);
+              });
+              
+              // Kombinierte Liste: Watchlist zuerst, dann pausierte Pairs
+              const allPairsToShow = [...watchlist, ...pairsWithThresholdsNotInWatchlist];
+              
+              if (allPairsToShow.length === 0) {
+                return (
+                  <div className="p-8 text-center">
+                    <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                      <Bell className="w-12 h-12 opacity-50" />
+                      <p>Keine Trendpreise in der Watchlist.</p>
+                      <p className="text-sm">Fügen Sie Trendpreise zur Watchlist hinzu, um Benachrichtigungen zu konfigurieren.</p>
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
             <>
 
-            {/* Check if there are any saved thresholds across all watchlist items */}
+            {/* Check if there are any saved thresholds across all pairs (watchlist + paused) */}
             {/* WICHTIG: Only exclude threshold if we're CREATING a new one (not editing existing) */}
             {(() => {
-              const hasAnyThresholds = watchlist.some(trendPriceId => {
+              const hasAnyThresholds = allPairsToShow.some(trendPriceId => {
                 const settings = trendPriceSettings[trendPriceId];
                 const savedThresholds = settings?.thresholds.filter(t => {
                   // Only exclude if we're creating a NEW threshold AND this is that threshold
@@ -3123,7 +3141,7 @@ export default function Notifications() {
                           </DialogHeader>
                           <ScrollArea className="max-h-[60vh] pr-4 pl-2">
                             <div className="space-y-4">
-                              {watchlist.map((trendPriceId) => {
+                              {allPairsToShow.map((trendPriceId) => {
                                 const pair = getTrendPrice(trendPriceId);
 
                                 const storedMarketType = pairMarketTypes[trendPriceId]?.marketType || 'spot';
@@ -3460,7 +3478,7 @@ export default function Notifications() {
               }
 
               // Count how many items have active thresholds (will be rendered)
-              const activeItemCount = watchlist.filter(trendPriceId => {
+              const activeItemCount = allPairsToShow.filter(trendPriceId => {
                 const settings = trendPriceSettings[trendPriceId];
                 const savedThresholds = settings?.thresholds.filter(t => 
                   t.threshold && 
@@ -3470,8 +3488,8 @@ export default function Notifications() {
                 return savedThresholds.length > 0;
               }).length;
 
-              // Sort watchlist alphabetically based on notificationSortOrder
-              const sortedWatchlist = [...watchlist].sort((a, b) => {
+              // Sort allPairsToShow alphabetically based on notificationSortOrder
+              const sortedWatchlist = [...allPairsToShow].sort((a, b) => {
                 const nameA = getTrendPriceName(a).toLowerCase();
                 const nameB = getTrendPriceName(b).toLowerCase();
                 if (notificationSortOrder === 'asc') {
@@ -3499,10 +3517,10 @@ export default function Notifications() {
                       </DialogHeader>
                       <ScrollArea className={cn(
                         "pr-4 pl-2",
-                        watchlist.length > 3 ? "h-[400px]" : ""
+                        allPairsToShow.length > 3 ? "h-[400px]" : ""
                       )}>
                         <div className="space-y-4">
-                          {watchlist.map((trendPriceId) => {
+                          {allPairsToShow.map((trendPriceId) => {
                             const pair = getTrendPrice(trendPriceId);
 
                             const storedMarketType = pairMarketTypes[trendPriceId]?.marketType || 'spot';
@@ -4230,7 +4248,8 @@ export default function Notifications() {
               );
             })()}
             </>
-            )}
+          );
+        })()}
           </CardContent>
         </Card>
 
