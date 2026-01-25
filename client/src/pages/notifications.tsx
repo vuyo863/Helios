@@ -1373,54 +1373,59 @@ export default function Notifications() {
     localStorage.setItem('notifications-pair-market-types', JSON.stringify(pairMarketTypes));
   }, [pairMarketTypes]);
 
-  // REMOVED: Automatic save on every change - now only saves on explicit "Speichern" click
-  // Save function to be called explicitly when user clicks "Speichern"
-  // Also syncs to backend for cross-device sync
-  const saveSettingsToStorage = () => {
-    localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
-    
-    // Sync all thresholds to backend with ALL fields
-    const allThresholds: Array<{
-      pairId: string;
-      thresholdId: string;
-      threshold: string;
-      notifyOnIncrease: boolean;
-      notifyOnDecrease: boolean;
-      increaseFrequency: 'einmalig' | 'wiederholend';
-      decreaseFrequency: 'einmalig' | 'wiederholend';
-      alarmLevel: string;
-      note: string;
-      isActive: boolean;
-      triggerCount: number;
-      activeAlarmId?: string;
-    }> = [];
-    
-    Object.entries(trendPriceSettings).forEach(([pairId, settings]) => {
-      settings.thresholds.forEach((t: ThresholdConfig) => {
-        allThresholds.push({
-          pairId,
-          thresholdId: t.id,
-          threshold: t.threshold || '',
-          notifyOnIncrease: t.notifyOnIncrease || false,
-          notifyOnDecrease: t.notifyOnDecrease || false,
-          increaseFrequency: t.increaseFrequency || 'einmalig',
-          decreaseFrequency: t.decreaseFrequency || 'einmalig',
-          alarmLevel: t.alarmLevel || 'harmlos',
-          note: t.note || '',
-          isActive: t.isActive !== false,
-          triggerCount: t.triggerCount || 0,
-          activeAlarmId: t.activeAlarmId
-        });
+  // Save a single threshold to backend (POST for create/update)
+  // Backend is the single source of truth - localStorage is just a cache
+  const saveThresholdToBackend = async (pairId: string, threshold: ThresholdConfig) => {
+    const thresholdData = {
+      pairId,
+      thresholdId: threshold.id,
+      threshold: threshold.threshold || '',
+      notifyOnIncrease: threshold.notifyOnIncrease || false,
+      notifyOnDecrease: threshold.notifyOnDecrease || false,
+      increaseFrequency: threshold.increaseFrequency || 'einmalig',
+      decreaseFrequency: threshold.decreaseFrequency || 'einmalig',
+      alarmLevel: threshold.alarmLevel || 'harmlos',
+      note: threshold.note || '',
+      isActive: threshold.isActive !== false,
+      triggerCount: threshold.triggerCount || 0,
+      activeAlarmId: threshold.activeAlarmId || null
+    };
+
+    try {
+      const response = await fetch('/api/notification-thresholds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(thresholdData)
       });
-    });
+      
+      if (response.ok) {
+        console.log(`[THRESHOLD] Saved to backend: ${pairId} - ${threshold.id}`);
+        // Update localStorage cache with current state
+        localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
+      } else {
+        console.error(`[THRESHOLD] Failed to save: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('[THRESHOLD] Save error:', err);
+    }
+  };
+
+  // Legacy function - now just saves single threshold
+  // Called when user clicks "Speichern" button
+  const saveSettingsToStorage = () => {
+    // Find the currently editing threshold and save only that one
+    const editingRef = editingThresholdRef.current;
+    if (editingRef.pairId && editingRef.thresholdId) {
+      const pairSettings = trendPriceSettings[editingRef.pairId];
+      const threshold = pairSettings?.thresholds.find(t => t.id === editingRef.thresholdId);
+      if (threshold) {
+        saveThresholdToBackend(editingRef.pairId, threshold);
+        return;
+      }
+    }
     
-    fetch('/api/notification-thresholds/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(allThresholds)
-    }).then(res => {
-      if (res.ok) console.log(`[THRESHOLDS-SYNC] Synced ${allThresholds.length} thresholds to backend`);
-    }).catch(err => console.error('[THRESHOLDS-SYNC] Sync error:', err));
+    // Fallback: just update localStorage cache (backend will sync via polling)
+    localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
   };
 
   const [alarmLevelEditMode, setAlarmLevelEditMode] = useState<Record<AlarmLevel, boolean>>({
@@ -4017,8 +4022,8 @@ export default function Notifications() {
                                                         return;
                                                       }
 
-                                                      // WICHTIG: Only save to localStorage when user explicitly clicks Speichern
-                                                      saveSettingsToStorage();
+                                                      // WICHTIG: Save directly to backend (single threshold)
+                                                      saveThresholdToBackend(trendPriceId, threshold);
                                                       setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
                                                       toast({
                                                         title: "Gespeichert",
