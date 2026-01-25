@@ -70,6 +70,46 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
     - If Trading-Pair is re-added → thresholds remain paused → NO automatic alarms.
     - User must manually activate threshold to trigger alarm.
 
+---
+
+## ⚠️ PERFEKTER CODE SNAPSHOT - 25.01.2026 ~23:00 Uhr
+**WICHTIG:** Der aktuelle Code der Notification Page (`client/src/pages/notifications.tsx`) ist vollständig getestet und funktioniert perfekt:
+- ✅ 25 Badge-Logic Tests bestanden
+- ✅ 30 No-Auto-Alarm-After-Re-Add Tests bestanden
+- ✅ Alle Golden State Features funktionieren korrekt
+- ✅ Watchlist, Benachrichtigungen Konfigurieren, Aktive Alarmierungen, Alarmierungsstufen - alle Sections stabil
+
+**DARF NICHT MODIFIZIERT WERDEN** außer explizit vom User erlaubt.
+
+---
+
+## SYNC SECTION (SEPARATE ENTWICKLUNG)
+**Datei:** `client/src/lib/sync.ts` (NEUE SEPARATE DATEI)
+
+Die Synchronisation wird in einer **separaten Datei** entwickelt, um den perfekten Code in `notifications.tsx` nicht zu gefährden.
+
+### Sync-Anforderungen:
+1. **Aktive Alarmierungen** - Approve, Stoppen, Auto-Dismiss Status (Cross-Device)
+2. **Watchlist** - Welche Pairs sind aktiv
+3. **Benachrichtigungen konfigurieren** - Schwellenwerte, isActive, triggerCount
+4. **Alarmierungsstufen** - Die 4 Level-Settings
+
+### Sync-Strategie:
+- **localStorage bleibt Master** für lokale Änderungen
+- **Backend nur für Cross-Device Sync** (Lesen von anderen Geräten)
+- **Timestamp bei jeder Änderung** → neuere Version gewinnt
+- **Merge statt Überschreiben** → keine Daten gehen verloren
+- **Polling alle 3-5 Sekunden**
+
+### Entwicklungs-Status:
+- [ ] Sync-Modul erstellt (`client/src/lib/sync.ts`)
+- [ ] Timestamp-basierte Logik implementiert
+- [ ] Merge-Strategie implementiert
+- [ ] Tests bestanden
+- [ ] In notifications.tsx integriert (NUR nach erfolgreichen Tests)
+
+---
+
 ## System Architecture
 
 ### UI/UX
