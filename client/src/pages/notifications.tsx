@@ -801,10 +801,9 @@ export default function Notifications() {
   }, [watchlist, availableTradingPairs, pairMarketTypes, isFuturesBlocked]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
-    // WICHTIG: Start empty - Backend is the single source of truth
-    // localStorage is only used as cache during the session
-    // Backend sync will populate this state on mount
-    return {};
+    // NUR localStorage - kein Backend-Sync
+    const saved = localStorage.getItem('notifications-threshold-settings');
+    return saved ? JSON.parse(saved) : {};
   });
 
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
@@ -1379,40 +1378,28 @@ export default function Notifications() {
 
   // Save a single threshold to backend (POST for create/update)
   // Backend is the single source of truth - localStorage is just a cache
+  // NUR localStorage - kein Backend-Sync mehr
   const saveThresholdToBackend = async (pairId: string, threshold: ThresholdConfig): Promise<boolean> => {
-    console.log('[THRESHOLD-SAVE] Starting save:', pairId, threshold.id, threshold.threshold);
-    const thresholdData = {
-      pairId,
-      thresholdId: threshold.id,
-      threshold: threshold.threshold || '',
-      notifyOnIncrease: threshold.notifyOnIncrease || false,
-      notifyOnDecrease: threshold.notifyOnDecrease || false,
-      increaseFrequency: threshold.increaseFrequency || 'einmalig',
-      decreaseFrequency: threshold.decreaseFrequency || 'einmalig',
-      alarmLevel: threshold.alarmLevel || 'harmlos',
-      note: threshold.note || '',
-      isActive: threshold.isActive !== false,
-      triggerCount: threshold.triggerCount || 0,
-      activeAlarmId: threshold.activeAlarmId || null
-    };
-
+    console.log('[THRESHOLD-SAVE] Saving to localStorage only:', pairId, threshold.id, threshold.threshold);
+    
     try {
-      const response = await fetch('/api/notification-thresholds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(thresholdData)
-      });
-      
-      if (response.ok) {
-        console.log(`[THRESHOLD] Saved to backend: ${pairId} - ${threshold.id}`);
-        // Update localStorage cache with current state
-        localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
-        return true;
-      } else {
-        const errorText = await response.text();
-        console.error(`[THRESHOLD] Failed to save: ${response.status}`, errorText);
-        return false;
+      // Speichere direkt in localStorage
+      const currentSettings = { ...trendPriceSettings };
+      if (!currentSettings[pairId]) {
+        currentSettings[pairId] = { thresholds: [] };
       }
+      
+      // Update or add threshold
+      const existingIndex = currentSettings[pairId].thresholds.findIndex(t => t.id === threshold.id);
+      if (existingIndex >= 0) {
+        currentSettings[pairId].thresholds[existingIndex] = threshold;
+      } else {
+        currentSettings[pairId].thresholds.push(threshold);
+      }
+      
+      localStorage.setItem('notifications-threshold-settings', JSON.stringify(currentSettings));
+      console.log(`[THRESHOLD] Saved to localStorage: ${pairId} - ${threshold.id}`);
+      return true;
     } catch (err) {
       console.error('[THRESHOLD] Save error:', err);
       return false;
@@ -1544,8 +1531,9 @@ export default function Notifications() {
     fetchBackendAlarms();
   }, []);
   
-  // POLLING: Sync ALL notification settings from backend every 3.5 seconds when Live Updates is active
-  // Backend is the SINGLE SOURCE OF TRUTH - always use backend data for cross-device sync
+  // DEAKTIVIERT: Backend-Sync temporär deaktiviert - nur localStorage wird verwendet
+  // Später wird dieser Sync sauber neu implementiert
+  /*
   useEffect(() => {
     if (!isLiveUpdating) {
       console.log('[NOTIFICATION-POLLING] Polling paused (Live Updates deactivated)');
@@ -1754,6 +1742,7 @@ export default function Notifications() {
       console.log('[NOTIFICATION-POLLING] Stopped polling');
     };
   }, [isLiveUpdating]);
+  */
 
   // Countdown tick - forces re-render every second for countdown display
   const [countdownTick, setCountdownTick] = useState(0);
@@ -2142,6 +2131,7 @@ export default function Notifications() {
     }));
   };
 
+  // NUR localStorage - kein Backend-Sync mehr
   const removeThreshold = (trendPriceId: string, thresholdId: string) => {
     const currentSettings = trendPriceSettings[trendPriceId];
 
@@ -2152,11 +2142,6 @@ export default function Notifications() {
       editingThresholdRef.current = { pairId: null, thresholdId: null };
       setEditingThresholdId(null);
     }
-
-    // IMPORTANT: Add to pending deletes BEFORE removing from state
-    // This prevents polling from restoring the threshold before DELETE completes
-    pendingDeletesRef.current.add(thresholdId);
-    console.log(`[THRESHOLDS-DELETE] Added ${thresholdId} to pending deletes`);
 
     // Lösche den Schwellenwert
     const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
@@ -2172,24 +2157,7 @@ export default function Notifications() {
 
     setTrendPriceSettings(newSettings);
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
-    
-    // Sync to backend for cross-device sync
-    fetch(`/api/notification-thresholds/${encodeURIComponent(trendPriceId)}/${encodeURIComponent(thresholdId)}`, {
-      method: 'DELETE'
-    }).then(res => {
-      if (res.ok) {
-        console.log(`[THRESHOLDS-SYNC] Deleted threshold ${thresholdId} from backend`);
-        // Remove from pending deletes after successful backend deletion
-        pendingDeletesRef.current.delete(thresholdId);
-        console.log(`[THRESHOLDS-DELETE] Removed ${thresholdId} from pending deletes (backend confirmed)`);
-      } else {
-        // Keep in pending deletes on error - user will need to refresh
-        console.error(`[THRESHOLDS-SYNC] Delete failed for ${thresholdId}, status: ${res.status}`);
-      }
-    }).catch(err => {
-      console.error('[THRESHOLDS-SYNC] Delete error:', err);
-      // Keep in pending deletes on error
-    });
+    console.log(`[THRESHOLD] Deleted from localStorage: ${thresholdId}`);
 
     toast({
       title: "Schwellenwert gelöscht",
