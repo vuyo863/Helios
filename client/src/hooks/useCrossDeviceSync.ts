@@ -61,6 +61,18 @@ export function useCrossDeviceSync({
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const initialSyncComplete = useRef(false);
   
+  // REFS for stable polling - prevents interval recreation on every state change
+  const watchlistRef = useRef(watchlist);
+  const pairMarketTypesRef = useRef(pairMarketTypes);
+  const trendPriceSettingsRef = useRef(trendPriceSettings);
+  const alarmLevelConfigsRef = useRef(alarmLevelConfigs);
+  
+  // Keep refs in sync with state
+  useEffect(() => { watchlistRef.current = watchlist; }, [watchlist]);
+  useEffect(() => { pairMarketTypesRef.current = pairMarketTypes; }, [pairMarketTypes]);
+  useEffect(() => { trendPriceSettingsRef.current = trendPriceSettings; }, [trendPriceSettings]);
+  useEffect(() => { alarmLevelConfigsRef.current = alarmLevelConfigs; }, [alarmLevelConfigs]);
+  
   // Prevent rapid consecutive pushes
   const PUSH_DEBOUNCE_MS = 1000;
 
@@ -191,7 +203,7 @@ export function useCrossDeviceSync({
   }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, pushAllToBackend]);
 
   // ===========================================
-  // POLLING - Sync every 3.5 seconds
+  // POLLING - Sync every 3.5 seconds (STABLE - uses refs)
   // ===========================================
   useEffect(() => {
     const myDeviceId = getDeviceId();
@@ -200,17 +212,21 @@ export function useCrossDeviceSync({
       try {
         console.log('[CROSS-DEVICE-SYNC] Polling for updates...');
         
-        // 1. Sync Watchlist - ALWAYS merge, use UNION strategy
+        // Use refs to get current state (prevents stale closures)
+        const currentWatchlist = watchlistRef.current;
+        const currentPairMarketTypes = pairMarketTypesRef.current;
+        const currentTrendPriceSettings = trendPriceSettingsRef.current;
+        const currentAlarmLevelConfigs = alarmLevelConfigsRef.current;
+        
+        // 1. Sync Watchlist - UNION strategy (additions sync, deletions only from same device)
         const remoteWatchlist = await pullWatchlistFromBackend();
         if (remoteWatchlist && remoteWatchlist.watchlist && remoteWatchlist.watchlist.length > 0) {
-          // Only update if remote has data we don't have locally
-          const localSet = new Set(watchlist);
-          const remoteSet = new Set(remoteWatchlist.watchlist);
+          const localSet = new Set(currentWatchlist);
           const hasNewItems = remoteWatchlist.watchlist.some(item => !localSet.has(item));
-          const hasMissingItems = watchlist.some(item => !remoteSet.has(item));
           
-          if (hasNewItems || (hasMissingItems && remoteWatchlist.deviceId !== myDeviceId)) {
-            const localData = createWatchlistSyncData(watchlist, pairMarketTypes);
+          // Always merge if remote has new items we don't have
+          if (hasNewItems) {
+            const localData = createWatchlistSyncData(currentWatchlist, currentPairMarketTypes);
             const merged = mergeWatchlist(localData, remoteWatchlist);
             
             if (merged && merged.watchlist.length > 0) {
@@ -224,12 +240,12 @@ export function useCrossDeviceSync({
         // 2. Sync Thresholds - UNION merge for configurations
         const remoteThresholds = await pullThresholdsFromBackend();
         if (remoteThresholds && Object.keys(remoteThresholds.settings || {}).length > 0) {
-          const localData = createThresholdsSyncData(trendPriceSettings);
+          const localData = createThresholdsSyncData(currentTrendPriceSettings);
           const merged = mergeAllThresholds(localData, remoteThresholds);
           
-          // Update if remote has newer data OR if remote has more thresholds
+          // Update if remote is newer OR has more thresholds
           const remoteThresholdCount = Object.values(remoteThresholds.settings || {}).reduce((sum, s: any) => sum + (s.thresholds?.length || 0), 0);
-          const localThresholdCount = Object.values(trendPriceSettings).reduce((sum, s) => sum + (s.thresholds?.length || 0), 0);
+          const localThresholdCount = Object.values(currentTrendPriceSettings).reduce((sum, s) => sum + (s.thresholds?.length || 0), 0);
           
           if (merged && (remoteThresholdCount > localThresholdCount || remoteThresholds.timestamp > (localData?.timestamp || 0))) {
             console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(merged.settings));
@@ -237,10 +253,10 @@ export function useCrossDeviceSync({
           }
         }
         
-        // 3. Sync Alarm Levels
+        // 3. Sync Alarm Levels - newer timestamp wins
         const remoteAlarmLevels = await pullAlarmLevelsFromBackend();
         if (remoteAlarmLevels && Object.keys(remoteAlarmLevels.configs || {}).length > 0) {
-          const localData = createAlarmLevelsSyncData(alarmLevelConfigs);
+          const localData = createAlarmLevelsSyncData(currentAlarmLevelConfigs);
           const merged = mergeAlarmLevelConfigs(localData, remoteAlarmLevels);
           
           if (merged && remoteAlarmLevels.timestamp > (localData?.timestamp || 0)) {
@@ -255,6 +271,7 @@ export function useCrossDeviceSync({
     };
     
     // Start polling after 3 seconds (give time for initial sync)
+    // This effect only runs once on mount - no dependencies that cause re-creation
     const startPolling = setTimeout(() => {
       console.log('[CROSS-DEVICE-SYNC] Starting polling interval (3.5s)');
       syncIntervalRef.current = setInterval(performSync, 3500);
@@ -266,7 +283,9 @@ export function useCrossDeviceSync({
         clearInterval(syncIntervalRef.current);
       }
     };
-  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, setWatchlist, setPairMarketTypes, setTrendPriceSettings, setAlarmLevelConfigs]);
+    // Empty dependency array - interval is stable, uses refs for current state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setWatchlist, setPairMarketTypes, setTrendPriceSettings, setAlarmLevelConfigs]);
 
   return {
     pushAllToBackend
