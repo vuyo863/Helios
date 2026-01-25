@@ -3856,6 +3856,23 @@ export default function Notifications() {
                             FUTURE
                           </span>
                         )}
+                        {/* Status Badge: Paused wenn nicht in Watchlist oder alle Schwellenwerte inaktiv */}
+                        {(() => {
+                          const isInWatchlist = watchlist.includes(trendPriceId);
+                          const hasAnyActiveThreshold = savedThresholds.some(t => t.isActive !== false);
+                          const isActive = isInWatchlist && hasAnyActiveThreshold;
+                          
+                          return (
+                            <span className={cn(
+                              "text-xs px-2 py-0.5 rounded font-medium",
+                              isActive 
+                                ? "bg-green-500/20 text-green-600 dark:text-green-400" 
+                                : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                            )}>
+                              {isActive ? "Active" : "Paused"}
+                            </span>
+                          );
+                        })()}
                         <span className="text-xs text-muted-foreground">
                           {savedThresholds.length} Schwellenwert{savedThresholds.length !== 1 ? 'e' : ''}
                         </span>
