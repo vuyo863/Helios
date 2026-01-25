@@ -1065,14 +1065,9 @@ export default function Notifications() {
             }, 100);
           }
           
-          // POST to backend for cross-device sync
-          fetch('/api/active-alarms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newAlarm)
-          }).then(res => {
-            if (res.ok) console.log(`[ACTIVE-ALARMS] Created alarm ${newAlarm.id} in backend`);
-          }).catch(err => console.error('[ACTIVE-ALARMS] Backend POST error:', err));
+          // DEAKTIVIERT: Backend-Sync temporär deaktiviert - nur localStorage
+          // Alarm wird über setActiveAlarms automatisch im localStorage gespeichert
+          console.log(`[ACTIVE-ALARMS] Created alarm ${newAlarm.id} (localStorage only)`);
 
           // Show in-app notification (Push)
           if (alarmConfig.channels.push) {
@@ -1256,14 +1251,9 @@ export default function Notifications() {
             }, 100);
           }
           
-          // POST to backend for cross-device sync
-          fetch('/api/active-alarms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newAlarm)
-          }).then(res => {
-            if (res.ok) console.log(`[ACTIVE-ALARMS] Created alarm ${newAlarm.id} in backend`);
-          }).catch(err => console.error('[ACTIVE-ALARMS] Backend POST error:', err));
+          // DEAKTIVIERT: Backend-Sync temporär deaktiviert - nur localStorage
+          // Alarm wird über setActiveAlarms automatisch im localStorage gespeichert
+          console.log(`[ACTIVE-ALARMS] Created alarm ${newAlarm.id} (localStorage only)`);
 
           // Show in-app notification (Push)
           if (alarmConfig.channels.push) {
@@ -1484,51 +1474,24 @@ export default function Notifications() {
     console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${activeAlarms.length} alarms`);
   }, [activeAlarms]);
   
-  // Load active alarms from backend on mount (for cross-device sync)
+  // DEAKTIVIERT: Backend-Sync für Active Alarms temporär deaktiviert - nur localStorage
+  // Früher wurde hier /api/active-alarms gefetcht, aber das verursachte Race Conditions
   useEffect(() => {
-    const fetchBackendAlarms = async () => {
+    // Nur localStorage als Quelle verwenden
+    const stored = localStorage.getItem('active-alarms');
+    if (stored) {
       try {
-        const response = await fetch('/api/active-alarms');
-        if (response.ok) {
-          const rawBackendAlarms = await response.json();
-          // Normalize: convert ISO strings to Date objects
-          const backendAlarms: ActiveAlarm[] = rawBackendAlarms.map(normalizeBackendAlarm);
-          console.log(`[ACTIVE-ALARMS] Fetched ${backendAlarms.length} alarms from backend`);
-          
-          if (backendAlarms.length > 0) {
-            // Backend is source of truth - use backend alarms directly
-            setActiveAlarms(() => {
-              activeAlarmsRef.current = backendAlarms;
-              console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${backendAlarms.length} alarms from backend`);
-              return backendAlarms;
-            });
-          } else {
-            // No backend alarms, update ref with current localStorage alarms
-            const stored = localStorage.getItem('active-alarms');
-            if (stored) {
-              try {
-                const localAlarms = JSON.parse(stored).map(parseStoredAlarm);
-                activeAlarmsRef.current = localAlarms;
-                console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${localAlarms.length} alarms from localStorage`);
-              } catch {}
-            }
-          }
-          // Mark initial load as complete - threshold checks can now proceed
-          setInitialAlarmsLoaded(true);
-          console.log('[ACTIVE-ALARMS] Initial load complete - threshold checks enabled');
-        } else {
-          // Even on error, mark as loaded to not block threshold checks indefinitely
-          setInitialAlarmsLoaded(true);
-          console.log('[ACTIVE-ALARMS] Backend fetch failed, enabling threshold checks anyway');
-        }
-      } catch (err) {
-        console.error('[ACTIVE-ALARMS] Failed to fetch from backend:', err);
-        // Even on error, mark as loaded to not block threshold checks indefinitely
-        setInitialAlarmsLoaded(true);
+        const localAlarms = JSON.parse(stored).map(parseStoredAlarm);
+        activeAlarmsRef.current = localAlarms;
+        setActiveAlarms(localAlarms);
+        console.log(`[ACTIVE-ALARMS] Loaded ${localAlarms.length} alarms from localStorage only`);
+      } catch {
+        console.log('[ACTIVE-ALARMS] No valid alarms in localStorage');
       }
-    };
-    
-    fetchBackendAlarms();
+    }
+    // Mark initial load as complete
+    setInitialAlarmsLoaded(true);
+    console.log('[ACTIVE-ALARMS] Initial load complete (localStorage only mode)');
   }, []);
   
   // DEAKTIVIERT: Backend-Sync temporär deaktiviert - nur localStorage wird verwendet
@@ -1769,13 +1732,9 @@ export default function Notifications() {
       
       if (alarmsToRemove.length === 0) return;
       
-      // Remove from backend
+      // DEAKTIVIERT: Backend-Sync temporär deaktiviert - nur localStorage
       alarmsToRemove.forEach(alarm => {
-        fetch(`/api/active-alarms/${alarm.id}`, { method: 'DELETE' })
-          .then(res => {
-            if (res.ok) console.log(`[AUTO-DISMISS] Removed alarm ${alarm.id} from backend`);
-          })
-          .catch(err => console.error('[AUTO-DISMISS] Backend delete error:', err));
+        console.log(`[AUTO-DISMISS] Removing alarm ${alarm.id} (localStorage only)`);
       });
       
       // Remove from local state
@@ -2375,25 +2334,14 @@ export default function Notifications() {
     }));
   };
 
+  // NUR localStorage - kein Backend-Sync mehr
   const approveAlarm = async (alarmId: string) => {
     // Find the alarm to get its thresholdId and pairId for clearing activeAlarmId
     const alarmToRemove = activeAlarms.find(a => a.id === alarmId);
     
-    // Delete from backend first for cross-device sync
-    try {
-      const response = await fetch(`/api/active-alarms/${alarmId}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        console.log(`[ACTIVE-ALARMS] Deleted alarm ${alarmId} from backend`);
-      } else {
-        console.warn(`[ACTIVE-ALARMS] Backend delete failed for ${alarmId}:`, response.status);
-      }
-    } catch (err) {
-      console.error('[ACTIVE-ALARMS] Backend delete error:', err);
-    }
+    console.log(`[ACTIVE-ALARMS] Stopping alarm ${alarmId} (localStorage only)`);
     
-    // Also remove from local state and localStorage
+    // Remove from local state and localStorage
     setActiveAlarms(prev => {
       const updated = prev.filter(alarm => alarm.id !== alarmId);
       localStorage.setItem('active-alarms', JSON.stringify(updated));
