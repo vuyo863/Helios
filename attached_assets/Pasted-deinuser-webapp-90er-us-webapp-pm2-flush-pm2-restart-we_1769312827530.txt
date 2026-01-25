@@ -1,0 +1,39 @@
+deinuser@webapp-90er-us:~/webapp$ pm2 flush
+pm2 restart webapp --update-env
+pm2 logs webapp --lines 20
+[PM2] Flushing /home/deinuser/.pm2/pm2.log
+[PM2] Flushing:
+[PM2] /home/deinuser/.pm2/logs/webapp-out.log
+[PM2] /home/deinuser/.pm2/logs/webapp-error.log
+[PM2] Logs flushed
+[PM2] Applying action restartProcessId on app [webapp](ids: [ 0 ])
+[PM2] [webapp](0) ✓
+┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ webapp    │ default     │ 1.0.0   │ fork    │ 404848   │ 0s     │ 23   │ online    │ 0%       │ 18.0mb   │ deinuser │ disabled │
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[TAILING] Tailing last 20 lines for [webapp] process (change the value with --lines option)
+/home/deinuser/.pm2/logs/webapp-out.log last 20 lines:
+/home/deinuser/.pm2/logs/webapp-error.log last 20 lines:
+0|webapp  | [DB] Using node-postgres (server mode)
+0|webapp  | 3:45:13 AM [express] serving on port 5000
+0|webapp  | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp  | [API] GET /api/notification-settings - watchlist: 0, thresholds: 1, levels: 0, alarms: 0
+0|webapp  | 3:45:14 AM [express] GET /api/notification-settings 304 in 41ms :: {"watchlist":[],"thresholds":[{"i…
+0|webapp  | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp  | [API] GET /api/notification-settings - watchlist: 0, thresholds: 1, levels: 0, alarms: 0
+0|webapp  | 3:45:18 AM [express] GET /api/notification-settings 304 in 6ms :: {"watchlist":[],"thresholds":[{"id…
+0|webapp  | [BACKGROUND-UPDATER] Refreshing popular symbol prices...
+0|webapp  | (node:404848) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+0|webapp  | (Use `node --trace-warnings ...` to show where the warning was created)
+0|webapp  | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp  | [API] GET /api/notification-settings - watchlist: 0, thresholds: 1, levels: 0, alarms: 0
+0|webapp  | 3:45:21 AM [express] GET /api/notification-settings 304 in 9ms :: {"watchlist":[],"thresholds":[{"id…
+0|webapp  | [API] OKX Spot: fetching fresh data for ETHUSDT
+0|webapp  | [BACKGROUND-UPDATER] Updated 8 symbols (spot + futures)
+0|webapp  | 3:45:22 AM [express] GET /api/okx/spot 200 in 254ms :: [{"symbol":"ETHUSDT","lastPrice":"2940","pric…
+0|webapp  | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp  | [API] GET /api/notification-settings - watchlist: 0, thresholds: 1, levels: 0, alarms: 0
+0|webapp  | 3:45:25 AM [express] GET /api/notification-settings 304 in 4ms :: {"watchlist":[],"thresholds":[{"id…
+0|webapp  | [ACTIVE-ALARMS] getAl
