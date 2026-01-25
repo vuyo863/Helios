@@ -807,6 +807,9 @@ export default function Notifications() {
   });
 
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
+  
+  // Trigger to force threshold check after re-activating a threshold
+  const [thresholdCheckTrigger, setThresholdCheckTrigger] = useState(0);
 
   // Alarmierungsstufen Konfiguration - moved up before useEffect
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>(() => {
@@ -1324,7 +1327,7 @@ export default function Notifications() {
         }
       });
     });
-  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId, initialAlarmsLoaded]);
+  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId, initialAlarmsLoaded, thresholdCheckTrigger]);
 
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
@@ -3363,6 +3366,11 @@ export default function Notifications() {
                                                             title: "Gespeichert",
                                                             description: "Schwellenwert wurde erfolgreich gespeichert.",
                                                           });
+                                                          // Force threshold check if threshold is active (re-activated)
+                                                          if (threshold.isActive !== false) {
+                                                            console.log('[THRESHOLD-REACTIVATED] Forcing threshold check');
+                                                            setThresholdCheckTrigger(prev => prev + 1);
+                                                          }
                                                         } else {
                                                           toast({
                                                             title: "Fehler",
@@ -3676,6 +3684,11 @@ export default function Notifications() {
                                                       title: "Gespeichert",
                                                       description: "Schwellenwert wurde erfolgreich hinzugefügt.",
                                                     });
+                                                    // Force threshold check if threshold is active (re-activated)
+                                                    if (threshold.isActive !== false) {
+                                                      console.log('[THRESHOLD-REACTIVATED] Forcing threshold check');
+                                                      setThresholdCheckTrigger(prev => prev + 1);
+                                                    }
                                                   } else {
                                                     toast({
                                                       title: "Fehler",
@@ -4030,6 +4043,11 @@ export default function Notifications() {
                                                           title: "Gespeichert",
                                                           description: "Schwellenwert wurde erfolgreich gespeichert.",
                                                         });
+                                                        // Force threshold check if threshold is active (re-activated)
+                                                        if (threshold.isActive !== false) {
+                                                          console.log('[THRESHOLD-REACTIVATED] Forcing threshold check');
+                                                          setThresholdCheckTrigger(prev => prev + 1);
+                                                        }
                                                       } else {
                                                         toast({
                                                           title: "Fehler",
