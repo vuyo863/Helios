@@ -1,0 +1,41 @@
+[✓] Pulling schema from database...
+
++ market_type column will be created
+
++ display_name column will be created
+--- all columns conflicts in notification_watchlist table resolved ---
+
+error: permission denied for table notification_watchlist
+    at /home/deinuser/webapp/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.query (/home/deinuser/webapp/node_modules/drizzle-kit/bin.cjs:80601:26)
+    at async pgSuggestions (/home/deinuser/webapp/node_modules/drizzle-kit/bin.cjs:82065:25)
+    at async pgPush (/home/deinuser/webapp/node_modules/drizzle-kit/bin.cjs:84368:15)
+    at async Object.handler (/home/deinuser/webapp/node_modules/drizzle-kit/bin.cjs:93813:9)
+    at async run (/home/deinuser/webapp/node_modules/drizzle-kit/bin.cjs:93059:7) {
+  length: 110,
+  severity: 'ERROR',
+  code: '42501',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'aclchk.c',
+  line: '2812',
+  routine: 'aclcheck_error'
+}
+[PM2] Applying action restartProcessId on app [webapp](ids: [ 0 ])
+[PM2] [webapp](0) ✓
+┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ webapp    │ default     │ 1.0.0   │ fork    │ 404616   │ 0s     │ 20   │ online    │ 0%       │ 17.1mb   │ deinuser │ disabled │
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+deinuser@webapp-90er-us:~/webapp$
