@@ -59,6 +59,7 @@ export function useCrossDeviceSync({
   const isInitialMount = useRef(true);
   const lastPushTimestamp = useRef<number>(0);
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const initialSyncComplete = useRef(false);
   
   // Prevent rapid consecutive pushes
   const PUSH_DEBOUNCE_MS = 1000;
@@ -110,8 +111,13 @@ export function useCrossDeviceSync({
         
         console.log('[CROSS-DEVICE-SYNC] Initial sync complete');
         
+        // Mark initial sync as complete - NOW pushes are allowed
+        initialSyncComplete.current = true;
+        
       } catch (error) {
         console.error('[CROSS-DEVICE-SYNC] Initial sync error:', error);
+        // Even on error, mark as complete to not block forever
+        initialSyncComplete.current = true;
       }
     };
     
@@ -124,6 +130,13 @@ export function useCrossDeviceSync({
   // PUSH TO BACKEND when Local Data Changes
   // ===========================================
   const pushAllToBackend = useCallback(async () => {
+    // CRITICAL: Don't push until initial sync is complete!
+    // This prevents empty local data from overwriting remote data
+    if (!initialSyncComplete.current) {
+      console.log('[CROSS-DEVICE-SYNC] Skipping push - initial sync not complete');
+      return;
+    }
+    
     const now = getCurrentTimestamp();
     
     // Debounce rapid pushes
@@ -135,13 +148,24 @@ export function useCrossDeviceSync({
     console.log('[CROSS-DEVICE-SYNC] Pushing data to backend...');
     
     try {
-      // Push Watchlist
-      await pushWatchlistToBackend(watchlist, pairMarketTypes);
+      // SAFETY: Only push if we have actual data - never overwrite remote with empty
+      if (watchlist.length > 0) {
+        await pushWatchlistToBackend(watchlist, pairMarketTypes);
+        console.log('[CROSS-DEVICE-SYNC] Watchlist pushed (items:', watchlist.length, ')');
+      } else {
+        console.log('[CROSS-DEVICE-SYNC] Skipping watchlist push - no local data');
+      }
       
-      // Push Thresholds
-      await pushThresholdsToBackend(trendPriceSettings);
+      // Push Thresholds only if we have any
+      const hasThresholds = Object.values(trendPriceSettings).some(s => s.thresholds && s.thresholds.length > 0);
+      if (hasThresholds) {
+        await pushThresholdsToBackend(trendPriceSettings);
+        console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
+      } else {
+        console.log('[CROSS-DEVICE-SYNC] Skipping thresholds push - no local data');
+      }
       
-      // Push Alarm Levels
+      // Alarm levels can always be pushed (they have defaults)
       await pushAlarmLevelsToBackend(alarmLevelConfigs);
       
       console.log('[CROSS-DEVICE-SYNC] Push complete');
