@@ -2,16 +2,30 @@
  * SYNC MODULE - SEPARATE ENTWICKLUNG
  * ===================================
  * Erstellt: 25.01.2026 ~23:00 Uhr
+ * Aktualisiert: 25.01.2026 ~23:15 Uhr
  * 
  * WICHTIG: Diese Datei ist SEPARAT von notifications.tsx
  * Der perfekte Code in notifications.tsx wird NICHT modifiziert!
  * 
- * Sync-Strategie:
- * - localStorage bleibt Master für lokale Änderungen
- * - Backend nur für Cross-Device Sync (Lesen von anderen Geräten)
- * - Timestamp bei jeder Änderung → neuere Version gewinnt
- * - Merge statt Überschreiben → keine Daten gehen verloren
- * - Polling alle 3-5 Sekunden
+ * SICHERE SYNC-STRATEGIE:
+ * ========================
+ * 1. localStorage bleibt MASTER für lokale Änderungen
+ * 2. Backend NUR für Cross-Device Sync (Lesen von anderen Geräten)
+ * 3. Timestamp bei JEDER Änderung → neuere Version gewinnt
+ * 4. MERGE statt Überschreiben → keine Daten gehen verloren
+ * 5. Wenn Backend leer/veraltet ist → lokale Daten werden NICHT gelöscht!
+ * 
+ * FLOW:
+ * ======
+ * Lokales Gerät ändert etwas
+ *     ↓
+ * localStorage wird SOFORT aktualisiert (wie jetzt)
+ *     ↓
+ * Änderung wird MIT Timestamp ans Backend gesendet
+ *     ↓
+ * Anderes Gerät pollt Backend alle 3-5 Sekunden
+ *     ↓
+ * Nur NEUERE Daten (Timestamp-Vergleich) werden übernommen
  */
 
 // ===========================================
@@ -28,26 +42,73 @@ export interface WatchlistSyncData extends SyncableData {
   pairMarketTypes: Record<string, { marketType: 'spot' | 'futures', symbol: string }>;
 }
 
+export interface ThresholdConfig {
+  id: string;
+  threshold: string;
+  notifyOnIncrease: boolean;
+  notifyOnDecrease: boolean;
+  increaseFrequency: 'einmalig' | 'wiederholend';
+  decreaseFrequency: 'einmalig' | 'wiederholend';
+  alarmLevel: 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich';
+  note: string;
+  isActive: boolean;
+  triggerCount?: number;
+  activeAlarmId?: string;
+}
+
 export interface ThresholdSyncData extends SyncableData {
   trendPriceId: string;
-  thresholds: any[]; // ThresholdConfig[]
+  thresholds: ThresholdConfig[];
+}
+
+export interface AllThresholdsSyncData extends SyncableData {
+  settings: Record<string, { trendPriceId: string; thresholds: ThresholdConfig[] }>;
+}
+
+export interface AlarmLevelConfig {
+  level: 'harmlos' | 'achtung' | 'gefährlich' | 'sehr_gefährlich';
+  channels: {
+    push: boolean;
+    email: boolean;
+    sms: boolean;
+    webPush: boolean;
+    nativePush: boolean;
+  };
+  requiresApproval: boolean;
+  repeatCount: number | 'infinite';
+  sequenceHours: number;
+  sequenceMinutes: number;
+  sequenceSeconds: number;
+  restwartezeitHours: number;
+  restwartezeitMinutes: number;
+  restwartezeitSeconds: number;
 }
 
 export interface AlarmLevelSyncData extends SyncableData {
-  configs: Record<string, any>; // Record<AlarmLevel, AlarmLevelConfig>
+  configs: Record<string, AlarmLevelConfig>;
 }
+
+// ===========================================
+// CONSTANTS
+// ===========================================
+
+const DEVICE_ID_KEY = 'sync-device-id';
+const WATCHLIST_TIMESTAMP_KEY = 'sync-watchlist-timestamp';
+const THRESHOLDS_TIMESTAMP_KEY = 'sync-thresholds-timestamp';
+const ALARM_LEVELS_TIMESTAMP_KEY = 'sync-alarm-levels-timestamp';
 
 // ===========================================
 // DEVICE ID - Unique identifier for this device
 // ===========================================
 
-const DEVICE_ID_KEY = 'sync-device-id';
-
 export function getDeviceId(): string {
+  if (typeof window === 'undefined') return 'server';
+  
   let deviceId = localStorage.getItem(DEVICE_ID_KEY);
   if (!deviceId) {
     deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
+    console.log('[SYNC] New device ID created:', deviceId);
   }
   return deviceId;
 }
@@ -64,31 +125,48 @@ export function isNewerThan(timestampA: number, timestampB: number): boolean {
   return timestampA > timestampB;
 }
 
+export function getLocalTimestamp(key: string): number {
+  if (typeof window === 'undefined') return 0;
+  const stored = localStorage.getItem(key);
+  return stored ? parseInt(stored, 10) : 0;
+}
+
+export function setLocalTimestamp(key: string, timestamp: number): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, String(timestamp));
+}
+
 // ===========================================
-// MERGE STRATEGIES
+// MERGE STRATEGIES - CRITICAL FOR SAFE SYNC
 // ===========================================
 
 /**
- * Merge watchlist data - newer wins, but preserve local additions
+ * SICHERE Merge-Strategie für Watchlist
+ * - Wenn remote neuer: Merge (union) statt überschreiben
+ * - Lokale Daten werden NIE gelöscht!
  */
 export function mergeWatchlist(
   local: WatchlistSyncData | null,
   remote: WatchlistSyncData | null
 ): WatchlistSyncData | null {
+  // Wenn keine Daten vorhanden
   if (!local && !remote) return null;
   if (!local) return remote;
   if (!remote) return local;
   
-  // If same device, always use local
+  // Wenn vom gleichen Gerät, immer lokal bevorzugen
   if (remote.deviceId === getDeviceId()) {
+    console.log('[SYNC-MERGE] Watchlist: Same device, keeping local');
     return local;
   }
   
-  // Remote is newer - use remote but merge additions
+  // Remote ist neuer - MERGE statt überschreiben!
   if (isNewerThan(remote.timestamp, local.timestamp)) {
-    // Merge: keep local additions that remote doesn't have
+    console.log('[SYNC-MERGE] Watchlist: Remote is newer, MERGING (not overwriting)');
+    
+    // WICHTIG: Union der beiden Watchlists - nichts geht verloren!
     const mergedWatchlist = [...new Set([...remote.watchlist, ...local.watchlist])];
-    const mergedPairMarketTypes = { ...remote.pairMarketTypes, ...local.pairMarketTypes };
+    const mergedPairMarketTypes = { ...local.pairMarketTypes, ...remote.pairMarketTypes };
     
     return {
       timestamp: remote.timestamp,
@@ -98,40 +176,67 @@ export function mergeWatchlist(
     };
   }
   
-  // Local is newer - keep local
+  // Lokal ist neuer - behalten
+  console.log('[SYNC-MERGE] Watchlist: Local is newer, keeping local');
   return local;
 }
 
 /**
- * Merge threshold data - newer wins per threshold
+ * SICHERE Merge-Strategie für Thresholds
+ * - Pro TrendPriceId: neuere Version gewinnt
+ * - Aber: Wenn remote leer, NICHT löschen!
  */
-export function mergeThresholds(
-  local: ThresholdSyncData | null,
-  remote: ThresholdSyncData | null
-): ThresholdSyncData | null {
+export function mergeAllThresholds(
+  local: AllThresholdsSyncData | null,
+  remote: AllThresholdsSyncData | null
+): AllThresholdsSyncData | null {
   if (!local && !remote) return null;
   if (!local) return remote;
   if (!remote) return local;
   
-  // If same device, always use local
+  // Wenn vom gleichen Gerät, immer lokal bevorzugen
   if (remote.deviceId === getDeviceId()) {
+    console.log('[SYNC-MERGE] Thresholds: Same device, keeping local');
     return local;
   }
   
-  // Remote is newer - use remote data
+  // Remote ist neuer - aber MERGE pro Pair!
   if (isNewerThan(remote.timestamp, local.timestamp)) {
+    console.log('[SYNC-MERGE] Thresholds: Remote is newer, MERGING per pair');
+    
+    const mergedSettings: Record<string, { trendPriceId: string; thresholds: ThresholdConfig[] }> = { ...local.settings };
+    
+    // Remote Settings hinzufügen/aktualisieren
+    for (const pairId in remote.settings) {
+      const remoteData = remote.settings[pairId];
+      const localData = local.settings[pairId];
+      
+      // Wenn lokal nicht vorhanden oder remote neuer, remote nehmen
+      if (!localData || remoteData.thresholds.length > 0) {
+        // ABER: Wenn remote leer und lokal hat Daten, NICHT löschen!
+        if (remoteData.thresholds.length === 0 && localData && localData.thresholds.length > 0) {
+          console.log(`[SYNC-MERGE] Thresholds: Keeping local for ${pairId} (remote is empty)`);
+          continue; // Lokal behalten!
+        }
+        mergedSettings[pairId] = remoteData;
+      }
+    }
+    
     return {
-      ...remote,
-      deviceId: getDeviceId()
+      timestamp: remote.timestamp,
+      deviceId: getDeviceId(),
+      settings: mergedSettings
     };
   }
   
-  // Local is newer - keep local
+  // Lokal ist neuer - behalten
+  console.log('[SYNC-MERGE] Thresholds: Local is newer, keeping local');
   return local;
 }
 
 /**
- * Merge alarm level configs - newer wins
+ * SICHERE Merge-Strategie für Alarm-Level Configs
+ * - Neuere Version gewinnt komplett
  */
 export function mergeAlarmLevelConfigs(
   local: AlarmLevelSyncData | null,
@@ -141,20 +246,22 @@ export function mergeAlarmLevelConfigs(
   if (!local) return remote;
   if (!remote) return local;
   
-  // If same device, always use local
+  // Wenn vom gleichen Gerät, immer lokal bevorzugen
   if (remote.deviceId === getDeviceId()) {
+    console.log('[SYNC-MERGE] AlarmLevels: Same device, keeping local');
     return local;
   }
   
-  // Remote is newer - use remote
+  // Neuere Version gewinnt
   if (isNewerThan(remote.timestamp, local.timestamp)) {
+    console.log('[SYNC-MERGE] AlarmLevels: Remote is newer, using remote');
     return {
       ...remote,
       deviceId: getDeviceId()
     };
   }
   
-  // Local is newer - keep local
+  console.log('[SYNC-MERGE] AlarmLevels: Local is newer, keeping local');
   return local;
 }
 
@@ -166,12 +273,18 @@ export interface SyncStatus {
   lastSyncTime: number | null;
   isSyncing: boolean;
   error: string | null;
+  lastWatchlistSync: number | null;
+  lastThresholdsSync: number | null;
+  lastAlarmLevelsSync: number | null;
 }
 
 let syncStatus: SyncStatus = {
   lastSyncTime: null,
   isSyncing: false,
-  error: null
+  error: null,
+  lastWatchlistSync: null,
+  lastThresholdsSync: null,
+  lastAlarmLevelsSync: null
 };
 
 export function getSyncStatus(): SyncStatus {
@@ -179,78 +292,277 @@ export function getSyncStatus(): SyncStatus {
 }
 
 // ===========================================
-// PLACEHOLDER - Backend Sync Functions
-// (Wird später implementiert)
+// BACKEND API FUNCTIONS
 // ===========================================
 
-export async function syncWatchlistToBackend(data: WatchlistSyncData): Promise<boolean> {
-  // TODO: POST to /api/sync/watchlist
-  console.log('[SYNC] syncWatchlistToBackend - Not implemented yet', data);
-  return true;
+const API_BASE = '/api/sync';
+
+/**
+ * Watchlist zum Backend pushen
+ */
+export async function pushWatchlistToBackend(
+  watchlist: string[],
+  pairMarketTypes: Record<string, { marketType: 'spot' | 'futures', symbol: string }>
+): Promise<boolean> {
+  try {
+    const timestamp = getCurrentTimestamp();
+    const data: WatchlistSyncData = {
+      timestamp,
+      deviceId: getDeviceId(),
+      watchlist,
+      pairMarketTypes
+    };
+    
+    const response = await fetch(`${API_BASE}/watchlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+      setLocalTimestamp(WATCHLIST_TIMESTAMP_KEY, timestamp);
+      console.log('[SYNC] Watchlist pushed to backend');
+      return true;
+    }
+    
+    console.error('[SYNC] Failed to push watchlist:', response.status);
+    return false;
+  } catch (error) {
+    console.error('[SYNC] Error pushing watchlist:', error);
+    return false;
+  }
 }
 
-export async function syncWatchlistFromBackend(): Promise<WatchlistSyncData | null> {
-  // TODO: GET from /api/sync/watchlist
-  console.log('[SYNC] syncWatchlistFromBackend - Not implemented yet');
-  return null;
+/**
+ * Watchlist vom Backend holen und SICHER mergen
+ */
+export async function pullWatchlistFromBackend(): Promise<WatchlistSyncData | null> {
+  try {
+    const response = await fetch(`${API_BASE}/watchlist`);
+    
+    if (!response.ok) {
+      console.log('[SYNC] No watchlist data from backend');
+      return null;
+    }
+    
+    const remoteData: WatchlistSyncData = await response.json();
+    syncStatus.lastWatchlistSync = Date.now();
+    
+    return remoteData;
+  } catch (error) {
+    console.error('[SYNC] Error pulling watchlist:', error);
+    return null;
+  }
 }
 
-export async function syncThresholdsToBackend(data: ThresholdSyncData): Promise<boolean> {
-  // TODO: POST to /api/sync/thresholds
-  console.log('[SYNC] syncThresholdsToBackend - Not implemented yet', data);
-  return true;
+/**
+ * Thresholds zum Backend pushen
+ */
+export async function pushThresholdsToBackend(
+  settings: Record<string, { trendPriceId: string; thresholds: ThresholdConfig[] }>
+): Promise<boolean> {
+  try {
+    const timestamp = getCurrentTimestamp();
+    const data: AllThresholdsSyncData = {
+      timestamp,
+      deviceId: getDeviceId(),
+      settings
+    };
+    
+    const response = await fetch(`${API_BASE}/thresholds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+      setLocalTimestamp(THRESHOLDS_TIMESTAMP_KEY, timestamp);
+      console.log('[SYNC] Thresholds pushed to backend');
+      return true;
+    }
+    
+    console.error('[SYNC] Failed to push thresholds:', response.status);
+    return false;
+  } catch (error) {
+    console.error('[SYNC] Error pushing thresholds:', error);
+    return false;
+  }
 }
 
-export async function syncThresholdsFromBackend(trendPriceId: string): Promise<ThresholdSyncData | null> {
-  // TODO: GET from /api/sync/thresholds/:trendPriceId
-  console.log('[SYNC] syncThresholdsFromBackend - Not implemented yet', trendPriceId);
-  return null;
+/**
+ * Thresholds vom Backend holen
+ */
+export async function pullThresholdsFromBackend(): Promise<AllThresholdsSyncData | null> {
+  try {
+    const response = await fetch(`${API_BASE}/thresholds`);
+    
+    if (!response.ok) {
+      console.log('[SYNC] No thresholds data from backend');
+      return null;
+    }
+    
+    const remoteData: AllThresholdsSyncData = await response.json();
+    syncStatus.lastThresholdsSync = Date.now();
+    
+    return remoteData;
+  } catch (error) {
+    console.error('[SYNC] Error pulling thresholds:', error);
+    return null;
+  }
 }
 
-export async function syncAlarmLevelsToBackend(data: AlarmLevelSyncData): Promise<boolean> {
-  // TODO: POST to /api/sync/alarm-levels
-  console.log('[SYNC] syncAlarmLevelsToBackend - Not implemented yet', data);
-  return true;
+/**
+ * Alarm Levels zum Backend pushen
+ */
+export async function pushAlarmLevelsToBackend(
+  configs: Record<string, AlarmLevelConfig>
+): Promise<boolean> {
+  try {
+    const timestamp = getCurrentTimestamp();
+    const data: AlarmLevelSyncData = {
+      timestamp,
+      deviceId: getDeviceId(),
+      configs
+    };
+    
+    const response = await fetch(`${API_BASE}/alarm-levels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+      setLocalTimestamp(ALARM_LEVELS_TIMESTAMP_KEY, timestamp);
+      console.log('[SYNC] Alarm levels pushed to backend');
+      return true;
+    }
+    
+    console.error('[SYNC] Failed to push alarm levels:', response.status);
+    return false;
+  } catch (error) {
+    console.error('[SYNC] Error pushing alarm levels:', error);
+    return false;
+  }
 }
 
-export async function syncAlarmLevelsFromBackend(): Promise<AlarmLevelSyncData | null> {
-  // TODO: GET from /api/sync/alarm-levels
-  console.log('[SYNC] syncAlarmLevelsFromBackend - Not implemented yet');
-  return null;
+/**
+ * Alarm Levels vom Backend holen
+ */
+export async function pullAlarmLevelsFromBackend(): Promise<AlarmLevelSyncData | null> {
+  try {
+    const response = await fetch(`${API_BASE}/alarm-levels`);
+    
+    if (!response.ok) {
+      console.log('[SYNC] No alarm levels data from backend');
+      return null;
+    }
+    
+    const remoteData: AlarmLevelSyncData = await response.json();
+    syncStatus.lastAlarmLevelsSync = Date.now();
+    
+    return remoteData;
+  } catch (error) {
+    console.error('[SYNC] Error pulling alarm levels:', error);
+    return null;
+  }
 }
 
 // ===========================================
-// SYNC MANAGER (Polling)
+// SYNC MANAGER (Polling mit sicherer Merge-Logik)
 // ===========================================
 
-let syncInterval: NodeJS.Timeout | null = null;
+let syncInterval: ReturnType<typeof setInterval> | null = null;
 
-export function startSyncPolling(intervalMs: number = 3500): void {
+export interface SyncCallbacks {
+  onWatchlistUpdate?: (merged: WatchlistSyncData) => void;
+  onThresholdsUpdate?: (merged: AllThresholdsSyncData) => void;
+  onAlarmLevelsUpdate?: (merged: AlarmLevelSyncData) => void;
+  getLocalWatchlist: () => WatchlistSyncData | null;
+  getLocalThresholds: () => AllThresholdsSyncData | null;
+  getLocalAlarmLevels: () => AlarmLevelSyncData | null;
+}
+
+/**
+ * Startet das sichere Sync-Polling
+ * - Holt Daten vom Backend
+ * - Merged mit lokalen Daten (NIEMALS überschreiben!)
+ * - Ruft Callbacks nur wenn sich was geändert hat
+ */
+export function startSyncPolling(
+  callbacks: SyncCallbacks,
+  intervalMs: number = 3500
+): void {
   if (syncInterval) {
     clearInterval(syncInterval);
   }
   
-  console.log(`[SYNC] Starting sync polling every ${intervalMs}ms`);
+  console.log(`[SYNC] Starting SAFE sync polling every ${intervalMs}ms`);
   
-  syncInterval = setInterval(async () => {
+  const performSync = async () => {
+    if (syncStatus.isSyncing) return;
+    
     try {
       syncStatus.isSyncing = true;
       
-      // TODO: Implement actual sync logic here
-      // 1. Fetch remote data
-      // 2. Merge with local data
-      // 3. Update localStorage if needed
-      // 4. Push local changes if newer
+      // 1. Watchlist Sync
+      const remoteWatchlist = await pullWatchlistFromBackend();
+      if (remoteWatchlist) {
+        const localWatchlist = callbacks.getLocalWatchlist();
+        const merged = mergeWatchlist(localWatchlist, remoteWatchlist);
+        
+        if (merged && callbacks.onWatchlistUpdate) {
+          // Nur updaten wenn sich was geändert hat
+          const localTimestamp = localWatchlist?.timestamp || 0;
+          if (merged.timestamp > localTimestamp) {
+            callbacks.onWatchlistUpdate(merged);
+          }
+        }
+      }
+      
+      // 2. Thresholds Sync
+      const remoteThresholds = await pullThresholdsFromBackend();
+      if (remoteThresholds) {
+        const localThresholds = callbacks.getLocalThresholds();
+        const merged = mergeAllThresholds(localThresholds, remoteThresholds);
+        
+        if (merged && callbacks.onThresholdsUpdate) {
+          const localTimestamp = localThresholds?.timestamp || 0;
+          if (merged.timestamp > localTimestamp) {
+            callbacks.onThresholdsUpdate(merged);
+          }
+        }
+      }
+      
+      // 3. Alarm Levels Sync
+      const remoteAlarmLevels = await pullAlarmLevelsFromBackend();
+      if (remoteAlarmLevels) {
+        const localAlarmLevels = callbacks.getLocalAlarmLevels();
+        const merged = mergeAlarmLevelConfigs(localAlarmLevels, remoteAlarmLevels);
+        
+        if (merged && callbacks.onAlarmLevelsUpdate) {
+          const localTimestamp = localAlarmLevels?.timestamp || 0;
+          if (merged.timestamp > localTimestamp) {
+            callbacks.onAlarmLevelsUpdate(merged);
+          }
+        }
+      }
       
       syncStatus.lastSyncTime = Date.now();
       syncStatus.error = null;
+      
     } catch (error) {
       syncStatus.error = String(error);
-      console.error('[SYNC] Error:', error);
+      console.error('[SYNC] Polling error:', error);
     } finally {
       syncStatus.isSyncing = false;
     }
-  }, intervalMs);
+  };
+  
+  // Initial sync
+  performSync();
+  
+  // Start interval
+  syncInterval = setInterval(performSync, intervalMs);
 }
 
 export function stopSyncPolling(): void {
@@ -262,20 +574,60 @@ export function stopSyncPolling(): void {
 }
 
 // ===========================================
+// HELPER: Create Sync Data from localStorage
+// ===========================================
+
+export function createWatchlistSyncData(
+  watchlist: string[],
+  pairMarketTypes: Record<string, { marketType: 'spot' | 'futures', symbol: string }>
+): WatchlistSyncData {
+  return {
+    timestamp: getLocalTimestamp(WATCHLIST_TIMESTAMP_KEY) || getCurrentTimestamp(),
+    deviceId: getDeviceId(),
+    watchlist,
+    pairMarketTypes
+  };
+}
+
+export function createThresholdsSyncData(
+  settings: Record<string, { trendPriceId: string; thresholds: ThresholdConfig[] }>
+): AllThresholdsSyncData {
+  return {
+    timestamp: getLocalTimestamp(THRESHOLDS_TIMESTAMP_KEY) || getCurrentTimestamp(),
+    deviceId: getDeviceId(),
+    settings
+  };
+}
+
+export function createAlarmLevelsSyncData(
+  configs: Record<string, AlarmLevelConfig>
+): AlarmLevelSyncData {
+  return {
+    timestamp: getLocalTimestamp(ALARM_LEVELS_TIMESTAMP_KEY) || getCurrentTimestamp(),
+    deviceId: getDeviceId(),
+    configs
+  };
+}
+
+// ===========================================
 // EXPORTS SUMMARY
 // ===========================================
 // 
-// Diese Datei enthält:
-// - getDeviceId() - Eindeutige Geräte-ID
-// - mergeWatchlist() - Merge-Strategie für Watchlist
-// - mergeThresholds() - Merge-Strategie für Schwellenwerte
-// - mergeAlarmLevelConfigs() - Merge-Strategie für Alarm-Level
-// - syncXxxToBackend() - Placeholder für Backend-Sync (Push)
-// - syncXxxFromBackend() - Placeholder für Backend-Sync (Pull)
-// - startSyncPolling() / stopSyncPolling() - Polling-Manager
-//
+// SICHERE SYNC-LOGIK:
+// - mergeWatchlist() - Union-Merge, nichts geht verloren
+// - mergeAllThresholds() - Pro-Pair Merge, leere Remote löscht nichts
+// - mergeAlarmLevelConfigs() - Timestamp-basiert
+// 
+// BACKEND-FUNKTIONEN:
+// - pushWatchlistToBackend() / pullWatchlistFromBackend()
+// - pushThresholdsToBackend() / pullThresholdsFromBackend()
+// - pushAlarmLevelsToBackend() / pullAlarmLevelsFromBackend()
+// 
+// POLLING:
+// - startSyncPolling(callbacks, intervalMs)
+// - stopSyncPolling()
+// 
 // NÄCHSTE SCHRITTE:
-// 1. Backend-API-Routen erstellen
-// 2. Sync-Funktionen implementieren
-// 3. Tests erstellen
-// 4. In notifications.tsx integrieren (NUR nach Tests!)
+// 1. Backend-API-Routen erstellen (/api/sync/*)
+// 2. Tests für Merge-Logik
+// 3. Integration in notifications.tsx (NUR nach Tests!)

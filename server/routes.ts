@@ -3800,6 +3800,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initial run after 5 seconds (let server start first)
   setTimeout(backgroundPriceUpdater, 5000);
 
+  // ===========================================
+  // NEUE SICHERE SYNC API ROUTES
+  // Erstellt: 25.01.2026 ~23:15 Uhr
+  // SEPARATE von der alten Sync-Logik!
+  // ===========================================
+  
+  // In-Memory Storage für Sync (wird später auf PostgreSQL umgestellt)
+  interface SyncData {
+    timestamp: number;
+    deviceId: string;
+    data: any;
+  }
+  
+  const syncStorage: {
+    watchlist: SyncData | null;
+    thresholds: SyncData | null;
+    alarmLevels: SyncData | null;
+  } = {
+    watchlist: null,
+    thresholds: null,
+    alarmLevels: null
+  };
+
+  // GET /api/sync/watchlist - Watchlist vom Backend holen
+  app.get("/api/sync/watchlist", (req, res) => {
+    try {
+      if (!syncStorage.watchlist) {
+        return res.status(404).json({ error: "No watchlist data" });
+      }
+      console.log('[SYNC-API] GET watchlist - returning data with timestamp:', syncStorage.watchlist.timestamp);
+      return res.json(syncStorage.watchlist.data);
+    } catch (error) {
+      console.error('[SYNC-API] Error getting watchlist:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/sync/watchlist - Watchlist zum Backend pushen
+  app.post("/api/sync/watchlist", (req, res) => {
+    try {
+      const { timestamp, deviceId, watchlist, pairMarketTypes } = req.body;
+      
+      if (!timestamp || !deviceId) {
+        return res.status(400).json({ error: "Missing timestamp or deviceId" });
+      }
+      
+      // Nur aktualisieren wenn neuer als gespeichert
+      if (!syncStorage.watchlist || timestamp > syncStorage.watchlist.timestamp) {
+        syncStorage.watchlist = {
+          timestamp,
+          deviceId,
+          data: { timestamp, deviceId, watchlist, pairMarketTypes }
+        };
+        console.log('[SYNC-API] POST watchlist - saved with timestamp:', timestamp);
+      } else {
+        console.log('[SYNC-API] POST watchlist - ignored (older than stored)');
+      }
+      
+      return res.json({ success: true, storedTimestamp: syncStorage.watchlist.timestamp });
+    } catch (error) {
+      console.error('[SYNC-API] Error posting watchlist:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/sync/thresholds - Thresholds vom Backend holen
+  app.get("/api/sync/thresholds", (req, res) => {
+    try {
+      if (!syncStorage.thresholds) {
+        return res.status(404).json({ error: "No thresholds data" });
+      }
+      console.log('[SYNC-API] GET thresholds - returning data with timestamp:', syncStorage.thresholds.timestamp);
+      return res.json(syncStorage.thresholds.data);
+    } catch (error) {
+      console.error('[SYNC-API] Error getting thresholds:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/sync/thresholds - Thresholds zum Backend pushen
+  app.post("/api/sync/thresholds", (req, res) => {
+    try {
+      const { timestamp, deviceId, settings } = req.body;
+      
+      if (!timestamp || !deviceId) {
+        return res.status(400).json({ error: "Missing timestamp or deviceId" });
+      }
+      
+      // Nur aktualisieren wenn neuer als gespeichert
+      if (!syncStorage.thresholds || timestamp > syncStorage.thresholds.timestamp) {
+        syncStorage.thresholds = {
+          timestamp,
+          deviceId,
+          data: { timestamp, deviceId, settings }
+        };
+        console.log('[SYNC-API] POST thresholds - saved with timestamp:', timestamp);
+      } else {
+        console.log('[SYNC-API] POST thresholds - ignored (older than stored)');
+      }
+      
+      return res.json({ success: true, storedTimestamp: syncStorage.thresholds.timestamp });
+    } catch (error) {
+      console.error('[SYNC-API] Error posting thresholds:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/sync/alarm-levels - Alarm Levels vom Backend holen
+  app.get("/api/sync/alarm-levels", (req, res) => {
+    try {
+      if (!syncStorage.alarmLevels) {
+        return res.status(404).json({ error: "No alarm levels data" });
+      }
+      console.log('[SYNC-API] GET alarm-levels - returning data with timestamp:', syncStorage.alarmLevels.timestamp);
+      return res.json(syncStorage.alarmLevels.data);
+    } catch (error) {
+      console.error('[SYNC-API] Error getting alarm-levels:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/sync/alarm-levels - Alarm Levels zum Backend pushen
+  app.post("/api/sync/alarm-levels", (req, res) => {
+    try {
+      const { timestamp, deviceId, configs } = req.body;
+      
+      if (!timestamp || !deviceId) {
+        return res.status(400).json({ error: "Missing timestamp or deviceId" });
+      }
+      
+      // Nur aktualisieren wenn neuer als gespeichert
+      if (!syncStorage.alarmLevels || timestamp > syncStorage.alarmLevels.timestamp) {
+        syncStorage.alarmLevels = {
+          timestamp,
+          deviceId,
+          data: { timestamp, deviceId, configs }
+        };
+        console.log('[SYNC-API] POST alarm-levels - saved with timestamp:', timestamp);
+      } else {
+        console.log('[SYNC-API] POST alarm-levels - ignored (older than stored)');
+      }
+      
+      return res.json({ success: true, storedTimestamp: syncStorage.alarmLevels.timestamp });
+    } catch (error) {
+      console.error('[SYNC-API] Error posting alarm-levels:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  console.log('[SYNC-API] New safe sync routes registered: /api/sync/watchlist, /api/sync/thresholds, /api/sync/alarm-levels');
+
   const httpServer = createServer(app);
 
   return httpServer;
