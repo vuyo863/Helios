@@ -3365,7 +3365,8 @@ export default function Notifications() {
 
                                                         // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
                                                         isSavingThresholdRef.current = true;
-                                                        saveSettingsToStorage();
+                                                        // Save directly to backend (not via saveSettingsToStorage which uses editingThresholdRef)
+                                                        saveThresholdToBackend(trendPriceId, threshold);
                                                         // Close BOTH the new-dialog AND the threshold's edit dialog state
                                                         const thresholdIdToClose = editingThresholdId;
                                                         setEditDialogOpen(prev => ({ 
@@ -3674,7 +3675,8 @@ export default function Notifications() {
                                                 onClick={() => {
                                                   // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
                                                   isSavingThresholdRef.current = true;
-                                                  saveSettingsToStorage();
+                                                  // Save directly to backend (not via saveSettingsToStorage which uses editingThresholdRef)
+                                                  saveThresholdToBackend(trendPriceId, threshold);
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
                                                   editingThresholdRef.current = { pairId: null, thresholdId: null };
