@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useCrossDeviceSync } from "@/hooks/useCrossDeviceSync";
 
 interface TrendPrice {
   id: string;
@@ -910,6 +911,20 @@ export default function Notifications() {
   
   // Ref to track current activeAlarms for threshold check (avoids stale closure issue)
   const activeAlarmsRef = useRef<ActiveAlarm[]>([]);
+
+  // ===========================================
+  // CROSS-DEVICE SYNC HOOK
+  // ===========================================
+  useCrossDeviceSync({
+    watchlist,
+    pairMarketTypes,
+    trendPriceSettings,
+    alarmLevelConfigs,
+    setWatchlist,
+    setPairMarketTypes,
+    setTrendPriceSettings,
+    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>)
+  });
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
