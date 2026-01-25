@@ -950,12 +950,16 @@ export default function Notifications() {
 
         // Create unique key for this threshold trigger
         const triggerKey = `${pair.id}-${threshold.id}-${thresholdValue}`;
+        
+        // DEBUG: Log every threshold check
+        console.log(`[THRESHOLD-DEBUG] Checking ${pair.name}: triggerKey=${triggerKey}, inTriggered=${triggeredThresholds.has(triggerKey)}, inBypassRef=${allowedReactivatedThresholdsRef.current.has(triggerKey)}, currentPrice=${currentPrice}, thresholdValue=${thresholdValue}`);
 
         // Check if this threshold was already triggered
         // BUT: Allow if it was just re-activated (bypass via ref)
         if (triggeredThresholds.has(triggerKey)) {
           // Check if this threshold is allowed to bypass (just re-activated)
           if (!allowedReactivatedThresholdsRef.current.has(triggerKey)) {
+            console.log(`[THRESHOLD-DEBUG] BLOCKED: ${triggerKey} - in triggeredThresholds but NOT in bypass ref`);
             return;
           }
           // Clear from allowed set after use (one-time bypass)
@@ -3381,11 +3385,12 @@ export default function Notifications() {
                                                           });
                                                           // Force threshold check if threshold is active (re-activated)
                                                           if (threshold.isActive !== false) {
-                                                            console.log('[THRESHOLD-REACTIVATED] Adding to bypass ref and forcing check');
                                                             const thresholdValue = parseFloat(threshold.threshold || '0');
                                                             const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
+                                                            console.log('[THRESHOLD-REACTIVATED] Adding to bypass ref:', triggerKey, 'threshold:', threshold);
                                                             // Add to bypass ref (works immediately, no state batching delay)
                                                             allowedReactivatedThresholdsRef.current.add(triggerKey);
+                                                            console.log('[THRESHOLD-REACTIVATED] Bypass ref now contains:', Array.from(allowedReactivatedThresholdsRef.current));
                                                             // Force threshold check immediately
                                                             setThresholdCheckTrigger(prev => prev + 1);
                                                           }
