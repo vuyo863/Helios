@@ -1,0 +1,67 @@
+[TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.91 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.92 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.92 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.92 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.92 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.92 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.92 (-0.89%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2

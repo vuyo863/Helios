@@ -1492,6 +1492,8 @@ export default function Notifications() {
     // Also update the ref for threshold check (avoids stale closure in threshold useEffect)
     activeAlarmsRef.current = activeAlarms;
     console.log(`[ACTIVE-ALARMS-REF] Updated ref with ${activeAlarms.length} alarms`);
+    // Debug: Log whenever activeAlarms state changes to help diagnose UI update issues
+    console.log(`[ACTIVE-ALARMS-UI] UI should now show ${activeAlarms.length} alarms`);
   }, [activeAlarms]);
   
   // DEAKTIVIERT: Backend-Sync für Active Alarms temporär deaktiviert - nur localStorage

@@ -1,0 +1,30 @@
+[TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:955 [THRESHOLD-DEBUG] Checking ETH/USDT: triggerKey=binance-futures-1-953511cb-a68c-40b5-a11a-6a747e844e28-833, inTriggered=false, inBypassRef=false, currentPrice=2934.98, thresholdValue=833
+notifications.tsx:1028 [AUTO-DISMISS] Calculated: 5 reps x 10000ms seq + 60000ms rest = 100000ms total, dismiss at 2026-01-25T11:53:58.985Z
+notifications.tsx:1090 [ACTIVE-ALARMS] Created alarm 57a3edea-7d79-4080-8f4b-7a43d4740a43 (localStorage only)
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 0 active alarms
+notifications.tsx:1494 [ACTIVE-ALARMS-REF] Updated ref with 1 alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.98 (-0.90%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 1 active alarms
+notifications:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.98 (-0.90%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 1 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.98 (-0.90%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications:1  Error while trying to use the following icon from the Manifest: https://9318949e-a5e9-4b35-9e71-09724f6c1506-00-2exiw1hhay1ts.janeway.replit.dev/icon-192.png (Resource size is not correct - typo in the Manifest?)
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurate prices...
+notifications.tsx:925 [THRESHOLD-CHECK] Running with 1 active alarms
+notifications.tsx:526 [TRENDPREIS-24/7] OKX ETHUSDT: $2934.99 (-0.90%)
+notifications.tsx:544 [TRENDPREIS-24/7] OKX Futures prices updated successfully
+notifications.tsx:502 [TRENDPREIS-24/7] Using OKX Futures API for accurat
