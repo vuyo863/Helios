@@ -1720,6 +1720,10 @@ export default function Notifications() {
       }
     };
     
+    // IMMEDIATE initial sync on mount - backend is the source of truth
+    pollNotificationSettings();
+    console.log('[NOTIFICATION-POLLING] Initial sync executed');
+    
     // Start polling every 3.5 seconds
     const pollInterval = setInterval(pollNotificationSettings, 3500);
     console.log('[NOTIFICATION-POLLING] Started polling (every 3.5s)');
