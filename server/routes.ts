@@ -2416,6 +2416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST create threshold
   app.post("/api/notification-thresholds", async (req, res) => {
+    console.log(`[API] POST /api/notification-thresholds - received:`, JSON.stringify(req.body));
     try {
       const validatedData = insertThresholdSchema.parse(req.body);
       const threshold = await storage.createThreshold(validatedData);

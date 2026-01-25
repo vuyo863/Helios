@@ -1375,7 +1375,7 @@ export default function Notifications() {
 
   // Save a single threshold to backend (POST for create/update)
   // Backend is the single source of truth - localStorage is just a cache
-  const saveThresholdToBackend = async (pairId: string, threshold: ThresholdConfig) => {
+  const saveThresholdToBackend = async (pairId: string, threshold: ThresholdConfig): Promise<boolean> => {
     console.log('[THRESHOLD-SAVE] Starting save:', pairId, threshold.id, threshold.threshold);
     const thresholdData = {
       pairId,
@@ -1403,11 +1403,15 @@ export default function Notifications() {
         console.log(`[THRESHOLD] Saved to backend: ${pairId} - ${threshold.id}`);
         // Update localStorage cache with current state
         localStorage.setItem('notifications-threshold-settings', JSON.stringify(trendPriceSettings));
+        return true;
       } else {
-        console.error(`[THRESHOLD] Failed to save: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`[THRESHOLD] Failed to save: ${response.status}`, errorText);
+        return false;
       }
     } catch (err) {
       console.error('[THRESHOLD] Save error:', err);
+      return false;
     }
   };
 
@@ -3344,7 +3348,7 @@ export default function Notifications() {
                                                       Abbrechen
                                                     </Button>
                                                     <Button
-                                                      onClick={() => {
+                                                      onClick={async () => {
                                                         // Validate threshold
                                                         if (!threshold.threshold || threshold.threshold.trim() === '') {
                                                           toast({
@@ -3368,7 +3372,7 @@ export default function Notifications() {
                                                         isSavingThresholdRef.current = true;
                                                         // Save directly to backend (not via saveSettingsToStorage which uses editingThresholdRef)
                                                         console.log('[SPEICHERN-CLICK] New threshold save:', trendPriceId, threshold.id, threshold.threshold);
-                                                        saveThresholdToBackend(trendPriceId, threshold);
+                                                        const success = await saveThresholdToBackend(trendPriceId, threshold);
                                                         // Close BOTH the new-dialog AND the threshold's edit dialog state
                                                         const thresholdIdToClose = editingThresholdId;
                                                         setEditDialogOpen(prev => ({ 
@@ -3379,10 +3383,18 @@ export default function Notifications() {
                                                         setEditingThresholdId(null);
                                                         editingThresholdRef.current = { pairId: null, thresholdId: null };
                                                         setIsCreatingNewThreshold(false);
-                                                        toast({
-                                                          title: "Gespeichert",
-                                                          description: "Schwellenwert wurde erfolgreich gespeichert.",
-                                                        });
+                                                        if (success) {
+                                                          toast({
+                                                            title: "Gespeichert",
+                                                            description: "Schwellenwert wurde erfolgreich gespeichert.",
+                                                          });
+                                                        } else {
+                                                          toast({
+                                                            title: "Fehler",
+                                                            description: "Schwellenwert konnte nicht gespeichert werden.",
+                                                            variant: "destructive"
+                                                          });
+                                                        }
                                                       }}
                                                     >
                                                       Speichern
@@ -3674,20 +3686,28 @@ export default function Notifications() {
                                                 </span>
                                               </div>
                                               <Button
-                                                onClick={() => {
+                                                onClick={async () => {
                                                   // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
                                                   isSavingThresholdRef.current = true;
                                                   // Save directly to backend (not via saveSettingsToStorage which uses editingThresholdRef)
                                                   console.log('[SPEICHERN-CLICK] Add threshold save:', trendPriceId, threshold.id, threshold.threshold);
-                                                  saveThresholdToBackend(trendPriceId, threshold);
+                                                  const success = await saveThresholdToBackend(trendPriceId, threshold);
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
                                                   editingThresholdRef.current = { pairId: null, thresholdId: null };
                                                   setIsCreatingNewThreshold(false);
-                                                  toast({
-                                                    title: "Gespeichert",
-                                                    description: "Schwellenwert wurde erfolgreich hinzugefügt.",
-                                                  });
+                                                  if (success) {
+                                                    toast({
+                                                      title: "Gespeichert",
+                                                      description: "Schwellenwert wurde erfolgreich hinzugefügt.",
+                                                    });
+                                                  } else {
+                                                    toast({
+                                                      title: "Fehler",
+                                                      description: "Schwellenwert konnte nicht gespeichert werden.",
+                                                      variant: "destructive"
+                                                    });
+                                                  }
                                                 }}
                                               >
                                                 Speichern
@@ -4007,7 +4027,7 @@ export default function Notifications() {
                                                     Abbrechen
                                                   </Button>
                                                   <Button
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                       // Validate threshold
                                                       if (!threshold.threshold || threshold.threshold.trim() === '') {
                                                         toast({
@@ -4028,12 +4048,20 @@ export default function Notifications() {
                                                       }
 
                                                       // WICHTIG: Save directly to backend (single threshold)
-                                                      saveThresholdToBackend(trendPriceId, threshold);
+                                                      const success = await saveThresholdToBackend(trendPriceId, threshold);
                                                       setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
-                                                      toast({
-                                                        title: "Gespeichert",
-                                                        description: "Schwellenwert wurde erfolgreich gespeichert.",
-                                                      });
+                                                      if (success) {
+                                                        toast({
+                                                          title: "Gespeichert",
+                                                          description: "Schwellenwert wurde erfolgreich gespeichert.",
+                                                        });
+                                                      } else {
+                                                        toast({
+                                                          title: "Fehler",
+                                                          description: "Schwellenwert konnte nicht gespeichert werden.",
+                                                          variant: "destructive"
+                                                        });
+                                                      }
                                                     }}
                                                   >
                                                     Speichern
