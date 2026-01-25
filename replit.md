@@ -26,6 +26,13 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Status-Anzeige Logik:** Prüft `isActive === false` (persistiert) ODER `triggeredThresholds` (Session)
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_einmalig_threshold_logic.md` für vollständigen Code-Snapshot
   - **Unit Tests:** 10 Tests in `server/threshold-einmalig.test.ts` (alle bestanden)
+  - **BUGFIX 25.01.2026 - Sofortige Alarm-Auslösung nach Reaktivierung:**
+    - **Problem:** Nach dem Reaktivieren eines "Einmalig" Schwellenwerts (Toggle von "Pause" auf "Aktiv" + "Speichern") wurde der Alarm NICHT sofort ausgelöst. Der User musste den Dialog schließen und erneut öffnen, bevor der Alarm erschien.
+    - **Root Cause:** Im Speichern-Handler des **existierenden Threshold Dialogs** (Zeile ~4085) wurde `setEditingThresholdId(null)` NICHT aufgerufen. Dadurch blieb `editingThresholdId` auf der Threshold-ID gesetzt.
+    - **Auswirkung:** Der Threshold-Check (Zeile ~940) hat die Bedingung `if (threshold.id === editingThresholdId) return;` erfüllt und den Threshold übersprungen, obwohl der Dialog bereits geschlossen war.
+    - **Lösung:** Im existierenden Threshold Dialog nach dem Speichern jetzt `setEditingThresholdId(null)` UND `editingThresholdRef.current = { pairId: null, thresholdId: null }` aufrufen, BEVOR der `setTimeout(() => setThresholdCheckTrigger(...), 0)` den Threshold-Check triggert.
+    - **Code-Stelle:** `client/src/pages/notifications.tsx`, Zeile ~4088-4091
+    - **Ergebnis:** Nach "Speichern" wird der Alarm jetzt SOFORT in "Aktive Alarmierungen" angezeigt
 - **Golden State - Wiederholend Threshold Logic**: Die komplette Logik für "Häufigkeit: Wiederholend" ist Golden State und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
   - **Verhalten:** Neuer Schwellenwert zeigt "0 ∞", Toggle = "Aktiv"
   - **Nach Trigger:** Counter wird erhöht, Status zeigt "X ∞" (X = Anzahl Trigger), Toggle bleibt "Aktiv"
