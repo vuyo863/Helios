@@ -801,9 +801,10 @@ export default function Notifications() {
   }, [watchlist, availableTradingPairs, pairMarketTypes, isFuturesBlocked]);
 
   const [trendPriceSettings, setTrendPriceSettings] = useState<Record<string, TrendPriceSettings>>(() => {
-    // Load saved thresholds from localStorage on mount
-    const saved = localStorage.getItem('notifications-threshold-settings');
-    return saved ? JSON.parse(saved) : {};
+    // WICHTIG: Start empty - Backend is the single source of truth
+    // localStorage is only used as cache during the session
+    // Backend sync will populate this state on mount
+    return {};
   });
 
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
