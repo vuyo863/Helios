@@ -4083,6 +4083,9 @@ export default function Notifications() {
                                                       // WICHTIG: Save directly to backend (single threshold)
                                                       const success = await saveThresholdToBackend(trendPriceId, threshold);
                                                       setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
+                                                      // CRITICAL: Clear editingThresholdId so threshold check doesn't skip this threshold
+                                                      setEditingThresholdId(null);
+                                                      editingThresholdRef.current = { pairId: null, thresholdId: null };
                                                       if (success) {
                                                         toast({
                                                           title: "Gespeichert",
