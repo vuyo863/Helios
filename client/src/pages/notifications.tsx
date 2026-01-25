@@ -810,6 +810,10 @@ export default function Notifications() {
   
   // Trigger to force threshold check after re-activating a threshold
   const [thresholdCheckTrigger, setThresholdCheckTrigger] = useState(0);
+  
+  // Ref to track thresholds that should bypass triggeredThresholds check (for re-activation)
+  // This works immediately without waiting for state batching
+  const allowedReactivatedThresholdsRef = useRef<Set<string>>(new Set());
 
   // Alarmierungsstufen Konfiguration - moved up before useEffect
   const [alarmLevelConfigs, setAlarmLevelConfigs] = useState<Record<AlarmLevel, AlarmLevelConfig>>(() => {
@@ -948,7 +952,16 @@ export default function Notifications() {
         const triggerKey = `${pair.id}-${threshold.id}-${thresholdValue}`;
 
         // Check if this threshold was already triggered
-        if (triggeredThresholds.has(triggerKey)) return;
+        // BUT: Allow if it was just re-activated (bypass via ref)
+        if (triggeredThresholds.has(triggerKey)) {
+          // Check if this threshold is allowed to bypass (just re-activated)
+          if (!allowedReactivatedThresholdsRef.current.has(triggerKey)) {
+            return;
+          }
+          // Clear from allowed set after use (one-time bypass)
+          console.log('[REACTIVATED-BYPASS] Allowing threshold to re-trigger:', triggerKey);
+          allowedReactivatedThresholdsRef.current.delete(triggerKey);
+        }
 
         // Get alarm level config
         const alarmConfig = alarmLevelConfigs[threshold.alarmLevel];
@@ -3368,19 +3381,13 @@ export default function Notifications() {
                                                           });
                                                           // Force threshold check if threshold is active (re-activated)
                                                           if (threshold.isActive !== false) {
-                                                            console.log('[THRESHOLD-REACTIVATED] Clearing triggeredThresholds and forcing check');
-                                                            // WICHTIG: Remove from triggeredThresholds to allow re-trigger
+                                                            console.log('[THRESHOLD-REACTIVATED] Adding to bypass ref and forcing check');
                                                             const thresholdValue = parseFloat(threshold.threshold || '0');
                                                             const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
-                                                            setTriggeredThresholds(prev => {
-                                                              const newSet = new Set(prev);
-                                                              newSet.delete(triggerKey);
-                                                              return newSet;
-                                                            });
-                                                            // Then force threshold check
-                                                            setTimeout(() => {
-                                                              setThresholdCheckTrigger(prev => prev + 1);
-                                                            }, 100);
+                                                            // Add to bypass ref (works immediately, no state batching delay)
+                                                            allowedReactivatedThresholdsRef.current.add(triggerKey);
+                                                            // Force threshold check immediately
+                                                            setThresholdCheckTrigger(prev => prev + 1);
                                                           }
                                                         } else {
                                                           toast({
@@ -3701,15 +3708,10 @@ export default function Notifications() {
                                                       // WICHTIG: Remove from triggeredThresholds to allow re-trigger
                                                       const thresholdValue = parseFloat(threshold.threshold || '0');
                                                       const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
-                                                      setTriggeredThresholds(prev => {
-                                                        const newSet = new Set(prev);
-                                                        newSet.delete(triggerKey);
-                                                        return newSet;
-                                                      });
-                                                      // Then force threshold check
-                                                      setTimeout(() => {
-                                                        setThresholdCheckTrigger(prev => prev + 1);
-                                                      }, 100);
+                                                      // Add to bypass ref (works immediately, no state batching delay)
+                                                      allowedReactivatedThresholdsRef.current.add(triggerKey);
+                                                      // Force threshold check immediately
+                                                      setThresholdCheckTrigger(prev => prev + 1);
                                                     }
                                                   } else {
                                                     toast({
@@ -4067,19 +4069,13 @@ export default function Notifications() {
                                                         });
                                                         // Force threshold check if threshold is active (re-activated)
                                                         if (threshold.isActive !== false) {
-                                                          console.log('[THRESHOLD-REACTIVATED] Clearing triggeredThresholds and forcing check');
-                                                          // WICHTIG: Remove from triggeredThresholds to allow re-trigger
+                                                          console.log('[THRESHOLD-REACTIVATED] Adding to bypass ref and forcing check');
                                                           const thresholdValue = parseFloat(threshold.threshold || '0');
                                                           const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
-                                                          setTriggeredThresholds(prev => {
-                                                            const newSet = new Set(prev);
-                                                            newSet.delete(triggerKey);
-                                                            return newSet;
-                                                          });
-                                                          // Then force threshold check
-                                                          setTimeout(() => {
-                                                            setThresholdCheckTrigger(prev => prev + 1);
-                                                          }, 100);
+                                                          // Add to bypass ref (works immediately, no state batching delay)
+                                                          allowedReactivatedThresholdsRef.current.add(triggerKey);
+                                                          // Force threshold check immediately
+                                                          setThresholdCheckTrigger(prev => prev + 1);
                                                         }
                                                       } else {
                                                         toast({
