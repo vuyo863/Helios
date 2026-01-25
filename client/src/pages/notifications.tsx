@@ -3399,8 +3399,12 @@ export default function Notifications() {
                                                             // Add to bypass ref (works immediately, no state batching delay)
                                                             allowedReactivatedThresholdsRef.current.add(triggerKey);
                                                             console.log('[THRESHOLD-REACTIVATED] Bypass ref now contains:', Array.from(allowedReactivatedThresholdsRef.current));
-                                                            // Force threshold check immediately
-                                                            setThresholdCheckTrigger(prev => prev + 1);
+                                                            // Force threshold check AFTER React state update cycle completes
+                                                            // This ensures editingThresholdId is null before the check runs
+                                                            setTimeout(() => {
+                                                              console.log('[THRESHOLD-REACTIVATED] Triggering threshold check after state update');
+                                                              setThresholdCheckTrigger(prev => prev + 1);
+                                                            }, 0);
                                                           }
                                                         } else {
                                                           toast({
@@ -3723,8 +3727,12 @@ export default function Notifications() {
                                                       const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
                                                       // Add to bypass ref (works immediately, no state batching delay)
                                                       allowedReactivatedThresholdsRef.current.add(triggerKey);
-                                                      // Force threshold check immediately
-                                                      setThresholdCheckTrigger(prev => prev + 1);
+                                                      // Force threshold check AFTER React state update cycle completes
+                                                      // This ensures editingThresholdId is null before the check runs
+                                                      setTimeout(() => {
+                                                        console.log('[THRESHOLD-REACTIVATED] Triggering threshold check after state update');
+                                                        setThresholdCheckTrigger(prev => prev + 1);
+                                                      }, 0);
                                                     }
                                                   } else {
                                                     toast({
@@ -4087,8 +4095,12 @@ export default function Notifications() {
                                                           const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
                                                           // Add to bypass ref (works immediately, no state batching delay)
                                                           allowedReactivatedThresholdsRef.current.add(triggerKey);
-                                                          // Force threshold check immediately
-                                                          setThresholdCheckTrigger(prev => prev + 1);
+                                                          // Force threshold check AFTER React state update cycle completes
+                                                          // This ensures editingThresholdId is null before the check runs
+                                                          setTimeout(() => {
+                                                            console.log('[THRESHOLD-REACTIVATED] Triggering threshold check after state update');
+                                                            setThresholdCheckTrigger(prev => prev + 1);
+                                                          }, 0);
                                                         }
                                                       } else {
                                                         toast({
