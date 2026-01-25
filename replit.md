@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots. It offers detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytics. The application also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots. It provides detailed insights into bot performance, including profit trend visualization, bot type comparison, and advanced analytics. The application also features a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The business vision is to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -60,6 +60,47 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Dialog-System:** Bearbeiten-Dialog mit "Abbrechen" und "Speichern" Buttons
   - **Dokumentation:** Siehe `docs/GOLDEN_STATE_alarmierungsstufen_konfigurieren.md` für vollständigen Code-Snapshot
 - **Workflow**: For the Notifications page, adding or editing a threshold, or changing its alarm level, requires an explicit "Speichern" (Save) button click; there is no auto-save for these actions. Dialog cleanup is automatic: when a "new threshold" dialog is closed (via X, ESC, or outside click) without saving, any incomplete threshold (missing value or notification type) is automatically removed from state. The `hasAnyThresholds` check excludes the currently editing threshold to prevent dialog auto-close during editing.
+- **Golden State - Trendpreise & Watchlist V1.1**:
+  - **Problem gelöst:** Trading-Pairs mit konfigurierten Schwellenwerten verschwanden aus "Benachrichtigungen konfigurieren" wenn sie aus der Watchlist entfernt wurden.
+  - **Lösung - Safe Remove Workflow:**
+    1. User entfernt Trading-Pair aus Watchlist
+    2. ALLE Schwellenwerte werden auf `isActive: false` gesetzt (pausiert)
+    3. `activeAlarmId` wird gelöscht (kein Re-Trigger möglich)
+    4. Trading-Pair bleibt in "Benachrichtigungen konfigurieren" sichtbar (mit "Paused" Badge)
+  - **Lösung - Safe Re-Add Workflow:**
+    1. User fügt Trading-Pair wieder zur Watchlist hinzu
+    2. Existierende Settings werden NICHT modifiziert
+    3. Schwellenwerte bleiben auf `isActive: false` (pausiert)
+    4. KEINE automatischen Alarme werden ausgelöst
+    5. User muss manuell den Toggle auf "Aktiv" setzen + "Speichern" klicken
+  - **Implementierung:**
+    - `removeFromWatchlist()` setzt alle Schwellenwerte auf `isActive: false`
+    - `addToWatchlist()` behält existierende Settings unverändert bei
+    - Threshold-Check überspringt alle Schwellenwerte mit `isActive === false`
+  - **Unit Tests:** 30 Tests in `server/no-auto-alarm-after-readd.test.ts` (alle bestanden)
+- **Golden State - Benachrichtigungen Konfigurieren V1.5**:
+  - **Problem gelöst:** Nur Watchlist-Pairs wurden angezeigt. Pairs mit Schwellenwerten aber nicht in Watchlist waren unsichtbar.
+  - **Lösung - Combined Pairs Display:**
+    - `allPairsToShow = [...watchlist, ...pairsWithThresholdsNotInWatchlist]`
+    - ALLE Pairs mit konfigurierten Schwellenwerten werden angezeigt (Watchlist + Nicht-Watchlist)
+  - **Trading-Pair Card Status Badge:**
+    - **"Active" (grün):** Pair ist in Watchlist UND mindestens 1 Schwellenwert hat `isActive !== false`
+    - **"Paused" (grau):** Pair ist NICHT in Watchlist ODER alle Schwellenwerte haben `isActive === false`
+  - **Badge-Logik:**
+    ```typescript
+    const isInWatchlist = watchlist.includes(trendPriceId);
+    const hasAnyActiveThreshold = savedThresholds.some(t => t.isActive !== false);
+    const isActive = isInWatchlist && hasAnyActiveThreshold;
+    // Badge: isActive ? "Active" : "Paused"
+    ```
+  - **Einmalig-Threshold Sonderfall:** Nach Trigger wird `isActive: false` gesetzt → Badge zeigt korrekt "Paused" wenn es der einzige Schwellenwert war
+  - **Unit Tests:** 25 Tests in `server/badge-logic.test.ts` (alle bestanden)
+- **Golden State - Aktive Alarmierungen V1.1**:
+  - **Verhalten nach Remove/Re-Add:** 
+    - Wenn Trading-Pair aus Watchlist entfernt wird → Schwellenwerte pausiert → KEINE neuen Alarme
+    - Wenn Trading-Pair wieder hinzugefügt wird → Schwellenwerte bleiben pausiert → KEINE automatischen Alarme
+    - User muss Schwellenwert manuell aktivieren um Alarm auszulösen
+  - **Keine Änderungen an:** Border-Farben, Blinking-Animation, Sortierung, Scroll-Container
 
 ## System Architecture
 
