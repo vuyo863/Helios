@@ -1376,6 +1376,7 @@ export default function Notifications() {
   // Save a single threshold to backend (POST for create/update)
   // Backend is the single source of truth - localStorage is just a cache
   const saveThresholdToBackend = async (pairId: string, threshold: ThresholdConfig) => {
+    console.log('[THRESHOLD-SAVE] Starting save:', pairId, threshold.id, threshold.threshold);
     const thresholdData = {
       pairId,
       thresholdId: threshold.id,
@@ -3366,6 +3367,7 @@ export default function Notifications() {
                                                         // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
                                                         isSavingThresholdRef.current = true;
                                                         // Save directly to backend (not via saveSettingsToStorage which uses editingThresholdRef)
+                                                        console.log('[SPEICHERN-CLICK] New threshold save:', trendPriceId, threshold.id, threshold.threshold);
                                                         saveThresholdToBackend(trendPriceId, threshold);
                                                         // Close BOTH the new-dialog AND the threshold's edit dialog state
                                                         const thresholdIdToClose = editingThresholdId;
@@ -3676,6 +3678,7 @@ export default function Notifications() {
                                                   // WICHTIG: Set ref BEFORE closing dialog so onOpenChange knows not to cleanup
                                                   isSavingThresholdRef.current = true;
                                                   // Save directly to backend (not via saveSettingsToStorage which uses editingThresholdRef)
+                                                  console.log('[SPEICHERN-CLICK] Add threshold save:', trendPriceId, threshold.id, threshold.threshold);
                                                   saveThresholdToBackend(trendPriceId, threshold);
                                                   setEditDialogOpen(prev => ({ ...prev, [`add-${trendPriceId}`]: false, [editingThresholdId]: false }));
                                                   setEditingThresholdId(null);
