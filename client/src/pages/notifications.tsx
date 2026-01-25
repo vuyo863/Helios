@@ -3368,8 +3368,19 @@ export default function Notifications() {
                                                           });
                                                           // Force threshold check if threshold is active (re-activated)
                                                           if (threshold.isActive !== false) {
-                                                            console.log('[THRESHOLD-REACTIVATED] Forcing threshold check');
-                                                            setThresholdCheckTrigger(prev => prev + 1);
+                                                            console.log('[THRESHOLD-REACTIVATED] Clearing triggeredThresholds and forcing check');
+                                                            // WICHTIG: Remove from triggeredThresholds to allow re-trigger
+                                                            const thresholdValue = parseFloat(threshold.threshold || '0');
+                                                            const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
+                                                            setTriggeredThresholds(prev => {
+                                                              const newSet = new Set(prev);
+                                                              newSet.delete(triggerKey);
+                                                              return newSet;
+                                                            });
+                                                            // Then force threshold check
+                                                            setTimeout(() => {
+                                                              setThresholdCheckTrigger(prev => prev + 1);
+                                                            }, 100);
                                                           }
                                                         } else {
                                                           toast({
@@ -3686,8 +3697,19 @@ export default function Notifications() {
                                                     });
                                                     // Force threshold check if threshold is active (re-activated)
                                                     if (threshold.isActive !== false) {
-                                                      console.log('[THRESHOLD-REACTIVATED] Forcing threshold check');
-                                                      setThresholdCheckTrigger(prev => prev + 1);
+                                                      console.log('[THRESHOLD-REACTIVATED] Clearing triggeredThresholds and forcing check');
+                                                      // WICHTIG: Remove from triggeredThresholds to allow re-trigger
+                                                      const thresholdValue = parseFloat(threshold.threshold || '0');
+                                                      const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
+                                                      setTriggeredThresholds(prev => {
+                                                        const newSet = new Set(prev);
+                                                        newSet.delete(triggerKey);
+                                                        return newSet;
+                                                      });
+                                                      // Then force threshold check
+                                                      setTimeout(() => {
+                                                        setThresholdCheckTrigger(prev => prev + 1);
+                                                      }, 100);
                                                     }
                                                   } else {
                                                     toast({
@@ -4045,8 +4067,19 @@ export default function Notifications() {
                                                         });
                                                         // Force threshold check if threshold is active (re-activated)
                                                         if (threshold.isActive !== false) {
-                                                          console.log('[THRESHOLD-REACTIVATED] Forcing threshold check');
-                                                          setThresholdCheckTrigger(prev => prev + 1);
+                                                          console.log('[THRESHOLD-REACTIVATED] Clearing triggeredThresholds and forcing check');
+                                                          // WICHTIG: Remove from triggeredThresholds to allow re-trigger
+                                                          const thresholdValue = parseFloat(threshold.threshold || '0');
+                                                          const triggerKey = `${trendPriceId}-${threshold.id}-${thresholdValue}`;
+                                                          setTriggeredThresholds(prev => {
+                                                            const newSet = new Set(prev);
+                                                            newSet.delete(triggerKey);
+                                                            return newSet;
+                                                          });
+                                                          // Then force threshold check
+                                                          setTimeout(() => {
+                                                            setThresholdCheckTrigger(prev => prev + 1);
+                                                          }, 100);
                                                         }
                                                       } else {
                                                         toast({
