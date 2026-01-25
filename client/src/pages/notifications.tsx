@@ -2348,7 +2348,7 @@ export default function Notifications() {
       return updated;
     });
     
-    // WIEDERHOLEND: Clear activeAlarmId from threshold to allow re-triggering
+    // Clear threshold state when alarm is stopped
     if (alarmToRemove?.thresholdId && alarmToRemove?.pairId) {
       const thresholdIdToClear = alarmToRemove.thresholdId;
       const pairIdToClear = alarmToRemove.pairId;
@@ -2361,28 +2361,47 @@ export default function Notifications() {
           ...prev,
           [pairIdToClear]: {
             ...pairSettings,
-            thresholds: pairSettings.thresholds.map((t: ThresholdConfig) => 
-              t.id === thresholdIdToClear && t.activeAlarmId === alarmId
-                ? { ...t, activeAlarmId: undefined }
-                : t
-            )
+            thresholds: pairSettings.thresholds.map((t: ThresholdConfig) => {
+              if (t.id !== thresholdIdToClear) return t;
+              
+              // Check if this is an "einmalig" threshold
+              const isEinmalig = (t.notifyOnIncrease && t.increaseFrequency === 'einmalig') ||
+                                 (t.notifyOnDecrease && t.decreaseFrequency === 'einmalig');
+              
+              if (isEinmalig) {
+                // EINMALIG: Set isActive=false to prevent re-triggering after page refresh
+                console.log(`[EINMALIG] Deactivating threshold ${t.id} after stop`);
+                return { ...t, activeAlarmId: undefined, isActive: false };
+              } else {
+                // WIEDERHOLEND: Just clear activeAlarmId to allow re-triggering
+                return { ...t, activeAlarmId: undefined };
+              }
+            })
           }
         };
       });
-      // Clear from localStorage immediately
+      
+      // Update localStorage immediately
       setTimeout(() => {
         const stored = localStorage.getItem('notifications-threshold-settings');
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
             if (parsed[pairIdToClear]?.thresholds) {
-              parsed[pairIdToClear].thresholds = parsed[pairIdToClear].thresholds.map((t: ThresholdConfig) => 
-                t.id === thresholdIdToClear && t.activeAlarmId === alarmId
-                  ? { ...t, activeAlarmId: undefined }
-                  : t
-              );
+              parsed[pairIdToClear].thresholds = parsed[pairIdToClear].thresholds.map((t: ThresholdConfig) => {
+                if (t.id !== thresholdIdToClear) return t;
+                
+                const isEinmalig = (t.notifyOnIncrease && t.increaseFrequency === 'einmalig') ||
+                                   (t.notifyOnDecrease && t.decreaseFrequency === 'einmalig');
+                
+                if (isEinmalig) {
+                  console.log(`[EINMALIG] Saved isActive=false for threshold ${t.id} to localStorage`);
+                  return { ...t, activeAlarmId: undefined, isActive: false };
+                } else {
+                  return { ...t, activeAlarmId: undefined };
+                }
+              });
               localStorage.setItem('notifications-threshold-settings', JSON.stringify(parsed));
-              console.log(`[WIEDERHOLEND] Cleared activeAlarmId from threshold ${thresholdIdToClear} in localStorage`);
             }
           } catch {}
         }
