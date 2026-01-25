@@ -2070,11 +2070,33 @@ export default function Notifications() {
     
     setWatchlist(prev => prev.filter(tpId => tpId !== id));
     setExpandedDropdowns(prev => prev.filter(tpId => tpId !== id));
+    
+    // WICHTIG: Schwellenwerte NICHT löschen, sondern auf Pause setzen
+    // So bleiben sie erhalten wenn das Trading-Pair wieder hinzugefügt wird
     setTrendPriceSettings(prev => {
-      const updated = { ...prev };
-      delete updated[id];
-      return updated;
+      const existing = prev[id];
+      if (!existing || !existing.thresholds || existing.thresholds.length === 0) {
+        // Keine Schwellenwerte vorhanden - komplett entfernen
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      }
+      // Schwellenwerte auf isActive=false setzen (Pause)
+      return {
+        ...prev,
+        [id]: {
+          ...existing,
+          thresholds: existing.thresholds.map(t => ({
+            ...t,
+            isActive: false,
+            activeAlarmId: undefined // Aktive Alarm-Referenz entfernen
+          }))
+        }
+      };
     });
+    
+    // Aktive Alarmierungen für dieses Trading-Pair entfernen
+    setActiveAlarms(prev => prev.filter(alarm => alarm.pairId !== id));
     
     // Sync to backend for cross-device sync
     fetch(`/api/notification-watchlist/${encodeURIComponent(symbol)}/${pairMarket}`, {
