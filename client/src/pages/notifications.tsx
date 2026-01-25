@@ -1052,6 +1052,9 @@ export default function Notifications() {
             channels: { ...alarmConfig.channels }
           };
 
+          // CRITICAL: Update ref IMMEDIATELY before setActiveAlarms to prevent duplicate alarms
+          // This ensures the next threshold check sees the alarm even before React re-renders
+          activeAlarmsRef.current = [...activeAlarmsRef.current, newAlarm];
           setActiveAlarms(prev => [...prev, newAlarm]);
           
           // WIEDERHOLEND: Store activeAlarmId in threshold to prevent re-triggering on refresh
@@ -1238,6 +1241,9 @@ export default function Notifications() {
             channels: { ...alarmConfig.channels }
           };
 
+          // CRITICAL: Update ref IMMEDIATELY before setActiveAlarms to prevent duplicate alarms
+          // This ensures the next threshold check sees the alarm even before React re-renders
+          activeAlarmsRef.current = [...activeAlarmsRef.current, newAlarm];
           setActiveAlarms(prev => [...prev, newAlarm]);
           
           // WIEDERHOLEND: Store activeAlarmId in threshold to prevent re-triggering on refresh
