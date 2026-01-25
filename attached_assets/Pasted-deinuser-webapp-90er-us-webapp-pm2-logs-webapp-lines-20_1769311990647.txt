@@ -1,0 +1,74 @@
+deinuser@webapp-90er-us:~/webapp$ pm2 logs webapp --lines 20
+[TAILING] Tailing last 20 lines for [webapp] process (change the value with --lines option)
+/home/deinuser/.pm2/logs/webapp-error.log last 20 lines:
+0|webapp   |     at async Promise.all (index 0)
+0|webapp   |     at async file:///home/deinuser/webapp/dist/index.js:3000:67 {
+0|webapp   |   length: 111,
+0|webapp   |   severity: 'ERROR',
+0|webapp   |   code: '42703',
+0|webapp   |   detail: undefined,
+0|webapp   |   hint: undefined,
+0|webapp   |   position: '24',
+0|webapp   |   internalPosition: undefined,
+0|webapp   |   internalQuery: undefined,
+0|webapp   |   where: undefined,
+0|webapp   |   schema: undefined,
+0|webapp   |   table: undefined,
+0|webapp   |   column: undefined,
+0|webapp   |   dataType: undefined,
+0|webapp   |   constraint: undefined,
+0|webapp   |   file: 'parse_relation.c',
+0|webapp   |   line: '3722',
+0|webapp   |   routine: 'errorMissingColumn'
+0|webapp   | }
+
+/home/deinuser/.pm2/logs/webapp-out.log last 20 lines:
+0|webapp   | 3:31:46 AM [express] GET /api/notification-settings 500 in 4ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | 3:31:49 AM [express] GET /api/notification-settings 500 in 3ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | 3:31:53 AM [express] GET /api/notification-settings 500 in 3ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | 3:31:56 AM [express] GET /api/notification-settings 500 in 4ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | 3:32:00 AM [express] GET /api/notification-settings 500 in 3ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | [BACKGROUND-UPDATER] Refreshing popular symbol prices...
+0|webapp   | 3:32:03 AM [express] GET /api/notification-settings 500 in 3ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | [BACKGROUND-UPDATER] Updated 8 symbols (spot + futures)
+0|webapp   | 3:32:07 AM [express] GET /api/notification-settings 500 in 6ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | 3:32:10 AM [express] GET /api/notification-settings 500 in 5ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp   | 3:32:14 AM [express] GET /api/notification-settings 500 in 3ms :: {"error":"Failed to fetch notifica…
+0|webapp   | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+
+0|webapp  | [API] GET /api/notification-settings error: error: column "market_type" does not exist
+0|webapp  |     at /home/deinuser/webapp/node_modules/pg-pool/index.js:45:11
+0|webapp  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|webapp  |     at async file:///home/deinuser/webapp/node_modules/drizzle-orm/node-postgres/session.js:83:22
+0|webapp  |     at async DbStorage.getAllWatchlistItems (file:///home/deinuser/webapp/dist/index.js:601:12)
+0|webapp  |     at async Promise.all (index 0)
+0|webapp  |     at async file:///home/deinuser/webapp/dist/index.js:3000:67 {
+0|webapp  |   length: 111,
+0|webapp  |   severity: 'ERROR',
+0|webapp  |   code: '42703',
+0|webapp  |   detail: undefined,
+0|webapp  |   hint: undefined,
+0|webapp  |   position: '24',
+0|webapp  |   internalPosition: undefined,
+0|webapp  |   internalQuery: undefined,
+0|webapp  |   where: undefined,
+0|webapp  |   schema: undefined,
+0|webapp  |   table: undefined,
+0|webapp  |   column: undefined,
+0|webapp  |   dataType: undefined,
+0|webapp  |   constraint: undefined,
+0|webapp  |   file: 'parse_relation.c',
+0|webapp  |   line: '3722',
+0|webapp  |   routine: 'errorMissingColumn'
+0|webapp  | }
+0|webapp  | 3:32:17 AM [express] GET /api/notification-settings 500 in 4ms :: {"error":"Failed to fetch notifica…
+0|webapp  | [ACTIVE-ALARMS] getAllActiveAlarms called, count: 0
+0|webapp  | [API] GET /api/notification-settings erro
