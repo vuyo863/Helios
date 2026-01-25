@@ -1362,6 +1362,9 @@ export default function Notifications() {
   
   // Ref to track if save button was clicked (to distinguish from X/ESC close)
   const isSavingThresholdRef = useRef(false);
+  
+  // Ref to track pending deletes - prevents polling from restoring deleted thresholds
+  const pendingDeletesRef = useRef<Set<string>>(new Set());
 
   // Save watchlist to localStorage whenever it changes
   useEffect(() => {
@@ -1626,6 +1629,13 @@ export default function Notifications() {
                 triggerCount: number;
                 activeAlarmId: string | null;
               }) => {
+                // IMPORTANT: Skip thresholds that are pending deletion
+                // This prevents deleted thresholds from being restored before DELETE completes
+                if (pendingDeletesRef.current.has(t.thresholdId)) {
+                  console.log(`[NOTIFICATION-POLLING] Skipping pending-delete threshold: ${t.thresholdId}`);
+                  return;
+                }
+                
                 if (!newSettings[t.pairId]) {
                   newSettings[t.pairId] = { thresholds: [] };
                 }
@@ -2142,6 +2152,11 @@ export default function Notifications() {
       setEditingThresholdId(null);
     }
 
+    // IMPORTANT: Add to pending deletes BEFORE removing from state
+    // This prevents polling from restoring the threshold before DELETE completes
+    pendingDeletesRef.current.add(thresholdId);
+    console.log(`[THRESHOLDS-DELETE] Added ${thresholdId} to pending deletes`);
+
     // Lösche den Schwellenwert
     const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
 
@@ -2161,8 +2176,19 @@ export default function Notifications() {
     fetch(`/api/notification-thresholds/${encodeURIComponent(trendPriceId)}/${encodeURIComponent(thresholdId)}`, {
       method: 'DELETE'
     }).then(res => {
-      if (res.ok) console.log(`[THRESHOLDS-SYNC] Deleted threshold ${thresholdId} from backend`);
-    }).catch(err => console.error('[THRESHOLDS-SYNC] Delete error:', err));
+      if (res.ok) {
+        console.log(`[THRESHOLDS-SYNC] Deleted threshold ${thresholdId} from backend`);
+        // Remove from pending deletes after successful backend deletion
+        pendingDeletesRef.current.delete(thresholdId);
+        console.log(`[THRESHOLDS-DELETE] Removed ${thresholdId} from pending deletes (backend confirmed)`);
+      } else {
+        // Keep in pending deletes on error - user will need to refresh
+        console.error(`[THRESHOLDS-SYNC] Delete failed for ${thresholdId}, status: ${res.status}`);
+      }
+    }).catch(err => {
+      console.error('[THRESHOLDS-SYNC] Delete error:', err);
+      // Keep in pending deletes on error
+    });
 
     toast({
       title: "Schwellenwert gelöscht",
@@ -2179,6 +2205,12 @@ export default function Notifications() {
       editingThresholdRef.current = { pairId: null, thresholdId: null };
       setEditingThresholdId(null);
     }
+
+    // IMPORTANT: Add ALL threshold IDs to pending deletes BEFORE removing from state
+    currentSettings.thresholds.forEach(t => {
+      pendingDeletesRef.current.add(t.id);
+    });
+    console.log(`[THRESHOLDS-DELETE] Added ${currentSettings.thresholds.length} thresholds to pending deletes for ${trendPriceId}`);
 
     const thresholdCount = currentSettings.thresholds.filter(t => 
       t.threshold && 
@@ -2202,7 +2234,14 @@ export default function Notifications() {
     fetch(`/api/notification-thresholds/pair/${encodeURIComponent(trendPriceId)}`, {
       method: 'DELETE'
     }).then(res => {
-      if (res.ok) console.log(`[THRESHOLDS-SYNC] Deleted all thresholds for ${trendPriceId} from backend`);
+      if (res.ok) {
+        console.log(`[THRESHOLDS-SYNC] Deleted all thresholds for ${trendPriceId} from backend`);
+        // Remove all from pending deletes after successful backend deletion
+        currentSettings.thresholds.forEach(t => {
+          pendingDeletesRef.current.delete(t.id);
+        });
+        console.log(`[THRESHOLDS-DELETE] Cleared pending deletes for ${trendPriceId}`);
+      }
     }).catch(err => console.error('[THRESHOLDS-SYNC] Delete all error:', err));
 
     toast({
