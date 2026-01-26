@@ -61,6 +61,10 @@ export function useCrossDeviceSync({
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const initialSyncComplete = useRef(false);
   
+  // CRITICAL: Flag to prevent push when we just received data from server
+  // This prevents the "ping-pong" effect where pulling data triggers a push
+  const isProcessingRemoteUpdate = useRef(false);
+  
   // REFS for stable polling - prevents interval recreation on every state change
   const watchlistRef = useRef(watchlist);
   const pairMarketTypesRef = useRef(pairMarketTypes);
@@ -161,6 +165,13 @@ export function useCrossDeviceSync({
       return;
     }
     
+    // CRITICAL: Don't push when we just received data from server!
+    // This prevents the "ping-pong" effect
+    if (isProcessingRemoteUpdate.current) {
+      console.log('[CROSS-DEVICE-SYNC] Skipping push - processing remote update');
+      return;
+    }
+    
     const now = getCurrentTimestamp();
     
     // Debounce rapid pushes
@@ -172,22 +183,14 @@ export function useCrossDeviceSync({
     console.log('[CROSS-DEVICE-SYNC] Pushing data to backend...');
     
     try {
-      // SAFETY: Only push if we have actual data - never overwrite remote with empty
-      if (watchlist.length > 0) {
-        await pushWatchlistToBackend(watchlist, pairMarketTypes);
-        console.log('[CROSS-DEVICE-SYNC] Watchlist pushed (items:', watchlist.length, ')');
-      } else {
-        console.log('[CROSS-DEVICE-SYNC] Skipping watchlist push - no local data');
-      }
+      // Push watchlist - including empty arrays (for deletions)
+      // The initial sync protection + isProcessingRemoteUpdate flag prevents overwriting
+      await pushWatchlistToBackend(watchlist, pairMarketTypes);
+      console.log('[CROSS-DEVICE-SYNC] Watchlist pushed (items:', watchlist.length, ')');
       
-      // Push Thresholds only if we have any
-      const hasThresholds = Object.values(trendPriceSettings).some(s => s.thresholds && s.thresholds.length > 0);
-      if (hasThresholds) {
-        await pushThresholdsToBackend(trendPriceSettings);
-        console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
-      } else {
-        console.log('[CROSS-DEVICE-SYNC] Skipping thresholds push - no local data');
-      }
+      // Push Thresholds - including for deletions
+      await pushThresholdsToBackend(trendPriceSettings);
+      console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
       
       // Alarm levels can always be pushed (they have defaults)
       await pushAlarmLevelsToBackend(alarmLevelConfigs);
@@ -232,7 +235,7 @@ export function useCrossDeviceSync({
         
         // 1. Sync Watchlist - NEUERER TIMESTAMP GEWINNT KOMPLETT
         const remoteWatchlist = await pullWatchlistFromBackend();
-        if (remoteWatchlist && remoteWatchlist.watchlist) {
+        if (remoteWatchlist && remoteWatchlist.watchlist !== undefined) {
           const localData = createWatchlistSyncData(currentWatchlist, currentPairMarketTypes);
           
           // Vergleiche Timestamps - nur wenn remote neuer ist, übernehmen
@@ -245,38 +248,72 @@ export function useCrossDeviceSync({
               const isDifferent = JSON.stringify(merged.watchlist.sort()) !== JSON.stringify(currentWatchlist.sort());
               if (isDifferent) {
                 console.log('[CROSS-DEVICE-SYNC] Watchlist updated from remote:', merged.watchlist);
+                
+                // SET FLAG before updating state to prevent push-back!
+                isProcessingRemoteUpdate.current = true;
+                
                 setWatchlistRef.current(() => merged.watchlist);
                 setPairMarketTypesRef.current(() => merged.pairMarketTypes);
+                
+                // Reset flag after a short delay (after state update effects have run)
+                setTimeout(() => {
+                  isProcessingRemoteUpdate.current = false;
+                }, 1000);
               }
             }
           }
         }
         
-        // 2. Sync Thresholds - UNION merge for configurations
+        // 2. Sync Thresholds - newer timestamp wins
         const remoteThresholds = await pullThresholdsFromBackend();
-        if (remoteThresholds && Object.keys(remoteThresholds.settings || {}).length > 0) {
+        if (remoteThresholds && remoteThresholds.settings !== undefined) {
           const localData = createThresholdsSyncData(currentTrendPriceSettings);
-          const merged = mergeAllThresholds(localData, remoteThresholds);
           
-          // Update if remote is newer OR has more thresholds
-          const remoteThresholdCount = Object.values(remoteThresholds.settings || {}).reduce((sum, s: any) => sum + (s.thresholds?.length || 0), 0);
-          const localThresholdCount = Object.values(currentTrendPriceSettings).reduce((sum, s) => sum + (s.thresholds?.length || 0), 0);
-          
-          if (merged && (remoteThresholdCount > localThresholdCount || remoteThresholds.timestamp > (localData?.timestamp || 0))) {
-            console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(merged.settings));
-            setTrendPriceSettingsRef.current(() => merged.settings);
+          // Only update if remote is newer
+          if (remoteThresholds.timestamp > (localData?.timestamp || 0)) {
+            const merged = mergeAllThresholds(localData, remoteThresholds);
+            
+            if (merged) {
+              const isDifferent = JSON.stringify(merged.settings) !== JSON.stringify(currentTrendPriceSettings);
+              if (isDifferent) {
+                console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(merged.settings));
+                
+                // SET FLAG before updating state to prevent push-back!
+                isProcessingRemoteUpdate.current = true;
+                
+                setTrendPriceSettingsRef.current(() => merged.settings);
+                
+                setTimeout(() => {
+                  isProcessingRemoteUpdate.current = false;
+                }, 1000);
+              }
+            }
           }
         }
         
         // 3. Sync Alarm Levels - newer timestamp wins
         const remoteAlarmLevels = await pullAlarmLevelsFromBackend();
-        if (remoteAlarmLevels && Object.keys(remoteAlarmLevels.configs || {}).length > 0) {
+        if (remoteAlarmLevels && remoteAlarmLevels.configs !== undefined) {
           const localData = createAlarmLevelsSyncData(currentAlarmLevelConfigs);
-          const merged = mergeAlarmLevelConfigs(localData, remoteAlarmLevels);
           
-          if (merged && remoteAlarmLevels.timestamp > (localData?.timestamp || 0)) {
-            console.log('[CROSS-DEVICE-SYNC] Alarm levels updated');
-            setAlarmLevelConfigsRef.current(merged.configs);
+          if (remoteAlarmLevels.timestamp > (localData?.timestamp || 0)) {
+            const merged = mergeAlarmLevelConfigs(localData, remoteAlarmLevels);
+            
+            if (merged) {
+              const isDifferent = JSON.stringify(merged.configs) !== JSON.stringify(currentAlarmLevelConfigs);
+              if (isDifferent) {
+                console.log('[CROSS-DEVICE-SYNC] Alarm levels updated');
+                
+                // SET FLAG before updating state to prevent push-back!
+                isProcessingRemoteUpdate.current = true;
+                
+                setAlarmLevelConfigsRef.current(merged.configs);
+                
+                setTimeout(() => {
+                  isProcessingRemoteUpdate.current = false;
+                }, 1000);
+              }
+            }
           }
         }
         
