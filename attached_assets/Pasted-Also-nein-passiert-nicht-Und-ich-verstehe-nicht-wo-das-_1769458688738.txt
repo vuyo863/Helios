@@ -1,0 +1,17 @@
+Also nein, passiert nicht. Und ich verstehe nicht, wo das Problem gerade ist. Ich habe noch eigentlich da alles zum hinbekommen mit Benachrichtigungen konfigurieren. Wie wie was ist denn jetzt los, dass Benachrichtigungen konfigurieren ist dem Toggle, dass ein Toggle-Switch die ganzen Funktionen, die nicht mehr lahmlegt. Also, so wie kann das denn sein, Digga, hä? Irgendwie verstehe ich es gerade nicht. Also, ich habe es wieder deployed, habe es getestet. Und wie du siehst, bei einem Tab habe ich Benachrichtigungen konfigurieren, ein Sperrwert der Pause erstellt und auf meinem Tablet kommt nichts an und auf den anderen Tabs auf meinem Laptop kommt auch nichts an. So wie wieso, wieso? Was ist denn da los? Wieso hat anscheinend bei dir funktioniert? Also irgendwas machst du dann bei deinen Tests ja falsch. Du machst irgendwas bei deinen Tests ja falsch. Was machst du? Du machst ja, du musst schon die Umgebung so machen, dass es auch stimmt.[TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DZZLPOnU.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-DZZLPOnU.js:470   GET https://helios-ai.replit.app/api/sync/thresholds 404 (Not Found)
+gL @ index-DZZLPOnU.js:470
+Oe @ index-DZZLPOnU.js:470
+index-DZZLPOnU.js:470 [SYNC] No thresholds data from backend
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2917.68 (4.00%), [CROSS-DEVICE-SYNC] Polling for updates...
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2917.07 (3.98%)
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DZZLPOnU.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+thresholds:1   Failed to load resource: the server responded with a status of 404 ()
+index-DZZLPOnU.js:470 [SYNC] No thresholds data from backend
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2917.22 (3.98%)
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DZZLPOnU.js:470 [TRENDPREIS-24/7] Using OKX Spot AP
