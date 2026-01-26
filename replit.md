@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing Pionex trading bot profits. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts. The project aims to enhance trading strategies and profitability through real-time data, AI analysis, interactive charting, and cross-device synchronization. A dedicated Notifications page allows monitoring prices from Binance Spot and Futures markets. The business vision is to provide traders with a powerful tool to optimize their strategies and maximize profits.
+A full-stack web application for tracking and analyzing Pionex trading bot profits. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts to optimize trading strategies and profitability. The project aims to empower traders with tools for informed decision-making and profit maximization through real-time data, AI analysis, interactive charting, and cross-device synchronization.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -54,15 +54,6 @@ Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMO
   
   Der komplette Code ist in der Datei gespeichert und funktioniert perfekt.
   Bei Bedarf kann der Code mit `cat client/src/hooks/useCrossDeviceSync.ts` angezeigt werden.
-  ### SYNC-LOGIK (NIEMALS ÄNDERN):
-  - **Timestamp-Vergleich:** Vergleicht gegen `lastKnownRemoteTimestamp`, nicht gegen neu erstellte Timestamps
-  - **Hash-basierte Anti-Ping-Pong:** `lastPushedHash` und `lastReceivedHash` verhindern Endlosschleifen
-  - **Refs für Stable Polling:** Alle State-Werte und Setter als Refs, Polling mit EMPTY Dependency Array
-  ### SYNC-STRATEGIE:
-  - `localStorage` bleibt Master für lokale Änderungen
-  - Backend nur für Cross-Device Sync
-  - Timestamp-basierte Versionierung
-  - Polling alle 3.5 Sekunden
   ### KRITISCHE REFS (NIEMALS LÖSCHEN):
   ```typescript
   // Anti-Ping-Pong (verhindert Endlosschleifen bei 3+ Tabs)
@@ -130,7 +121,7 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
   - **hasAnyThresholds Check:** Excludiert aktuell bearbeiteten Threshold um Dialog-Auto-Close während Bearbeitung zu verhindern
   #### SYNC-ARCHITEKTUR (DIAMOND STATE):
   #### Anti-Ping-Pong System (3+ Tabs):
-  - **Problem:** Tab A pusht → Tab B empfängt → Tab B pusht zurück → Endlosschleife
+  - **Problem:** Tab A pushes → Tab B receives → Tab B pushes back → Infinite loop
   - **Lösung:** Hash-basierte Duplikat-Erkennung:
     - `lastPushedWatchlistHash` / `lastPushedThresholdsHash` / etc.
     - `lastReceivedWatchlistHash` / `lastReceivedThresholdsHash` / etc.
@@ -171,36 +162,36 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
 
 ## System Architecture
 ### UI/UX
-The frontend uses React and TypeScript, with `shadcn/ui` and Tailwind CSS for responsive design. Recharts handles data visualization, and Wouter manages client-side routing. The application features a dashboard with charting, and a Notifications page with a live watchlist, configurable price alerts across four alarm levels, and an active alerts display. PWA support is integrated.
+The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application features a dashboard with charting, and a Notifications page with a live watchlist and configurable price alerts across four alarm levels. PWA support is integrated.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
 - **Backend**: Express.js with TypeScript.
-- **State Management**: TypeScript-typed state with `useMemo` hooks.
+- **State Management**: TypeScript-typed state managed with `useMemo` hooks.
 - **Data Persistence**: Watchlist and pair market types are stored in `localStorage`.
-- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
-- **Push Notification Integration**: OneSignal for web and native push notifications.
-- **5-Tier Fallback Preissystem**: Ensures reliable cryptocurrency price data using a tiered system (OKX API, Last-Known-Good Cache, CoinGecko, Stale Cache, Emergency values) with server-side background updates.
-- **Frontend Backup System**: Features a 2-second interval for price updates, exponential backoff retry on API errors, immediate refetch on page visibility change, and a watchdog to restart price fetching.
+- **Notification Logic**: Features configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API using PostgreSQL persistence and 3.5-second polling intervals.
+- **Push Notification Integration**: OneSignal is used for web and native push notifications.
+- **5-Tier Fallback Preissystem**: Ensures robust cryptocurrency price data through a tiered system with server-side background updates.
+- **Frontend Backup System**: Implements a 2-second interval for price updates, exponential backoff retry for API errors, immediate refetch on page visibility change, and a watchdog to restart price fetching.
 
 ### Feature Specifications
-- **Charts**: Interactive marker system, zoom & pan.
-- **AI-Analysis**: Integration with OpenAI.
-- **Info-Tooltips**: Contextual explanations.
-- **Notifications**: Real-time price tracking watchlist, configurable price alerts with German number formatting, Web Push Notifications, Native Push Notifications (PWA) for iOS and Android, SMS Notifications, Alarm Approval System with auto-dismiss and repetition logic, Cross-Device Alarm Synchronization, Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
+- **Charts**: Interactive marker system, zoom & pan capabilities.
+- **AI-Analysis**: Integration with OpenAI for analytical insights.
+- **Info-Tooltips**: Provides contextual explanations for various elements.
+- **Notifications**: Real-time price tracking watchlist, configurable price alerts with German number formatting, Web Push Notifications, Native Push Notifications (PWA) for iOS and Android, SMS Notifications, an Alarm Approval System with auto-dismiss and repetition logic, Cross-Device Alarm Synchronization, and Re-Trigger Prevention for "Wiederholend" thresholds using `activeAlarmId`.
 
 ### System Design Choices
-- **Modular Architecture**: Clear separation of concerns.
-- **Stable ID Handling**: Symbol-based lookup for futures pairs.
-- **Multi-Environment Database**: `server/db.ts` uses `RUNTIME_ENV` to switch between Neon Serverless (Replit) and PostgreSQL (server) with Drizzle ORM.
-- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key. Supports multiple production domains.
+- **Modular Architecture**: Designed with a clear separation of concerns.
+- **Stable ID Handling**: Employs symbol-based lookup for futures pairs for consistent data identification.
+- **Multi-Environment Database**: `server/db.ts` dynamically switches between Neon Serverless (for Replit deployment) and a local PostgreSQL instance (for server deployment) using Drizzle ORM.
+- **OneSignal Configuration**: Utilizes a specific App ID, Site URL, and REST API Key, supporting multiple production domains for push notifications.
 
 ## External Dependencies
-- **Database**: Neon Serverless (Replit) or PostgreSQL (server).
+- **Database**: Neon Serverless (for Replit) or PostgreSQL.
 - **Backend Framework**: Express.js.
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
-- **Crypto Data**: OKX API, CoinGecko.
+- **Cryptocurrency Data**: OKX API, CoinGecko.
 - **Web Push Notifications**: OneSignal Web Push SDK.
 - **SMS Notifications**: Twilio.
