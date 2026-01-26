@@ -256,8 +256,8 @@ export default function Notifications() {
   }, [allBinancePairs, allBinanceFuturesPairs, watchlist]);
 
   // Load watchlist pairs into availableTradingPairs when data is available
+  // FIX: Prüfe separat für Spot und Futures ob die jeweilige Liste verfügbar ist
   useEffect(() => {
-    if (allBinancePairs.length === 0 && allBinanceFuturesPairs.length === 0) return;
     if (watchlist.length === 0) return;
 
     // WICHTIG: Batch update to avoid multiple re-renders
@@ -288,6 +288,17 @@ export default function Notifications() {
           }
           console.log(`[TRENDPREIS-24/7] Symbol aus ID extrahiert: ${id} -> ${derivedSymbol} (${derivedMarketType})`);
         }
+      }
+
+      // FIX: Skip this pair if the required market list is not yet loaded
+      // This ensures we don't miss pairs when one list loads before the other
+      if (derivedMarketType === 'futures' && allBinanceFuturesPairs.length === 0) {
+        console.log(`[TRENDPREIS-24/7] Skipping futures pair ${id} - futures list not loaded yet`);
+        return; // Skip, will be processed when futures list loads
+      }
+      if (derivedMarketType === 'spot' && allBinancePairs.length === 0) {
+        console.log(`[TRENDPREIS-24/7] Skipping spot pair ${id} - spot list not loaded yet`);
+        return; // Skip, will be processed when spot list loads
       }
 
       // WICHTIG: Primär nach SYMBOL suchen im korrekten Markt
@@ -327,6 +338,8 @@ export default function Notifications() {
           marketType: derivedMarketType as 'spot' | 'futures'
         };
         newPairs.push(correctedPair);
+      } else {
+        console.log(`[TRENDPREIS-24/7] Pair not found: ${id} (${derivedMarketType}, symbol: ${derivedSymbol})`);
       }
     });
 
