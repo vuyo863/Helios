@@ -758,6 +758,16 @@ Hilf dem Benutzer bei Fragen zur Anwendung und zur Bot-Trading-Strategie.
 ` + MODES_PROMPT;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for Cloud Run deployment
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "healthy", timestamp: Date.now() });
+  });
+  
+  // Ready check endpoint - confirms server is fully initialized
+  app.get("/api/ready", (_req, res) => {
+    res.status(200).json({ status: "ready", timestamp: Date.now() });
+  });
+
   app.post("/api/phase4", async (req, res) => {
     try {
       const { 
