@@ -920,10 +920,12 @@ export default function Notifications() {
     pairMarketTypes,
     trendPriceSettings,
     alarmLevelConfigs,
+    activeAlarms,
     setWatchlist,
     setPairMarketTypes,
     setTrendPriceSettings,
     setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
+    setActiveAlarms,
     editingThresholdId
   });
 
