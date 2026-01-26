@@ -231,7 +231,12 @@ export function useCrossDeviceSync({
         }
         
         // 4. Pull Active Alarms from Backend - MOST IMPORTANT for cross-device sync!
+        // ===========================================
+        // ACTIVE ALARMS INITIAL SYNC - Kann bearbeitet werden
+        // ===========================================
         const remoteActiveAlarms = await pullActiveAlarmsFromBackend();
+        console.log('[ACTIVE-ALARMS-SYNC] Initial sync - Remote alarms:', remoteActiveAlarms?.alarms?.length ?? 'null', 'Timestamp:', remoteActiveAlarms?.timestamp ?? 'null');
+        
         if (remoteActiveAlarms && remoteActiveAlarms.alarms !== undefined) {
           // For active alarms: Remote always wins (newer timestamp = more accurate state)
           // Parse dates back from ISO strings
@@ -241,9 +246,11 @@ export function useCrossDeviceSync({
             restwartezeitEndsAt: a.restwartezeitEndsAt ? new Date(a.restwartezeitEndsAt) : undefined
           }));
           
-          console.log('[CROSS-DEVICE-SYNC] Synced active alarms from remote:', parsedAlarms.length);
+          console.log('[ACTIVE-ALARMS-SYNC] Initial sync - Setting', parsedAlarms.length, 'alarms, LastKnownTS:', remoteActiveAlarms.timestamp);
           lastKnownRemoteActiveAlarmsTimestamp.current = remoteActiveAlarms.timestamp;
           setActiveAlarms(() => parsedAlarms);
+        } else {
+          console.log('[ACTIVE-ALARMS-SYNC] Initial sync - No remote data');
         }
         
         console.log('[CROSS-DEVICE-SYNC] Initial sync complete');
@@ -371,16 +378,22 @@ export function useCrossDeviceSync({
       }
       
       // Push active alarms - CRITICAL for cross-device approve/stop sync!
+      // ===========================================
+      // ACTIVE ALARMS PUSH - Kann bearbeitet werden
+      // ===========================================
       const currentActiveAlarmsHash = hashContent(activeAlarms.map(a => a.id).sort());
       const isActiveAlarmsFromRemote = currentActiveAlarmsHash === lastReceivedActiveAlarmsHash.current;
       const activeAlarmsAlreadyPushed = currentActiveAlarmsHash === lastPushedActiveAlarmsHash.current;
       
+      console.log('[ACTIVE-ALARMS-SYNC] Push check - Count:', activeAlarms.length, 'Hash:', currentActiveAlarmsHash, 'FromRemote:', isActiveAlarmsFromRemote, 'AlreadyPushed:', activeAlarmsAlreadyPushed);
+      
       if (!isActiveAlarmsFromRemote && !activeAlarmsAlreadyPushed) {
+        console.log('[ACTIVE-ALARMS-SYNC] PUSHING to backend!', activeAlarms.length, 'alarms');
         await pushActiveAlarmsToBackend(activeAlarms);
         lastPushedActiveAlarmsHash.current = currentActiveAlarmsHash;
-        console.log('[CROSS-DEVICE-SYNC] Active alarms pushed (count:', activeAlarms.length, ')');
+        console.log('[ACTIVE-ALARMS-SYNC] Push SUCCESS');
       } else {
-        console.log('[CROSS-DEVICE-SYNC] Active alarms skip - already synced');
+        console.log('[ACTIVE-ALARMS-SYNC] Push SKIPPED - already synced');
       }
       
       console.log('[CROSS-DEVICE-SYNC] Push complete');
@@ -536,10 +549,18 @@ export function useCrossDeviceSync({
         }
         
         // 4. Sync Active Alarms - CRITICAL for cross-device approve/stop sync!
+        // ===========================================
+        // ACTIVE ALARMS SYNC - Kann bearbeitet werden
+        // ===========================================
         const currentActiveAlarms = activeAlarmsRef.current;
         const remoteActiveAlarms = await pullActiveAlarmsFromBackend();
+        
+        console.log('[ACTIVE-ALARMS-SYNC] Polling - Remote:', remoteActiveAlarms?.alarms?.length ?? 'null', 'Local:', currentActiveAlarms.length, 'LastKnownTS:', lastKnownRemoteActiveAlarmsTimestamp.current);
+        
         if (remoteActiveAlarms && remoteActiveAlarms.alarms !== undefined) {
           const isNewerThanLastKnown = remoteActiveAlarms.timestamp > lastKnownRemoteActiveAlarmsTimestamp.current;
+          
+          console.log('[ACTIVE-ALARMS-SYNC] Timestamp check - Remote:', remoteActiveAlarms.timestamp, 'LastKnown:', lastKnownRemoteActiveAlarmsTimestamp.current, 'IsNewer:', isNewerThanLastKnown);
           
           if (isNewerThanLastKnown) {
             lastKnownRemoteActiveAlarmsTimestamp.current = remoteActiveAlarms.timestamp;
@@ -549,8 +570,10 @@ export function useCrossDeviceSync({
             const remoteIds = remoteActiveAlarms.alarms.map(a => a.id).sort().join(',');
             const isDifferent = currentIds !== remoteIds;
             
+            console.log('[ACTIVE-ALARMS-SYNC] Content check - LocalIDs:', currentIds, 'RemoteIDs:', remoteIds, 'IsDifferent:', isDifferent);
+            
             if (isDifferent) {
-              console.log('[CROSS-DEVICE-SYNC] Active alarms updated from remote. Local:', currentActiveAlarms.length, 'Remote:', remoteActiveAlarms.alarms.length);
+              console.log('[ACTIVE-ALARMS-SYNC] UPDATING from remote! Local:', currentActiveAlarms.length, '→ Remote:', remoteActiveAlarms.alarms.length);
               
               // Parse dates back from ISO strings
               const parsedAlarms = remoteActiveAlarms.alarms.map(a => ({

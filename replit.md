@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing Pionex trading bot profits. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts to optimize trading strategies and profitability. The project aims to empower traders with tools for informed decision-making and profit maximization through real-time data, AI analysis, interactive charting, and cross-device synchronization.
+A full-stack web application for tracking and analyzing Pionex trading bot profits. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts. The project aims to improve trading strategies and maximize profitability through real-time data, AI analysis, interactive charting, and cross-device synchronization, enabling informed decision-making for traders.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -45,72 +45,12 @@ A full-stack web application for tracking and analyzing Pionex trading bot profi
   - **Wiederholung:** Numerisches Input + "∞ Unendlich" Button, mit `py-0.5` für Border-Fix
   - **Sequenz:** 3-Spalten Grid (Stunden, Minuten, Sekunden)
   - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
-- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V2.0**:
-Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V2.0**: Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   ### DIAMOND STATE FILE (NIEMALS ÄNDERN):
   **`client/src/hooks/useCrossDeviceSync.ts`** - VOLLSTÄNDIGER CODE GESCHÜTZT (600 Zeilen)
-  
   ⚠️⚠️⚠️ DIESE DATEI DARF NIEMALS MODIFIZIERT WERDEN ⚠️⚠️⚠️
-  
   Der komplette Code ist in der Datei gespeichert und funktioniert perfekt.
   Bei Bedarf kann der Code mit `cat client/src/hooks/useCrossDeviceSync.ts` angezeigt werden.
-  ### KRITISCHE REFS (NIEMALS LÖSCHEN):
-  ```typescript
-  // Anti-Ping-Pong (verhindert Endlosschleifen bei 3+ Tabs)
-  const lastPushedWatchlistHash = useRef<string>('');
-  const lastReceivedWatchlistHash = useRef<string>('');
-  
-  // Timestamp-Tracking (korrekter Vergleich)
-  const lastKnownRemoteWatchlistTimestamp = useRef<number>(0);
-  
-  // Debounce-Retry (FIX für Rapid-Add Bug - V2.0)
-  const pendingPushRetry = useRef<NodeJS.Timeout | null>(null);
-  const pushAllToBackendRef = useRef<() => void>(() => {});
-  
-  // Remote-Update-Flag (verhindert Push-Back)
-  const isProcessingRemoteUpdate = useRef(false);
-  ```
-  ### DEBOUNCE-RETRY LOGIK (V2.0 FIX - NIEMALS ÄNDERN):
-  ```typescript
-  const timeSinceLastPush = now - lastPushTimestamp.current;
-  if (timeSinceLastPush < PUSH_DEBOUNCE_MS) {
-    const retryDelay = PUSH_DEBOUNCE_MS - timeSinceLastPush + 100;
-    
-    if (pendingPushRetry.current) {
-      clearTimeout(pendingPushRetry.current);
-    }
-    
-    // FIX: Verwendet Ref um Stale Closures zu vermeiden
-    pendingPushRetry.current = setTimeout(() => {
-      pushAllToBackendRef.current();
-    }, retryDelay);
-    return;
-  }
-  ```
-  ### CLEANUP ON UNMOUNT (V2.0 FIX - NIEMALS ÄNDERN):
-  ```typescript
-  // FIX: Ref mit aktueller Version synchron halten
-  useEffect(() => {
-    pushAllToBackendRef.current = pushAllToBackend;
-  }, [pushAllToBackend]);
-
-  // FIX: Cleanup bei Tab-Schließung
-  useEffect(() => {
-    return () => {
-      if (pendingPushRetry.current) {
-        clearTimeout(pendingPushRetry.current);
-        pendingPushRetry.current = null;
-      }
-    };
-  }, []);
-  ```
-  ### TESTS BESTANDEN (40/40):
-  - Rapid Addition: 10+ Pairs schnell hintereinander ✓
-  - Multi-Device Sync: 2 Geräte synchronisieren ✓
-  - Deletion Sync: Löschungen werden synchronisiert ✓
-  - Timestamp-Konflikte: Neuerer Timestamp gewinnt ✓
-  - Futures/Spot Mix: Beide Market Types funktionieren ✓
-  - Leere Liste: Komplette Löschung wird synchronisiert ✓
 - **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.0**:
 Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   #### DIALOG-VERHALTEN (KRITISCH - NIEMALS ÄNDERN):
@@ -162,7 +102,7 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
 
 ## System Architecture
 ### UI/UX
-The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application features a dashboard with charting, and a Notifications page with a live watchlist and configurable price alerts across four alarm levels. PWA support is integrated.
+The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application features a dashboard with charting, and a Notifications page with a live watchlist and configurable price alerts across four alarm levels. PWA support is integrated.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
