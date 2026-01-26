@@ -72,6 +72,66 @@ Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMO
 - **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.0**:
 Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
 
+  ### KOMPLETTE SECTION "BENACHRICHTIGUNGEN KONFIGURIEREN" (DIAMOND STATE):
+
+  #### UI-STRUKTUR:
+  - **Section Header:** "Benachrichtigungen konfigurieren" mit Glocken-Symbol
+  - **Leer-Zustand:** "Keine Benachrichtigungen konfiguriert" Text wenn keine Thresholds existieren
+  - **Trading-Pair Karten:** Pro Trading-Pair eine Karte mit:
+    - Header: Symbol-Name (z.B. "BTCUSDT") + Market-Type Badge (Spot/Futures)
+    - Status-Badge: "Aktiv" (grün) wenn in Watchlist UND min. 1 Threshold aktiv, sonst "Pause" (grau)
+    - "+ Benachrichtigung hinzufügen" Button
+
+  #### SCHWELLENWERT-KARTEN (pro Threshold):
+  - **Alarm-Level Farben:** 
+    - Harmlos = Blau
+    - Achtung = Gelb
+    - Gefährlich = Orange
+    - Sehr Gefährlich = Rot
+  - **Toggle:** Aktiv/Pause (setzt `isActive` true/false)
+  - **Status-Anzeige:**
+    - "0/1" = Einmalig, noch nicht getriggert
+    - "X/1" oder "✓" = Einmalig, bereits getriggert
+    - "0 ∞" = Wiederholend, noch nicht getriggert
+    - "X ∞" = Wiederholend, X mal getriggert
+  - **Icons:** Bearbeiten (Pencil), Löschen (Trash)
+  - **Threshold-Wert:** z.B. "≥ 100.000 $" oder "≤ 50.000 $"
+
+  #### DIALOG-SYSTEM:
+  - **Schwellenwert-Dialog:**
+    - Schwellenwert Input (deutsches Zahlenformat: 1.000,50)
+    - Richtung: Steigt auf / Fällt auf
+    - Häufigkeit: Einmalig / Wiederholend
+    - Alarm-Level Dropdown
+    - Notiz (optional)
+    - "Speichern" Button (PFLICHT - kein Auto-Save!)
+    - X-Button / ESC / Außenklick = Dialog schließen OHNE Speichern
+  - **Alarm-Level-Dialog:**
+    - Öffnet sich bei Klick auf Alarm-Level Dropdown
+    - Zeigt alle 4 Alarm-Levels zur Auswahl
+    - Zurück zur Schwellenwert-Dialog nach Auswahl
+
+  #### DIALOG-VERHALTEN (KRITISCH - NIEMALS ÄNDERN):
+  - **Kein Auto-Save:** Änderungen werden NUR bei "Speichern" Klick gespeichert
+  - **Kein Auto-Close:** Dialog schließt NICHT automatisch bei Wert-Eingabe
+  - **X/ESC/Außenklick:** Dialog schließen OHNE Änderungen zu speichern
+  - **Draft Cleanup:** Unvollständige Thresholds (ohne Wert oder Richtung) werden automatisch entfernt wenn Dialog geschlossen wird
+  - **hasAnyThresholds Check:** Excludiert aktuell bearbeiteten Threshold um Dialog-Auto-Close während Bearbeitung zu verhindern
+
+  #### THRESHOLD-LOGIK:
+  - **Einmalig:** Nach Trigger wird `isActive = false` gesetzt, Status zeigt "✓"
+  - **Wiederholend:** Nach Trigger wird `triggerCount` erhöht, bleibt aktiv
+  - **Re-Trigger Prevention:** `activeAlarmId` verhindert Duplikat-Alarme
+  - **Persistenz:** Alle Daten in localStorage UND Backend (Cross-Device Sync)
+
+  #### WAS WIRD SYNCHRONISIERT:
+  - Alle Threshold-Konfigurationen (`trendPriceSettings`)
+  - Toggle-Status (`isActive`)
+  - Trigger-Count (`triggerCount`)
+  - Active-Alarm-ID (`activeAlarmId`)
+  - Notizen (`note`)
+  - Alarm-Level (`alarmLevel`)
+
   ### PROBLEME UND LÖSUNGEN (DOKUMENTIERT 26.01.2026):
 
   #### PROBLEM 1: Auto-Sync während Bearbeitung
