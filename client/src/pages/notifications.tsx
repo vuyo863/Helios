@@ -901,6 +901,8 @@ export default function Notifications() {
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   // Ref to track editing state for use in polling (avoids stale closure)
   const editingThresholdRef = useRef<{ pairId: string | null; thresholdId: string | null }>({ pairId: null, thresholdId: null });
+  // GOLDEN STATE FIX: Store original threshold when dialog opens - restore on close without save
+  const originalThresholdRef = useRef<ThresholdConfig | null>(null);
   // Track if we're creating a NEW threshold (vs editing existing)
   // This is used to exclude incomplete new thresholds from hasAnyThresholds check
   const [isCreatingNewThreshold, setIsCreatingNewThreshold] = useState(false);
@@ -3978,7 +3980,30 @@ export default function Notifications() {
                                             if (open) {
                                               setEditingThresholdId(threshold.id);
                                               editingThresholdRef.current = { pairId: trendPriceId, thresholdId: threshold.id };
+                                              // GOLDEN STATE FIX: Store original threshold state when dialog opens
+                                              // This will be used to restore if user closes without saving
+                                              originalThresholdRef.current = JSON.parse(JSON.stringify(threshold));
+                                              console.log('[EDIT-DIALOG] Stored original threshold:', threshold.id, 'isActive:', threshold.isActive);
                                             } else {
+                                              // GOLDEN STATE FIX: If closing WITHOUT "Speichern", restore original threshold
+                                              // Check if isSavingThresholdRef is NOT set (means user didn't click Save)
+                                              if (!isSavingThresholdRef.current && originalThresholdRef.current) {
+                                                const origThreshold = originalThresholdRef.current;
+                                                console.log('[EDIT-DIALOG] Restoring original threshold:', origThreshold.id, 'isActive:', origThreshold.isActive);
+                                                // Restore the threshold to its original state
+                                                setTrendPriceSettings(prev => ({
+                                                  ...prev,
+                                                  [trendPriceId]: {
+                                                    ...prev[trendPriceId],
+                                                    thresholds: prev[trendPriceId].thresholds.map(t =>
+                                                      t.id === origThreshold.id ? origThreshold : t
+                                                    )
+                                                  }
+                                                }));
+                                              }
+                                              // Clear refs
+                                              originalThresholdRef.current = null;
+                                              isSavingThresholdRef.current = false;
                                               setEditingThresholdId(null);
                                               editingThresholdRef.current = { pairId: null, thresholdId: null };
                                             }
@@ -4157,12 +4182,17 @@ export default function Notifications() {
                                                         return;
                                                       }
 
+                                                      // GOLDEN STATE: Set saving flag BEFORE closing dialog
+                                                      // This prevents onOpenChange from restoring original threshold
+                                                      isSavingThresholdRef.current = true;
+                                                      
                                                       // WICHTIG: Save directly to backend (single threshold)
                                                       const success = await saveThresholdToBackend(trendPriceId, threshold);
                                                       setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
                                                       // CRITICAL: Clear editingThresholdId so threshold check doesn't skip this threshold
                                                       setEditingThresholdId(null);
                                                       editingThresholdRef.current = { pairId: null, thresholdId: null };
+                                                      originalThresholdRef.current = null;
                                                       if (success) {
                                                         toast({
                                                           title: "Gespeichert",
