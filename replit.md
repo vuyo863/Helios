@@ -95,7 +95,7 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
   - **Alarm-Trigger Guard:** `if (!watchlist.includes(pair.id)) return;` in der Threshold-Check-Logik (Zeile ~955)
   - **Toggle Disabled:** Switch-Komponente ist `disabled` wenn `!watchlist.includes(trendPriceId)` - User kann Toggle nicht auf "Aktiv" setzen wenn Pair nicht in der Watchlist
   - **Betroffene Stellen:** 3 Switch-Komponenten (Neuer Threshold Dialog, Add Threshold Dialog, Edit Threshold Dialog)
-  - **Verhalten:** Schwellenwerte können angesehen/bearbeitet werden, aber nicht aktiviert werden solange der Pair nicht in der Watchlist ist
+  - **Verhalten:** Schwellenwerte können angesehen/bearbeitet werden, aber nicht aktiviert werden solange der Pair nicht in der Watchlist
 - **DIAMOND STATE - Aktive Alarmierungen Cross-Device Sync V1.0**:
 Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   - **Ziel:** Wenn User auf Tab A "Approved" oder "Stoppen" klickt, verschwindet der Alarm automatisch auf allen anderen Tabs (B, C, etc.)
