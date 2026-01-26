@@ -1,0 +1,44 @@
+[TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-DesXRcSy.js:470 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+index-DesXRcSy.js:470 [ACTIVE-ALARMS-UI] UI should now show 0 alarms
+watchlist:1   Failed to load resource: the server responded with a status of 404 ()
+index-DesXRcSy.js:470 [SYNC] No watchlist data from backend
+index-DesXRcSy.js:470 [CROSS-DEVICE-SYNC] Skipping push - initial sync not complete
+index-DesXRcSy.js:470 [SYNC-MERGE] Thresholds: Same device, keeping local
+index-DesXRcSy.js:470 [CROSS-DEVICE-SYNC] Merged thresholds: Array(3)
+index-DesXRcSy.js:470  OneSignal initialization error: Error: Can only be used on: https://helios-ai.app
+    at domain.ts:29:11
+    at app.ts:45:5
+    at async t.Pe (OneSignal.ts:68:11)
+    at async t.init (OneSignal.ts:139:5)
+(anonymous) @ index-DesXRcSy.js:470
+alarm-levels:1   Failed to load resource: the server responded with a status of 404 ()
+index-DesXRcSy.js:470 [SYNC] No alarm levels data from backend
+notifications:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+active-alarms:1   Failed to load resource: the server responded with a status of 404 ()
+index-DesXRcSy.js:470 [SYNC] No active alarms data from backend
+index-DesXRcSy.js:470 [CROSS-DEVICE-SYNC] Initial sync complete
+notifications:1  Error while trying to use the following icon from the Manifest: https://helios-ai.replit.app/icon-192.png (Resource size is not correct - typo in the Manifest?)
+index-DesXRcSy.js:470 [CROSS-DEVICE-SYNC] Starting polling interval (3.5s)
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2927.85 (4.00%)
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2927.88 (4.01%)
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-DesXRcSy.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2927.88 (4.01%)
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2928.11 (4.01%)
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-DesXRcSy.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-DesXRcSy.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-sp

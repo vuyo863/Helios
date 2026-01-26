@@ -154,13 +154,10 @@ export function mergeWatchlist(
   if (!local) return remote;
   if (!remote) return local;
   
-  // Wenn vom gleichen Gerät, immer lokal bevorzugen
-  if (remote.deviceId === getDeviceId()) {
-    console.log('[SYNC-MERGE] Watchlist: Same device, keeping local');
-    return local;
-  }
+  // FIX: "Same device" check entfernt - Timestamp entscheidet IMMER!
+  // Bei Multi-Tab-Sync teilen alle Tabs dieselbe deviceId, also muss Remote trotzdem übernommen werden wenn neuer
   
-  // NEUER ANSATZ: Letzter Timestamp gewinnt KOMPLETT (kein Union mehr)
+  // TIMESTAMP GEWINNT: Neuere Version überschreibt ältere (ermöglicht Löschungen)
   // Das ermöglicht auch Löschungen zu syncen!
   if (isNewerThan(remote.timestamp, local.timestamp)) {
     console.log('[SYNC-MERGE] Watchlist: Remote is NEWER - taking remote completely');
@@ -193,13 +190,10 @@ export function mergeAllThresholds(
   if (!local) return remote;
   if (!remote) return local;
   
-  // Wenn vom gleichen Gerät, immer lokal bevorzugen
-  if (remote.deviceId === getDeviceId()) {
-    console.log('[SYNC-MERGE] Thresholds: Same device, keeping local');
-    return local;
-  }
+  // FIX: "Same device" check entfernt - Timestamp entscheidet IMMER!
+  // Bei Multi-Tab-Sync teilen alle Tabs dieselbe deviceId
   
-  // Remote ist neuer - aber MERGE pro Pair!
+  // TIMESTAMP GEWINNT: Neuere Version überschreibt ältere (pro Pair MERGE)
   if (isNewerThan(remote.timestamp, local.timestamp)) {
     console.log('[SYNC-MERGE] Thresholds: Remote is newer, MERGING per pair');
     
@@ -245,13 +239,10 @@ export function mergeAlarmLevelConfigs(
   if (!local) return remote;
   if (!remote) return local;
   
-  // Wenn vom gleichen Gerät, immer lokal bevorzugen
-  if (remote.deviceId === getDeviceId()) {
-    console.log('[SYNC-MERGE] AlarmLevels: Same device, keeping local');
-    return local;
-  }
+  // FIX: "Same device" check entfernt - Timestamp entscheidet IMMER!
+  // Bei Multi-Tab-Sync teilen alle Tabs dieselbe deviceId
   
-  // Neuere Version gewinnt
+  // TIMESTAMP GEWINNT: Neuere Version gewinnt
   if (isNewerThan(remote.timestamp, local.timestamp)) {
     console.log('[SYNC-MERGE] AlarmLevels: Remote is newer, using remote');
     return {
