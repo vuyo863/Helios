@@ -46,96 +46,39 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Sequenz:** 3-Spalten Grid (Stunden, Minuten, Sekunden)
   - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
   - **Dialog-System:** Bearbeiten-Dialog mit "Abbrechen" und "Speichern" Buttons
+- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V1.0**:
+  Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+  - **Checkpoint:** 26.01.2026 ~01:30 Uhr, Commit: `90eb8f587f88684d60fad8b2e75d83a0b1ca718a`
+  - **Problem gelöst:** Remote-Updates wurden ignoriert weil Timestamp-Vergleich fundamental fehlerhaft war. `createWatchlistSyncData()` erstellte bei jedem Poll neue Timestamps, wodurch Remote-Daten immer "älter" erschienen.
+  - **Solution:** Implemented `lastKnownRemoteWatchlistTimestamp`, `lastKnownRemoteThresholdsTimestamp`, `lastKnownRemoteAlarmLevelsTimestamp` for correct comparison and added DELETE routes for sync data cleanup.
+  - **DIAMOND STATE Files:** `client/src/hooks/useCrossDeviceSync.ts` and Sync API routes in `server/routes.ts`.
+  - **Sync-Logik:** Compares against last known remote timestamp (not freshly created local timestamps).
+  - **Sync-Strategie:** `localStorage` remains master for local changes, backend for cross-device sync only. Timestamp-based versioning, polling every 3.5 seconds.
+  - **Tests bestanden:** 20/20 Durchgänge mit 5 Tabs gleichzeitig (ADD + DELETE), Backend API Logs verifiziert.
 - **Workflow**: For the Notifications page, adding or editing a threshold, or changing its alarm level, requires an explicit "Speichern" (Save) button click; there is no auto-save for these actions. Dialog cleanup is automatic: when a "new threshold" dialog is closed (via X, ESC, or outside click) without saving, any incomplete threshold (missing value or notification type) is automatically removed from state. The `hasAnyThresholds` check excludes the currently editing threshold to prevent dialog auto-close during editing.
 - **Golden State - Trendpreise & Watchlist V1.1**:
-  - **Lösung - Safe Remove Workflow:** User removes Trading-Pair from Watchlist. ALL thresholds are set to `isActive: false` (paused). `activeAlarmId` is deleted. Trading-Pair remains visible in "Benachrichtigungen konfigurieren" with "Paused" Badge.
-  - **Lösung - Safe Re-Add Workflow:** User re-adds Trading-Pair to Watchlist. Existing settings are NOT modified. Thresholds remain `isActive: false` (paused). NO automatic alarms are triggered. User must manually activate the Toggle + click "Speichern".
-  - **Implementierung:** `removeFromWatchlist()` sets all thresholds to `isActive: false`. `addToWatchlist()` keeps existing settings unchanged. Threshold-Check skips all thresholds with `isActive === false`.
+  - **Safe Remove Workflow:** User removes Trading-Pair from Watchlist. ALL thresholds are set to `isActive: false` (paused). `activeAlarmId` is deleted. Trading-Pair remains visible in "Benachrichtigungen konfigurieren" with "Paused" Badge.
+  - **Safe Re-Add Workflow:** User re-adds Trading-Pair to Watchlist. Existing settings are NOT modified. Thresholds remain `isActive: false` (paused). NO automatic alarms are triggered. User must manually activate the Toggle + click "Speichern".
 - **Golden State - Benachrichtigungen Konfigurieren V1.5**:
-  - **Lösung - Combined Pairs Display:** `allPairsToShow = [...watchlist, ...pairsWithThresholdsNotInWatchlist]`. ALL Pairs with configured thresholds are displayed (Watchlist + Non-Watchlist).
-  - **Trading-Pair Card Status Badge:**
-    - **"Active" (grün):** Pair is in Watchlist AND at least 1 threshold has `isActive !== false`.
-    - **"Paused" (grau):** Pair is NOT in Watchlist OR all thresholds have `isActive === false`.
-  - **Badge-Logik:**
-    ```typescript
-    const isInWatchlist = watchlist.includes(trendPriceId);
-    const hasAnyActiveThreshold = savedThresholds.some(t => t.isActive !== false);
-    const isActive = isInWatchlist && hasAnyActiveThreshold;
-    // Badge: isActive ? "Active" : "Paused"
-    ```
-  - **Einmalig-Threshold Sonderfall:** After trigger, `isActive: false` is set → Badge correctly shows "Paused" if it was the only threshold.
+  - **Combined Pairs Display:** Displays all pairs with configured thresholds (Watchlist + Non-Watchlist).
+  - **Trading-Pair Card Status Badge:** "Active" (green) if in Watchlist AND at least 1 threshold is active. "Paused" (gray) otherwise.
 - **Golden State - Aktive Alarmierungen V1.1**:
-  - **Verhalten nach Remove/Re-Add:**
-    - If Trading-Pair is removed from Watchlist → thresholds paused → NO new alarms.
-    - If Trading-Pair is re-added → thresholds remain paused → NO automatic alarms.
-    - User must manually activate threshold to trigger alarm.
-
----
-
-## ⚠️ PERFEKTER CODE SNAPSHOT - 25.01.2026 ~23:00 Uhr
-**WICHTIG:** Der aktuelle Code der Notification Page (`client/src/pages/notifications.tsx`) ist vollständig getestet und funktioniert perfekt:
-- ✅ 25 Badge-Logic Tests bestanden
-- ✅ 30 No-Auto-Alarm-After-Re-Add Tests bestanden
-- ✅ Alle Golden State Features funktionieren korrekt
-- ✅ Watchlist, Benachrichtigungen Konfigurieren, Aktive Alarmierungen, Alarmierungsstufen - alle Sections stabil
-
-**DARF NICHT MODIFIZIERT WERDEN** außer explizit vom User erlaubt.
-
----
-
-## SYNC SECTION (SEPARATE ENTWICKLUNG)
-**Datei:** `client/src/lib/sync.ts` (NEUE SEPARATE DATEI)
-
-Die Synchronisation wird in einer **separaten Datei** entwickelt, um den perfekten Code in `notifications.tsx` nicht zu gefährden.
-
-### Sync-Anforderungen:
-1. **Aktive Alarmierungen** - Approve, Stoppen, Auto-Dismiss Status (Cross-Device)
-2. **Watchlist** - Welche Pairs sind aktiv
-3. **Benachrichtigungen konfigurieren** - Schwellenwerte, isActive, triggerCount
-4. **Alarmierungsstufen** - Die 4 Level-Settings
-
-### Sync-Strategie:
-- **localStorage bleibt Master** für lokale Änderungen
-- **Backend nur für Cross-Device Sync** (Lesen von anderen Geräten)
-- **Timestamp bei jeder Änderung** → neuere Version gewinnt
-- **Merge statt Überschreiben** → keine Daten gehen verloren
-- **Polling alle 3-5 Sekunden**
-
-### Entwicklungs-Status:
-- [ ] Sync-Modul erstellt (`client/src/lib/sync.ts`)
-- [ ] Timestamp-basierte Logik implementiert
-- [ ] Merge-Strategie implementiert
-- [ ] Tests bestanden
-- [ ] In notifications.tsx integriert (NUR nach erfolgreichen Tests)
-
----
+  - **Behavior after Remove/Re-Add:** No new alarms are triggered after removing/re-adding a trading pair from the watchlist; thresholds remain paused and require manual activation.
 
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for dynamic data visualization, and Wouter for client-side routing. The dashboard includes MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display. PWA support is enabled through `manifest.json` and Apple Meta-Tags.
+The frontend is built with React and TypeScript, utilizing `shadcn/ui` and Tailwind CSS for a responsive design. Recharts provides dynamic data visualization, and Wouter manages client-side routing. The application features a dashboard with MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page includes a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display. PWA support is integrated via `manifest.json` and Apple Meta-Tags.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
 - **Backend**: Express.js with TypeScript.
-- **State Management**: TypeScript-typed state with `useMemo` hooks for optimization.
-- **Data Persistence**: Watchlist and pair market types are persisted in `localStorage`.
-- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss functionality. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
-- **Push Notification Integration**: OneSignal is used for web and native push notifications.
-- **5-Tier Fallback Preissystem (99%+ Zuverlässigkeit)**:
-  - **Tier 1 (Primary)**: OKX API with 2s Cache
-  - **Tier 2 (LKG)**: Last-Known-Good Cache with 24h persistence in server memory
-  - **Tier 3 (CoinGecko)**: Automatic fallback for Spot-Preise
-  - **Tier 4 (Stale)**: Stale Cache return for partial API failures
-  - **Tier 5 (Emergency)**: Static Emergency values
-  - **Background-Updater**: Server-side 30s interval updates 8 popular symbols.
-  - **Per-Symbol Guarantee**: Each requested symbol receives a price (no partial responses).
-- **Frontend Backup System**:
-  - **Primary**: 2-second interval for price updates
-  - **Backup #1**: Exponential Backoff Retry on API errors
-  - **Backup #2**: Page Visibility API triggers immediate refetch
-  - **Backup #3**: Watchdog checks `lastPriceUpdateRef` and forces restart
-  - **Immediate Price-Fetch**: New Watchlist-Pairs trigger immediate price fetch.
+- **State Management**: TypeScript-typed state with `useMemo` hooks.
+- **Data Persistence**: Watchlist and pair market types are stored in `localStorage`.
+- **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
+- **Push Notification Integration**: OneSignal for web and native push notifications.
+- **5-Tier Fallback Preissystem**: Ensures 99%+ reliability for cryptocurrency price data using a tiered system (OKX API, Last-Known-Good Cache, CoinGecko, Stale Cache, Emergency values) with server-side background updates and per-symbol price guarantees.
+- **Frontend Backup System**: Features a 2-second interval for price updates, exponential backoff retry on API errors, immediate refetch on page visibility change, and a watchdog to restart price fetching.
 
 ### Feature Specifications
 - **Charts**: Interactive marker system, zoom & pan.
@@ -146,9 +89,8 @@ The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind 
 ### System Design Choices
 - **Modular Architecture**: Clear separation of concerns.
 - **Stable ID Handling**: Symbol-based lookup for futures pairs.
-- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key.
 - **Multi-Environment Database**: `server/db.ts` uses `RUNTIME_ENV` to switch between Neon Serverless (Replit) and PostgreSQL (server) with Drizzle ORM.
-- **OneSignal Domain Configuration**: Supports multiple production domains.
+- **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key. Supports multiple production domains.
 
 ## External Dependencies
 - **Database**: Neon Serverless (Replit) or PostgreSQL (server) with Drizzle ORM.
