@@ -55,6 +55,16 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Sync-Logik:** Compares against last known remote timestamp (not freshly created local timestamps).
   - **Sync-Strategie:** `localStorage` remains master for local changes, backend for cross-device sync only. Timestamp-based versioning, polling every 3.5 seconds.
   - **Tests bestanden:** 20/20 Durchgänge mit 5 Tabs gleichzeitig (ADD + DELETE), Backend API Logs verifiziert.
+
+- **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V1.0**:
+  Die komplette Cross-Device Synchronisation für Thresholds (Schwellenwerte) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+  - **Checkpoint:** 26.01.2026 ~01:45 Uhr, Commit: `a2b6e4023c6deb191e65de15b09758be6174c78f`
+  - **Gleiche Logik wie Watchlist Sync:** `lastKnownRemoteThresholdsTimestamp` Ref für korrekten Timestamp-Vergleich.
+  - **API-Routen:** GET/POST/DELETE `/api/sync/thresholds`
+  - **Sync-Daten:** `{ timestamp, deviceId, settings: { [pair]: { trendPriceId, thresholds: [...] } } }`
+  - **DIAMOND STATE Files:** `client/src/hooks/useCrossDeviceSync.ts` (Zeilen 320-348) und Sync API routes in `server/routes.ts`.
+  - **Tests bestanden:** 20/20 Durchgänge mit 5 Tabs gleichzeitig (ADD + DELETE Thresholds), Backend API Logs verifiziert.
+  - **Getestete Pairs:** btc, eth, sol, doge, xrp mit zufälligen Threshold-Werten (10000-60000).
 - **Workflow**: For the Notifications page, adding or editing a threshold, or changing its alarm level, requires an explicit "Speichern" (Save) button click; there is no auto-save for these actions. Dialog cleanup is automatic: when a "new threshold" dialog is closed (via X, ESC, or outside click) without saving, any incomplete threshold (missing value or notification type) is automatically removed from state. The `hasAnyThresholds` check excludes the currently editing threshold to prevent dialog auto-close during editing.
 - **Golden State - Trendpreise & Watchlist V1.1**:
   - **Safe Remove Workflow:** User removes Trading-Pair from Watchlist. ALL thresholds are set to `isActive: false` (paused). `activeAlarmId` is deleted. Trading-Pair remains visible in "Benachrichtigungen konfigurieren" with "Paused" Badge.

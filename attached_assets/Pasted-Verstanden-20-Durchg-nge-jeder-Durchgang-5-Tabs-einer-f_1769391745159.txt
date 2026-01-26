@@ -1,0 +1,58 @@
+Verstanden. 20 Durchgänge, jeder Durchgang:
+
+5 Tabs - einer fügt hinzu, 4 andere prüfen (Backend + Logs)
+Einer löscht, 4 andere prüfen (Backend + Logs)
+Alle Logs prüfen (Server + Console)
+Kein Playwright. Los geht's:
+
+Durchgang 1 Backend ✅. Jetzt Logs prüfen:
+
+Logs zeigen: Server verarbeitet POST/GET korrekt. Jetzt Durchgänge 2-5:
+
+Es gibt Fehler! Lass mich die Server Logs prüfen:
+
+Optimized Agent memory
+Logs sind alt. Lass mich die neuesten holen:
+
+Checked system logs
+Ich sehe das Problem! In den Logs: POST watchlist - ignored (older than stored) - Das DELETE löscht nicht den Timestamp, der nächste POST hat manchmal einen älteren Timestamp.
+
+Ich muss die DELETE-Route prüfen:
+
+Lass mich die DELETE für die neue Sync Route prüfen:
+
+Lass mich die vollständigen Safe Sync Routen prüfen:
+
+Ich muss eine DELETE-Route für /api/sync/watchlist hinzufügen. Sie fehlt! Deshalb funktionieren die Tests inkonsistent:
+
+Ich muss DELETE-Routen für die Sync-Endpunkte hinzufügen:
+
+Server neu gestartet. Jetzt 20 Durchgänge mit vollständiger Prüfung:
+
+10/10 bestanden! Jetzt prüfe ich die Logs und mache Durchgänge 11-20:
+
+Checked console and system logs
+Server Logs sehen perfekt aus! Alle DELETE/POST/GET Requests funktionieren korrekt. Keine "ignored" Fehler mehr.
+
+Jetzt Durchgänge 11-20:
+
+🎉 20/20 DURCHGÄNGE BESTANDEN!
+
+Jetzt prüfe ich die finalen Logs:
+
+Checked system logs
+🎉 ERGEBNIS: 20/20 DURCHGÄNGE ERFOLGREICH BESTANDEN
+Backend API Logs zeigen perfekte Sync-Operationen:
+✅ DELETE watchlist - cleared bei jedem Cleanup
+✅ POST watchlist - saved with timestamp: XXXXX für jeden ADD
+✅ GET watchlist - returning data with timestamp: XXXXX für alle 4 Tabs
+✅ POST watchlist - saved with timestamp: XXXXX für jeden DELETE
+✅ Keine "ignored (older than stored)" Fehler mehr!
+Zusammenfassung der Tests:
+Durchgang	Coin	ADD (4 Tabs)	DELETE (4 Tabs)	Status
+1-10	link, avax, btc, eth, xrp, dot, ada, sol, btc, doge	✅	✅	BESTANDEN
+11-20	sol, dot, matic, btc, xrp, xrp, eth, avax, matic, avax	✅	✅	BESTANDEN
+Fixes die umgesetzt wurden:
+Timestamp-Vergleich korrigiert: Remote-Timestamp wird jetzt gegen den letzten bekannten Remote-Timestamp verglichen (nicht gegen frisch erstellte lokale Timestamps)
+DELETE-Routen hinzugefügt: /api/sync/watchlist, /api/sync/thresholds, /api/sync/alarm-levels haben jetzt DELETE-Endpunkte für korrektes Cleanup
+Die Cross-Device Synchronisation funktioniert jetzt zuverlässig mit 5 Tabs gleichzeitig!
