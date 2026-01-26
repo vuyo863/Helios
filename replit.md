@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots, providing detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to improve trading decisions and leverage market opportunities, enhancing their decision-making with real-time data.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots, providing detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to enhance decision-making with real-time data and a user-friendly interface, ultimately supporting better trading strategies and improved profitability.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -45,7 +45,7 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Wiederholung:** Numerisches Input + "∞ Unendlich" Button, mit `py-0.5` für Border-Fix
   - **Sequenz:** 3-Spalten Grid (Stunden, Minuten, Sekunden)
   - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
-  - **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V1.0**:
+- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V1.0**:
 Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   - **DIAMOND STATE Files:** `client/src/hooks/useCrossDeviceSync.ts` and Sync API routes in `server/routes.ts`.
   - **Sync-Logik:** Compares against last known remote timestamp (not freshly created local timestamps).
@@ -164,9 +164,8 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
   - **Master:** localStorage bleibt Master für lokale Änderungen, Backend nur für Cross-Device Sync
 
 ## System Architecture
-
 ### UI/UX
-The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application includes a dashboard with MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display. PWA support is integrated via `manifest.json` and Apple Meta-Tags.
+The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application features a dashboard with charting capabilities and a Notifications page that includes a watchlist with live Binance prices, a configurable threshold system across four alarm levels, and an active alerts display. PWA support is integrated.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
