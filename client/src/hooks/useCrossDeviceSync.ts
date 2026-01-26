@@ -131,6 +131,14 @@ export function useCrossDeviceSync({
   const lastKnownRemoteAlarmLevelsTimestamp = useRef<number>(0);
   const lastKnownRemoteActiveAlarmsTimestamp = useRef<number>(0);
   
+  // ===========================================
+  // ACTIVE ALARMS ONLY - Separate Refs
+  // ===========================================
+  // Separate flag for Active Alarms to avoid interference with other sync areas
+  const isProcessingRemoteActiveAlarmsUpdate = useRef(false);
+  // Stabilization: Pending update timeout to prevent ghost notifications from rapid changes
+  const pendingActiveAlarmsUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
+  
   // Helper to create a hash of content for comparison
   const hashContent = (obj: unknown): string => JSON.stringify(obj);
   
@@ -381,19 +389,24 @@ export function useCrossDeviceSync({
       // ===========================================
       // ACTIVE ALARMS PUSH - Kann bearbeitet werden
       // ===========================================
-      const currentActiveAlarmsHash = hashContent(activeAlarms.map(a => a.id).sort());
-      const isActiveAlarmsFromRemote = currentActiveAlarmsHash === lastReceivedActiveAlarmsHash.current;
-      const activeAlarmsAlreadyPushed = currentActiveAlarmsHash === lastPushedActiveAlarmsHash.current;
-      
-      console.log('[ACTIVE-ALARMS-SYNC] Push check - Count:', activeAlarms.length, 'Hash:', currentActiveAlarmsHash, 'FromRemote:', isActiveAlarmsFromRemote, 'AlreadyPushed:', activeAlarmsAlreadyPushed);
-      
-      if (!isActiveAlarmsFromRemote && !activeAlarmsAlreadyPushed) {
-        console.log('[ACTIVE-ALARMS-SYNC] PUSHING to backend!', activeAlarms.length, 'alarms');
-        await pushActiveAlarmsToBackend(activeAlarms);
-        lastPushedActiveAlarmsHash.current = currentActiveAlarmsHash;
-        console.log('[ACTIVE-ALARMS-SYNC] Push SUCCESS');
+      // Use SEPARATE flag for Active Alarms to avoid interference
+      if (isProcessingRemoteActiveAlarmsUpdate.current) {
+        console.log('[ACTIVE-ALARMS-SYNC] Push SKIPPED - processing remote active alarms update');
       } else {
-        console.log('[ACTIVE-ALARMS-SYNC] Push SKIPPED - already synced');
+        const currentActiveAlarmsHash = hashContent(activeAlarms.map(a => a.id).sort());
+        const isActiveAlarmsFromRemote = currentActiveAlarmsHash === lastReceivedActiveAlarmsHash.current;
+        const activeAlarmsAlreadyPushed = currentActiveAlarmsHash === lastPushedActiveAlarmsHash.current;
+        
+        console.log('[ACTIVE-ALARMS-SYNC] Push check - Count:', activeAlarms.length, 'Hash:', currentActiveAlarmsHash, 'FromRemote:', isActiveAlarmsFromRemote, 'AlreadyPushed:', activeAlarmsAlreadyPushed);
+        
+        if (!isActiveAlarmsFromRemote && !activeAlarmsAlreadyPushed) {
+          console.log('[ACTIVE-ALARMS-SYNC] PUSHING to backend!', activeAlarms.length, 'alarms');
+          await pushActiveAlarmsToBackend(activeAlarms);
+          lastPushedActiveAlarmsHash.current = currentActiveAlarmsHash;
+          console.log('[ACTIVE-ALARMS-SYNC] Push SUCCESS');
+        } else {
+          console.log('[ACTIVE-ALARMS-SYNC] Push SKIPPED - already synced');
+        }
       }
       
       console.log('[CROSS-DEVICE-SYNC] Push complete');
@@ -573,8 +586,6 @@ export function useCrossDeviceSync({
             console.log('[ACTIVE-ALARMS-SYNC] Content check - LocalIDs:', currentIds, 'RemoteIDs:', remoteIds, 'IsDifferent:', isDifferent);
             
             if (isDifferent) {
-              console.log('[ACTIVE-ALARMS-SYNC] UPDATING from remote! Local:', currentActiveAlarms.length, '→ Remote:', remoteActiveAlarms.alarms.length);
-              
               // Parse dates back from ISO strings
               const parsedAlarms = remoteActiveAlarms.alarms.map(a => ({
                 ...a,
@@ -586,16 +597,59 @@ export function useCrossDeviceSync({
               const receivedHash = hashContent(remoteActiveAlarms.alarms.map(a => a.id).sort());
               lastReceivedActiveAlarmsHash.current = receivedHash;
               
-              isProcessingRemoteUpdate.current = true;
+              // STABILIZATION FIX V2: Prevent ghost notifications from rapid changes
+              // while ensuring no legitimate new alarms are missed
+              const localCount = currentActiveAlarms.length;
+              const remoteCount = remoteActiveAlarms.alarms.length;
+              const localIds = new Set(currentActiveAlarms.map(a => a.id));
+              const remoteIds = new Set(remoteActiveAlarms.alarms.map(a => a.id));
               
-              setActiveAlarmsRef.current(() => parsedAlarms);
+              // Check if this is a pure REMOVAL (remote is subset of local)
+              const isPureRemoval = remoteCount < localCount && 
+                Array.from(remoteIds).every(id => localIds.has(id));
               
-              // Also update localStorage immediately for consistency
-              localStorage.setItem('active-alarms', JSON.stringify(parsedAlarms));
+              // Check if remote has NEW alarms not in local (should apply quickly)
+              const hasNewAlarms = Array.from(remoteIds).some(id => !localIds.has(id));
               
-              setTimeout(() => {
-                isProcessingRemoteUpdate.current = false;
-              }, 1000);
+              // Cancel any pending update to prevent ghost notifications
+              if (pendingActiveAlarmsUpdateTimeout.current) {
+                clearTimeout(pendingActiveAlarmsUpdateTimeout.current);
+                pendingActiveAlarmsUpdateTimeout.current = null;
+                console.log('[ACTIVE-ALARMS-SYNC] Cancelled pending update (newer data arrived)');
+              }
+              
+              const applyUpdate = () => {
+                console.log('[ACTIVE-ALARMS-SYNC] APPLYING update from remote! Local:', localCount, '→ Remote:', remoteCount);
+                
+                // Use SEPARATE flag for Active Alarms
+                isProcessingRemoteActiveAlarmsUpdate.current = true;
+                
+                setActiveAlarmsRef.current(() => parsedAlarms);
+                
+                // Also update localStorage immediately for consistency
+                localStorage.setItem('active-alarms', JSON.stringify(parsedAlarms));
+                
+                setTimeout(() => {
+                  isProcessingRemoteActiveAlarmsUpdate.current = false;
+                }, 1000);
+              };
+              
+              if (isPureRemoval || hasNewAlarms) {
+                // REMOVALS or NEW ALARMS: Apply immediately
+                // - Pure removal = user stopped an alarm, apply fast
+                // - New alarms = legitimate new trigger, don't delay
+                console.log('[ACTIVE-ALARMS-SYNC]', isPureRemoval ? 'REMOVAL' : 'NEW ALARM', 'detected - applying immediately');
+                applyUpdate();
+              } else {
+                // Same count but different IDs = intermediate state, apply with short delay
+                // This prevents ghost notifications from rapid consecutive changes
+                const STABILIZATION_DELAY_MS = 250;
+                console.log('[ACTIVE-ALARMS-SYNC] INTERMEDIATE state detected - applying with', STABILIZATION_DELAY_MS, 'ms stabilization delay');
+                pendingActiveAlarmsUpdateTimeout.current = setTimeout(() => {
+                  pendingActiveAlarmsUpdateTimeout.current = null;
+                  applyUpdate();
+                }, STABILIZATION_DELAY_MS);
+              }
             }
           }
         }
@@ -617,6 +671,11 @@ export function useCrossDeviceSync({
       clearTimeout(startPolling);
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
+      }
+      // ACTIVE ALARMS ONLY: Clean up pending update timeout
+      if (pendingActiveAlarmsUpdateTimeout.current) {
+        clearTimeout(pendingActiveAlarmsUpdateTimeout.current);
+        pendingActiveAlarmsUpdateTimeout.current = null;
       }
     };
     // EMPTY dependency array - interval is FULLY stable, uses refs for ALL state and functions
