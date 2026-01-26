@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots, providing detailed insights into bot performance and advanced analytics. It also includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with custom threshold alerts. The project aims to empower cryptocurrency traders with comprehensive analytics and timely notifications to enhance trading decisions and capitalize on market opportunities.
+A full-stack web application designed to track and analyze profits from Pionex trading bots, offering detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to improve trading decisions and leverage market opportunities.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -45,27 +45,31 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Wiederholung:** Numerisches Input + "∞ Unendlich" Button, mit `py-0.5` für Border-Fix
   - **Sequenz:** 3-Spalten Grid (Stunden, Minuten, Sekunden)
   - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
-  - **Dialog-System:** Bearbeiten-Dialog mit "Abbrechen" und "Speichern" Buttons
-- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V1.0**:
-  Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
-  - **Checkpoint:** 26.01.2026 ~01:30 Uhr, Commit: `90eb8f587f88684d60fad8b2e75d83a0b1ca718a`
-  - **Problem gelöst:** Remote-Updates wurden ignoriert weil Timestamp-Vergleich fundamental fehlerhaft war. `createWatchlistSyncData()` erstellte bei jedem Poll neue Timestamps, wodurch Remote-Daten immer "älter" erschienen.
-  - **Solution:** Implemented `lastKnownRemoteWatchlistTimestamp`, `lastKnownRemoteThresholdsTimestamp`, `lastKnownRemoteAlarmLevelsTimestamp` for correct comparison and added DELETE routes for sync data cleanup.
+  - **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V1.0**:
+Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   - **DIAMOND STATE Files:** `client/src/hooks/useCrossDeviceSync.ts` and Sync API routes in `server/routes.ts`.
   - **Sync-Logik:** Compares against last known remote timestamp (not freshly created local timestamps).
   - **Sync-Strategie:** `localStorage` remains master for local changes, backend for cross-device sync only. Timestamp-based versioning, polling every 3.5 seconds.
-  - **Tests bestanden:** 20/20 Durchgänge mit 5 Tabs gleichzeitig (ADD + DELETE), Backend API Logs verifiziert.
-
-- **Benachrichtigungen Konfigurieren Cross-Device Sync V1.0 (WARTET AUF PRÜFUNG)**:
-  Cross-Device Synchronisation für Thresholds (Schwellenwerte) - wartet auf User-Prüfung für DIAMOND STATE.
-  - **Checkpoint:** 26.01.2026 ~01:45 Uhr, Commit: `a2b6e4023c6deb191e65de15b09758be6174c78f`
-  - **Gleiche Logik wie Watchlist Sync:** `lastKnownRemoteThresholdsTimestamp` Ref für korrekten Timestamp-Vergleich.
+- **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V1.1**:
+Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+  - **Problem-Beschreibung:**
+  - Schwellenwerte wurden AUTOMATISCH synchronisiert sobald ein Wert eingegeben wurde
+  - Verletzung der Golden State Regel: Explizites "Speichern" ist PFLICHT, kein Auto-Save
+  - **Konsequenz:** Alarme wurden vorzeitig auf anderen Geräten ausgelöst, BEVOR der User "Speichern" geklickt hat
+  - **Lösung - editingThresholdId Blocking-Mechanismus:**
+  1. Neue Prop `editingThresholdId` an `useCrossDeviceSync` Hook hinzugefügt
+  2. Wenn `editingThresholdId !== null` → Threshold-Sync wird BLOCKIERT
+  3. Erst wenn User "Speichern" klickt → `editingThresholdId = null` → Sync wird freigegeben
+  4. Damit wird GARANTIERT, dass nur bestätigte Schwellenwerte synchronisiert werden
+  - **Sync-Logik (DIAMOND STATE)**
   - **API-Routen:** GET/POST/DELETE `/api/sync/thresholds`
-  - **Tests durchgeführt:** 20/20 Durchgänge mit 5 Tabs gleichzeitig (ADD + DELETE), Backend API Logs geprüft.
+  - **Timestamp-Vergleich:** `lastKnownRemoteThresholdsTimestamp` Ref für korrekten Vergleich
+  - **Polling-Intervall:** Alle 3.5 Sekunden
+  - **Master:** localStorage bleibt Master, Backend nur für Cross-Device Sync
 - **Workflow**: For the Notifications page, adding or editing a threshold, or changing its alarm level, requires an explicit "Speichern" (Save) button click; there is no auto-save for these actions. Dialog cleanup is automatic: when a "new threshold" dialog is closed (via X, ESC, or outside click) without saving, any incomplete threshold (missing value or notification type) is automatically removed from state. The `hasAnyThresholds` check excludes the currently editing threshold to prevent dialog auto-close during editing.
 - **Golden State - Trendpreise & Watchlist V1.1**:
   - **Safe Remove Workflow:** User removes Trading-Pair from Watchlist. ALL thresholds are set to `isActive: false` (paused). `activeAlarmId` is deleted. Trading-Pair remains visible in "Benachrichtigungen konfigurieren" with "Paused" Badge.
-  - **Safe Re-Add Workflow:** User re-adds Trading-Pair to Watchlist. Existing settings are NOT modified. Thresholds remain `isActive: false` (paused). NO automatic alarms are triggered. User must manually activate the Toggle + click "Speichern".
+  - **Safe Re-Add Workflow:** User re-add Trading-Pair to Watchlist. Existing settings are NOT modified. Thresholds remain `isActive: false` (paused). NO automatic alarms are triggered. User must manually activate the Toggle + click "Speichern".
 - **Golden State - Benachrichtigungen Konfigurieren V1.5**:
   - **Combined Pairs Display:** Displays all pairs with configured thresholds (Watchlist + Non-Watchlist).
   - **Trading-Pair Card Status Badge:** "Active" (green) if in Watchlist AND at least 1 threshold is active. "Paused" (gray) otherwise.
@@ -75,7 +79,7 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
 ## System Architecture
 
 ### UI/UX
-The frontend is built with React and TypeScript, utilizing `shadcn/ui` and Tailwind CSS for a responsive design. Recharts provides dynamic data visualization, and Wouter manages client-side routing. The application features a dashboard with MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page includes a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display. PWA support is integrated via `manifest.json` and Apple Meta-Tags.
+The frontend is built with React and TypeScript, using `shadcn/ui` and Tailwind CSS for responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application includes a dashboard with MainChart, Compare Mode, and Added Mode (Analysis and Overlay). The Notifications page features a watchlist with live Binance prices, a configurable threshold system with four alarm levels, and an active alerts display. PWA support is integrated via `manifest.json` and Apple Meta-Tags.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
@@ -84,7 +88,7 @@ The frontend is built with React and TypeScript, utilizing `shadcn/ui` and Tailw
 - **Data Persistence**: Watchlist and pair market types are stored in `localStorage`.
 - **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
 - **Push Notification Integration**: OneSignal for web and native push notifications.
-- **5-Tier Fallback Preissystem**: Ensures 99%+ reliability for cryptocurrency price data using a tiered system (OKX API, Last-Known-Good Cache, CoinGecko, Stale Cache, Emergency values) with server-side background updates and per-symbol price guarantees.
+- **5-Tier Fallback Preissystem**: Ensures reliable cryptocurrency price data using a tiered system (OKX API, Last-Known-Good Cache, CoinGecko, Stale Cache, Emergency values) with server-side background updates and per-symbol price guarantees.
 - **Frontend Backup System**: Features a 2-second interval for price updates, exponential backoff retry on API errors, immediate refetch on page visibility change, and a watchdog to restart price fetching.
 
 ### Feature Specifications
