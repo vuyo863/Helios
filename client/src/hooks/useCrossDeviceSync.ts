@@ -3,6 +3,28 @@
  * =======================
  * Erstellt: 25.01.2026
  * 
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ * ⚠️ DIAMOND STATE - TRENDPREISE & WATCHLIST SYNC ⚠️
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ * 
+ * NIEMALS ANFASSEN! FERTIG UND FUNKTIONIERT!
+ * 
+ * Der Watchlist-Sync Code ist DIAMOND STATE:
+ * - pushWatchlistToBackend Aufrufe
+ * - pullWatchlistFromBackend Aufrufe
+ * - mergeWatchlist Aufrufe
+ * - setWatchlist / setPairMarketTypes Callbacks
+ * 
+ * SECTIONS SIND SEPARAT:
+ * - Watchlist Sync = DIAMOND STATE (nicht anfassen)
+ * - Threshold Sync = Kann bearbeitet werden
+ * - AlarmLevel Sync = Kann bearbeitet werden
+ * - ActiveAlarms Sync = Kann bearbeitet werden
+ * 
+ * Bei Änderungen: NUR die betroffene Section bearbeiten!
+ * 
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ * 
  * Separater Hook für Cross-Device Sync Integration.
  * Wird in notifications.tsx eingebunden ohne Golden State zu ändern.
  * 

@@ -1,5 +1,24 @@
 # Pionex Bot Profit Tracker
 
+## ⚠️ DIAMOND STATE - NIEMALS ANFASSEN ⚠️
+Die folgenden Sections sind DIAMOND STATE und dürfen NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
+
+### 1. TRENDPREISE & WATCHLIST SYNC
+- **Status:** DIAMOND STATE - FERTIG UND FUNKTIONIERT
+- **Files:** Watchlist-bezogene Funktionen in `sync.ts` und `useCrossDeviceSync.ts`
+- **Regel:** KEINE Änderungen erlaubt. Code funktioniert. Nicht anfassen.
+
+### 2. WATCHLIST UI
+- **Status:** DIAMOND STATE - FERTIG UND FUNKTIONIERT  
+- **Bereich:** Search, Spot/Futures Toggle, Watchlist-Anzeige mit Preisen
+- **Regel:** KEINE Änderungen erlaubt. Code funktioniert. Nicht anfassen.
+
+### WICHTIG FÜR ENTWICKLUNG:
+- Die Sync-Sections sind SEPARAT zu behandeln
+- Änderungen an einer Section dürfen NIEMALS andere Sections beeinflussen
+- Bei Problemen: NUR die betroffene Section fixen, Rest nicht anfassen
+- Im Zweifel: Code kopieren und separat entwickeln
+
 ## Overview
 A full-stack web application designed to track and analyze profits from Pionex trading bots, offering detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to improve trading decisions and leverage market opportunities.
 

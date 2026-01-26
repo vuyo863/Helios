@@ -4,6 +4,28 @@
  * Erstellt: 25.01.2026 ~23:00 Uhr
  * Aktualisiert: 25.01.2026 ~23:15 Uhr
  * 
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ * ⚠️ DIAMOND STATE - TRENDPREISE & WATCHLIST SYNC ⚠️
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ * 
+ * NIEMALS ANFASSEN! FERTIG UND FUNKTIONIERT!
+ * 
+ * Die folgenden Funktionen sind DIAMOND STATE:
+ * - pushWatchlistToBackend()
+ * - pullWatchlistFromBackend()
+ * - mergeWatchlist()
+ * - createWatchlistSyncData()
+ * 
+ * SECTIONS SIND SEPARAT:
+ * - Watchlist Sync = DIAMOND STATE (nicht anfassen)
+ * - Threshold Sync = Kann bearbeitet werden
+ * - AlarmLevel Sync = Kann bearbeitet werden
+ * - ActiveAlarms Sync = Kann bearbeitet werden
+ * 
+ * Bei Änderungen: NUR die betroffene Section bearbeiten!
+ * 
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ * 
  * WICHTIG: Diese Datei ist SEPARAT von notifications.tsx
  * Der perfekte Code in notifications.tsx wird NICHT modifiziert!
  * 
