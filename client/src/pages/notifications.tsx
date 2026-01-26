@@ -3980,33 +3980,7 @@ export default function Notifications() {
                                             if (open) {
                                               setEditingThresholdId(threshold.id);
                                               editingThresholdRef.current = { pairId: trendPriceId, thresholdId: threshold.id };
-                                              // GOLDEN STATE FIX: Store original threshold ONLY for existing thresholds (not new ones)
-                                              // This prevents toggle auto-sync when editing
-                                              if (!isCreatingNewThreshold) {
-                                                originalThresholdRef.current = JSON.parse(JSON.stringify(threshold));
-                                                console.log('[EDIT-DIALOG] Stored original threshold:', threshold.id, 'isActive:', threshold.isActive);
-                                              }
                                             } else {
-                                              // GOLDEN STATE FIX: Restore original threshold ONLY if:
-                                              // 1. NOT saving (user didn't click "Speichern")
-                                              // 2. NOT creating new threshold
-                                              // 3. Original was stored
-                                              if (!isSavingThresholdRef.current && !isCreatingNewThreshold && originalThresholdRef.current) {
-                                                const origThreshold = originalThresholdRef.current;
-                                                console.log('[EDIT-DIALOG] Restoring original threshold:', origThreshold.id, 'isActive:', origThreshold.isActive);
-                                                setTrendPriceSettings(prev => ({
-                                                  ...prev,
-                                                  [trendPriceId]: {
-                                                    ...prev[trendPriceId],
-                                                    thresholds: prev[trendPriceId].thresholds.map(t =>
-                                                      t.id === origThreshold.id ? origThreshold : t
-                                                    )
-                                                  }
-                                                }));
-                                              }
-                                              // Clear refs
-                                              originalThresholdRef.current = null;
-                                              isSavingThresholdRef.current = false;
                                               setEditingThresholdId(null);
                                               editingThresholdRef.current = { pairId: null, thresholdId: null };
                                             }
