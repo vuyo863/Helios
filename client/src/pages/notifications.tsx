@@ -3469,6 +3469,12 @@ export default function Notifications() {
                                                               console.log('[THRESHOLD-REACTIVATED] Triggering threshold check after state update');
                                                               setThresholdCheckTrigger(prev => prev + 1);
                                                             }, 0);
+                                                          } else {
+                                                            // PAUSED THRESHOLD: Still trigger state update for sync (no threshold check needed)
+                                                            console.log('[THRESHOLD-PAUSED] Triggering state update for sync');
+                                                            setTimeout(() => {
+                                                              setThresholdCheckTrigger(prev => prev + 1);
+                                                            }, 0);
                                                           }
                                                         } else {
                                                           toast({
@@ -3795,6 +3801,12 @@ export default function Notifications() {
                                                       // This ensures editingThresholdId is null before the check runs
                                                       setTimeout(() => {
                                                         console.log('[THRESHOLD-REACTIVATED] Triggering threshold check after state update');
+                                                        setThresholdCheckTrigger(prev => prev + 1);
+                                                      }, 0);
+                                                    } else {
+                                                      // PAUSED THRESHOLD: Still trigger state update for sync (no threshold check needed)
+                                                      console.log('[THRESHOLD-PAUSED] Triggering state update for sync');
+                                                      setTimeout(() => {
                                                         setThresholdCheckTrigger(prev => prev + 1);
                                                       }, 0);
                                                     }
@@ -4183,6 +4195,12 @@ export default function Notifications() {
                                                           // This ensures editingThresholdId is null before the check runs
                                                           setTimeout(() => {
                                                             console.log('[THRESHOLD-REACTIVATED] Triggering threshold check after state update');
+                                                            setThresholdCheckTrigger(prev => prev + 1);
+                                                          }, 0);
+                                                        } else {
+                                                          // PAUSED THRESHOLD: Still trigger state update for sync (no threshold check needed)
+                                                          console.log('[THRESHOLD-PAUSED] Triggering state update for sync');
+                                                          setTimeout(() => {
                                                             setThresholdCheckTrigger(prev => prev + 1);
                                                           }, 0);
                                                         }
