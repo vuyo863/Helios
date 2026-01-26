@@ -202,7 +202,10 @@ export function mergeWatchlist(
 /**
  * SICHERE Merge-Strategie für Thresholds
  * - Pro TrendPriceId: neuere Version gewinnt
- * - Aber: Wenn remote leer, NICHT löschen!
+ * - WICHTIG: Wenn remote neuer ist, werden auch LÖSCHUNGEN übernommen!
+ * 
+ * THRESHOLD SYNC SECTION - Kann bearbeitet werden
+ * (Watchlist Sync = DIAMOND STATE, nicht anfassen)
  */
 export function mergeAllThresholds(
   local: AllThresholdsSyncData | null,
@@ -215,32 +218,16 @@ export function mergeAllThresholds(
   // FIX: "Same device" check entfernt - Timestamp entscheidet IMMER!
   // Bei Multi-Tab-Sync teilen alle Tabs dieselbe deviceId
   
-  // TIMESTAMP GEWINNT: Neuere Version überschreibt ältere (pro Pair MERGE)
+  // TIMESTAMP GEWINNT: Neuere Version überschreibt ältere
   if (isNewerThan(remote.timestamp, local.timestamp)) {
-    console.log('[SYNC-MERGE] Thresholds: Remote is newer, MERGING per pair');
+    console.log('[SYNC-MERGE] Thresholds: Remote is newer, taking remote data');
     
-    const mergedSettings: Record<string, { trendPriceId: string; thresholds: ThresholdConfig[] }> = { ...local.settings };
-    
-    // Remote Settings hinzufügen/aktualisieren
-    for (const pairId in remote.settings) {
-      const remoteData = remote.settings[pairId];
-      const localData = local.settings[pairId];
-      
-      // Wenn lokal nicht vorhanden oder remote neuer, remote nehmen
-      if (!localData || remoteData.thresholds.length > 0) {
-        // ABER: Wenn remote leer und lokal hat Daten, NICHT löschen!
-        if (remoteData.thresholds.length === 0 && localData && localData.thresholds.length > 0) {
-          console.log(`[SYNC-MERGE] Thresholds: Keeping local for ${pairId} (remote is empty)`);
-          continue; // Lokal behalten!
-        }
-        mergedSettings[pairId] = remoteData;
-      }
-    }
-    
+    // Remote gewinnt komplett - AUCH bei Löschungen!
+    // Wenn User auf Tablet löscht → Remote ist neuer UND leer → Laptop übernimmt Löschung
     return {
       timestamp: remote.timestamp,
       deviceId: getDeviceId(),
-      settings: mergedSettings
+      settings: { ...remote.settings }
     };
   }
   
