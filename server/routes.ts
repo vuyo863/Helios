@@ -3827,10 +3827,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     watchlist: SyncData | null;
     thresholds: SyncData | null;
     alarmLevels: SyncData | null;
+    activeAlarms: SyncData | null;
   } = {
     watchlist: null,
     thresholds: null,
-    alarmLevels: null
+    alarmLevels: null,
+    activeAlarms: null
   };
 
   // GET /api/sync/watchlist - Watchlist vom Backend holen
@@ -3978,7 +3980,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ success: true });
   });
 
-  console.log('[SYNC-API] New safe sync routes registered: /api/sync/watchlist, /api/sync/thresholds, /api/sync/alarm-levels');
+  // GET /api/sync/active-alarms - Active Alarms vom Backend holen
+  app.get("/api/sync/active-alarms", (req, res) => {
+    try {
+      if (!syncStorage.activeAlarms) {
+        return res.status(404).json({ error: "No active alarms data" });
+      }
+      console.log('[SYNC-API] GET active-alarms - returning data with timestamp:', syncStorage.activeAlarms.timestamp);
+      return res.json(syncStorage.activeAlarms.data);
+    } catch (error) {
+      console.error('[SYNC-API] Error getting active-alarms:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/sync/active-alarms - Active Alarms zum Backend pushen
+  app.post("/api/sync/active-alarms", (req, res) => {
+    try {
+      const { timestamp, deviceId, alarms } = req.body;
+      
+      if (!timestamp || !deviceId) {
+        return res.status(400).json({ error: "Missing timestamp or deviceId" });
+      }
+      
+      // Nur aktualisieren wenn neuer als gespeichert
+      if (!syncStorage.activeAlarms || timestamp > syncStorage.activeAlarms.timestamp) {
+        syncStorage.activeAlarms = {
+          timestamp,
+          deviceId,
+          data: { timestamp, deviceId, alarms }
+        };
+        console.log('[SYNC-API] POST active-alarms - saved with timestamp:', timestamp, 'alarms:', alarms?.length || 0);
+      } else {
+        console.log('[SYNC-API] POST active-alarms - ignored (older than stored)');
+      }
+      
+      return res.json({ success: true, storedTimestamp: syncStorage.activeAlarms.timestamp });
+    } catch (error) {
+      console.error('[SYNC-API] Error posting active-alarms:', error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/sync/active-alarms", (req, res) => {
+    syncStorage.activeAlarms = null;
+    console.log('[SYNC-API] DELETE active-alarms - cleared');
+    return res.json({ success: true });
+  });
+
+  console.log('[SYNC-API] New safe sync routes registered: /api/sync/watchlist, /api/sync/thresholds, /api/sync/alarm-levels, /api/sync/active-alarms');
 
   const httpServer = createServer(app);
 
