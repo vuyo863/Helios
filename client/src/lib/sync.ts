@@ -160,24 +160,23 @@ export function mergeWatchlist(
     return local;
   }
   
-  // Remote ist neuer - MERGE statt überschreiben!
+  // NEUER ANSATZ: Letzter Timestamp gewinnt KOMPLETT (kein Union mehr)
+  // Das ermöglicht auch Löschungen zu syncen!
   if (isNewerThan(remote.timestamp, local.timestamp)) {
-    console.log('[SYNC-MERGE] Watchlist: Remote is newer, MERGING (not overwriting)');
+    console.log('[SYNC-MERGE] Watchlist: Remote is NEWER - taking remote completely');
+    console.log('[SYNC-MERGE] Remote:', remote.watchlist, 'Local:', local.watchlist);
     
-    // WICHTIG: Union der beiden Watchlists - nichts geht verloren!
-    const mergedWatchlist = [...new Set([...remote.watchlist, ...local.watchlist])];
-    const mergedPairMarketTypes = { ...local.pairMarketTypes, ...remote.pairMarketTypes };
-    
+    // Remote gewinnt komplett - inklusive Löschungen!
     return {
       timestamp: remote.timestamp,
-      deviceId: getDeviceId(),
-      watchlist: mergedWatchlist,
-      pairMarketTypes: mergedPairMarketTypes
+      deviceId: remote.deviceId,
+      watchlist: remote.watchlist,
+      pairMarketTypes: remote.pairMarketTypes
     };
   }
   
   // Lokal ist neuer - behalten
-  console.log('[SYNC-MERGE] Watchlist: Local is newer, keeping local');
+  console.log('[SYNC-MERGE] Watchlist: Local is NEWER, keeping local');
   return local;
 }
 

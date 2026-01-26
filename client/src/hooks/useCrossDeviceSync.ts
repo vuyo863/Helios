@@ -218,21 +218,24 @@ export function useCrossDeviceSync({
         const currentTrendPriceSettings = trendPriceSettingsRef.current;
         const currentAlarmLevelConfigs = alarmLevelConfigsRef.current;
         
-        // 1. Sync Watchlist - UNION strategy (additions sync, deletions only from same device)
+        // 1. Sync Watchlist - NEUERER TIMESTAMP GEWINNT KOMPLETT
         const remoteWatchlist = await pullWatchlistFromBackend();
-        if (remoteWatchlist && remoteWatchlist.watchlist && remoteWatchlist.watchlist.length > 0) {
-          const localSet = new Set(currentWatchlist);
-          const hasNewItems = remoteWatchlist.watchlist.some(item => !localSet.has(item));
+        if (remoteWatchlist && remoteWatchlist.watchlist) {
+          const localData = createWatchlistSyncData(currentWatchlist, currentPairMarketTypes);
           
-          // Always merge if remote has new items we don't have
-          if (hasNewItems) {
-            const localData = createWatchlistSyncData(currentWatchlist, currentPairMarketTypes);
+          // Vergleiche Timestamps - nur wenn remote neuer ist, übernehmen
+          if (remoteWatchlist.timestamp > (localData?.timestamp || 0)) {
+            // Remote ist neuer - übernehme komplett (inklusive Löschungen!)
             const merged = mergeWatchlist(localData, remoteWatchlist);
             
-            if (merged && merged.watchlist.length > 0) {
-              console.log('[CROSS-DEVICE-SYNC] Watchlist updated:', merged.watchlist);
-              setWatchlist(() => merged.watchlist);
-              setPairMarketTypes(() => merged.pairMarketTypes);
+            if (merged) {
+              // Nur aktualisieren wenn sich was geändert hat
+              const isDifferent = JSON.stringify(merged.watchlist.sort()) !== JSON.stringify(currentWatchlist.sort());
+              if (isDifferent) {
+                console.log('[CROSS-DEVICE-SYNC] Watchlist updated from remote:', merged.watchlist);
+                setWatchlist(() => merged.watchlist);
+                setPairMarketTypes(() => merged.pairMarketTypes);
+              }
             }
           }
         }
