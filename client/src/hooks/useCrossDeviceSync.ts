@@ -169,6 +169,9 @@ export function useCrossDeviceSync({
   
   // FIX: Track if a push was blocked and needs retry
   const pendingPushRetry = useRef<NodeJS.Timeout | null>(null);
+  
+  // FIX: Ref for pushAllToBackend to avoid stale closures in retry callback
+  const pushAllToBackendRef = useRef<() => void>(() => {});
 
   // ===========================================
   // INITIAL SYNC - Fetch Remote on Mount
@@ -294,9 +297,10 @@ export function useCrossDeviceSync({
       }
       
       // Schedule retry - this ensures the latest data eventually gets pushed
+      // FIX: Use ref to avoid stale closure - always calls latest version
       pendingPushRetry.current = setTimeout(() => {
         console.log('[CROSS-DEVICE-SYNC] Debounce retry triggered');
-        pushAllToBackend();
+        pushAllToBackendRef.current();
       }, retryDelay);
       
       console.log('[CROSS-DEVICE-SYNC] Push debounced, retry scheduled in', retryDelay, 'ms');
@@ -381,6 +385,21 @@ export function useCrossDeviceSync({
       console.error('[CROSS-DEVICE-SYNC] Push error:', error);
     }
   }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms]);
+
+  // FIX: Keep ref updated with latest version to avoid stale closures
+  useEffect(() => {
+    pushAllToBackendRef.current = pushAllToBackend;
+  }, [pushAllToBackend]);
+
+  // FIX: Cleanup pendingPushRetry on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (pendingPushRetry.current) {
+        clearTimeout(pendingPushRetry.current);
+        pendingPushRetry.current = null;
+      }
+    };
+  }, []);
 
   // Push to backend when data changes (after initial mount)
   // CRITICAL FIX: Also trigger when editingThresholdId changes to null (user clicked "Speichern")
