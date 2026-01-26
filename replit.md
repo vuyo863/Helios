@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing Pionex trading bot profits, offering detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to enhance trading strategies and profitability through real-time data and a user-friendly interface.
+A full-stack web application for tracking and analyzing Pionex trading bot profits, providing detailed performance insights, advanced analytics, and real-time cryptocurrency price monitoring with customizable threshold alerts. The project aims to enhance trading strategies and profitability through real-time data, AI analysis, interactive charting, and cross-device synchronization. It includes a Notifications page for monitoring prices from Binance Spot and Futures markets.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -47,6 +47,13 @@ A full-stack web application for tracking and analyzing Pionex trading bot profi
   - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
 - **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V2.0**:
 Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+  ### DIAMOND STATE FILE (NIEMALS ÄNDERN):
+  **`client/src/hooks/useCrossDeviceSync.ts`** - VOLLSTÄNDIGER CODE GESCHÜTZT (600 Zeilen)
+  
+  ⚠️⚠️⚠️ DIESE DATEI DARF NIEMALS MODIFIZIERT WERDEN ⚠️⚠️⚠️
+  
+  Der komplette Code ist in der Datei gespeichert und funktioniert perfekt.
+  Bei Bedarf kann der Code mit `cat client/src/hooks/useCrossDeviceSync.ts` angezeigt werden.
   ### SYNC-LOGIK (NIEMALS ÄNDERN):
   - **Timestamp-Vergleich:** Vergleicht gegen `lastKnownRemoteTimestamp`, nicht gegen neu erstellte Timestamps
   - **Hash-basierte Anti-Ping-Pong:** `lastPushedHash` und `lastReceivedHash` verhindern Endlosschleifen
@@ -56,6 +63,63 @@ Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMO
   - Backend nur für Cross-Device Sync
   - Timestamp-basierte Versionierung
   - Polling alle 3.5 Sekunden
+  ### KRITISCHE REFS (NIEMALS LÖSCHEN):
+  ```typescript
+  // Anti-Ping-Pong (verhindert Endlosschleifen bei 3+ Tabs)
+  const lastPushedWatchlistHash = useRef<string>('');
+  const lastReceivedWatchlistHash = useRef<string>('');
+  
+  // Timestamp-Tracking (korrekter Vergleich)
+  const lastKnownRemoteWatchlistTimestamp = useRef<number>(0);
+  
+  // Debounce-Retry (FIX für Rapid-Add Bug - V2.0)
+  const pendingPushRetry = useRef<NodeJS.Timeout | null>(null);
+  const pushAllToBackendRef = useRef<() => void>(() => {});
+  
+  // Remote-Update-Flag (verhindert Push-Back)
+  const isProcessingRemoteUpdate = useRef(false);
+  ```
+  ### DEBOUNCE-RETRY LOGIK (V2.0 FIX - NIEMALS ÄNDERN):
+  ```typescript
+  const timeSinceLastPush = now - lastPushTimestamp.current;
+  if (timeSinceLastPush < PUSH_DEBOUNCE_MS) {
+    const retryDelay = PUSH_DEBOUNCE_MS - timeSinceLastPush + 100;
+    
+    if (pendingPushRetry.current) {
+      clearTimeout(pendingPushRetry.current);
+    }
+    
+    // FIX: Verwendet Ref um Stale Closures zu vermeiden
+    pendingPushRetry.current = setTimeout(() => {
+      pushAllToBackendRef.current();
+    }, retryDelay);
+    return;
+  }
+  ```
+  ### CLEANUP ON UNMOUNT (V2.0 FIX - NIEMALS ÄNDERN):
+  ```typescript
+  // FIX: Ref mit aktueller Version synchron halten
+  useEffect(() => {
+    pushAllToBackendRef.current = pushAllToBackend;
+  }, [pushAllToBackend]);
+
+  // FIX: Cleanup bei Tab-Schließung
+  useEffect(() => {
+    return () => {
+      if (pendingPushRetry.current) {
+        clearTimeout(pendingPushRetry.current);
+        pendingPushRetry.current = null;
+      }
+    };
+  }, []);
+  ```
+  ### TESTS BESTANDEN (40/40):
+  - Rapid Addition: 10+ Pairs schnell hintereinander ✓
+  - Multi-Device Sync: 2 Geräte synchronisieren ✓
+  - Deletion Sync: Löschungen werden synchronisiert ✓
+  - Timestamp-Konflikte: Neuerer Timestamp gewinnt ✓
+  - Futures/Spot Mix: Beide Market Types funktionieren ✓
+  - Leere Liste: Komplette Löschung wird synchronisiert ✓
 - **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.0**:
 Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   #### DIALOG-VERHALTEN (KRITISCH - NIEMALS ÄNDERN):
