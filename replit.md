@@ -75,6 +75,15 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
   - **Trading-Pair Card Status Badge:** "Active" (green) if in Watchlist AND at least 1 threshold is active. "Paused" (gray) otherwise.
 - **Golden State - Aktive Alarmierungen V1.1**:
   - **Behavior after Remove/Re-Add:** No new alarms are triggered after removing/re-adding a trading pair from the watchlist; thresholds remain paused and require manual activation.
+- **DIAMOND STATE - Aktive Alarmierungen Cross-Device Sync V1.0**:
+Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+  - **Ziel:** Wenn User auf Tab A "Approved" oder "Stoppen" klickt, verschwindet der Alarm automatisch auf allen anderen Tabs (B, C, etc.)
+  - **API-Routen:** GET/POST/DELETE `/api/sync/active-alarms`
+  - **Sync-Strategie:** Timestamp-basierte Versionierung, Polling alle 3.5 Sekunden
+  - **Anti-Ping-Pong:** Hash-basierte Duplikat-Erkennung verhindert Push-Back von empfangenen Daten
+  - **Date Parsing:** `triggeredAt` und `restwartezeitEndsAt` werden als ISO-Strings übertragen und beim Pull zurück zu Date-Objekten konvertiert
+  - **localStorage Update:** Nach Remote-Sync wird localStorage sofort aktualisiert für Konsistenz
+  - **Master:** localStorage bleibt Master für lokale Änderungen, Backend nur für Cross-Device Sync
 
 ## System Architecture
 

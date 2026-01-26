@@ -901,8 +901,6 @@ export default function Notifications() {
   const [editingThresholdId, setEditingThresholdId] = useState<string | null>(null);
   // Ref to track editing state for use in polling (avoids stale closure)
   const editingThresholdRef = useRef<{ pairId: string | null; thresholdId: string | null }>({ pairId: null, thresholdId: null });
-  // GOLDEN STATE FIX: Store original threshold when dialog opens - restore on close without save
-  const originalThresholdRef = useRef<ThresholdConfig | null>(null);
   // Track if we're creating a NEW threshold (vs editing existing)
   // This is used to exclude incomplete new thresholds from hasAnyThresholds check
   const [isCreatingNewThreshold, setIsCreatingNewThreshold] = useState(false);
@@ -914,7 +912,22 @@ export default function Notifications() {
   // Ref to track current activeAlarms for threshold check (avoids stale closure issue)
   const activeAlarmsRef = useRef<ActiveAlarm[]>([]);
 
-  // Cross-Device Sync Hook wird weiter unten aufgerufen (nach activeAlarms Definition)
+  // ===========================================
+  // CROSS-DEVICE SYNC HOOK
+  // ===========================================
+  useCrossDeviceSync({
+    watchlist,
+    pairMarketTypes,
+    trendPriceSettings,
+    alarmLevelConfigs,
+    activeAlarms,
+    setWatchlist,
+    setPairMarketTypes,
+    setTrendPriceSettings,
+    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
+    setActiveAlarms,
+    editingThresholdId
+  });
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
@@ -1506,23 +1519,6 @@ export default function Notifications() {
     // Debug: Log whenever activeAlarms state changes to help diagnose UI update issues
     console.log(`[ACTIVE-ALARMS-UI] UI should now show ${activeAlarms.length} alarms`);
   }, [activeAlarms]);
-  
-  // ===========================================
-  // CROSS-DEVICE SYNC HOOK (nach activeAlarms Definition)
-  // ===========================================
-  useCrossDeviceSync({
-    watchlist,
-    pairMarketTypes,
-    trendPriceSettings,
-    alarmLevelConfigs,
-    activeAlarms: activeAlarms as any,
-    setWatchlist,
-    setPairMarketTypes,
-    setTrendPriceSettings,
-    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
-    setActiveAlarms: setActiveAlarms as any,
-    editingThresholdId
-  });
   
   // DEAKTIVIERT: Backend-Sync für Active Alarms temporär deaktiviert - nur localStorage
   // Früher wurde hier /api/active-alarms gefetcht, aber das verursachte Race Conditions
@@ -4159,17 +4155,12 @@ export default function Notifications() {
                                                         return;
                                                       }
 
-                                                      // GOLDEN STATE: Set saving flag BEFORE closing dialog
-                                                      // This prevents onOpenChange from restoring original threshold
-                                                      isSavingThresholdRef.current = true;
-                                                      
                                                       // WICHTIG: Save directly to backend (single threshold)
                                                       const success = await saveThresholdToBackend(trendPriceId, threshold);
                                                       setEditDialogOpen(prev => ({ ...prev, [threshold.id]: false }));
                                                       // CRITICAL: Clear editingThresholdId so threshold check doesn't skip this threshold
                                                       setEditingThresholdId(null);
                                                       editingThresholdRef.current = { pairId: null, thresholdId: null };
-                                                      originalThresholdRef.current = null;
                                                       if (success) {
                                                         toast({
                                                           title: "Gespeichert",
