@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing profits from Pionex trading bots, providing detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to enhance decision-making with real-time data and a user-friendly interface, ultimately supporting better trading strategies and improved profitability.
+A full-stack web application for tracking and analyzing Pionex trading bot profits, offering detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to enhance trading strategies and profitability through real-time data and a user-friendly interface.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -45,76 +45,26 @@ A full-stack web application for tracking and analyzing profits from Pionex trad
   - **Wiederholung:** Numerisches Input + "∞ Unendlich" Button, mit `py-0.5` für Border-Fix
   - **Sequenz:** 3-Spalten Grid (Stunden, Minuten, Sekunden)
   - **Restwartezeit:** Nur sichtbar wenn Approval=false UND repeatCount nicht infinite
-- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V1.0**:
+- **DIAMOND STATE - Trendpreis & Watchlist Cross-Device Sync V2.0**:
 Die komplette Cross-Device Synchronisation für Trendpreis & Watchlist ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
-  - **DIAMOND STATE Files:** `client/src/hooks/useCrossDeviceSync.ts` and Sync API routes in `server/routes.ts`.
-  - **Sync-Logik:** Compares against last known remote timestamp (not freshly created local timestamps).
-  - **Sync-Strategie:** `localStorage` remains master for local changes, backend for cross-device sync only. Timestamp-based versioning, polling every 3.5 seconds.
+  ### SYNC-LOGIK (NIEMALS ÄNDERN):
+  - **Timestamp-Vergleich:** Vergleicht gegen `lastKnownRemoteTimestamp`, nicht gegen neu erstellte Timestamps
+  - **Hash-basierte Anti-Ping-Pong:** `lastPushedHash` und `lastReceivedHash` verhindern Endlosschleifen
+  - **Refs für Stable Polling:** Alle State-Werte und Setter als Refs, Polling mit EMPTY Dependency Array
+  ### SYNC-STRATEGIE:
+  - `localStorage` bleibt Master für lokale Änderungen
+  - Backend nur für Cross-Device Sync
+  - Timestamp-basierte Versionierung
+  - Polling alle 3.5 Sekunden
 - **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.0**:
 Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
-
-  ### KOMPLETTE SECTION "BENACHRICHTIGUNGEN KONFIGURIEREN" (DIAMOND STATE):
-
-  #### UI-STRUKTUR:
-  - **Section Header:** "Benachrichtigungen konfigurieren" mit Glocken-Symbol
-  - **Leer-Zustand:** "Keine Benachrichtigungen konfiguriert" Text wenn keine Thresholds existieren
-  - **Trading-Pair Karten:** Pro Trading-Pair eine Karte mit:
-    - Header: Symbol-Name (z.B. "BTCUSDT") + Market-Type Badge (Spot/Futures)
-    - Status-Badge: "Aktiv" (grün) wenn in Watchlist UND min. 1 Threshold aktiv, sonst "Pause" (grau)
-    - "+ Benachrichtigung hinzufügen" Button
-
-  #### SCHWELLENWERT-KARTEN (pro Threshold):
-  - **Alarm-Level Farben:** 
-    - Harmlos = Blau
-    - Achtung = Gelb
-    - Gefährlich = Orange
-    - Sehr Gefährlich = Rot
-  - **Toggle:** Aktiv/Pause (setzt `isActive` true/false)
-  - **Status-Anzeige:**
-    - "0/1" = Einmalig, noch nicht getriggert
-    - "X/1" oder "✓" = Einmalig, bereits getriggert
-    - "0 ∞" = Wiederholend, noch nicht getriggert
-    - "X ∞" = Wiederholend, X mal getriggert
-  - **Icons:** Bearbeiten (Pencil), Löschen (Trash)
-  - **Threshold-Wert:** z.B. "≥ 100.000 $" oder "≤ 50.000 $"
-
-  #### DIALOG-SYSTEM:
-  - **Schwellenwert-Dialog:**
-    - Schwellenwert Input (deutsches Zahlenformat: 1.000,50)
-    - Richtung: Steigt auf / Fällt auf
-    - Häufigkeit: Einmalig / Wiederholend
-    - Alarm-Level Dropdown
-    - Notiz (optional)
-    - "Speichern" Button (PFLICHT - kein Auto-Save!)
-    - X-Button / ESC / Außenklick = Dialog schließen OHNE Speichern
-  - **Alarm-Level-Dialog:**
-    - Öffnet sich bei Klick auf Alarm-Level Dropdown
-    - Zeigt alle 4 Alarm-Levels zur Auswahl
-    - Zurück zur Schwellenwert-Dialog nach Auswahl
-
   #### DIALOG-VERHALTEN (KRITISCH - NIEMALS ÄNDERN):
   - **Kein Auto-Save:** Änderungen werden NUR bei "Speichern" Klick gespeichert
   - **Kein Auto-Close:** Dialog schließt NICHT automatisch bei Wert-Eingabe
   - **X/ESC/Außenklick:** Dialog schließen OHNE Änderungen zu speichern
   - **Draft Cleanup:** Unvollständige Thresholds (ohne Wert oder Richtung) werden automatisch entfernt wenn Dialog geschlossen wird
   - **hasAnyThresholds Check:** Excludiert aktuell bearbeiteten Threshold um Dialog-Auto-Close während Bearbeitung zu verhindern
-
-  #### THRESHOLD-LOGIK:
-  - **Einmalig:** Nach Trigger wird `isActive = false` gesetzt, Status zeigt "✓"
-  - **Wiederholend:** Nach Trigger wird `triggerCount` erhöht, bleibt aktiv
-  - **Re-Trigger Prevention:** `activeAlarmId` verhindert Duplikat-Alarme
-  - **Persistenz:** Alle Daten in localStorage UND Backend (Cross-Device Sync)
-
-  #### WAS WIRD SYNCHRONISIERT:
-  - Alle Threshold-Konfigurationen (`trendPriceSettings`)
-  - Toggle-Status (`isActive`)
-  - Trigger-Count (`triggerCount`)
-  - Active-Alarm-ID (`activeAlarmId`)
-  - Notizen (`note`)
-  - Alarm-Level (`alarmLevel`)
-
-  ### SYNC-ARCHITEKTUR (DIAMOND STATE):
-
+  #### SYNC-ARCHITEKTUR (DIAMOND STATE):
   #### Anti-Ping-Pong System (3+ Tabs):
   - **Problem:** Tab A pusht → Tab B empfängt → Tab B pusht zurück → Endlosschleife
   - **Lösung:** Hash-basierte Duplikat-Erkennung:
@@ -132,13 +82,6 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
     - `watchlistRef`, `trendPriceSettingsRef`, etc.
     - `setWatchlistRef`, `setTrendPriceSettingsRef`, etc.
     - Polling-Interval hat EMPTY Dependency Array
-
-  ### API-ROUTEN (DIAMOND STATE):
-  - GET/POST `/api/sync/watchlist`
-  - GET/POST `/api/sync/thresholds`
-  - GET/POST `/api/sync/alarm-levels`
-  - GET/POST `/api/sync/active-alarms`
-
   ### SYNC-PARAMETER:
   - **Polling-Intervall:** 3.5 Sekunden
   - **Push-Debounce:** 1 Sekunde
@@ -156,7 +99,6 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
 - **DIAMOND STATE - Aktive Alarmierungen Cross-Device Sync V1.0**:
 Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   - **Ziel:** Wenn User auf Tab A "Approved" oder "Stoppen" klickt, verschwindet der Alarm automatisch auf allen anderen Tabs (B, C, etc.)
-  - **API-Routen:** GET/POST/DELETE `/api/sync/active-alarms`
   - **Sync-Strategie:** Timestamp-basierte Versionierung, Polling alle 3.5 Sekunden
   - **Anti-Ping-Pong:** Hash-basierte Duplikat-Erkennung verhindert Push-Back von empfangenen Daten
   - **Date Parsing:** `triggeredAt` und `restwartezeitEndsAt` werden als ISO-Strings übertragen und beim Pull zurück zu Date-Objekten konvertiert
@@ -165,7 +107,7 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
 
 ## System Architecture
 ### UI/UX
-The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tailwind CSS for a responsive design. Recharts is used for data visualization, and Wouter for client-side routing. The application features a dashboard with charting capabilities and a Notifications page that includes a watchlist with live Binance prices, a configurable threshold system across four alarm levels, and an active alerts display. PWA support is integrated.
+The frontend uses React and TypeScript, with `shadcn/ui` and Tailwind CSS for responsive design. Recharts handles data visualization, and Wouter manages client-side routing. The application features a dashboard with charting, and a Notifications page with a live watchlist, configurable price alerts across four alarm levels, and an active alerts display. PWA support is integrated.
 
 ### Technical Implementations
 - **Frontend**: React, TypeScript.
@@ -174,7 +116,7 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **Data Persistence**: Watchlist and pair market types are stored in `localStorage`.
 - **Notification Logic**: Configurable thresholds, multi-channel notifications (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API with PostgreSQL persistence and 3.5-second polling intervals.
 - **Push Notification Integration**: OneSignal for web and native push notifications.
-- **5-Tier Fallback Preissystem**: Ensures reliable cryptocurrency price data using a tiered system (OKX API, Last-Known-Good Cache, CoinGecko, Stale Cache, Emergency values) with server-side background updates and per-symbol price guarantees.
+- **5-Tier Fallback Preissystem**: Ensures reliable cryptocurrency price data using a tiered system (OKX API, Last-Known-Good Cache, CoinGecko, Stale Cache, Emergency values) with server-side background updates.
 - **Frontend Backup System**: Features a 2-second interval for price updates, exponential backoff retry on API errors, immediate refetch on page visibility change, and a watchdog to restart price fetching.
 
 ### Feature Specifications
@@ -190,11 +132,11 @@ The frontend is built with React and TypeScript, leveraging `shadcn/ui` and Tail
 - **OneSignal Configuration**: Specific App ID, Site URL, and REST API Key. Supports multiple production domains.
 
 ## External Dependencies
-- **Database**: Neon Serverless (Replit) or PostgreSQL (server) with Drizzle ORM.
+- **Database**: Neon Serverless (Replit) or PostgreSQL (server).
 - **Backend Framework**: Express.js.
 - **Frontend Libraries**: React, Recharts, shadcn/ui, Tailwind CSS, Wouter.
 - **Validation**: Zod.
 - **AI Integration**: OpenAI API.
 - **Crypto Data**: OKX API, CoinGecko.
-- **Web Push Notifications**: OneSignal Web Push SDK v16.
+- **Web Push Notifications**: OneSignal Web Push SDK.
 - **SMS Notifications**: Twilio.

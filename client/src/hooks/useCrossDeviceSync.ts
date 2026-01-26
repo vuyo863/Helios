@@ -174,7 +174,9 @@ export function useCrossDeviceSync({
   const pushAllToBackendRef = useRef<() => void>(() => {});
 
   // ===========================================
+  // ⚠️⚠️⚠️ DIAMOND STATE - WATCHLIST SYNC V2.0 ⚠️⚠️⚠️
   // INITIAL SYNC - Fetch Remote on Mount
+  // NIEMALS ÄNDERN! Funktioniert perfekt!
   // ===========================================
   useEffect(() => {
     const performInitialSync = async () => {
@@ -262,7 +264,9 @@ export function useCrossDeviceSync({
   }, []);
 
   // ===========================================
+  // ⚠️⚠️⚠️ DIAMOND STATE - PUSH LOGIC V2.0 ⚠️⚠️⚠️
   // PUSH TO BACKEND when Local Data Changes
+  // NIEMALS ÄNDERN! Debounce-Retry funktioniert!
   // ===========================================
   const pushAllToBackend = useCallback(async () => {
     // CRITICAL: Don't push until initial sync is complete!
@@ -419,7 +423,9 @@ export function useCrossDeviceSync({
   }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms, editingThresholdId, pushAllToBackend]);
 
   // ===========================================
-  // POLLING - Sync every 3.5 seconds (FULLY STABLE - uses refs for EVERYTHING)
+  // ⚠️⚠️⚠️ DIAMOND STATE - POLLING V2.0 ⚠️⚠️⚠️
+  // POLLING - Sync every 3.5 seconds (FULLY STABLE)
+  // NIEMALS ÄNDERN! Anti-Ping-Pong funktioniert!
   // ===========================================
   useEffect(() => {
     console.log('[CROSS-DEVICE-SYNC] Setting up polling interval...');
