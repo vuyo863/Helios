@@ -913,21 +913,10 @@ export default function Notifications() {
   const activeAlarmsRef = useRef<ActiveAlarm[]>([]);
 
   // ===========================================
-  // CROSS-DEVICE SYNC HOOK
+  // CROSS-DEVICE SYNC HOOK - MOVED BELOW activeAlarms declaration
   // ===========================================
-  useCrossDeviceSync({
-    watchlist,
-    pairMarketTypes,
-    trendPriceSettings,
-    alarmLevelConfigs,
-    activeAlarms,
-    setWatchlist,
-    setPairMarketTypes,
-    setTrendPriceSettings,
-    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
-    setActiveAlarms,
-    editingThresholdId
-  });
+  // NOTE: Hook is now placed after activeAlarms useState to avoid "used before declaration" error
+  // See line ~1545 for actual useCrossDeviceSync call
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
@@ -1420,7 +1409,7 @@ export default function Notifications() {
       // Speichere direkt in localStorage
       const currentSettings = { ...trendPriceSettings };
       if (!currentSettings[pairId]) {
-        currentSettings[pairId] = { thresholds: [] };
+        currentSettings[pairId] = { trendPriceId: pairId, thresholds: [] };
       }
       
       // Update or add threshold
@@ -1539,6 +1528,23 @@ export default function Notifications() {
     setInitialAlarmsLoaded(true);
     console.log('[ACTIVE-ALARMS] Initial load complete (localStorage only mode)');
   }, []);
+
+  // ===========================================
+  // CROSS-DEVICE SYNC HOOK - ACTUAL CALL (moved here after activeAlarms declaration)
+  // ===========================================
+  useCrossDeviceSync({
+    watchlist,
+    pairMarketTypes,
+    trendPriceSettings,
+    alarmLevelConfigs,
+    activeAlarms,
+    setWatchlist,
+    setPairMarketTypes,
+    setTrendPriceSettings,
+    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
+    setActiveAlarms: (fn) => setActiveAlarms(fn as (prev: ActiveAlarm[]) => ActiveAlarm[]),
+    editingThresholdId
+  });
   
   // DEAKTIVIERT: Backend-Sync temporär deaktiviert - nur localStorage wird verwendet
   // Später wird dieser Sync sauber neu implementiert
@@ -4628,9 +4634,9 @@ export default function Notifications() {
                                       nativePushEnabled: levelConfig.channels.nativePush,
                                       requiresApproval: levelConfig.requiresApproval,
                                       repeatCount: levelConfig.repeatCount === 'infinite' ? 'infinite' : String(levelConfig.repeatCount || 1),
-                                      sequenceHours: levelConfig.sequence?.hours || 0,
-                                      sequenceMinutes: levelConfig.sequence?.minutes || 1,
-                                      sequenceSeconds: levelConfig.sequence?.seconds || 0,
+                                      sequenceHours: levelConfig.sequenceHours || 0,
+                                      sequenceMinutes: levelConfig.sequenceMinutes || 1,
+                                      sequenceSeconds: levelConfig.sequenceSeconds || 0,
                                       restwartezeitHours: 0,
                                       restwartezeitMinutes: 0,
                                       restwartezeitSeconds: 0
