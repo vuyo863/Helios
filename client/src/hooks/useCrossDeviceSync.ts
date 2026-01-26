@@ -67,11 +67,23 @@ export function useCrossDeviceSync({
   const trendPriceSettingsRef = useRef(trendPriceSettings);
   const alarmLevelConfigsRef = useRef(alarmLevelConfigs);
   
+  // REFS for setters - prevents interval recreation when functions change
+  const setWatchlistRef = useRef(setWatchlist);
+  const setPairMarketTypesRef = useRef(setPairMarketTypes);
+  const setTrendPriceSettingsRef = useRef(setTrendPriceSettings);
+  const setAlarmLevelConfigsRef = useRef(setAlarmLevelConfigs);
+  
   // Keep refs in sync with state
   useEffect(() => { watchlistRef.current = watchlist; }, [watchlist]);
   useEffect(() => { pairMarketTypesRef.current = pairMarketTypes; }, [pairMarketTypes]);
   useEffect(() => { trendPriceSettingsRef.current = trendPriceSettings; }, [trendPriceSettings]);
   useEffect(() => { alarmLevelConfigsRef.current = alarmLevelConfigs; }, [alarmLevelConfigs]);
+  
+  // Keep setter refs in sync
+  useEffect(() => { setWatchlistRef.current = setWatchlist; }, [setWatchlist]);
+  useEffect(() => { setPairMarketTypesRef.current = setPairMarketTypes; }, [setPairMarketTypes]);
+  useEffect(() => { setTrendPriceSettingsRef.current = setTrendPriceSettings; }, [setTrendPriceSettings]);
+  useEffect(() => { setAlarmLevelConfigsRef.current = setAlarmLevelConfigs; }, [setAlarmLevelConfigs]);
   
   // Prevent rapid consecutive pushes
   const PUSH_DEBOUNCE_MS = 1000;
@@ -203,10 +215,10 @@ export function useCrossDeviceSync({
   }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, pushAllToBackend]);
 
   // ===========================================
-  // POLLING - Sync every 3.5 seconds (STABLE - uses refs)
+  // POLLING - Sync every 3.5 seconds (FULLY STABLE - uses refs for EVERYTHING)
   // ===========================================
   useEffect(() => {
-    const myDeviceId = getDeviceId();
+    console.log('[CROSS-DEVICE-SYNC] Setting up polling interval...');
     
     const performSync = async () => {
       try {
@@ -233,8 +245,8 @@ export function useCrossDeviceSync({
               const isDifferent = JSON.stringify(merged.watchlist.sort()) !== JSON.stringify(currentWatchlist.sort());
               if (isDifferent) {
                 console.log('[CROSS-DEVICE-SYNC] Watchlist updated from remote:', merged.watchlist);
-                setWatchlist(() => merged.watchlist);
-                setPairMarketTypes(() => merged.pairMarketTypes);
+                setWatchlistRef.current(() => merged.watchlist);
+                setPairMarketTypesRef.current(() => merged.pairMarketTypes);
               }
             }
           }
@@ -252,7 +264,7 @@ export function useCrossDeviceSync({
           
           if (merged && (remoteThresholdCount > localThresholdCount || remoteThresholds.timestamp > (localData?.timestamp || 0))) {
             console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(merged.settings));
-            setTrendPriceSettings(() => merged.settings);
+            setTrendPriceSettingsRef.current(() => merged.settings);
           }
         }
         
@@ -264,7 +276,7 @@ export function useCrossDeviceSync({
           
           if (merged && remoteAlarmLevels.timestamp > (localData?.timestamp || 0)) {
             console.log('[CROSS-DEVICE-SYNC] Alarm levels updated');
-            setAlarmLevelConfigs(merged.configs);
+            setAlarmLevelConfigsRef.current(merged.configs);
           }
         }
         
@@ -274,21 +286,21 @@ export function useCrossDeviceSync({
     };
     
     // Start polling after 3 seconds (give time for initial sync)
-    // This effect only runs once on mount - no dependencies that cause re-creation
+    // COMPLETELY STABLE - no dependencies, uses refs for everything
     const startPolling = setTimeout(() => {
       console.log('[CROSS-DEVICE-SYNC] Starting polling interval (3.5s)');
       syncIntervalRef.current = setInterval(performSync, 3500);
     }, 3000);
     
     return () => {
+      console.log('[CROSS-DEVICE-SYNC] Cleaning up polling interval');
       clearTimeout(startPolling);
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
       }
     };
-    // Empty dependency array - interval is stable, uses refs for current state
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setWatchlist, setPairMarketTypes, setTrendPriceSettings, setAlarmLevelConfigs]);
+    // EMPTY dependency array - interval is FULLY stable, uses refs for ALL state and functions
+  }, []);
 
   return {
     pushAllToBackend
