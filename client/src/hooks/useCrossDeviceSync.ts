@@ -325,6 +325,8 @@ export function useCrossDeviceSync({
   }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms]);
 
   // Push to backend when data changes (after initial mount)
+  // CRITICAL FIX: Also trigger when editingThresholdId changes to null (user clicked "Speichern")
+  // This ensures the push happens AFTER the editing state is cleared
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -337,7 +339,7 @@ export function useCrossDeviceSync({
     }, 500);
     
     return () => clearTimeout(timeout);
-  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms, pushAllToBackend]);
+  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms, editingThresholdId, pushAllToBackend]);
 
   // ===========================================
   // POLLING - Sync every 3.5 seconds (FULLY STABLE - uses refs for EVERYTHING)
