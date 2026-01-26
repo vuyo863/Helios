@@ -44,6 +44,7 @@ interface UseCrossDeviceSyncProps {
   setPairMarketTypes: (fn: (prev: Record<string, { marketType: 'spot' | 'futures'; symbol: string }>) => Record<string, { marketType: 'spot' | 'futures'; symbol: string }>) => void;
   setTrendPriceSettings: (fn: (prev: Record<string, { trendPriceId: string; thresholds: any[] }>) => Record<string, { trendPriceId: string; thresholds: any[] }>) => void;
   setAlarmLevelConfigs: (configs: Record<string, AlarmLevelConfig>) => void;
+  editingThresholdId?: string | null;
 }
 
 export function useCrossDeviceSync({
@@ -54,7 +55,8 @@ export function useCrossDeviceSync({
   setWatchlist,
   setPairMarketTypes,
   setTrendPriceSettings,
-  setAlarmLevelConfigs
+  setAlarmLevelConfigs,
+  editingThresholdId = null
 }: UseCrossDeviceSyncProps) {
   const isInitialMount = useRef(true);
   const lastPushTimestamp = useRef<number>(0);
@@ -89,6 +91,7 @@ export function useCrossDeviceSync({
   const pairMarketTypesRef = useRef(pairMarketTypes);
   const trendPriceSettingsRef = useRef(trendPriceSettings);
   const alarmLevelConfigsRef = useRef(alarmLevelConfigs);
+  const editingThresholdIdRef = useRef(editingThresholdId);
   
   // REFS for setters - prevents interval recreation when functions change
   const setWatchlistRef = useRef(setWatchlist);
@@ -101,6 +104,7 @@ export function useCrossDeviceSync({
   useEffect(() => { pairMarketTypesRef.current = pairMarketTypes; }, [pairMarketTypes]);
   useEffect(() => { trendPriceSettingsRef.current = trendPriceSettings; }, [trendPriceSettings]);
   useEffect(() => { alarmLevelConfigsRef.current = alarmLevelConfigs; }, [alarmLevelConfigs]);
+  useEffect(() => { editingThresholdIdRef.current = editingThresholdId; }, [editingThresholdId]);
   
   // Keep setter refs in sync
   useEffect(() => { setWatchlistRef.current = setWatchlist; }, [setWatchlist]);
@@ -191,6 +195,10 @@ export function useCrossDeviceSync({
       return;
     }
     
+    // GOLDEN STATE FIX: Don't push thresholds when user is currently editing one!
+    // User must click "Speichern" explicitly - no auto-save on value input
+    const currentlyEditing = editingThresholdIdRef.current;
+    
     const now = getCurrentTimestamp();
     
     // Debounce rapid pushes
@@ -204,17 +212,14 @@ export function useCrossDeviceSync({
     try {
       // ROBUST FIX: Only push if content has ACTUALLY changed (not just received from remote)
       const currentWatchlistHash = hashContent({ watchlist, pairMarketTypes });
-      const currentThresholdsHash = hashContent(trendPriceSettings);
       const currentAlarmLevelsHash = hashContent(alarmLevelConfigs);
       
       // Check if this is the same data we just received from remote - don't push it back!
       const isWatchlistFromRemote = currentWatchlistHash === lastReceivedWatchlistHash.current;
-      const isThresholdsFromRemote = currentThresholdsHash === lastReceivedThresholdsHash.current;
       const isAlarmLevelsFromRemote = currentAlarmLevelsHash === lastReceivedAlarmLevelsHash.current;
       
       // Also check if we already pushed this exact content
       const watchlistAlreadyPushed = currentWatchlistHash === lastPushedWatchlistHash.current;
-      const thresholdsAlreadyPushed = currentThresholdsHash === lastPushedThresholdsHash.current;
       const alarmLevelsAlreadyPushed = currentAlarmLevelsHash === lastPushedAlarmLevelsHash.current;
       
       // Push watchlist only if it's NEW local data (not from remote and not already pushed)
@@ -226,13 +231,22 @@ export function useCrossDeviceSync({
         console.log('[CROSS-DEVICE-SYNC] Watchlist skip - already synced');
       }
       
-      // Push thresholds only if NEW local data
-      if (!isThresholdsFromRemote && !thresholdsAlreadyPushed) {
-        await pushThresholdsToBackend(trendPriceSettings);
-        lastPushedThresholdsHash.current = currentThresholdsHash;
-        console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
+      // GOLDEN STATE: Only push thresholds when NOT editing (user must click "Speichern")
+      if (currentlyEditing) {
+        console.log('[CROSS-DEVICE-SYNC] Thresholds skip - user is editing (editingThresholdId:', currentlyEditing, ')');
       } else {
-        console.log('[CROSS-DEVICE-SYNC] Thresholds skip - already synced');
+        const currentThresholdsHash = hashContent(trendPriceSettings);
+        const isThresholdsFromRemote = currentThresholdsHash === lastReceivedThresholdsHash.current;
+        const thresholdsAlreadyPushed = currentThresholdsHash === lastPushedThresholdsHash.current;
+        
+        // Push thresholds only if NEW local data
+        if (!isThresholdsFromRemote && !thresholdsAlreadyPushed) {
+          await pushThresholdsToBackend(trendPriceSettings);
+          lastPushedThresholdsHash.current = currentThresholdsHash;
+          console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
+        } else {
+          console.log('[CROSS-DEVICE-SYNC] Thresholds skip - already synced');
+        }
       }
       
       // Push alarm levels only if NEW local data

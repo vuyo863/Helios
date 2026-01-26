@@ -923,7 +923,8 @@ export default function Notifications() {
     setWatchlist,
     setPairMarketTypes,
     setTrendPriceSettings,
-    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>)
+    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
+    editingThresholdId
   });
 
   // Monitor price changes and trigger threshold notifications
