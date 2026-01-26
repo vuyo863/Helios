@@ -176,38 +176,48 @@ export function useCrossDeviceSync({
       
       try {
         // 1. Pull Watchlist from Backend
+        // FIX: AUCH leere Watchlists verarbeiten um Löschungen zu syncen!
         const remoteWatchlist = await pullWatchlistFromBackend();
-        if (remoteWatchlist && remoteWatchlist.watchlist && remoteWatchlist.watchlist.length > 0) {
+        if (remoteWatchlist && remoteWatchlist.watchlist !== undefined) {
           const localData = createWatchlistSyncData(watchlist, pairMarketTypes);
           const merged = mergeWatchlist(localData, remoteWatchlist);
           
-          if (merged && merged.watchlist.length > 0) {
-            console.log('[CROSS-DEVICE-SYNC] Merged watchlist:', merged.watchlist);
+          // FIX: Auch leere Watchlists anwenden (wenn neuer als lokal)
+          if (merged) {
+            console.log('[CROSS-DEVICE-SYNC] Merged watchlist:', merged.watchlist.length, 'items');
+            // Store remote timestamp so we don't push it back
+            lastKnownRemoteWatchlistTimestamp.current = remoteWatchlist.timestamp;
             setWatchlist(() => merged.watchlist);
             setPairMarketTypes(() => merged.pairMarketTypes);
           }
         }
         
         // 2. Pull Thresholds from Backend
+        // FIX: AUCH leere Thresholds verarbeiten um Löschungen zu syncen!
         const remoteThresholds = await pullThresholdsFromBackend();
-        if (remoteThresholds && Object.keys(remoteThresholds.settings || {}).length > 0) {
+        if (remoteThresholds && remoteThresholds.settings !== undefined) {
           const localData = createThresholdsSyncData(trendPriceSettings);
           const merged = mergeAllThresholds(localData, remoteThresholds);
           
-          if (merged && Object.keys(merged.settings).length > 0) {
-            console.log('[CROSS-DEVICE-SYNC] Merged thresholds:', Object.keys(merged.settings));
+          // FIX: Auch leere Settings anwenden (wenn neuer als lokal)
+          if (merged) {
+            console.log('[CROSS-DEVICE-SYNC] Merged thresholds:', Object.keys(merged.settings).length, 'items');
+            lastKnownRemoteThresholdsTimestamp.current = remoteThresholds.timestamp;
             setTrendPriceSettings(() => merged.settings);
           }
         }
         
         // 3. Pull Alarm Levels from Backend
+        // FIX: AUCH leere Alarm Levels verarbeiten um Löschungen zu syncen!
         const remoteAlarmLevels = await pullAlarmLevelsFromBackend();
-        if (remoteAlarmLevels && Object.keys(remoteAlarmLevels.configs || {}).length > 0) {
+        if (remoteAlarmLevels && remoteAlarmLevels.configs !== undefined) {
           const localData = createAlarmLevelsSyncData(alarmLevelConfigs);
           const merged = mergeAlarmLevelConfigs(localData, remoteAlarmLevels);
           
+          // FIX: Auch leere Configs anwenden (wenn neuer als lokal)
           if (merged) {
-            console.log('[CROSS-DEVICE-SYNC] Merged alarm levels');
+            console.log('[CROSS-DEVICE-SYNC] Merged alarm levels:', Object.keys(merged.configs).length, 'items');
+            lastKnownRemoteAlarmLevelsTimestamp.current = remoteAlarmLevels.timestamp;
             setAlarmLevelConfigs(merged.configs);
           }
         }
