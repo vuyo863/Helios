@@ -949,6 +949,9 @@ export default function Notifications() {
       const settings = trendPriceSettings[pair.id];
       if (!settings || !settings.thresholds || settings.thresholds.length === 0) return;
 
+      // CRITICAL: Skip if pair is NOT in watchlist - no alarms for pairs removed from watchlist
+      if (!watchlist.includes(pair.id)) return;
+
       // Only check if we have a valid price
       if (!pair.price || pair.price === 'Loading...') return;
 
@@ -1370,7 +1373,7 @@ export default function Notifications() {
         }
       });
     });
-  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId, initialAlarmsLoaded, thresholdCheckTrigger]);
+  }, [availableTradingPairs, trendPriceSettings, triggeredThresholds, alarmLevelConfigs, toast, editingThresholdId, initialAlarmsLoaded, thresholdCheckTrigger, watchlist]);
 
   // Live Price Update System - Aktualisiert alle 2 Sekunden (This was the old polling, now replaced by the above useEffect)
   useEffect(() => {
@@ -3382,6 +3385,7 @@ export default function Notifications() {
                                                   <div className="flex items-center gap-2">
                                                     <Switch
                                                       checked={threshold.isActive !== false}
+                                                      disabled={!watchlist.includes(trendPriceId)}
                                                       onCheckedChange={(checked) => {
                                                         updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked);
                                                         // If re-activating, reset triggered status (0/1 instead of ✓)
@@ -3760,6 +3764,7 @@ export default function Notifications() {
                                               <div className="flex items-center gap-2">
                                                 <Switch
                                                   checked={threshold.isActive !== false}
+                                                  disabled={!watchlist.includes(trendPriceId)}
                                                   onCheckedChange={(checked) => {
                                                     updateThreshold(trendPriceId, editingThresholdId, 'isActive', checked);
                                                     // If re-activating, reset triggered status (0/1 instead of ✓)
@@ -4132,6 +4137,7 @@ export default function Notifications() {
                                                 <div className="flex items-center gap-2">
                                                   <Switch
                                                     checked={threshold.isActive !== false}
+                                                    disabled={!watchlist.includes(trendPriceId)}
                                                     onCheckedChange={(checked) => {
                                                       updateThreshold(trendPriceId, threshold.id, 'isActive', checked);
                                                       // If re-activating, reset triggered status (0/1 instead of ✓)

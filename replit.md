@@ -91,6 +91,11 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
   - **Trading-Pair Card Status Badge:** "Active" (green) if in Watchlist AND at least 1 threshold is active. "Paused" (gray) otherwise.
 - **Golden State - Aktive Alarmierungen V1.1**:
   - **Behavior after Remove/Re-Add:** No new alarms are triggered after removing/re-adding a trading pair from the watchlist; thresholds remain paused and require manual activation.
+- **Golden State - Watchlist-Schutz V1.0**: Alarme können nur triggern wenn der Trading-Pair in der Watchlist ist:
+  - **Alarm-Trigger Guard:** `if (!watchlist.includes(pair.id)) return;` in der Threshold-Check-Logik (Zeile ~955)
+  - **Toggle Disabled:** Switch-Komponente ist `disabled` wenn `!watchlist.includes(trendPriceId)` - User kann Toggle nicht auf "Aktiv" setzen wenn Pair nicht in der Watchlist
+  - **Betroffene Stellen:** 3 Switch-Komponenten (Neuer Threshold Dialog, Add Threshold Dialog, Edit Threshold Dialog)
+  - **Verhalten:** Schwellenwerte können angesehen/bearbeitet werden, aber nicht aktiviert werden solange der Pair nicht in der Watchlist ist
 - **DIAMOND STATE - Aktive Alarmierungen Cross-Device Sync V1.0**:
 Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   - **Ziel:** Wenn User auf Tab A "Approved" oder "Stoppen" klickt, verschwindet der Alarm automatisch auf allen anderen Tabs (B, C, etc.)
