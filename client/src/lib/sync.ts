@@ -275,6 +275,7 @@ export interface SyncStatus {
   lastWatchlistSync: number | null;
   lastThresholdsSync: number | null;
   lastAlarmLevelsSync: number | null;
+  lastActiveAlarmsSync: number | null;
 }
 
 let syncStatus: SyncStatus = {
@@ -283,7 +284,8 @@ let syncStatus: SyncStatus = {
   error: null,
   lastWatchlistSync: null,
   lastThresholdsSync: null,
-  lastAlarmLevelsSync: null
+  lastAlarmLevelsSync: null,
+  lastActiveAlarmsSync: null
 };
 
 export function getSyncStatus(): SyncStatus {
@@ -462,6 +464,94 @@ export async function pullAlarmLevelsFromBackend(): Promise<AlarmLevelSyncData |
     return remoteData;
   } catch (error) {
     console.error('[SYNC] Error pulling alarm levels:', error);
+    return null;
+  }
+}
+
+// ===========================================
+// ACTIVE ALARMS SYNC
+// ===========================================
+
+export interface ActiveAlarmSyncData {
+  timestamp: number;
+  deviceId: string;
+  alarms: Array<{
+    id: string;
+    trendPriceName: string;
+    threshold: string;
+    alarmLevel: string;
+    triggeredAt: string;
+    message: string;
+    note: string;
+    thresholdId?: string;
+    pairId?: string;
+    requiresApproval: boolean;
+    repetitionsCompleted?: number;
+    repetitionsTotal?: number;
+    restwartezeitEndsAt?: string;
+  }>;
+}
+
+export function createActiveAlarmsSyncData(alarms: any[]): ActiveAlarmSyncData {
+  return {
+    timestamp: getCurrentTimestamp(),
+    deviceId: getDeviceId(),
+    alarms: alarms.map(a => ({
+      ...a,
+      triggeredAt: typeof a.triggeredAt === 'string' ? a.triggeredAt : new Date(a.triggeredAt).toISOString(),
+      restwartezeitEndsAt: a.restwartezeitEndsAt ? 
+        (typeof a.restwartezeitEndsAt === 'string' ? a.restwartezeitEndsAt : new Date(a.restwartezeitEndsAt).toISOString()) 
+        : undefined
+    }))
+  };
+}
+
+/**
+ * Active Alarms ans Backend pushen
+ */
+export async function pushActiveAlarmsToBackend(alarms: any[]): Promise<boolean> {
+  try {
+    const syncData = createActiveAlarmsSyncData(alarms);
+    
+    console.log(`[SYNC] Pushing active alarms:`, alarms.length);
+    
+    const response = await fetch(`${API_BASE}/active-alarms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(syncData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to push active alarms: ${response.status}`);
+    }
+    
+    syncStatus.lastActiveAlarmsSync = Date.now();
+    
+    return true;
+  } catch (error) {
+    console.error('[SYNC] Error pushing active alarms:', error);
+    return false;
+  }
+}
+
+/**
+ * Active Alarms vom Backend holen
+ */
+export async function pullActiveAlarmsFromBackend(): Promise<ActiveAlarmSyncData | null> {
+  try {
+    const response = await fetch(`${API_BASE}/active-alarms`);
+    
+    if (!response.ok) {
+      console.log('[SYNC] No active alarms data from backend');
+      return null;
+    }
+    
+    const remoteData: ActiveAlarmSyncData = await response.json();
+    syncStatus.lastActiveAlarmsSync = Date.now();
+    
+    return remoteData;
+  } catch (error) {
+    console.error('[SYNC] Error pulling active alarms:', error);
     return null;
   }
 }

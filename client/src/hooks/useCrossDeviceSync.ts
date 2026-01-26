@@ -22,6 +22,8 @@ import {
   pullThresholdsFromBackend,
   pushAlarmLevelsToBackend,
   pullAlarmLevelsFromBackend,
+  pushActiveAlarmsToBackend,
+  pullActiveAlarmsFromBackend,
   mergeWatchlist,
   mergeAllThresholds,
   mergeAlarmLevelConfigs,
@@ -31,19 +33,38 @@ import {
   type WatchlistSyncData,
   type AllThresholdsSyncData,
   type AlarmLevelSyncData,
+  type ActiveAlarmSyncData,
   type ThresholdConfig,
   type AlarmLevelConfig
 } from '@/lib/sync';
+
+interface ActiveAlarm {
+  id: string;
+  trendPriceName: string;
+  threshold: string;
+  alarmLevel: string;
+  triggeredAt: Date;
+  message: string;
+  note: string;
+  thresholdId?: string;
+  pairId?: string;
+  requiresApproval: boolean;
+  repetitionsCompleted?: number;
+  repetitionsTotal?: number;
+  restwartezeitEndsAt?: Date;
+}
 
 interface UseCrossDeviceSyncProps {
   watchlist: string[];
   pairMarketTypes: Record<string, { marketType: 'spot' | 'futures'; symbol: string }>;
   trendPriceSettings: Record<string, { trendPriceId: string; thresholds: any[] }>;
   alarmLevelConfigs: Record<string, AlarmLevelConfig>;
+  activeAlarms: ActiveAlarm[];
   setWatchlist: (fn: (prev: string[]) => string[]) => void;
   setPairMarketTypes: (fn: (prev: Record<string, { marketType: 'spot' | 'futures'; symbol: string }>) => Record<string, { marketType: 'spot' | 'futures'; symbol: string }>) => void;
   setTrendPriceSettings: (fn: (prev: Record<string, { trendPriceId: string; thresholds: any[] }>) => Record<string, { trendPriceId: string; thresholds: any[] }>) => void;
   setAlarmLevelConfigs: (configs: Record<string, AlarmLevelConfig>) => void;
+  setActiveAlarms: (fn: (prev: ActiveAlarm[]) => ActiveAlarm[]) => void;
   editingThresholdId?: string | null;
 }
 
@@ -52,10 +73,12 @@ export function useCrossDeviceSync({
   pairMarketTypes,
   trendPriceSettings,
   alarmLevelConfigs,
+  activeAlarms,
   setWatchlist,
   setPairMarketTypes,
   setTrendPriceSettings,
   setAlarmLevelConfigs,
+  setActiveAlarms,
   editingThresholdId = null
 }: UseCrossDeviceSyncProps) {
   const isInitialMount = useRef(true);
@@ -72,16 +95,19 @@ export function useCrossDeviceSync({
   const lastPushedWatchlistHash = useRef<string>('');
   const lastPushedThresholdsHash = useRef<string>('');
   const lastPushedAlarmLevelsHash = useRef<string>('');
+  const lastPushedActiveAlarmsHash = useRef<string>('');
   
   // Also track what we last received to detect if current state is from remote
   const lastReceivedWatchlistHash = useRef<string>('');
   const lastReceivedThresholdsHash = useRef<string>('');
   const lastReceivedAlarmLevelsHash = useRef<string>('');
+  const lastReceivedActiveAlarmsHash = useRef<string>('');
   
   // FIX: Track last KNOWN remote timestamp - use this for comparison instead of creating new timestamps!
   const lastKnownRemoteWatchlistTimestamp = useRef<number>(0);
   const lastKnownRemoteThresholdsTimestamp = useRef<number>(0);
   const lastKnownRemoteAlarmLevelsTimestamp = useRef<number>(0);
+  const lastKnownRemoteActiveAlarmsTimestamp = useRef<number>(0);
   
   // Helper to create a hash of content for comparison
   const hashContent = (obj: unknown): string => JSON.stringify(obj);
@@ -91,6 +117,7 @@ export function useCrossDeviceSync({
   const pairMarketTypesRef = useRef(pairMarketTypes);
   const trendPriceSettingsRef = useRef(trendPriceSettings);
   const alarmLevelConfigsRef = useRef(alarmLevelConfigs);
+  const activeAlarmsRef = useRef(activeAlarms);
   const editingThresholdIdRef = useRef(editingThresholdId);
   
   // REFS for setters - prevents interval recreation when functions change
@@ -98,12 +125,14 @@ export function useCrossDeviceSync({
   const setPairMarketTypesRef = useRef(setPairMarketTypes);
   const setTrendPriceSettingsRef = useRef(setTrendPriceSettings);
   const setAlarmLevelConfigsRef = useRef(setAlarmLevelConfigs);
+  const setActiveAlarmsRef = useRef(setActiveAlarms);
   
   // Keep refs in sync with state
   useEffect(() => { watchlistRef.current = watchlist; }, [watchlist]);
   useEffect(() => { pairMarketTypesRef.current = pairMarketTypes; }, [pairMarketTypes]);
   useEffect(() => { trendPriceSettingsRef.current = trendPriceSettings; }, [trendPriceSettings]);
   useEffect(() => { alarmLevelConfigsRef.current = alarmLevelConfigs; }, [alarmLevelConfigs]);
+  useEffect(() => { activeAlarmsRef.current = activeAlarms; }, [activeAlarms]);
   useEffect(() => { editingThresholdIdRef.current = editingThresholdId; }, [editingThresholdId]);
   
   // Keep setter refs in sync
@@ -111,6 +140,7 @@ export function useCrossDeviceSync({
   useEffect(() => { setPairMarketTypesRef.current = setPairMarketTypes; }, [setPairMarketTypes]);
   useEffect(() => { setTrendPriceSettingsRef.current = setTrendPriceSettings; }, [setTrendPriceSettings]);
   useEffect(() => { setAlarmLevelConfigsRef.current = setAlarmLevelConfigs; }, [setAlarmLevelConfigs]);
+  useEffect(() => { setActiveAlarmsRef.current = setActiveAlarms; }, [setActiveAlarms]);
   
   // Prevent rapid consecutive pushes
   const PUSH_DEBOUNCE_MS = 1000;
@@ -158,6 +188,22 @@ export function useCrossDeviceSync({
             console.log('[CROSS-DEVICE-SYNC] Merged alarm levels');
             setAlarmLevelConfigs(merged.configs);
           }
+        }
+        
+        // 4. Pull Active Alarms from Backend - MOST IMPORTANT for cross-device sync!
+        const remoteActiveAlarms = await pullActiveAlarmsFromBackend();
+        if (remoteActiveAlarms && remoteActiveAlarms.alarms !== undefined) {
+          // For active alarms: Remote always wins (newer timestamp = more accurate state)
+          // Parse dates back from ISO strings
+          const parsedAlarms = remoteActiveAlarms.alarms.map(a => ({
+            ...a,
+            triggeredAt: new Date(a.triggeredAt),
+            restwartezeitEndsAt: a.restwartezeitEndsAt ? new Date(a.restwartezeitEndsAt) : undefined
+          }));
+          
+          console.log('[CROSS-DEVICE-SYNC] Synced active alarms from remote:', parsedAlarms.length);
+          lastKnownRemoteActiveAlarmsTimestamp.current = remoteActiveAlarms.timestamp;
+          setActiveAlarms(() => parsedAlarms);
         }
         
         console.log('[CROSS-DEVICE-SYNC] Initial sync complete');
@@ -258,12 +304,25 @@ export function useCrossDeviceSync({
         console.log('[CROSS-DEVICE-SYNC] Alarm levels skip - already synced');
       }
       
+      // Push active alarms - CRITICAL for cross-device approve/stop sync!
+      const currentActiveAlarmsHash = hashContent(activeAlarms.map(a => a.id).sort());
+      const isActiveAlarmsFromRemote = currentActiveAlarmsHash === lastReceivedActiveAlarmsHash.current;
+      const activeAlarmsAlreadyPushed = currentActiveAlarmsHash === lastPushedActiveAlarmsHash.current;
+      
+      if (!isActiveAlarmsFromRemote && !activeAlarmsAlreadyPushed) {
+        await pushActiveAlarmsToBackend(activeAlarms);
+        lastPushedActiveAlarmsHash.current = currentActiveAlarmsHash;
+        console.log('[CROSS-DEVICE-SYNC] Active alarms pushed (count:', activeAlarms.length, ')');
+      } else {
+        console.log('[CROSS-DEVICE-SYNC] Active alarms skip - already synced');
+      }
+      
       console.log('[CROSS-DEVICE-SYNC] Push complete');
       
     } catch (error) {
       console.error('[CROSS-DEVICE-SYNC] Push error:', error);
     }
-  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs]);
+  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms]);
 
   // Push to backend when data changes (after initial mount)
   useEffect(() => {
@@ -278,7 +337,7 @@ export function useCrossDeviceSync({
     }, 500);
     
     return () => clearTimeout(timeout);
-  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, pushAllToBackend]);
+  }, [watchlist, pairMarketTypes, trendPriceSettings, alarmLevelConfigs, activeAlarms, pushAllToBackend]);
 
   // ===========================================
   // POLLING - Sync every 3.5 seconds (FULLY STABLE - uses refs for EVERYTHING)
@@ -383,6 +442,48 @@ export function useCrossDeviceSync({
               isProcessingRemoteUpdate.current = true;
               
               setAlarmLevelConfigsRef.current(remoteAlarmLevels.configs);
+              
+              setTimeout(() => {
+                isProcessingRemoteUpdate.current = false;
+              }, 1000);
+            }
+          }
+        }
+        
+        // 4. Sync Active Alarms - CRITICAL for cross-device approve/stop sync!
+        const currentActiveAlarms = activeAlarmsRef.current;
+        const remoteActiveAlarms = await pullActiveAlarmsFromBackend();
+        if (remoteActiveAlarms && remoteActiveAlarms.alarms !== undefined) {
+          const isNewerThanLastKnown = remoteActiveAlarms.timestamp > lastKnownRemoteActiveAlarmsTimestamp.current;
+          
+          if (isNewerThanLastKnown) {
+            lastKnownRemoteActiveAlarmsTimestamp.current = remoteActiveAlarms.timestamp;
+            
+            // Compare by alarm IDs (not full content, as dates may differ slightly)
+            const currentIds = currentActiveAlarms.map(a => a.id).sort().join(',');
+            const remoteIds = remoteActiveAlarms.alarms.map(a => a.id).sort().join(',');
+            const isDifferent = currentIds !== remoteIds;
+            
+            if (isDifferent) {
+              console.log('[CROSS-DEVICE-SYNC] Active alarms updated from remote. Local:', currentActiveAlarms.length, 'Remote:', remoteActiveAlarms.alarms.length);
+              
+              // Parse dates back from ISO strings
+              const parsedAlarms = remoteActiveAlarms.alarms.map(a => ({
+                ...a,
+                triggeredAt: new Date(a.triggeredAt),
+                restwartezeitEndsAt: a.restwartezeitEndsAt ? new Date(a.restwartezeitEndsAt) : undefined
+              }));
+              
+              // Store hash of what we're receiving
+              const receivedHash = hashContent(remoteActiveAlarms.alarms.map(a => a.id).sort());
+              lastReceivedActiveAlarmsHash.current = receivedHash;
+              
+              isProcessingRemoteUpdate.current = true;
+              
+              setActiveAlarmsRef.current(() => parsedAlarms);
+              
+              // Also update localStorage immediately for consistency
+              localStorage.setItem('active-alarms', JSON.stringify(parsedAlarms));
               
               setTimeout(() => {
                 isProcessingRemoteUpdate.current = false;
