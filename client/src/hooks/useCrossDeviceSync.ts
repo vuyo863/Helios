@@ -166,6 +166,9 @@ export function useCrossDeviceSync({
   
   // Prevent rapid consecutive pushes
   const PUSH_DEBOUNCE_MS = 1000;
+  
+  // FIX: Track if a push was blocked and needs retry
+  const pendingPushRetry = useRef<NodeJS.Timeout | null>(null);
 
   // ===========================================
   // INITIAL SYNC - Fetch Remote on Mount
@@ -279,10 +282,33 @@ export function useCrossDeviceSync({
     
     const now = getCurrentTimestamp();
     
-    // Debounce rapid pushes
-    if (now - lastPushTimestamp.current < PUSH_DEBOUNCE_MS) {
+    // Debounce rapid pushes - but schedule a retry if blocked!
+    const timeSinceLastPush = now - lastPushTimestamp.current;
+    if (timeSinceLastPush < PUSH_DEBOUNCE_MS) {
+      // FIX: Schedule a retry after debounce period ends
+      const retryDelay = PUSH_DEBOUNCE_MS - timeSinceLastPush + 100; // +100ms buffer
+      
+      // Clear any existing retry timer
+      if (pendingPushRetry.current) {
+        clearTimeout(pendingPushRetry.current);
+      }
+      
+      // Schedule retry - this ensures the latest data eventually gets pushed
+      pendingPushRetry.current = setTimeout(() => {
+        console.log('[CROSS-DEVICE-SYNC] Debounce retry triggered');
+        pushAllToBackend();
+      }, retryDelay);
+      
+      console.log('[CROSS-DEVICE-SYNC] Push debounced, retry scheduled in', retryDelay, 'ms');
       return;
     }
+    
+    // Clear pending retry since we're pushing now
+    if (pendingPushRetry.current) {
+      clearTimeout(pendingPushRetry.current);
+      pendingPushRetry.current = null;
+    }
+    
     lastPushTimestamp.current = now;
     
     console.log('[CROSS-DEVICE-SYNC] Pushing data to backend...');
