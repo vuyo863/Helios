@@ -3949,6 +3949,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE routes for testing/cleanup
+  app.delete("/api/sync/watchlist", (req, res) => {
+    syncStorage.watchlist = null;
+    console.log('[SYNC-API] DELETE watchlist - cleared');
+    return res.json({ success: true });
+  });
+
+  app.delete("/api/sync/thresholds", (req, res) => {
+    syncStorage.thresholds = null;
+    console.log('[SYNC-API] DELETE thresholds - cleared');
+    return res.json({ success: true });
+  });
+
+  app.delete("/api/sync/alarm-levels", (req, res) => {
+    syncStorage.alarmLevels = null;
+    console.log('[SYNC-API] DELETE alarm-levels - cleared');
+    return res.json({ success: true });
+  });
+
   console.log('[SYNC-API] New safe sync routes registered: /api/sync/watchlist, /api/sync/thresholds, /api/sync/alarm-levels');
 
   const httpServer = createServer(app);
