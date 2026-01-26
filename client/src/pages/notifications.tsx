@@ -912,22 +912,7 @@ export default function Notifications() {
   // Ref to track current activeAlarms for threshold check (avoids stale closure issue)
   const activeAlarmsRef = useRef<ActiveAlarm[]>([]);
 
-  // ===========================================
-  // CROSS-DEVICE SYNC HOOK
-  // ===========================================
-  useCrossDeviceSync({
-    watchlist,
-    pairMarketTypes,
-    trendPriceSettings,
-    alarmLevelConfigs,
-    activeAlarms,
-    setWatchlist,
-    setPairMarketTypes,
-    setTrendPriceSettings,
-    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
-    setActiveAlarms,
-    editingThresholdId
-  });
+  // Cross-Device Sync Hook wird weiter unten aufgerufen (nach activeAlarms Definition)
 
   // Monitor price changes and trigger threshold notifications
   useEffect(() => {
@@ -1519,6 +1504,23 @@ export default function Notifications() {
     // Debug: Log whenever activeAlarms state changes to help diagnose UI update issues
     console.log(`[ACTIVE-ALARMS-UI] UI should now show ${activeAlarms.length} alarms`);
   }, [activeAlarms]);
+  
+  // ===========================================
+  // CROSS-DEVICE SYNC HOOK (nach activeAlarms Definition)
+  // ===========================================
+  useCrossDeviceSync({
+    watchlist,
+    pairMarketTypes,
+    trendPriceSettings,
+    alarmLevelConfigs,
+    activeAlarms: activeAlarms as any,
+    setWatchlist,
+    setPairMarketTypes,
+    setTrendPriceSettings,
+    setAlarmLevelConfigs: (configs) => setAlarmLevelConfigs(configs as Record<AlarmLevel, AlarmLevelConfig>),
+    setActiveAlarms: setActiveAlarms as any,
+    editingThresholdId
+  });
   
   // DEAKTIVIERT: Backend-Sync für Active Alarms temporär deaktiviert - nur localStorage
   // Früher wurde hier /api/active-alarms gefetcht, aber das verursachte Race Conditions
