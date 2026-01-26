@@ -76,6 +76,11 @@ export function useCrossDeviceSync({
   const lastReceivedThresholdsHash = useRef<string>('');
   const lastReceivedAlarmLevelsHash = useRef<string>('');
   
+  // FIX: Track last KNOWN remote timestamp - use this for comparison instead of creating new timestamps!
+  const lastKnownRemoteWatchlistTimestamp = useRef<number>(0);
+  const lastKnownRemoteThresholdsTimestamp = useRef<number>(0);
+  const lastKnownRemoteAlarmLevelsTimestamp = useRef<number>(0);
+  
   // Helper to create a hash of content for comparison
   const hashContent = (obj: unknown): string => JSON.stringify(obj);
   
@@ -280,34 +285,34 @@ export function useCrossDeviceSync({
         // 1. Sync Watchlist - NEUERER TIMESTAMP GEWINNT KOMPLETT
         const remoteWatchlist = await pullWatchlistFromBackend();
         if (remoteWatchlist && remoteWatchlist.watchlist !== undefined) {
-          const localData = createWatchlistSyncData(currentWatchlist, currentPairMarketTypes);
+          // FIX: Compare against LAST KNOWN remote timestamp, not a freshly created one!
+          // This ensures we detect when another device has pushed newer data
+          const isNewerThanLastKnown = remoteWatchlist.timestamp > lastKnownRemoteWatchlistTimestamp.current;
           
-          // Vergleiche Timestamps - nur wenn remote neuer ist, übernehmen
-          if (remoteWatchlist.timestamp > (localData?.timestamp || 0)) {
-            // Remote ist neuer - übernehme komplett (inklusive Löschungen!)
-            const merged = mergeWatchlist(localData, remoteWatchlist);
+          if (isNewerThanLastKnown) {
+            // Update our knowledge of the remote timestamp
+            lastKnownRemoteWatchlistTimestamp.current = remoteWatchlist.timestamp;
             
-            if (merged) {
-              // Nur aktualisieren wenn sich was geändert hat
-              const isDifferent = JSON.stringify(merged.watchlist.sort()) !== JSON.stringify(currentWatchlist.sort());
-              if (isDifferent) {
-                console.log('[CROSS-DEVICE-SYNC] Watchlist updated from remote:', merged.watchlist);
-                
-                // ROBUST FIX: Store the hash of what we're receiving so we don't push it back
-                const receivedHash = hashContent({ watchlist: merged.watchlist, pairMarketTypes: merged.pairMarketTypes });
-                lastReceivedWatchlistHash.current = receivedHash;
-                
-                // SET FLAG before updating state to prevent push-back!
-                isProcessingRemoteUpdate.current = true;
-                
-                setWatchlistRef.current(() => merged.watchlist);
-                setPairMarketTypesRef.current(() => merged.pairMarketTypes);
-                
-                // Reset flag after a short delay (after state update effects have run)
-                setTimeout(() => {
-                  isProcessingRemoteUpdate.current = false;
-                }, 1000);
-              }
+            // Check if content is actually different from what we have
+            const isDifferent = JSON.stringify(remoteWatchlist.watchlist.sort()) !== JSON.stringify(currentWatchlist.sort());
+            
+            if (isDifferent) {
+              console.log('[CROSS-DEVICE-SYNC] Watchlist updated from remote:', remoteWatchlist.watchlist);
+              
+              // ROBUST FIX: Store the hash of what we're receiving so we don't push it back
+              const receivedHash = hashContent({ watchlist: remoteWatchlist.watchlist, pairMarketTypes: remoteWatchlist.pairMarketTypes });
+              lastReceivedWatchlistHash.current = receivedHash;
+              
+              // SET FLAG before updating state to prevent push-back!
+              isProcessingRemoteUpdate.current = true;
+              
+              setWatchlistRef.current(() => remoteWatchlist.watchlist);
+              setPairMarketTypesRef.current(() => remoteWatchlist.pairMarketTypes);
+              
+              // Reset flag after a short delay (after state update effects have run)
+              setTimeout(() => {
+                isProcessingRemoteUpdate.current = false;
+              }, 1000);
             }
           }
         }
@@ -315,30 +320,29 @@ export function useCrossDeviceSync({
         // 2. Sync Thresholds - newer timestamp wins
         const remoteThresholds = await pullThresholdsFromBackend();
         if (remoteThresholds && remoteThresholds.settings !== undefined) {
-          const localData = createThresholdsSyncData(currentTrendPriceSettings);
+          // FIX: Compare against LAST KNOWN remote timestamp
+          const isNewerThanLastKnown = remoteThresholds.timestamp > lastKnownRemoteThresholdsTimestamp.current;
           
-          // Only update if remote is newer
-          if (remoteThresholds.timestamp > (localData?.timestamp || 0)) {
-            const merged = mergeAllThresholds(localData, remoteThresholds);
+          if (isNewerThanLastKnown) {
+            // Update our knowledge of the remote timestamp
+            lastKnownRemoteThresholdsTimestamp.current = remoteThresholds.timestamp;
             
-            if (merged) {
-              const isDifferent = JSON.stringify(merged.settings) !== JSON.stringify(currentTrendPriceSettings);
-              if (isDifferent) {
-                console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(merged.settings));
-                
-                // ROBUST FIX: Store hash of what we're receiving
-                const receivedHash = hashContent(merged.settings);
-                lastReceivedThresholdsHash.current = receivedHash;
-                
-                // SET FLAG before updating state to prevent push-back!
-                isProcessingRemoteUpdate.current = true;
-                
-                setTrendPriceSettingsRef.current(() => merged.settings);
-                
-                setTimeout(() => {
-                  isProcessingRemoteUpdate.current = false;
-                }, 1000);
-              }
+            const isDifferent = JSON.stringify(remoteThresholds.settings) !== JSON.stringify(currentTrendPriceSettings);
+            if (isDifferent) {
+              console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(remoteThresholds.settings));
+              
+              // ROBUST FIX: Store hash of what we're receiving
+              const receivedHash = hashContent(remoteThresholds.settings);
+              lastReceivedThresholdsHash.current = receivedHash;
+              
+              // SET FLAG before updating state to prevent push-back!
+              isProcessingRemoteUpdate.current = true;
+              
+              setTrendPriceSettingsRef.current(() => remoteThresholds.settings);
+              
+              setTimeout(() => {
+                isProcessingRemoteUpdate.current = false;
+              }, 1000);
             }
           }
         }
@@ -346,29 +350,29 @@ export function useCrossDeviceSync({
         // 3. Sync Alarm Levels - newer timestamp wins
         const remoteAlarmLevels = await pullAlarmLevelsFromBackend();
         if (remoteAlarmLevels && remoteAlarmLevels.configs !== undefined) {
-          const localData = createAlarmLevelsSyncData(currentAlarmLevelConfigs);
+          // FIX: Compare against LAST KNOWN remote timestamp
+          const isNewerThanLastKnown = remoteAlarmLevels.timestamp > lastKnownRemoteAlarmLevelsTimestamp.current;
           
-          if (remoteAlarmLevels.timestamp > (localData?.timestamp || 0)) {
-            const merged = mergeAlarmLevelConfigs(localData, remoteAlarmLevels);
+          if (isNewerThanLastKnown) {
+            // Update our knowledge of the remote timestamp
+            lastKnownRemoteAlarmLevelsTimestamp.current = remoteAlarmLevels.timestamp;
             
-            if (merged) {
-              const isDifferent = JSON.stringify(merged.configs) !== JSON.stringify(currentAlarmLevelConfigs);
-              if (isDifferent) {
-                console.log('[CROSS-DEVICE-SYNC] Alarm levels updated');
-                
-                // ROBUST FIX: Store hash of what we're receiving
-                const receivedHash = hashContent(merged.configs);
-                lastReceivedAlarmLevelsHash.current = receivedHash;
-                
-                // SET FLAG before updating state to prevent push-back!
-                isProcessingRemoteUpdate.current = true;
-                
-                setAlarmLevelConfigsRef.current(merged.configs);
-                
-                setTimeout(() => {
-                  isProcessingRemoteUpdate.current = false;
-                }, 1000);
-              }
+            const isDifferent = JSON.stringify(remoteAlarmLevels.configs) !== JSON.stringify(currentAlarmLevelConfigs);
+            if (isDifferent) {
+              console.log('[CROSS-DEVICE-SYNC] Alarm levels updated');
+              
+              // ROBUST FIX: Store hash of what we're receiving
+              const receivedHash = hashContent(remoteAlarmLevels.configs);
+              lastReceivedAlarmLevelsHash.current = receivedHash;
+              
+              // SET FLAG before updating state to prevent push-back!
+              isProcessingRemoteUpdate.current = true;
+              
+              setAlarmLevelConfigsRef.current(remoteAlarmLevels.configs);
+              
+              setTimeout(() => {
+                isProcessingRemoteUpdate.current = false;
+              }, 1000);
             }
           }
         }
