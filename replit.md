@@ -1,26 +1,7 @@
 # Pionex Bot Profit Tracker
 
-## ⚠️ DIAMOND STATE - NIEMALS ANFASSEN ⚠️
-Die folgenden Sections sind DIAMOND STATE und dürfen NIEMALS ohne explizite User-Erlaubnis modifiziert werden:
-
-### 1. TRENDPREISE & WATCHLIST SYNC
-- **Status:** DIAMOND STATE - FERTIG UND FUNKTIONIERT
-- **Files:** Watchlist-bezogene Funktionen in `sync.ts` und `useCrossDeviceSync.ts`
-- **Regel:** KEINE Änderungen erlaubt. Code funktioniert. Nicht anfassen.
-
-### 2. WATCHLIST UI
-- **Status:** DIAMOND STATE - FERTIG UND FUNKTIONIERT  
-- **Bereich:** Search, Spot/Futures Toggle, Watchlist-Anzeige mit Preisen
-- **Regel:** KEINE Änderungen erlaubt. Code funktioniert. Nicht anfassen.
-
-### WICHTIG FÜR ENTWICKLUNG:
-- Die Sync-Sections sind SEPARAT zu behandeln
-- Änderungen an einer Section dürfen NIEMALS andere Sections beeinflussen
-- Bei Problemen: NUR die betroffene Section fixen, Rest nicht anfassen
-- Im Zweifel: Code kopieren und separat entwickeln
-
 ## Overview
-A full-stack web application designed to track and analyze profits from Pionex trading bots, offering detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to improve trading decisions and leverage market opportunities.
+A full-stack web application for tracking and analyzing profits from Pionex trading bots, providing detailed performance insights and advanced analytics. It includes a Notifications page for monitoring cryptocurrency prices from Binance Spot and Futures markets with customizable threshold alerts. The project aims to provide traders with comprehensive analytics and timely notifications to improve trading decisions and leverage market opportunities, enhancing their decision-making with real-time data.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -132,50 +113,6 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
   - Notizen (`note`)
   - Alarm-Level (`alarmLevel`)
 
-  ### PROBLEME UND LÖSUNGEN (DOKUMENTIERT 26.01.2026):
-
-  #### PROBLEM 1: Auto-Sync während Bearbeitung
-  - **Beschreibung:** Schwellenwerte wurden AUTOMATISCH synchronisiert sobald ein Wert eingegeben wurde
-  - **Konsequenz:** Alarme wurden vorzeitig auf anderen Geräten ausgelöst, BEVOR der User "Speichern" geklickt hat
-  - **Verletzung:** Golden State Regel - Explizites "Speichern" ist PFLICHT, kein Auto-Save
-  - **LÖSUNG - editingThresholdId Blocking-Mechanismus:**
-    1. Neue Prop `editingThresholdId` an `useCrossDeviceSync` Hook hinzugefügt
-    2. Wenn `editingThresholdId !== null` → Threshold-Sync wird BLOCKIERT
-    3. Erst wenn User "Speichern" klickt → `editingThresholdId = null` → Sync wird freigegeben
-    4. Damit wird GARANTIERT, dass nur bestätigte Schwellenwerte synchronisiert werden
-    - **Code-Location:** `useCrossDeviceSync.ts` Zeile 268, 302-318, 364
-
-  #### PROBLEM 2: Pausierte Thresholds (isActive: false) wurden nicht synchronisiert
-  - **Beschreibung:** Wenn User Toggle auf "Pause" setzt und "Speichern" klickt, wurde die Änderung NICHT auf andere Geräte synchronisiert
-  - **Root Cause:** React State Batching - Push wurde übersprungen weil `editingThresholdId` noch nicht null war wenn der Push getriggert wurde
-  - **LÖSUNG - editingThresholdId in useEffect Dependencies:**
-    1. `editingThresholdId` zur useEffect Dependency Array hinzugefügt (Zeile 364)
-    2. Jetzt triggert der Push wenn `editingThresholdId` von "id" zu `null` wechselt
-    3. Der Push passiert NACH dem State-Update, nicht währenddessen
-    - **Code-Location:** `useCrossDeviceSync.ts` Zeile 364
-
-  #### PROBLEM 3: Gelöschte Thresholds wurden nicht synchronisiert
-  - **Beschreibung:** Wenn User auf Tablet einen Threshold löscht, wird er auf dem Laptop NICHT entfernt
-  - **Root Cause:** Falsche "Schutzlogik" in `mergeAllThresholds()` blockierte Löschungen:
-    ```javascript
-    // ALTE FALSCHE LOGIK:
-    if (remoteData.thresholds.length === 0 && localData && localData.thresholds.length > 0) {
-      continue; // Lokal behalten! ← BLOCKIERTE ALLE LÖSCHUNGEN!
-    }
-    ```
-  - **Ursprüngliche Idee:** Schutz vor Datenverlust wenn Backend initial leer ist
-  - **Fehler:** Code konnte nicht unterscheiden zwischen "Backend initial leer" und "User hat gelöscht"
-  - **LÖSUNG - Timestamp-basierte Löschung:**
-    ```javascript
-    // NEUE KORREKTE LOGIK:
-    if (isNewerThan(remote.timestamp, local.timestamp)) {
-      // Remote gewinnt komplett - AUCH bei Löschungen!
-      return { ...remote.settings };
-    }
-    ```
-    - Wenn Remote neuer ist UND leer → User hat absichtlich gelöscht → Löschung übernehmen
-    - **Code-Location:** `sync.ts` Zeile 222-234
-
   ### SYNC-ARCHITEKTUR (DIAMOND STATE):
 
   #### Anti-Ping-Pong System (3+ Tabs):
@@ -184,22 +121,17 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
     - `lastPushedWatchlistHash` / `lastPushedThresholdsHash` / etc.
     - `lastReceivedWatchlistHash` / `lastReceivedThresholdsHash` / etc.
     - Vor Push: Check ob Daten von Remote kamen → Skip Push
-    - **Code-Location:** `useCrossDeviceSync.ts` Zeile 117-127, 286-291
-
   #### Timestamp-Vergleich (korrekt):
   - **Problem:** Neue Timestamps bei jedem Vergleich → Local immer "neuer"
   - **Lösung:** `lastKnownRemoteTimestamp` Refs:
     - Speichert letzten bekannten Remote-Timestamp
     - Vergleich gegen gespeicherten Wert, nicht gegen neuen Timestamp
-    - **Code-Location:** `useCrossDeviceSync.ts` Zeile 129-132
-
   #### Refs für Stable Polling:
   - **Problem:** Interval wird bei jedem State-Change neu erstellt
   - **Lösung:** Refs für alle State-Werte und Setter:
     - `watchlistRef`, `trendPriceSettingsRef`, etc.
     - `setWatchlistRef`, `setTrendPriceSettingsRef`, etc.
     - Polling-Interval hat EMPTY Dependency Array
-    - **Code-Location:** `useCrossDeviceSync.ts` Zeile 138-165, 539
 
   ### API-ROUTEN (DIAMOND STATE):
   - GET/POST `/api/sync/watchlist`
