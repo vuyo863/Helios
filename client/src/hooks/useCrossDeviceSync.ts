@@ -65,6 +65,20 @@ export function useCrossDeviceSync({
   // This prevents the "ping-pong" effect where pulling data triggers a push
   const isProcessingRemoteUpdate = useRef(false);
   
+  // ROBUST FIX: Track what we last pushed to prevent pushing the same data multiple times
+  // This is KEY for 3+ tab sync - prevents tabs from pushing back data they just received
+  const lastPushedWatchlistHash = useRef<string>('');
+  const lastPushedThresholdsHash = useRef<string>('');
+  const lastPushedAlarmLevelsHash = useRef<string>('');
+  
+  // Also track what we last received to detect if current state is from remote
+  const lastReceivedWatchlistHash = useRef<string>('');
+  const lastReceivedThresholdsHash = useRef<string>('');
+  const lastReceivedAlarmLevelsHash = useRef<string>('');
+  
+  // Helper to create a hash of content for comparison
+  const hashContent = (obj: unknown): string => JSON.stringify(obj);
+  
   // REFS for stable polling - prevents interval recreation on every state change
   const watchlistRef = useRef(watchlist);
   const pairMarketTypesRef = useRef(pairMarketTypes);
@@ -183,17 +197,47 @@ export function useCrossDeviceSync({
     console.log('[CROSS-DEVICE-SYNC] Pushing data to backend...');
     
     try {
-      // Push watchlist - including empty arrays (for deletions)
-      // The initial sync protection + isProcessingRemoteUpdate flag prevents overwriting
-      await pushWatchlistToBackend(watchlist, pairMarketTypes);
-      console.log('[CROSS-DEVICE-SYNC] Watchlist pushed (items:', watchlist.length, ')');
+      // ROBUST FIX: Only push if content has ACTUALLY changed (not just received from remote)
+      const currentWatchlistHash = hashContent({ watchlist, pairMarketTypes });
+      const currentThresholdsHash = hashContent(trendPriceSettings);
+      const currentAlarmLevelsHash = hashContent(alarmLevelConfigs);
       
-      // Push Thresholds - including for deletions
-      await pushThresholdsToBackend(trendPriceSettings);
-      console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
+      // Check if this is the same data we just received from remote - don't push it back!
+      const isWatchlistFromRemote = currentWatchlistHash === lastReceivedWatchlistHash.current;
+      const isThresholdsFromRemote = currentThresholdsHash === lastReceivedThresholdsHash.current;
+      const isAlarmLevelsFromRemote = currentAlarmLevelsHash === lastReceivedAlarmLevelsHash.current;
       
-      // Alarm levels can always be pushed (they have defaults)
-      await pushAlarmLevelsToBackend(alarmLevelConfigs);
+      // Also check if we already pushed this exact content
+      const watchlistAlreadyPushed = currentWatchlistHash === lastPushedWatchlistHash.current;
+      const thresholdsAlreadyPushed = currentThresholdsHash === lastPushedThresholdsHash.current;
+      const alarmLevelsAlreadyPushed = currentAlarmLevelsHash === lastPushedAlarmLevelsHash.current;
+      
+      // Push watchlist only if it's NEW local data (not from remote and not already pushed)
+      if (!isWatchlistFromRemote && !watchlistAlreadyPushed) {
+        await pushWatchlistToBackend(watchlist, pairMarketTypes);
+        lastPushedWatchlistHash.current = currentWatchlistHash;
+        console.log('[CROSS-DEVICE-SYNC] Watchlist pushed (items:', watchlist.length, ')');
+      } else {
+        console.log('[CROSS-DEVICE-SYNC] Watchlist skip - already synced');
+      }
+      
+      // Push thresholds only if NEW local data
+      if (!isThresholdsFromRemote && !thresholdsAlreadyPushed) {
+        await pushThresholdsToBackend(trendPriceSettings);
+        lastPushedThresholdsHash.current = currentThresholdsHash;
+        console.log('[CROSS-DEVICE-SYNC] Thresholds pushed');
+      } else {
+        console.log('[CROSS-DEVICE-SYNC] Thresholds skip - already synced');
+      }
+      
+      // Push alarm levels only if NEW local data
+      if (!isAlarmLevelsFromRemote && !alarmLevelsAlreadyPushed) {
+        await pushAlarmLevelsToBackend(alarmLevelConfigs);
+        lastPushedAlarmLevelsHash.current = currentAlarmLevelsHash;
+        console.log('[CROSS-DEVICE-SYNC] Alarm levels pushed');
+      } else {
+        console.log('[CROSS-DEVICE-SYNC] Alarm levels skip - already synced');
+      }
       
       console.log('[CROSS-DEVICE-SYNC] Push complete');
       
@@ -249,6 +293,10 @@ export function useCrossDeviceSync({
               if (isDifferent) {
                 console.log('[CROSS-DEVICE-SYNC] Watchlist updated from remote:', merged.watchlist);
                 
+                // ROBUST FIX: Store the hash of what we're receiving so we don't push it back
+                const receivedHash = hashContent({ watchlist: merged.watchlist, pairMarketTypes: merged.pairMarketTypes });
+                lastReceivedWatchlistHash.current = receivedHash;
+                
                 // SET FLAG before updating state to prevent push-back!
                 isProcessingRemoteUpdate.current = true;
                 
@@ -278,6 +326,10 @@ export function useCrossDeviceSync({
               if (isDifferent) {
                 console.log('[CROSS-DEVICE-SYNC] Thresholds updated:', Object.keys(merged.settings));
                 
+                // ROBUST FIX: Store hash of what we're receiving
+                const receivedHash = hashContent(merged.settings);
+                lastReceivedThresholdsHash.current = receivedHash;
+                
                 // SET FLAG before updating state to prevent push-back!
                 isProcessingRemoteUpdate.current = true;
                 
@@ -303,6 +355,10 @@ export function useCrossDeviceSync({
               const isDifferent = JSON.stringify(merged.configs) !== JSON.stringify(currentAlarmLevelConfigs);
               if (isDifferent) {
                 console.log('[CROSS-DEVICE-SYNC] Alarm levels updated');
+                
+                // ROBUST FIX: Store hash of what we're receiving
+                const receivedHash = hashContent(merged.configs);
+                lastReceivedAlarmLevelsHash.current = receivedHash;
                 
                 // SET FLAG before updating state to prevent push-back!
                 isProcessingRemoteUpdate.current = true;
