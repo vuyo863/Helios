@@ -599,6 +599,16 @@ export function useCrossDeviceSync({
               const receivedHash = hashContent(remoteActiveAlarms.alarms.map(a => a.id).sort());
               lastReceivedActiveAlarmsHash.current = receivedHash;
               
+              // CRITICAL FIX: Also update lastPushedActiveAlarmsHash to match received data!
+              // Without this, when user stops an alarm that was received from remote:
+              // 1. Before receiving: activeAlarms=[], lastPushedHash=Hash([])
+              // 2. After receiving: activeAlarms=[alarm1], but lastPushedHash still Hash([])
+              // 3. User stops alarm: activeAlarms=[], currentHash=Hash([])
+              // 4. Push check: Hash([]) === lastPushedHash(Hash([])) → "already pushed" → SKIPPED!
+              // The fix: Treat receiving remote data as if we had pushed it ourselves
+              lastPushedActiveAlarmsHash.current = receivedHash;
+              console.log('[ACTIVE-ALARMS-SYNC] Updated lastPushedHash to match received:', receivedHash);
+              
               // STABILIZATION FIX V2: Prevent ghost notifications from rapid changes
               // while ensuring no legitimate new alarms are missed
               const localCount = currentActiveAlarms.length;

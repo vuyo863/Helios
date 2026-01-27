@@ -1,0 +1,109 @@
+THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 1 Local: 1 LastKnownTS: 1769520449898
+index-CUqDu7tx.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769520449898 LastKnown: 1769520449898 IsNewer: false
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Tab reaktiviert - Preise werden sofort aktualisiert
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CUqDu7tx.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 1 Local: 1 LastKnownTS: 1769520449898
+index-CUqDu7tx.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769520449898 LastKnown: 1769520449898 IsNewer: false
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 1 Local: 1 LastKnownTS: 1769520449898
+index-CUqDu7tx.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769520449898 LastKnown: 1769520449898 IsNewer: false
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices updated successfully
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] Using OKX Spot API for accurate prices...
+index-CUqDu7tx.js:470 [THRESHOLD-CHECK] Running with 1 active alarms
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot ETHUSDT (id: binance-spot-1): $2908.15 (0.07%)
+index-CUqDu7tx.js:470 [TRENDPREIS-24/7] OKX Spot prices upd
