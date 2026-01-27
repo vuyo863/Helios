@@ -58,9 +58,22 @@ export default function Navbar() {
                 background: 'linear-gradient(135deg, #1e6091, #38bdf8)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                letterSpacing: '-0.05em'
-              }}>HELIOS</span>
+                backgroundClip: 'text'
+              }}>
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  HE
+                  <span style={{
+                    position: 'absolute',
+                    height: '0.12em',
+                    width: '0.35em',
+                    left: '0.68em',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'linear-gradient(135deg, #1e6091, #38bdf8)'
+                  }}></span>
+                </span>
+                LIOS
+              </span>
               <span style={{ color: '#1e293b' }}> AI</span>
             </h1>
           </div>
