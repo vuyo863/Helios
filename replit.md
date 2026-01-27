@@ -51,8 +51,27 @@ A full-stack web application for cryptocurrency traders to track and analyze pro
   ⚠️⚠️⚠️ DIESE DATEI DARF NIEMALS MODIFIZIERT WERDEN ⚠️⚠️⚠️
   Der komplette Code ist in der Datei gespeichert und funktioniert perfekt.
   Bei Bedarf kann der Code mit `cat client/src/hooks/useCrossDeviceSync.ts` angezeigt werden.
-- **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.0**:
+- **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.1**:
 Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+  
+  #### BUG-FIX V2.1 (2026-01-27): lastPushedHash Update bei Remote-Empfang für Thresholds UND Alarm Levels
+  - **Problem:** Gleiches Problem wie bei Active Alarms - wenn Tab A einen Threshold/Alarm-Level von Remote empfängt und User ihn später löscht, wurde der Push übersprungen weil `currentHash === lastPushedHash`
+  - **Ursache:** `lastPushedThresholdsHash` / `lastPushedAlarmLevelsHash` wurden NICHT aktualisiert wenn Remote-Daten empfangen wurden
+  - **Szenario (Thresholds):**
+    1. Tab hatte `settings = {A: [th1]}`, `lastPushedHash = Hash({A: [th1]})`
+    2. Tab empfängt von Remote → `settings = {A: [th1, th2]}`
+    3. Nur `lastReceivedHash` aktualisiert, NICHT `lastPushedHash`
+    4. User löscht th2 → `settings = {A: [th1]}`
+    5. Push-Check: `Hash({A: [th1]}) === lastPushedHash(Hash({A: [th1]}))` → FÄLSCHLICHERWEISE ÜBERSPRUNGEN!
+  - **Lösung:** Bei Remote-Empfang auch `lastPushedHash` aktualisieren:
+    ```typescript
+    // useCrossDeviceSync.ts Zeile 527-531 (Thresholds)
+    lastPushedThresholdsHash.current = receivedHash;
+    
+    // useCrossDeviceSync.ts Zeile 563-567 (Alarm Levels)
+    lastPushedAlarmLevelsHash.current = receivedHash;
+    ```
+  - **Validierung:** 30+ API-Tests mit 5 simulierten Tabs, alle bestanden
   #### DIALOG-VERHALTEN (KRITISCH - NIEMALS ÄNDERN):
   - **Kein Auto-Save:** Änderungen werden NUR bei "Speichern" Klick gespeichert
   - **Kein Auto-Close:** Dialog schließt NICHT automatisch bei Wert-Eingabe

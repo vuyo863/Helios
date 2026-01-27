@@ -521,6 +521,12 @@ export function useCrossDeviceSync({
               const receivedHash = hashContent(remoteThresholds.settings);
               lastReceivedThresholdsHash.current = receivedHash;
               
+              // CRITICAL FIX V1.1: Also update lastPushedHash to prevent false "already pushed" detection
+              // When we receive data from remote, treat it as if we pushed it ourselves
+              // This fixes: receive remote → user deletes → push skipped because hash matches old lastPushed
+              lastPushedThresholdsHash.current = receivedHash;
+              console.log('[THRESHOLDS-SYNC] Updated lastPushedHash to match received:', receivedHash.slice(0, 8));
+              
               // SET FLAG before updating state to prevent push-back!
               isProcessingRemoteUpdate.current = true;
               
@@ -550,6 +556,12 @@ export function useCrossDeviceSync({
               // ROBUST FIX: Store hash of what we're receiving
               const receivedHash = hashContent(remoteAlarmLevels.configs);
               lastReceivedAlarmLevelsHash.current = receivedHash;
+              
+              // CRITICAL FIX V1.1: Also update lastPushedHash to prevent false "already pushed" detection
+              // When we receive data from remote, treat it as if we pushed it ourselves
+              // This fixes: receive remote → user deletes → push skipped because hash matches old lastPushed
+              lastPushedAlarmLevelsHash.current = receivedHash;
+              console.log('[ALARM-LEVELS-SYNC] Updated lastPushedHash to match received:', receivedHash.slice(0, 8));
               
               // SET FLAG before updating state to prevent push-back!
               isProcessingRemoteUpdate.current = true;
