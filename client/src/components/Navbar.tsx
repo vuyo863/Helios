@@ -52,7 +52,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <img src={heliosLogo} alt="Helios AI" className="w-6 h-6" />
+            <img src={heliosLogo} alt="Helios AI" className="w-8 h-8" />
             <h1 className="text-xl font-bold">Helios AI</h1>
           </div>
 
