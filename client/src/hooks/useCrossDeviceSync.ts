@@ -219,6 +219,8 @@ export function useCrossDeviceSync({
           if (merged) {
             console.log('[CROSS-DEVICE-SYNC] Merged thresholds:', Object.keys(merged.settings).length, 'items');
             lastKnownRemoteThresholdsTimestamp.current = remoteThresholds.timestamp;
+            // FIX: Store hash to prevent pushing back the same data we just received
+            lastReceivedThresholdsHash.current = hashContent(merged.settings);
             setTrendPriceSettings(() => merged.settings);
           }
         }
