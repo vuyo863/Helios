@@ -53,7 +53,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <img src={heliosLogo} alt="Helios AI" className="w-12 h-12" />
-            <h1 className="text-xl font-semibold tracking-wide" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+            <h1 className="text-2xl font-semibold tracking-wide" style={{ fontFamily: 'Orbitron, sans-serif' }}>
               <span style={{ 
                 background: 'linear-gradient(135deg, #1e6091, #38bdf8)',
                 WebkitBackgroundClip: 'text',
