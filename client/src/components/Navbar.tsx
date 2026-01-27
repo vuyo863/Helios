@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { BarChart3, Upload, FileText, Layers, TrendingUp, Bell } from "lucide-react";
+import heliosLogo from "@/assets/helios-logo.png";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
@@ -51,8 +52,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-bold">Pionex Bot Tracker</h1>
+            <img src={heliosLogo} alt="Helios AI" className="w-6 h-6" />
+            <h1 className="text-xl font-bold">Helios AI</h1>
           </div>
 
           <div className="flex gap-2">
