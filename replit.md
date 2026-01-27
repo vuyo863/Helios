@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application designed for tracking and analyzing Pionex trading bot profits. It offers real-time data, AI-driven analysis, interactive charting, and cross-device synchronization to optimize trading strategies. The platform provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts. Its primary purpose is to empower users with informed trading decisions and maximize returns in the cryptocurrency market.
+A full-stack web application designed to track and analyze profits from Pionex trading bots. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts to optimize trading strategies and maximize returns in the cryptocurrency market.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -107,16 +107,16 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
 
 ## System Architecture
 ### UI/UX
-The frontend is built with React, TypeScript, `shadcn/ui`, and Tailwind CSS, providing a responsive and modern user interface. Recharts handles interactive data visualization. The application supports Progressive Web App (PWA) capabilities and features a dynamic dashboard and a Notifications page with a live watchlist and customizable price alerts across four distinct alarm levels.
+The frontend is built with React, TypeScript, `shadcn/ui`, and Tailwind CSS for a responsive and modern user experience. Recharts is used for interactive data visualization. The application supports PWA features, a dynamic dashboard, and a Notifications page with a live watchlist and customizable price alerts across four alarm levels.
 
 ### Technical Implementations
-The frontend uses React and TypeScript, while the backend is implemented with Express.js and TypeScript. State management utilizes TypeScript-typed `useMemo` hooks, and data like watchlist and market types are persisted in `localStorage`. The notification system supports configurable thresholds, multi-channel delivery (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API and PostgreSQL, using a 3.5-second polling mechanism. Push notifications are integrated via OneSignal. A 5-tier fallback price system ensures robust cryptocurrency price data, with server-side background updates and a frontend backup system featuring a 2-second update interval, exponential backoff, and a watchdog for price fetching.
+The frontend uses React and TypeScript, while the backend is built with Express.js and TypeScript. State management relies on TypeScript-typed `useMemo` hooks. Data such as watchlist and market types are persisted in `localStorage`. The notification system offers configurable thresholds, multi-channel delivery (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API and PostgreSQL, using a 3.5-second polling mechanism. Push notifications are integrated via OneSignal. A 5-tier fallback price system ensures robust cryptocurrency price data, supported by server-side background updates and a frontend backup system with a 2-second update interval, exponential backoff, and a watchdog for price fetching.
 
 ### Feature Specifications
-Key features include interactive charts with zoom and pan, AI-driven analytical insights integrated with OpenAI, contextual info-tooltips, and a comprehensive notification system. This system offers a real-time price tracking watchlist, customizable price alerts with German number formatting, Web Push, Native Push (PWA for iOS/Android), SMS Notifications, an Alarm Approval System with auto-dismiss and repetition, Cross-Device Alarm Synchronization, and re-trigger prevention for "Wiederholend" thresholds using `activeAlarmId`.
+Key features include interactive charts with zoom and pan, AI-driven analytical insights integrated with OpenAI, contextual info-tooltips, and a comprehensive notification system. This system includes a real-time price tracking watchlist, customizable price alerts with German number formatting, Web Push, Native Push (PWA for iOS/Android), SMS Notifications, an Alarm Approval System with auto-dismiss and repetition, Cross-Device Alarm Synchronization, and re-trigger prevention for "Wiederholend" thresholds using `activeAlarmId`.
 
 ### System Design Choices
-The architecture is modular, promoting maintainability and scalability. Stable ID handling, particularly symbol-based lookup for futures pairs, ensures data consistency. The `server/db.ts` component dynamically switches between Neon Serverless (for Replit) and local PostgreSQL using Drizzle ORM, supporting multi-environment database operations. OneSignal is configured with a specific App ID, Site URL, and REST API Key for multiple production domains.
+The architecture is modular for maintainability and scalability. Stable ID handling, specifically symbol-based lookup for futures pairs, ensures data consistency. The `server/db.ts` component dynamically switches between Neon Serverless (for Replit) and local PostgreSQL using Drizzle ORM, supporting multi-environment database operations. OneSignal is configured with a specific App ID, Site URL, and REST API Key for multiple production domains.
 
 ## External Dependencies
 - **Database**: Neon Serverless, PostgreSQL.
