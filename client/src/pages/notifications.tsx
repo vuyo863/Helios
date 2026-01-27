@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCrossDeviceSync } from "@/hooks/useCrossDeviceSync";
+import { useIOSZoomFix } from "@/hooks/useIOSZoomFix";
 
 interface TrendPrice {
   id: string;
@@ -1545,6 +1546,11 @@ export default function Notifications() {
     setInitialAlarmsLoaded(true);
     console.log('[ACTIVE-ALARMS] Initial load complete (localStorage only mode)');
   }, []);
+
+  // ===========================================
+  // iOS ZOOM FIX - SEPARATE FROM SYNC (prevents auto-zoom on page reload)
+  // ===========================================
+  useIOSZoomFix();
 
   // ===========================================
   // CROSS-DEVICE SYNC HOOK - ACTUAL CALL (moved here after activeAlarms declaration)

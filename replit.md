@@ -7,6 +7,48 @@
 - Aktive Alarmierungen Cross-Device Sync V1.1
 - Alarmierungsstufen konfigurieren
 
+---
+
+## iOS Zoom Fix V1.0 (2026-01-27) - SEPARATE SECTION
+**Komplett SEPARAT vom Sync-System. Hat NICHTS mit Cross-Device Sync zu tun.**
+
+### Das Problem:
+- **Nur auf iPad/iPhone:** Nach Page-Refresh zoomte die Seite über den Watchlist-Preis-Bereich
+- **Trigger:** Passierte nach dem Löschen eines Schwellenwerts oder Trendpreises
+- **Ursache:** iOS Safari stellt den Fokus auf das zuletzt aktive Element nach Reload wieder her
+
+### Die Lösung:
+Neuer Hook `useIOSZoomFix` in separater Datei:
+```typescript
+// client/src/hooks/useIOSZoomFix.ts
+export function useIOSZoomFix() {
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOS) {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement !== document.body) {
+        activeElement.blur();
+        console.log('[iOS-ZOOM-FIX] Blurred active element on page load');
+      }
+    }
+  }, []);
+}
+```
+
+### Integration:
+- Hook wird in `notifications.tsx` aufgerufen (Zeile ~1556)
+- Komplett isoliert vom Sync-Code
+- Läuft nur auf iOS-Geräten
+- Console-Log zeigt wann der Fix aktiv wird
+
+### Dateien:
+- `client/src/hooks/useIOSZoomFix.ts` - Separater Hook
+- `client/src/pages/notifications.tsx` - Import und Aufruf (Zeile 20, 1556)
+
+---
+
 ## Overview
 A full-stack web application for cryptocurrency traders to track and analyze profits from Pionex trading bots. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts to optimize trading strategies and maximize returns. The project aims to empower users with data-driven decision-making tools.
 
