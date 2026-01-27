@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for cryptocurrency traders to track and analyze profits from Pionex trading bots. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts to optimize trading strategies and maximize returns in the cryptocurrency market. The project aims to empower users with data-driven decision-making tools.
+A full-stack web application for cryptocurrency traders to track and analyze profits from Pionex trading bots. It provides detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts to optimize trading strategies and maximize returns. The project aims to empower users with data-driven decision-making tools.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
