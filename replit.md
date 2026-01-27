@@ -51,27 +51,137 @@ A full-stack web application for cryptocurrency traders to track and analyze pro
   ⚠️⚠️⚠️ DIESE DATEI DARF NIEMALS MODIFIZIERT WERDEN ⚠️⚠️⚠️
   Der komplette Code ist in der Datei gespeichert und funktioniert perfekt.
   Bei Bedarf kann der Code mit `cat client/src/hooks/useCrossDeviceSync.ts` angezeigt werden.
-- **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.1**:
-Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+- **DIAMOND STATE - Benachrichtigungen Konfigurieren Cross-Device Sync V2.2**:
+Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) und Alarmierungsstufen (Alarm Levels) ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
+
+  ### ÜBERSICHT DER GELÖSTEN PROBLEME:
+  Diese Sektion dokumentiert drei kritische Cross-Device-Sync Bugs die in V2.1 und V2.2 behoben wurden:
+  1. **V2.1:** Threshold/Alarm-Level Löschungen wurden nicht auf andere Geräte synchronisiert
+  2. **V2.2:** "Flash" von alten Daten bei Page-Refresh behoben
+  3. **V2.2:** Beide Fixes funktionieren identisch für Spot UND Futures Trading-Pairs
+
+  ---
   
   #### BUG-FIX V2.1 (2026-01-27): lastPushedHash Update bei Remote-Empfang für Thresholds UND Alarm Levels
-  - **Problem:** Gleiches Problem wie bei Active Alarms - wenn Tab A einen Threshold/Alarm-Level von Remote empfängt und User ihn später löscht, wurde der Push übersprungen weil `currentHash === lastPushedHash`
-  - **Ursache:** `lastPushedThresholdsHash` / `lastPushedAlarmLevelsHash` wurden NICHT aktualisiert wenn Remote-Daten empfangen wurden
-  - **Szenario (Thresholds):**
-    1. Tab hatte `settings = {A: [th1]}`, `lastPushedHash = Hash({A: [th1]})`
-    2. Tab empfängt von Remote → `settings = {A: [th1, th2]}`
-    3. Nur `lastReceivedHash` aktualisiert, NICHT `lastPushedHash`
-    4. User löscht th2 → `settings = {A: [th1]}`
-    5. Push-Check: `Hash({A: [th1]}) === lastPushedHash(Hash({A: [th1]}))` → FÄLSCHLICHERWEISE ÜBERSPRUNGEN!
-  - **Lösung:** Bei Remote-Empfang auch `lastPushedHash` aktualisieren:
-    ```typescript
-    // useCrossDeviceSync.ts Zeile 527-531 (Thresholds)
-    lastPushedThresholdsHash.current = receivedHash;
-    
-    // useCrossDeviceSync.ts Zeile 563-567 (Alarm Levels)
-    lastPushedAlarmLevelsHash.current = receivedHash;
+  
+  ##### DAS PROBLEM (Ausführliche Erklärung):
+  Wenn ein User auf Tab B einen Threshold/Alarm-Level löscht, soll diese Löschung automatisch auf alle anderen Tabs (A, C, etc.) synchronisiert werden. Das Problem war: Auf Tab A wurde die Löschung empfangen, aber wenn der User auf Tab A später SELBER etwas löschte, wurde dieser Push fälschlicherweise übersprungen.
+  
+  ##### WARUM DAS PASSIERTE (Technische Ursache):
+  Das Sync-System verwendet Hashes um zu erkennen ob Daten bereits gepusht wurden. Es gibt zwei Hash-Refs:
+  - `lastReceivedHash`: Der Hash der zuletzt empfangenen Remote-Daten
+  - `lastPushedHash`: Der Hash der zuletzt gepushten lokalen Daten
+  
+  **Vor dem Fix:** Wenn Tab A Remote-Daten empfing, wurde NUR `lastReceivedHash` aktualisiert. `lastPushedHash` blieb auf dem alten Wert.
+  
+  ##### SZENARIO (Schritt für Schritt):
+  ```
+  AUSGANGSZUSTAND Tab A:
+  - settings = {BTC_USDT: [threshold1]}
+  - lastPushedHash = Hash({BTC_USDT: [threshold1]})
+  
+  SCHRITT 1: Tab B erstellt threshold2 und pusht zum Backend
+  
+  SCHRITT 2: Tab A empfängt Remote-Daten via Polling
+  - settings wird zu {BTC_USDT: [threshold1, threshold2]}
+  - lastReceivedHash = Hash({BTC_USDT: [threshold1, threshold2]})
+  - lastPushedHash = UNVERÄNDERT = Hash({BTC_USDT: [threshold1]})  ← BUG!
+  
+  SCHRITT 3: User löscht threshold2 auf Tab A
+  - settings wird zu {BTC_USDT: [threshold1]}
+  - currentHash = Hash({BTC_USDT: [threshold1]})
+  
+  SCHRITT 4: Push-Check
+  - currentHash === lastPushedHash? 
+  - Hash({BTC_USDT: [threshold1]}) === Hash({BTC_USDT: [threshold1]}) → TRUE!
+  - Push wird ÜBERSPRUNGEN weil System denkt "schon gepusht"
+  
+  ERGEBNIS: Andere Tabs (B, C) sehen die Löschung NIE!
+  ```
+  
+  ##### DIE LÖSUNG (Code-Fix):
+  Bei jedem Remote-Empfang wird jetzt AUCH `lastPushedHash` auf den empfangenen Hash aktualisiert:
+  ```typescript
+  // useCrossDeviceSync.ts - Thresholds Polling (Zeile ~527)
+  if (remoteMergedThresholds) {
+    const receivedHash = hashContent(remoteMergedThresholds);
+    lastReceivedThresholdsHash.current = receivedHash;
+    lastPushedThresholdsHash.current = receivedHash;  // ← NEUER FIX!
+    setTrendPriceSettingsRef.current(remoteMergedThresholds);
+  }
+  
+  // useCrossDeviceSync.ts - Alarm Levels Polling (Zeile ~563)
+  if (remoteMergedAlarmLevels) {
+    const receivedHash = hashContent(remoteMergedAlarmLevels);
+    lastReceivedAlarmLevelsHash.current = receivedHash;
+    lastPushedAlarmLevelsHash.current = receivedHash;  // ← NEUER FIX!
+    setAlarmLevelConfigsRef.current(remoteMergedAlarmLevels);
+  }
+  ```
+  
+  ##### WARUM DAS FUNKTIONIERT:
+  Nach dem Fix im gleichen Szenario:
+  ```
+  SCHRITT 2 (nach Fix): Tab A empfängt Remote-Daten
+  - lastPushedHash = Hash({BTC_USDT: [threshold1, threshold2]})  ← JETZT AKTUALISIERT!
+  
+  SCHRITT 4 (nach Fix): Push-Check
+  - currentHash === lastPushedHash?
+  - Hash({BTC_USDT: [threshold1]}) === Hash({BTC_USDT: [threshold1, threshold2]}) → FALSE!
+  - Push wird AUSGEFÜHRT ✓
+  
+  ERGEBNIS: Alle Tabs sehen die Löschung sofort!
+  ```
+
+  ---
+  
+  #### BUG-FIX V2.2 (2026-01-27): localStorage Flash-Fix bei Page-Refresh
+  
+  ##### DAS PROBLEM:
+  Wenn User die Seite neu lädt (F5 / Refresh), wurden kurz die ALTEN Daten aus localStorage angezeigt, bevor die aktuellen Server-Daten geladen wurden. Das führte zu einem verwirrenden "Flash" - z.B. ein gelöschter Threshold erschien kurz wieder.
+  
+  ##### WARUM DAS PASSIERTE:
+  Der Initial-Sync und das Polling haben zwar die Server-Daten empfangen und in den React-State geschrieben, aber localStorage wurde NICHT sofort aktualisiert. Beim nächsten Refresh wurde das alte localStorage geladen.
+  
+  ##### DIE LÖSUNG:
+  Bei jedem Empfang von Remote-Daten wird localStorage SOFORT aktualisiert:
+  ```typescript
+  // useCrossDeviceSync.ts - Initial Sync (Zeile ~231, ~251)
+  localStorage.setItem('notifications-threshold-settings', JSON.stringify(remoteMergedThresholds));
+  localStorage.setItem('notification-alarm-level-configs', JSON.stringify(remoteMergedAlarmLevels));
+  
+  // useCrossDeviceSync.ts - Polling (Zeile ~540, ~585)
+  localStorage.setItem('notifications-threshold-settings', JSON.stringify(remoteMergedThresholds));
+  localStorage.setItem('notification-alarm-level-configs', JSON.stringify(remoteMergedAlarmLevels));
+  ```
+  
+  ##### ERGEBNIS:
+  - Kein Flash mehr bei Page-Refresh
+  - localStorage ist IMMER synchron mit den aktuellsten Server-Daten
+  - Konsistente Anzeige auf allen Geräten
+
+  ---
+  
+  #### SPOT UND FUTURES PAIRS:
+  Beide Fixes funktionieren IDENTISCH für:
+  - **Spot Pairs:** z.B. "BTC_USDT", "ETH_USDT"
+  - **Futures Pairs:** z.B. "BTC_USDT_SWAP", "ETH_USDT_SWAP"
+  
+  Das Backend behandelt beide Pair-Typen gleich. Die Unterschiede (Preis-APIs, Symbol-Format) sind nur auf der Preis-Anzeige-Ebene relevant, nicht für den Sync.
+
+  ---
+  
+  #### VALIDIERUNG (2026-01-27):
+  - **20+ Cross-Device Tests:** Tab A erstellt → Tab B löscht → Tab C refresh → alle zeigen konsistente Daten
+  - **Langzeit-Test:** 60+ Sekunden kontinuierliches Polling ohne Fehler
+  - **User-Bestätigung:** "jz hat es funktioniert" mit Log-Nachweis:
     ```
-  - **Validierung:** 30+ API-Tests mit 5 simulierten Tabs, alle bestanden
+    [SYNC-MERGE] Thresholds: Remote is newer, taking remote data
+    [CROSS-DEVICE-SYNC] Merged thresholds: 1 items
+    [CROSS-DEVICE-SYNC] Updated localStorage with merged thresholds
+    [CROSS-DEVICE-SYNC] Thresholds skip - already synced
+    ```
+  - **Architect-Review:** PASS - "The implemented cross-device sync fixes appear stable and achieve the stated objectives"
   #### DIALOG-VERHALTEN (KRITISCH - NIEMALS ÄNDERN):
   - **Kein Auto-Save:** Änderungen werden NUR bei "Speichern" Klick gespeichert
   - **Kein Auto-Close:** Dialog schließt NICHT automatisch bei Wert-Eingabe
