@@ -45,7 +45,22 @@ export function useIOSZoomFix() {
 
 ### Dateien:
 - `client/src/hooks/useIOSZoomFix.ts` - Separater Hook
-- `client/src/pages/notifications.tsx` - Import und Aufruf (Zeile 20, 1556)
+- `client/src/pages/notifications.tsx` - Import (Zeile 17) und Aufruf (Zeile 1553)
+
+### 100% TRENNUNG VERIFIZIERT:
+| Check | Ergebnis |
+|-------|----------|
+| `useIOSZoomFix.ts` enthält Sync-Code? | NEIN - 0 Referenzen |
+| `useCrossDeviceSync.ts` referenziert iOS-Fix? | NEIN - 0 Referenzen |
+| Separater Import in notifications.tsx? | JA - Zeile 17 |
+| Separater Aufruf mit Kommentar? | JA - Zeile 1551-1553 |
+
+**Datei-Struktur (komplett getrennt):**
+```
+client/src/hooks/
+├── useCrossDeviceSync.ts   ← DIAMOND STATE (Sync-Logik)
+└── useIOSZoomFix.ts        ← NEUE SEPARATE DATEI (iOS Fix)
+```
 
 ---
 
