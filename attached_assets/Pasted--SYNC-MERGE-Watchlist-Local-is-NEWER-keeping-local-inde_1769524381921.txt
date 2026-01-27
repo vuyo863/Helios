@@ -1,0 +1,74 @@
+[SYNC-MERGE] Watchlist: Local is NEWER, keeping local
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Merged watchlist: 0 items
+notifications:1  <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes">
+index-CuXwy5j4.js:470 [SYNC-MERGE] Thresholds: Remote is newer, taking remote data
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Merged thresholds: 1 items
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Updated localStorage with merged thresholds
+index-CuXwy5j4.js:470 [THRESHOLD-CHECK] Running with 0 active alarms
+index-CuXwy5j4.js:470 [SYNC-MERGE] AlarmLevels: Local is newer, keeping local
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Merged alarm levels: 4 items
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Updated localStorage with merged alarm levels
+notifications:1  Error while trying to use the following icon from the Manifest: https://helios-ai.replit.app/icon-192.png (Resource size is not correct - typo in the Manifest?)
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Initial sync - Remote alarms: 0 Timestamp: 1769524290781
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Initial sync - Setting 0 alarms, LastKnownTS: 1769524290781
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Initial sync complete
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-REF] Updated ref with 0 alarms
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-UI] UI should now show 0 alarms
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Pushing data to backend...
+index-CuXwy5j4.js:470 [SYNC] Watchlist pushed to backend
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Watchlist pushed (items: 0 )
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Thresholds skip - already synced
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Alarm levels skip - already synced
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Push check - Count: 0 Hash: [] FromRemote: false AlreadyPushed: false
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] PUSHING to backend! 0 alarms
+index-CuXwy5j4.js:470 [SYNC] Pushing active alarms: 0
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Push SUCCESS
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Push complete
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Starting polling interval (3.5s)
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524290781
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524290781 IsNewer: true
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Content check - LocalIDs:  RemoteIDs:  IsDifferent: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+2index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote: 1769524297574 LastKnown: 1769524297574 IsNewer: false
+index-CuXwy5j4.js:470 [CROSS-DEVICE-SYNC] Polling for updates...
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Polling - Remote: 0 Local: 0 LastKnownTS: 1769524297574
+index-CuXwy5j4.js:470 [ACTIVE-ALARMS-SYNC] Timestamp check - Remote
