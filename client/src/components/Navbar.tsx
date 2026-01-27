@@ -53,7 +53,10 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <img src={heliosLogo} alt="Helios AI" className="w-12 h-12" />
-            <h1 className="text-xl font-bold" style={{ color: '#1a1a1a', textShadow: '0 0 5px #3b82f6, 0 0 10px #3b82f6, 0 0 20px #3b82f6, 0 0 40px #3b82f6' }}>Helios AI</h1>
+            <h1 className="text-xl font-semibold tracking-wide" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+              <span style={{ color: '#38bdf8' }}>HELIOS</span>
+              <span style={{ color: '#1e293b' }}> AI</span>
+            </h1>
           </div>
 
           <div className="flex gap-2">
