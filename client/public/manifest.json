@@ -1,6 +1,6 @@
 {
-  "name": "Pionex Bot Profit Tracker",
-  "short_name": "Pionex Tracker",
+  "name": "Helios",
+  "short_name": "Helios",
   "description": "Verwalten und analysieren Sie Ihre Pionex Trading-Bot Gewinne mit detaillierten Statistiken und Alarmen.",
   "start_url": "/",
   "display": "standalone",
