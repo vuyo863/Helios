@@ -221,6 +221,12 @@ export function useCrossDeviceSync({
             lastKnownRemoteThresholdsTimestamp.current = remoteThresholds.timestamp;
             // FIX: Store hash to prevent pushing back the same data we just received
             lastReceivedThresholdsHash.current = hashContent(merged.settings);
+            // FIX: Also update lastPushedHash to prevent false "already pushed" detection
+            lastPushedThresholdsHash.current = hashContent(merged.settings);
+            // FIX: Update localStorage IMMEDIATELY to prevent "flash" on page refresh
+            // This ensures the next page load shows the correct data from the start
+            localStorage.setItem('notifications-threshold-settings', JSON.stringify(merged.settings));
+            console.log('[CROSS-DEVICE-SYNC] Updated localStorage with merged thresholds');
             setTrendPriceSettings(() => merged.settings);
           }
         }
@@ -236,6 +242,11 @@ export function useCrossDeviceSync({
           if (merged) {
             console.log('[CROSS-DEVICE-SYNC] Merged alarm levels:', Object.keys(merged.configs).length, 'items');
             lastKnownRemoteAlarmLevelsTimestamp.current = remoteAlarmLevels.timestamp;
+            // FIX: Also update lastPushedHash to prevent false "already pushed" detection
+            lastPushedAlarmLevelsHash.current = hashContent(merged.configs);
+            // FIX: Update localStorage to prevent "flash" on page refresh
+            localStorage.setItem('alarm-level-configs', JSON.stringify(merged.configs));
+            console.log('[CROSS-DEVICE-SYNC] Updated localStorage with merged alarm levels');
             setAlarmLevelConfigs(merged.configs);
           }
         }
@@ -527,6 +538,10 @@ export function useCrossDeviceSync({
               lastPushedThresholdsHash.current = receivedHash;
               console.log('[THRESHOLDS-SYNC] Updated lastPushedHash to match received:', receivedHash.slice(0, 8));
               
+              // FIX: Update localStorage to prevent "flash" on page refresh
+              localStorage.setItem('notifications-threshold-settings', JSON.stringify(remoteThresholds.settings));
+              console.log('[THRESHOLDS-SYNC] Updated localStorage with remote thresholds');
+              
               // SET FLAG before updating state to prevent push-back!
               isProcessingRemoteUpdate.current = true;
               
@@ -562,6 +577,10 @@ export function useCrossDeviceSync({
               // This fixes: receive remote → user deletes → push skipped because hash matches old lastPushed
               lastPushedAlarmLevelsHash.current = receivedHash;
               console.log('[ALARM-LEVELS-SYNC] Updated lastPushedHash to match received:', receivedHash.slice(0, 8));
+              
+              // FIX: Update localStorage to prevent "flash" on page refresh
+              localStorage.setItem('alarm-level-configs', JSON.stringify(remoteAlarmLevels.configs));
+              console.log('[ALARM-LEVELS-SYNC] Updated localStorage with remote alarm levels');
               
               // SET FLAG before updating state to prevent push-back!
               isProcessingRemoteUpdate.current = true;
