@@ -392,25 +392,13 @@ export async function pushThresholdsToBackend(
 
 /**
  * Thresholds vom Backend holen
- * FIX: Bei 404 (keine Daten) wird leeres Objekt mit aktuellem Timestamp zurückgegeben
- * Das signalisiert "alle Thresholds wurden gelöscht" und überschreibt lokale Daten
  */
 export async function pullThresholdsFromBackend(): Promise<AllThresholdsSyncData | null> {
   try {
     const response = await fetch(`${API_BASE}/thresholds`);
     
     if (!response.ok) {
-      // FIX: Bei 404 = "keine Thresholds mehr" → leeres Objekt mit aktuellem Timestamp
-      // Das sorgt dafür, dass gelöschte Thresholds auf anderen Geräten auch verschwinden
-      if (response.status === 404) {
-        console.log('[SYNC] No thresholds on backend (404) - returning empty with current timestamp');
-        return {
-          timestamp: getCurrentTimestamp(),
-          deviceId: 'backend-empty',
-          settings: {}
-        };
-      }
-      console.log('[SYNC] Error fetching thresholds:', response.status);
+      console.log('[SYNC] No thresholds data from backend');
       return null;
     }
     

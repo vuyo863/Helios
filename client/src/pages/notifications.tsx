@@ -821,31 +821,6 @@ export default function Notifications() {
   });
 
   // FIX: Quick pre-sync check to eliminate "flash" of deleted thresholds on page refresh
-  // This runs IMMEDIATELY on mount and clears local thresholds if backend has none (404)
-  // This prevents deleted thresholds from appearing briefly before cross-device sync kicks in
-  const [thresholdsSyncChecked, setThresholdsSyncChecked] = useState(false);
-  
-  useEffect(() => {
-    const quickSyncCheck = async () => {
-      try {
-        const response = await fetch('/api/sync/thresholds');
-        if (response.status === 404) {
-          // Backend has NO thresholds - clear local state immediately
-          console.log('[QUICK-SYNC] No thresholds on backend - clearing local state');
-          setTrendPriceSettings({});
-          localStorage.setItem('notifications-threshold-settings', '{}');
-          localStorage.setItem('notifications-threshold-settings-timestamp', Date.now().toString());
-        }
-      } catch (error) {
-        console.error('[QUICK-SYNC] Check failed:', error);
-      } finally {
-        setThresholdsSyncChecked(true);
-      }
-    };
-    
-    quickSyncCheck();
-  }, []);
-
   const [triggeredThresholds, setTriggeredThresholds] = useState<Set<string>>(new Set());
   
   // Trigger to force threshold check after re-activating a threshold
@@ -3189,16 +3164,6 @@ export default function Notifications() {
             <CardTitle className="text-xl">Benachrichtigungen konfigurieren</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* FIX: Block threshold display until quick-sync-check is complete to prevent flash of deleted thresholds */}
-            {!thresholdsSyncChecked ? (
-              <div className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <p className="text-sm">Synchronisiere...</p>
-                </div>
-              </div>
-            ) : (
-            <>
             {/* Kombinierte Liste: Watchlist + Pairs mit Schwellenwerten die nicht in Watchlist sind */}
             {(() => {
               // Finde alle Pairs mit Schwellenwerten die nicht in der Watchlist sind
@@ -4412,8 +4377,6 @@ export default function Notifications() {
             </>
           );
         })()}
-            </>
-            )}
           </CardContent>
         </Card>
 
