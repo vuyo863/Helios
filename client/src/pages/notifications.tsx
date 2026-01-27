@@ -2180,7 +2180,7 @@ export default function Notifications() {
     }));
   };
 
-  // NUR localStorage - kein Backend-Sync mehr
+  // FIX: Auch Backend-Sync für Cross-Device Löschungen!
   const removeThreshold = (trendPriceId: string, thresholdId: string) => {
     const currentSettings = trendPriceSettings[trendPriceId];
 
@@ -2191,6 +2191,11 @@ export default function Notifications() {
       editingThresholdRef.current = { pairId: null, thresholdId: null };
       setEditingThresholdId(null);
     }
+
+    // IMPORTANT: Add threshold ID to pending deletes BEFORE removing from state
+    // This prevents polling from restoring deleted threshold before DELETE completes
+    pendingDeletesRef.current.add(thresholdId);
+    console.log(`[THRESHOLD-DELETE] Added ${thresholdId} to pending deletes`);
 
     // Lösche den Schwellenwert
     const updatedThresholds = currentSettings.thresholds.filter(t => t.id !== thresholdId);
@@ -2206,7 +2211,33 @@ export default function Notifications() {
 
     setTrendPriceSettings(newSettings);
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
-    console.log(`[THRESHOLD] Deleted from localStorage: ${thresholdId}`);
+    
+    // FIX: Set timestamp to very old value (1) so backend always wins on next sync
+    // Using 1 instead of removing because 0 is falsy and triggers getCurrentTimestamp() fallback
+    // This ensures deleted thresholds don't come back after refresh
+    localStorage.setItem('sync-thresholds-timestamp', '1');
+    console.log(`[THRESHOLD-DELETE] Set sync timestamp to 1 (very old) for cross-device sync`);
+
+    // FIX: Sync to backend for cross-device sync
+    fetch(`/api/notification-thresholds/${encodeURIComponent(trendPriceId)}/${encodeURIComponent(thresholdId)}`, {
+      method: 'DELETE'
+    }).then(res => {
+      // Always clear pending delete to avoid permanent suppression
+      pendingDeletesRef.current.delete(thresholdId);
+      
+      if (res.ok) {
+        console.log(`[THRESHOLD-SYNC] Deleted threshold ${thresholdId} from backend`);
+        console.log(`[THRESHOLD-DELETE] Cleared pending delete for ${thresholdId}`);
+      } else {
+        console.error(`[THRESHOLD-SYNC] Failed to delete threshold ${thresholdId} from backend:`, res.status);
+        console.log(`[THRESHOLD-DELETE] Cleared pending delete despite error (avoid permanent suppression)`);
+      }
+    }).catch(err => {
+      // Also clear on error to avoid permanent suppression
+      pendingDeletesRef.current.delete(thresholdId);
+      console.error('[THRESHOLD-SYNC] Delete error:', err);
+      console.log(`[THRESHOLD-DELETE] Cleared pending delete after error (avoid permanent suppression)`);
+    });
 
     toast({
       title: "Schwellenwert gelöscht",
@@ -2248,19 +2279,36 @@ export default function Notifications() {
     setTrendPriceSettings(newSettings);
     localStorage.setItem('notifications-threshold-settings', JSON.stringify(newSettings));
     
+    // FIX: Set timestamp to very old value (1) so backend always wins on next sync
+    // Using 1 instead of removing because 0 is falsy and triggers getCurrentTimestamp() fallback
+    // This ensures deleted thresholds don't come back after refresh
+    localStorage.setItem('sync-thresholds-timestamp', '1');
+    console.log(`[THRESHOLDS-DELETE] Set sync timestamp to 1 (very old) for cross-device sync`);
+    
     // Sync to backend for cross-device sync
     fetch(`/api/notification-thresholds/pair/${encodeURIComponent(trendPriceId)}`, {
       method: 'DELETE'
     }).then(res => {
+      // Always clear pending deletes to avoid permanent suppression
+      currentSettings.thresholds.forEach(t => {
+        pendingDeletesRef.current.delete(t.id);
+      });
+      
       if (res.ok) {
         console.log(`[THRESHOLDS-SYNC] Deleted all thresholds for ${trendPriceId} from backend`);
-        // Remove all from pending deletes after successful backend deletion
-        currentSettings.thresholds.forEach(t => {
-          pendingDeletesRef.current.delete(t.id);
-        });
         console.log(`[THRESHOLDS-DELETE] Cleared pending deletes for ${trendPriceId}`);
+      } else {
+        console.error(`[THRESHOLDS-SYNC] Failed to delete all thresholds for ${trendPriceId} from backend:`, res.status);
+        console.log(`[THRESHOLDS-DELETE] Cleared pending deletes despite error (avoid permanent suppression)`);
       }
-    }).catch(err => console.error('[THRESHOLDS-SYNC] Delete all error:', err));
+    }).catch(err => {
+      // Also clear on error to avoid permanent suppression
+      currentSettings.thresholds.forEach(t => {
+        pendingDeletesRef.current.delete(t.id);
+      });
+      console.error('[THRESHOLDS-SYNC] Delete all error:', err);
+      console.log(`[THRESHOLDS-DELETE] Cleared pending deletes after error (avoid permanent suppression)`);
+    });
 
     toast({
       title: "Alle Schwellenwerte gelöscht",
