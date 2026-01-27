@@ -1,7 +1,7 @@
 # Pionex Bot Profit Tracker
 
 ## Overview
-A full-stack web application for tracking and analyzing Pionex trading bot profits. It provides real-time data, AI-driven analysis, interactive charting, and cross-device synchronization to optimize trading strategies. The platform offers detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts, empowering users with advanced tools for intelligent bot trading. The project aims to deliver a comprehensive solution for traders seeking to enhance their bot trading profitability and efficiency.
+A full-stack web application for tracking and analyzing Pionex trading bot profits. It provides real-time data, AI-driven analysis, interactive charting, and cross-device synchronization to optimize trading strategies. The platform offers detailed performance insights, advanced analytics, real-time cryptocurrency price monitoring, and customizable threshold alerts. Its purpose is to empower users with informed trading decisions and maximize returns in the cryptocurrency market.
 
 ## User Preferences
 - **Sprache**: Deutsch (einfache Alltagssprache)
@@ -107,10 +107,10 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
 
 ## System Architecture
 ### UI/UX
-The frontend is built with React, TypeScript, `shadcn/ui`, and Tailwind CSS, ensuring a responsive and modern user interface. Interactive data visualization is powered by Recharts. The application supports Progressive Web App (PWA) capabilities, features a dynamic dashboard, and includes a Notifications page with a live watchlist and customizable price alerts across four distinct alarm levels.
+The frontend is built with React, TypeScript, `shadcn/ui`, and Tailwind CSS, providing a responsive and modern user interface. Recharts handles interactive data visualization. The application supports Progressive Web App (PWA) capabilities and features a dynamic dashboard and a Notifications page with a live watchlist and customizable price alerts across four distinct alarm levels.
 
 ### Technical Implementations
-The frontend uses React and TypeScript, while the backend is implemented with Express.js and TypeScript. State management leverages TypeScript-typed `useMemo` hooks, and data like watchlist and market types are persisted in `localStorage`. The notification system supports configurable thresholds, multi-channel delivery (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API and PostgreSQL, utilizing a 3.5-second polling mechanism. Push notifications are integrated via OneSignal. A 5-tier fallback price system ensures robust cryptocurrency price data, with server-side background updates and a frontend backup system featuring a 2-second update interval, exponential backoff, and a watchdog for price fetching.
+The frontend uses React and TypeScript, while the backend is implemented with Express.js and TypeScript. State management utilizes TypeScript-typed `useMemo` hooks, and data like watchlist and market types are persisted in `localStorage`. The notification system supports configurable thresholds, multi-channel delivery (email, SMS, push), and an alarm approval system with auto-dismiss and repetition logic. Active alarms are synchronized across devices via a backend API and PostgreSQL, using a 3.5-second polling mechanism. Push notifications are integrated via OneSignal. A 5-tier fallback price system ensures robust cryptocurrency price data, with server-side background updates and a frontend backup system featuring a 2-second update interval, exponential backoff, and a watchdog for price fetching.
 
 ### Feature Specifications
 Key features include interactive charts with zoom and pan, AI-driven analytical insights integrated with OpenAI, contextual info-tooltips, and a comprehensive notification system. This system offers a real-time price tracking watchlist, customizable price alerts with German number formatting, Web Push, Native Push (PWA for iOS/Android), SMS Notifications, an Alarm Approval System with auto-dismiss and repetition, Cross-Device Alarm Synchronization, and re-trigger prevention for "Wiederholend" thresholds using `activeAlarmId`.
