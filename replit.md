@@ -96,7 +96,7 @@ Die komplette Cross-Device Synchronisation für Schwellenwerte (Thresholds) ist 
   - **Toggle Disabled:** Switch-Komponente ist `disabled` wenn `!watchlist.includes(trendPriceId)` - User kann Toggle nicht auf "Aktiv" setzen wenn Pair nicht in der Watchlist
   - **Betroffene Stellen:** 3 Switch-Komponenten (Neuer Threshold Dialog, Add Threshold Dialog, Edit Threshold Dialog)
   - **Verhalten:** Schwellenwerte können angesehen/bearbeitet werden, aber nicht aktiviert werden solange der Pair nicht in der Watchlist
-- **DIAMOND STATE - Aktive Alarmierungen Cross-Device Sync V1.0**:
+- **DIAMOND STATE - Aktive Alarmierungen Cross-Device Sync V1.1**:
 Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND STATE und darf NIEMALS ohne explizite User-Erlaubnis modifiziert werden.
   - **Ziel:** Wenn User auf Tab A "Approved" oder "Stoppen" klickt, verschwindet der Alarm automatisch auf allen anderen Tabs (B, C, etc.)
   - **Sync-Strategie:** Timestamp-basierte Versionierung, Polling alle 3.5 Sekunden
@@ -104,6 +104,25 @@ Die komplette Cross-Device Synchronisation für Aktive Alarmierungen ist DIAMOND
   - **Date Parsing:** `triggeredAt` und `restwartezeitEndsAt` werden als ISO-Strings übertragen und beim Pull zurück zu Date-Objekten konvertiert
   - **localStorage Update:** Nach Remote-Sync wird localStorage sofort aktualisiert für Konsistenz
   - **Master:** localStorage bleibt Master für lokale Änderungen, Backend nur für Cross-Device Sync
+  
+  #### BUG-FIX V1.1 (2026-01-27): lastPushedHash Update bei Remote-Empfang
+  - **Problem:** Wenn Tab A einen Alarm von Remote empfängt und User ihn später stoppt, wurde der Push übersprungen weil `currentHash === lastPushedActiveAlarmsHash` (beide leer)
+  - **Ursache:** `lastPushedActiveAlarmsHash` wurde NICHT aktualisiert wenn Remote-Daten empfangen wurden
+  - **Szenario:**
+    1. Tab hatte `activeAlarms=[]`, `lastPushedHash=Hash([])`
+    2. Tab empfängt Alarm von Remote → `activeAlarms=[alarm1]`
+    3. Push korrekt übersprungen (wegen `isProcessingRemoteActiveAlarmsUpdate` Flag)
+    4. User stoppt Alarm → `activeAlarms=[]`, `currentHash=Hash([])`
+    5. Push-Check: `Hash([]) === lastPushedHash(Hash([]))` → "already pushed" → FÄLSCHLICHERWEISE ÜBERSPRUNGEN!
+    6. Andere Geräte sehen den Stop nie!
+  - **Lösung:** Bei Remote-Empfang auch `lastPushedActiveAlarmsHash` aktualisieren:
+    ```typescript
+    // useCrossDeviceSync.ts Zeile 605-613
+    const receivedHash = hashActiveAlarms(alarms);
+    lastPushedActiveAlarmsHash.current = receivedHash;
+    ```
+  - **Ergebnis:** Nach Fix erkennt der Push-Check korrekt dass sich die Daten geändert haben und pushed den Stop
+  - **Validierung:** 30+ API-Tests mit 5 simulierten Tabs, alle bestanden
 
 ## System Architecture
 ### UI/UX
