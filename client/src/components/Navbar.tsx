@@ -51,7 +51,12 @@ export default function Navbar() {
     <nav className="border-b bg-card">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 cursor-pointer bg-transparent border-none p-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            data-testid="button-reload-app"
+            aria-label="Reload App"
+          >
             <img src={heliosLogo} alt="Helios AI" className="w-12 h-12" />
             <h1 className="text-2xl font-semibold tracking-wide" style={{ fontFamily: 'Orbitron, sans-serif' }}>
               <span style={{ 
@@ -62,7 +67,7 @@ export default function Navbar() {
               }}>HELIOS</span>
               <span style={{ color: '#1e293b' }}> AI</span>
             </h1>
-          </div>
+          </button>
 
           <div className="flex gap-2">
             {navItems.map((item) => {
