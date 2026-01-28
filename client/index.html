@@ -24,7 +24,9 @@
         <img src="/splash-logo.png" alt="Helios AI" style="width:200px;height:200px;animation:splashPulse 2.5s ease-in-out;" />
       </div>
       <!-- Video Layer (hidden initially) -->
-      <video id="splash-video" src="/splash-video.mp4" preload="auto" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.3s;"></video>
+      <div id="splash-video-wrapper" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fff;opacity:0;transition:opacity 0.3s;">
+        <video id="splash-video" src="/splash-video.mp4" preload="auto" muted playsinline style="width:250px;height:250px;object-fit:contain;"></video>
+      </div>
     </div>
     
     <style>
@@ -42,6 +44,7 @@
       (function() {
         var splash = document.getElementById('splash');
         var splashCss = document.getElementById('splash-css');
+        var videoWrapper = document.getElementById('splash-video-wrapper');
         var video = document.getElementById('splash-video');
         var isDashboard = window.location.pathname === '/' || window.location.pathname === '';
         var videoReady = false;
@@ -71,7 +74,7 @@
               splashCss.style.opacity = '0';
               splashCss.style.transition = 'opacity 0.3s';
               if (videoReady) {
-                video.style.opacity = '1';
+                videoWrapper.style.opacity = '1';
                 video.play().catch(function() {
                   removeSplash();
                 });
@@ -86,7 +89,7 @@
           setTimeout(removeSplash, 10000);
         } else {
           // Other pages: CSS only (2.5 seconds)
-          video.style.display = 'none';
+          videoWrapper.style.display = 'none';
           setTimeout(removeSplash, minCssTime);
         }
         
