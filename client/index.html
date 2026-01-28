@@ -55,19 +55,30 @@
             tryStartVideo();
           });
           
+          // Try at 2.5s (after CSS animation)
           setTimeout(function() {
             tryStartVideo();
           }, minCssTime);
           
+          // Fallback: try again at 5s if video still not ready
+          setTimeout(function() {
+            tryStartVideo();
+          }, 5000);
+          
           function tryStartVideo() {
             var elapsed = Date.now() - cssStartTime;
-            if (elapsed >= minCssTime && (videoReady || elapsed > 5000)) {
+            if (elapsed >= minCssTime && (videoReady || elapsed >= 5000)) {
               splashCss.style.opacity = '0';
               splashCss.style.transition = 'opacity 0.3s';
-              video.style.opacity = '1';
-              video.play().catch(function() {
+              if (videoReady) {
+                video.style.opacity = '1';
+                video.play().catch(function() {
+                  removeSplash();
+                });
+              } else {
+                // Video not ready after 5s, just remove splash
                 removeSplash();
-              });
+              }
             }
           }
           
