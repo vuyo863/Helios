@@ -107,6 +107,15 @@ function isOneSignalAllowedDomain(): boolean {
 function App() {
   const [oneSignalInitialized, setOneSignalInitialized] = useState(false);
 
+  // Signal that app is ready (for splash screen)
+  useEffect(() => {
+    // Small delay to ensure UI is painted
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('app-ready'));
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Initialize OneSignal for Web Push Notifications - only on production domain
   useEffect(() => {
     if (oneSignalInitialized) return;

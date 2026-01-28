@@ -27,6 +27,12 @@
       <div id="splash-video-wrapper" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fff;opacity:0;transition:opacity 0.3s;">
         <video id="splash-video" src="/splash-video.mp4" preload="auto" muted playsinline webkit-playsinline style="width:250px;height:250px;object-fit:contain;"></video>
       </div>
+      <!-- Fallback Loading Spinner (hidden initially) -->
+      <div id="splash-loading" style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;background:#fff;">
+        <img src="/splash-logo.png" alt="Helios AI" style="width:120px;height:120px;margin-bottom:20px;" />
+        <div style="width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#1e6091;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <p style="margin-top:16px;color:#64748b;font-family:system-ui,sans-serif;font-size:14px;">Laden...</p>
+      </div>
     </div>
     
     <style>
@@ -38,6 +44,9 @@
         80% { transform: scale(1.05); }
         100% { transform: scale(1); opacity: 1; }
       }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
     
     <script>
@@ -46,60 +55,104 @@
         var splashCss = document.getElementById('splash-css');
         var videoWrapper = document.getElementById('splash-video-wrapper');
         var video = document.getElementById('splash-video');
+        var splashLoading = document.getElementById('splash-loading');
         var isDashboard = window.location.pathname === '/' || window.location.pathname === '';
         var videoReady = false;
-        var videoStarted = false; // Prevent multiple starts
-        var minCssTime = 2500; // minimum 2.5s CSS animation
+        var videoStarted = false;
+        var videoFinished = false;
+        var appReady = false;
+        var splashRemoved = false;
+        var minCssTime = 2500;
         var cssStartTime = Date.now();
         
+        // Listen for app-ready event from React
+        window.addEventListener('app-ready', function() {
+          appReady = true;
+          tryRemoveSplash();
+        });
+        
+        function showLoadingSpinner() {
+          splashCss.style.display = 'none';
+          videoWrapper.style.display = 'none';
+          splashLoading.style.display = 'flex';
+        }
+        
+        function tryRemoveSplash() {
+          if (splashRemoved) return;
+          // Only remove when both: animation/video finished AND app ready
+          if ((videoFinished || !isDashboard) && appReady) {
+            splashRemoved = true;
+            removeSplash();
+          }
+        }
+        
         if (isDashboard) {
-          // Dashboard: CSS + Video
+          // Dashboard: CSS + Video, then wait for app-ready
           video.addEventListener('canplay', function() {
             videoReady = true;
             tryStartVideo();
           });
           
-          // Try at 2.5s (after CSS animation)
-          setTimeout(function() {
-            tryStartVideo();
-          }, minCssTime);
-          
-          // Fallback: try again at 5s if video still not ready
-          setTimeout(function() {
-            tryStartVideo();
-          }, 5000);
+          setTimeout(function() { tryStartVideo(); }, minCssTime);
+          setTimeout(function() { tryStartVideo(); }, 5000);
           
           function tryStartVideo() {
-            if (videoStarted) return; // Already started, do nothing
+            if (videoStarted) return;
             var elapsed = Date.now() - cssStartTime;
             if (elapsed >= minCssTime && (videoReady || elapsed >= 5000)) {
-              videoStarted = true; // Mark as started
+              videoStarted = true;
               splashCss.style.opacity = '0';
               splashCss.style.transition = 'opacity 0.3s';
               if (videoReady) {
                 videoWrapper.style.opacity = '1';
-                video.currentTime = 0; // Ensure video starts from beginning
+                video.currentTime = 0;
                 var playPromise = video.play();
                 if (playPromise !== undefined) {
                   playPromise.catch(function() {
-                    // Video blocked on mobile, just remove splash
-                    removeSplash();
+                    videoFinished = true;
+                    onVideoFinished();
                   });
                 }
               } else {
-                // Video not ready after 5s, just remove splash
-                removeSplash();
+                videoFinished = true;
+                onVideoFinished();
               }
             }
           }
           
-          video.addEventListener('ended', removeSplash);
-          setTimeout(removeSplash, 10000);
+          video.addEventListener('ended', function() {
+            videoFinished = true;
+            tryRemoveSplash();
+            // Fallback: show spinner after 2s if app not ready
+            setTimeout(function() {
+              if (!appReady && !splashRemoved) {
+                showLoadingSpinner();
+              }
+            }, 2000);
+          });
+          
         } else {
-          // Other pages: CSS only (2.5 seconds)
+          // Other pages: CSS only, then wait for app-ready
           videoWrapper.style.display = 'none';
-          setTimeout(removeSplash, minCssTime);
+          setTimeout(function() {
+            videoFinished = true;
+            tryRemoveSplash();
+            // Fallback: show spinner after 1s if app not ready
+            setTimeout(function() {
+              if (!appReady && !splashRemoved) {
+                showLoadingSpinner();
+              }
+            }, 1000);
+          }, minCssTime);
         }
+        
+        // Hard timeout: force remove after 15s no matter what
+        setTimeout(function() {
+          if (!splashRemoved) {
+            splashRemoved = true;
+            removeSplash();
+          }
+        }, 15000);
         
         function removeSplash() {
           if (splash && splash.parentNode) {
