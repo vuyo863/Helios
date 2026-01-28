@@ -43,40 +43,41 @@
         var splash = document.getElementById('splash');
         var splashCss = document.getElementById('splash-css');
         var video = document.getElementById('splash-video');
+        var isDashboard = window.location.pathname === '/' || window.location.pathname === '';
         var videoReady = false;
         var minCssTime = 2500; // minimum 2.5s CSS animation
         var cssStartTime = Date.now();
         
-        // When video is ready to play
-        video.addEventListener('canplay', function() {
-          videoReady = true;
-          tryStartVideo();
-        });
-        
-        // Fallback: start video after CSS animation minimum time
-        setTimeout(function() {
-          tryStartVideo();
-        }, minCssTime);
-        
-        function tryStartVideo() {
-          var elapsed = Date.now() - cssStartTime;
-          if (elapsed >= minCssTime && (videoReady || elapsed > 5000)) {
-            // Hide CSS, show and play video
-            splashCss.style.opacity = '0';
-            splashCss.style.transition = 'opacity 0.3s';
-            video.style.opacity = '1';
-            video.play().catch(function() {
-              // If video fails to play, just remove splash
-              removeSplash();
-            });
+        if (isDashboard) {
+          // Dashboard: CSS + Video
+          video.addEventListener('canplay', function() {
+            videoReady = true;
+            tryStartVideo();
+          });
+          
+          setTimeout(function() {
+            tryStartVideo();
+          }, minCssTime);
+          
+          function tryStartVideo() {
+            var elapsed = Date.now() - cssStartTime;
+            if (elapsed >= minCssTime && (videoReady || elapsed > 5000)) {
+              splashCss.style.opacity = '0';
+              splashCss.style.transition = 'opacity 0.3s';
+              video.style.opacity = '1';
+              video.play().catch(function() {
+                removeSplash();
+              });
+            }
           }
+          
+          video.addEventListener('ended', removeSplash);
+          setTimeout(removeSplash, 10000);
+        } else {
+          // Other pages: CSS only (2.5 seconds)
+          video.style.display = 'none';
+          setTimeout(removeSplash, minCssTime);
         }
-        
-        // When video ends, remove splash
-        video.addEventListener('ended', removeSplash);
-        
-        // Timeout fallback: remove splash after 10 seconds max
-        setTimeout(removeSplash, 10000);
         
         function removeSplash() {
           if (splash && splash.parentNode) {
