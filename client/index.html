@@ -17,6 +17,79 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <!-- Splash Screen -->
+    <div id="splash" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:#fff;">
+      <!-- CSS Animation Layer -->
+      <div id="splash-css" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fff;">
+        <img src="/splash-logo.png" alt="Helios AI" style="width:200px;height:200px;animation:splashPulse 2.5s ease-in-out;" />
+      </div>
+      <!-- Video Layer (hidden initially) -->
+      <video id="splash-video" src="/splash-video.mp4" preload="auto" muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.3s;"></video>
+    </div>
+    
+    <style>
+      @keyframes splashPulse {
+        0% { opacity: 0; transform: scale(0.8); }
+        20% { opacity: 1; transform: scale(1); }
+        40% { transform: scale(1.05); }
+        60% { transform: scale(1); }
+        80% { transform: scale(1.05); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+    </style>
+    
+    <script>
+      (function() {
+        var splash = document.getElementById('splash');
+        var splashCss = document.getElementById('splash-css');
+        var video = document.getElementById('splash-video');
+        var videoReady = false;
+        var minCssTime = 2500; // minimum 2.5s CSS animation
+        var cssStartTime = Date.now();
+        
+        // When video is ready to play
+        video.addEventListener('canplay', function() {
+          videoReady = true;
+          tryStartVideo();
+        });
+        
+        // Fallback: start video after CSS animation minimum time
+        setTimeout(function() {
+          tryStartVideo();
+        }, minCssTime);
+        
+        function tryStartVideo() {
+          var elapsed = Date.now() - cssStartTime;
+          if (elapsed >= minCssTime && (videoReady || elapsed > 5000)) {
+            // Hide CSS, show and play video
+            splashCss.style.opacity = '0';
+            splashCss.style.transition = 'opacity 0.3s';
+            video.style.opacity = '1';
+            video.play().catch(function() {
+              // If video fails to play, just remove splash
+              removeSplash();
+            });
+          }
+        }
+        
+        // When video ends, remove splash
+        video.addEventListener('ended', removeSplash);
+        
+        // Timeout fallback: remove splash after 10 seconds max
+        setTimeout(removeSplash, 10000);
+        
+        function removeSplash() {
+          if (splash && splash.parentNode) {
+            splash.style.opacity = '0';
+            splash.style.transition = 'opacity 0.5s';
+            setTimeout(function() {
+              splash.parentNode.removeChild(splash);
+            }, 500);
+          }
+        }
+      })();
+    </script>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
