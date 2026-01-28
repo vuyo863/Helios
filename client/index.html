@@ -48,6 +48,7 @@
         var video = document.getElementById('splash-video');
         var isDashboard = window.location.pathname === '/' || window.location.pathname === '';
         var videoReady = false;
+        var videoStarted = false; // Prevent multiple starts
         var minCssTime = 2500; // minimum 2.5s CSS animation
         var cssStartTime = Date.now();
         
@@ -69,8 +70,10 @@
           }, 5000);
           
           function tryStartVideo() {
+            if (videoStarted) return; // Already started, do nothing
             var elapsed = Date.now() - cssStartTime;
             if (elapsed >= minCssTime && (videoReady || elapsed >= 5000)) {
+              videoStarted = true; // Mark as started
               splashCss.style.opacity = '0';
               splashCss.style.transition = 'opacity 0.3s';
               if (videoReady) {
